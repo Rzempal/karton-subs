@@ -18,3 +18,22 @@
 
 # VS Code (keep launch configs in VCS if desired)
 #.vscode/
+
+# Secrets / environment
+.env
+.env.*
+*.env
+secrets/
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+apps/*/build/
+
+# Claude Code — local/machine-specific settings
+settings.local.json
