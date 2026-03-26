@@ -1,0 +1,284 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../models/subscription.dart';
+import '../controllers/subscription_controller.dart';
+import '../services/storage_service.dart';
+
+class AddSubscriptionScreen extends StatefulWidget {
+  final Subscription? existing;
+
+  const AddSubscriptionScreen({super.key, this.existing});
+
+  @override
+  State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
+}
+
+class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _amountCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _cancelUrlCtrl;
+
+  Currency _currency = Currency.PLN;
+  BillingCycle _cycle = BillingCycle.monthly;
+  String? _categoryId;
+  DateTime _startDate = DateTime.now();
+  bool _isSubmitting = false;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.existing;
+    _nameCtrl = TextEditingController(text: s?.name ?? '');
+    _amountCtrl = TextEditingController(
+        text: s != null ? s.amount.toStringAsFixed(2) : '');
+    _descCtrl = TextEditingController(text: s?.description ?? '');
+    _cancelUrlCtrl = TextEditingController(text: s?.cancellationUrl ?? '');
+    if (s != null) {
+      _currency = s.currency;
+      _cycle = s.billingCycle;
+      _categoryId = s.categoryId;
+      _startDate = s.startDate;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _amountCtrl.dispose();
+    _descCtrl.dispose();
+    _cancelUrlCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = context.read<StorageService>().getCategories();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edytuj subskrypcję' : 'Dodaj subskrypcję'),
+        actions: [
+          if (_isEditing)
+            TextButton(
+              onPressed: _isSubmitting ? null : _submit,
+              child: const Text('Zapisz'),
+            ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SectionLabel('Podstawowe'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(labelText: 'Nazwa *'),
+              textCapitalization: TextCapitalization.sentences,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Wymagane' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descCtrl,
+              decoration: const InputDecoration(labelText: 'Opis (opcjonalnie)'),
+            ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Płatność'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    controller: _amountCtrl,
+                    decoration: const InputDecoration(labelText: 'Kwota *'),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Wymagane';
+                      final parsed = double.tryParse(v.replaceAll(',', '.'));
+                      if (parsed == null || parsed <= 0) return 'Nieprawidłowa kwota';
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: DropdownButtonFormField<Currency>(
+                    initialValue: _currency,
+                    decoration: const InputDecoration(labelText: 'Waluta'),
+                    items: Currency.values
+                        .map((c) => DropdownMenuItem(
+                            value: c, child: Text(c.label)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _currency = v!),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<BillingCycle>(
+              initialValue: _cycle,
+              decoration: const InputDecoration(labelText: 'Cykl rozliczeniowy'),
+              items: BillingCycle.values
+                  .map((c) => DropdownMenuItem(
+                      value: c, child: Text(_cycleLabel(c))))
+                  .toList(),
+              onChanged: (v) => setState(() => _cycle = v!),
+            ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Kategoria'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Brak'),
+                  selected: _categoryId == null,
+                  onSelected: (_) => setState(() => _categoryId = null),
+                ),
+                ...categories.map((cat) => FilterChip(
+                      label: Text(cat.name),
+                      selected: _categoryId == cat.id,
+                      selectedColor: cat.color.withValues(alpha: 0.2),
+                      onSelected: (_) =>
+                          setState(() => _categoryId = cat.id),
+                    )),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Data startu'),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.calendar_today_outlined),
+              title: Text(DateFormat('d MMMM yyyy', 'pl').format(_startDate)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _pickDate,
+            ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Opcjonalne'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _cancelUrlCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Link do anulowania',
+                hintText: 'https://...',
+                prefixIcon: Icon(Icons.link),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 32),
+
+            FilledButton(
+              onPressed: _isSubmitting ? null : _submit,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj subskrypcję'),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _startDate = picked);
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+
+    final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
+    final ctrl = context.read<SubscriptionController>();
+
+    try {
+      if (_isEditing) {
+        await ctrl.update(widget.existing!.copyWith(
+          name: _nameCtrl.text.trim(),
+          description: _descCtrl.text.trim().isEmpty
+              ? null
+              : _descCtrl.text.trim(),
+          amount: amount,
+          currency: _currency,
+          billingCycle: _cycle,
+          categoryId: _categoryId,
+          startDate: _startDate,
+          cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
+              ? null
+              : _cancelUrlCtrl.text.trim(),
+        ));
+      } else {
+        await ctrl.create(
+          name: _nameCtrl.text.trim(),
+          description: _descCtrl.text.trim().isEmpty
+              ? null
+              : _descCtrl.text.trim(),
+          amount: amount,
+          currency: _currency,
+          billingCycle: _cycle,
+          categoryId: _categoryId,
+          startDate: _startDate,
+          cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
+              ? null
+              : _cancelUrlCtrl.text.trim(),
+        );
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  String _cycleLabel(BillingCycle cycle) {
+    return switch (cycle) {
+      BillingCycle.weekly => 'Tygodniowo',
+      BillingCycle.monthly => 'Miesięcznie',
+      BillingCycle.quarterly => 'Kwartalnie',
+      BillingCycle.yearly => 'Rocznie',
+      BillingCycle.custom => 'Własny cykl',
+    };
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            letterSpacing: 0.8,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+    );
+  }
+}
