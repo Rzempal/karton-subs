@@ -8,30 +8,32 @@
 
 | Faza | Nazwa | Status |
 |------|-------|--------|
-| 1 | MVP -- CRUD + Dashboard | Planowana |
+| 1 | MVP -- CRUD + Dashboard | ✅ Ukonczona (2026-03-26) |
 | 2 | Analytics + Wykresy | Planowana |
 | 3 | Powiadomienia + Usage Tracking | Planowana |
 | 4 | Polish + Release | Planowana |
 
 ---
 
-## Faza 1: MVP
+## Faza 1: MVP ✅
 
 **Cel:** Dzialajaca aplikacja z podstawowym CRUD i podsumowaniem miesiecznym.
 
-| Zadanie | Opis |
-|---------|------|
-| Setup projektu | Flutter, Hive, struktura katalogow, Ledger Glass theme |
-| Model danych | Subscription, Category (Hive boxes) |
-| StorageService | CRUD subskrypcji, import/export JSON |
-| Ekran: Dashboard | Total miesieczny, lista subskrypcji, breakdown bar |
-| Ekran: Dodaj subskrypcje | Formularz (nazwa, kwota, cykl, kategoria) |
-| Ekran: Lista subskrypcji | Sortowanie, filtrowanie po kategorii/statusie |
-| Ekran: Ustawienia | Motyw (dark/light), waluta domyslna, backup, OTA |
-| Quick Add | Predefiniowane szablony (Netflix, Spotify, iCloud...) |
-| Backup | Szyfrowany eksport/import (.subkarton) |
-| OTA | Aktualizacje z wlasnego serwera |
-| Deploy | Adaptacja deploy_apk.ps1 |
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Setup projektu | Flutter, Hive, struktura katalogow, Ledger Glass theme | ✅ |
+| Model danych | Subscription, Category, UsageEvent (Hive JSON) | ✅ |
+| StorageService | CRUD subskrypcji + cache + analytics helpers | ✅ |
+| Ekran: Dashboard | Total miesieczny, breakdown kategorii, ghost alert | ✅ |
+| Ekran: Dodaj subskrypcje | Formularz dodaj/edytuj (nazwa, kwota, cykl, kategoria) | ✅ |
+| Ekran: Lista subskrypcji | Sortowanie, filtrowanie po kategorii, pin/anuluj/usun | ✅ |
+| Ekran: Ustawienia | Motyw (dark/light/system), waluta domyslna | ✅ |
+| Quick log usage | Przycisk "Uzylem dzisiaj" na kartach | ✅ |
+| Ghost detection | Algorytm: aktywna + >30 dni bez uzycia | ✅ |
+| Quick Add | Predefiniowane szablony (Netflix, Spotify...) | ⏳ Faza 1b |
+| Backup | Szyfrowany eksport/import (.subkarton) | ⏳ Faza 1b |
+| OTA | Aktualizacje z wlasnego serwera | ⏳ Faza 1b |
+| Deploy | Adaptacja deploy_apk.ps1 | ⏳ Faza 1b |
 
 ---
 
@@ -94,4 +96,4 @@
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-25
+> **Ostatnia aktualizacja:** 2026-03-26
