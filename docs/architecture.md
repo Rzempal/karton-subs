@@ -2,6 +2,8 @@
 
 > **Powiazane:** [Roadmap](roadmap.md) | [Baza Danych](database.md) | [Bezpieczenstwo](security.md)
 > | [Konwencje](standards/conventions.md)
+>
+> **ADR:** [ADR-001 Hive JSON bez code-gen](adr/ADR-001-hive-json-bez-code-gen.md)
 
 ---
 

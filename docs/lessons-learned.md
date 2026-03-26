@@ -28,6 +28,24 @@ Wydzielono podkatalog `docs/standards/` dla dokumentów reużywalnych.
 
 ---
 
+## 2026-03-26: Flutter 3.32+/3.33+ -- Nowe API RadioGroup i DropdownButtonFormField
+
+### Problem
+`dart analyze` zglosil `deprecated_member_use` dla:
+- `RadioListTile.groupValue` / `RadioListTile.onChanged` (deprecated od Flutter 3.32)
+- `DropdownButtonFormField.value` (deprecated od Flutter 3.33)
+
+Te deprecations nie sa oczywiste, poniewaz komponenty nadal dzialaja (tylko ostrzezenie), ale beda usuniete w przyszlych wersjach.
+
+### Rozwiazanie
+- `RadioListTile` → opakuj w `RadioGroup<T>(groupValue: ..., onChanged: ..., child: Column([...RadioListTile<T>(value: ...)...]))`
+- `DropdownButtonFormField.value` → zamien na `initialValue` (ustawia wartosc startowa; stan kontrolowany przez `setState` / `onChanged`)
+
+### Wniosek
+Przy starcie nowego projektu Flutter sprawdz wersje SDK w `pubspec.yaml` i uruchom `dart analyze` przed pierwszym buildem. Nawet swiezy `flutter create` moze generowac deprecated API w szablonach.
+
+---
+
 ## 2026-01-15: Separacja procesu Review
 
 ### Problem
