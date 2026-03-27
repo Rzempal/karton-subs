@@ -6,8 +6,10 @@ import 'screens/dashboard_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
 import 'services/app_logger.dart';
+import 'services/backup_service.dart';
 import 'services/storage_service.dart';
 import 'services/theme_provider.dart';
+import 'services/update_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -22,6 +24,10 @@ void main() async {
   final themeProvider = ThemeProvider();
   await themeProvider.init();
 
+  final updateService = UpdateService();
+  // OTA check w tle — nie blokujemy startu
+  updateService.init();
+
   runApp(
     MultiProvider(
       providers: [
@@ -30,6 +36,8 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => SubscriptionController(storage),
         ),
+        ChangeNotifierProvider.value(value: updateService),
+        Provider(create: (_) => BackupService(storage)),
       ],
       child: const KartonApp(),
     ),

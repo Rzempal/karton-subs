@@ -19,7 +19,7 @@ $ErrorActionPreference = "Stop"
 # === Konfiguracja ===
 
 $PROJECT_ROOT = Split-Path -Parent $PSScriptRoot
-$MOBILE_DIR = Join-Path $PROJECT_ROOT "apps\mobile"
+$MOBILE_DIR = Join-Path $PROJECT_ROOT "apps\karton_subs"
 $RELEASES_DIR = Join-Path $PROJECT_ROOT "releases"
 
 
@@ -69,7 +69,7 @@ function Update-DeployLog {
         [string]$Duration
     )
 
-    $LOG_PATH = "C:\Users\rzemp\Documents\obsidian\-00-ADMIN\-LOG\log-karton.md"
+    $LOG_PATH = "C:\Users\rzemp\Documents\obsidian\-00-ADMIN\-LOG\log-karton-subs.md"
     $MAX_ENTRIES = 100
 
     # Format fields
@@ -128,7 +128,7 @@ function Update-ProdChangelog {
 
     $CHANGELOG_PATH = Join-Path $RELEASES_DIR "changelog.md"
     $MAX_ENTRIES = 1000
-    $HEADER = "# Karton z lekami - Historia zmian"
+    $HEADER = "# Karton na subskrypcje - Historia zmian"
 
     # Format new entry
     $notesLines = ($ReleaseNotes -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
@@ -237,7 +237,7 @@ $timerPs = [powershell]::Create().AddScript({
         while ($true) {
             $elapsed = $startTime.Elapsed
             $timeStr = "$($elapsed.Minutes.ToString('00')):$($elapsed.Seconds.ToString('00'))"
-            [Console]::Title = "APPteczka Deploy | Czas: $timeStr"
+            [Console]::Title = "Karton Subs Deploy | Czas: $timeStr"
             [System.Threading.Thread]::Sleep(1000)
         }
     }).AddArgument($startTime)
@@ -391,11 +391,11 @@ Show-Info "Patch: $PATCH (deploy #$($COUNT.ToString('00')) dzisiaj)"
 
 # Channel-specific naming
 if ($Channel -eq "internal") {
-    $APK_NAME = "karton-dev_$VERSION_NAME.apk"
+    $APK_NAME = "karton-subs-dev_$VERSION_NAME.apk"
     $VERSION_JSON_NAME = "version-internal.json"
 }
 else {
-    $APK_NAME = "karton-z-lekami_$VERSION_NAME.apk"
+    $APK_NAME = "karton-subs_$VERSION_NAME.apk"
     $VERSION_JSON_NAME = "version.json"
 }
 
@@ -412,7 +412,7 @@ if (-not $SkipBuild) {
 
     try {
         # Filtruj komunikaty tree-shaking (informacyjne, nie bledy)
-        cmd /c "flutter build apk --release --flavor $Channel --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
+        cmd /c "flutter build apk --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
 
         if ($LASTEXITCODE -ne 0) {
             Pop-Location
@@ -439,7 +439,7 @@ else {
 
 # 2. Kopiowanie
 Show-Warning "[2/4] Kopiowanie do releases..."
-$SOURCE_APK = Join-Path $MOBILE_DIR "build\app\outputs\flutter-apk\app-$Channel-release.apk"
+$SOURCE_APK = Join-Path $MOBILE_DIR "build\app\outputs\flutter-apk\app-release.apk"
 $DEST_APK = Join-Path $RELEASES_DIR $APK_NAME
 
 if (-not (Test-Path $RELEASES_DIR)) { New-Item -ItemType Directory -Path $RELEASES_DIR | Out-Null }

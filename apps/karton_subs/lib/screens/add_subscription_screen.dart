@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
+import '../models/quick_add_templates.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -74,8 +76,12 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           children: [
+            if (!_isEditing) ...[
+              _QuickAddBar(onSelected: _applyTemplate),
+              const SizedBox(height: 16),
+            ],
             _SectionLabel('Podstawowe'),
             const SizedBox(height: 8),
             TextFormField(
@@ -201,6 +207,16 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     );
   }
 
+  void _applyTemplate(SubscriptionTemplate t) {
+    setState(() {
+      _nameCtrl.text = t.name;
+      _amountCtrl.text = t.amount.toStringAsFixed(2);
+      _currency = t.currency;
+      _cycle = t.billingCycle;
+      _categoryId = t.categoryId;
+    });
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -265,6 +281,144 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       BillingCycle.custom => 'Własny cykl',
     };
   }
+}
+
+/// Poziomy pasek z chipami Quick Add + przycisk "wszystkie"
+class _QuickAddBar extends StatelessWidget {
+  final void Function(SubscriptionTemplate) onSelected;
+  const _QuickAddBar({required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final popular = QuickAddTemplates.all.take(6).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'SZYBKIE DODAWANIE',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    letterSpacing: 0.8,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            TextButton(
+              onPressed: () => _showAll(context),
+              child: const Text('Wszystkie'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: popular.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final t = popular[i];
+              final color = Color(
+                int.parse('FF${t.colorHex.replaceFirst('#', '')}', radix: 16),
+              );
+              return ActionChip(
+                label: Text(t.name),
+                avatar: CircleAvatar(backgroundColor: color, radius: 8),
+                onPressed: () => onSelected(t),
+                backgroundColor: isDark
+                    ? AppColors.darkSurfaceVariant
+                    : AppColors.lightSurfaceVariant,
+                side: BorderSide.none,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAll(BuildContext context) {
+    final grouped = QuickAddTemplates.byCategory;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (_, scrollCtrl) => Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 32, height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).dividerColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text('Wybierz szablon',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            Expanded(
+              child: ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                children: grouped.entries.map((entry) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      Text(
+                        _catLabel(entry.key).toUpperCase(),
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              letterSpacing: 0.8,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: entry.value.map((t) {
+                          final color = Color(int.parse(
+                              'FF${t.colorHex.replaceFirst('#', '')}',
+                              radix: 16));
+                          return ActionChip(
+                            label: Text(t.name),
+                            avatar: CircleAvatar(
+                                backgroundColor: color, radius: 8),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              onSelected(t);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _catLabel(String catId) => switch (catId) {
+        'cat_streaming' => 'Streaming',
+        'cat_music' => 'Muzyka',
+        'cat_cloud' => 'Cloud',
+        'cat_software' => 'Software',
+        'cat_gaming' => 'Gaming',
+        'cat_fitness' => 'Fitness',
+        _ => 'Inne',
+      };
 }
 
 class _SectionLabel extends StatelessWidget {
