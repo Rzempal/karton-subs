@@ -46,6 +46,22 @@ Przy starcie nowego projektu Flutter sprawdz wersje SDK w `pubspec.yaml` i uruch
 
 ---
 
+## 2026-03-27: preview_start (MCP) nie dziala z Flutter mobile
+
+### Problem
+`preview_start` (Claude Preview MCP tool) zwrocil blad przy probie uruchomienia `flutter run --release`. Narzedzie jest zaprojektowane dla serwerow HTTP (web) i nie obsluguje interaktywnych procesow wymagajacych polaczonego urzadzenia/emulatora.
+
+### Rozwiazanie
+Dla projektow Flutter mobile:
+- **Build APK:** `flutter build apk --debug` via Bash
+- **Uruchamianie na urzadzeniu:** `flutter run` via terminal (wymaga podlaczonego urzadzenia)
+- **`preview_start` mozna uzywac tylko dla:** Dart DevTools (`dart pub global run devtools --port XXXX`) — bo to serwer HTTP
+
+### Wniosek
+`.claude/launch.json` w projektach Flutter mobile jest uzyteczny jako dokumentacja dostepnych polecen, ale `preview_start` uruchomi jedynie konfiguracje z prawdziwym HTTP serverem (np. DevTools, web server backendu).
+
+---
+
 ## 2026-01-15: Separacja procesu Review
 
 ### Problem
