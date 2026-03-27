@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Flutter: Run Debug (device)",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "--debug"],
+      "port": 9100,
+      "cwd": "apps/karton_subs"
+    },
+    {
+      "name": "Flutter: Run Release (device)",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": ["run", "--release"],
+      "port": 9100,
+      "cwd": "apps/karton_subs"
+    },
+    {
+      "name": "Dart DevTools (standalone)",
+      "runtimeExecutable": "dart",
+      "runtimeArgs": ["pub", "global", "run", "devtools", "--port", "9100"],
+      "port": 9100,
+      "cwd": "apps/karton_subs"
+    }
+  ]
+}
