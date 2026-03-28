@@ -309,6 +309,11 @@ class _OtaSection extends StatelessWidget {
                 color: AppColors.positive),
             title: const Text('Aplikacja jest aktualna'),
             subtitle: Text('Sprawdzono: ${_formatTime(svc.lastCheckTime)}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => svc.checkForUpdate(),
+              tooltip: 'Sprawdź ponownie',
+            ),
           );
         }
         return ListTile(
@@ -371,10 +376,20 @@ class _UpdateAvailableTile extends StatelessWidget {
                 )),
           ],
           const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => svc.startUpdate(),
-            icon: const Icon(Icons.download_outlined),
-            label: const Text('Pobierz i zainstaluj'),
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: () => svc.startUpdate(),
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Pobierz i zainstaluj'),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => svc.checkForUpdate(),
+                tooltip: 'Sprawdź ponownie',
+              ),
+            ],
           ),
         ],
       ),
