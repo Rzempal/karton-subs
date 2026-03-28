@@ -8,7 +8,7 @@
 
 param(
     [switch]$SkipBuild,
-    [bool]$SkipUpload = $true,
+    [switch]$SkipUpload,
     [string]$Channel = "production",
     [switch]$CreateTag
 )
