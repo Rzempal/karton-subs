@@ -1,8 +1,9 @@
 {
-  "versionCode": 126032804,
+  "releaseNotes": "- bug fixes",
+  "versionCode": 126032806,
   "changelog": [
     {
-      "version": "0.1.26032804",
+      "version": "0.1.26032806",
       "notes": "- bug fixes"
     },
     {
@@ -14,8 +15,7 @@
       "notes": "- bug fixes"
     }
   ],
-  "releaseNotes": "- bug fixes",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.1.26032804.apk",
-  "releaseDate": "2026-03-28T06:58:35Z",
-  "version": "0.1.26032804"
+  "releaseDate": "2026-03-28T08:17:13Z",
+  "version": "0.1.26032806",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.1.26032806.apk"
 }
