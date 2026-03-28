@@ -60,8 +60,7 @@ class BackupService {
   /// Rzuca wyjątek jeśli plik jest uszkodzony lub hasło złe.
   Future<BackupImportResult> importFromFile({String? password}) async {
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: [_fileExtension],
+      type: FileType.any,
       withData: true,
     );
 
@@ -69,7 +68,14 @@ class BackupService {
       throw const FormatException('Nie wybrano pliku');
     }
 
-    final bytes = result.files.first.bytes;
+    final pickedFile = result.files.first;
+    if (pickedFile.name.toLowerCase().endsWith('.$_fileExtension') == false) {
+      throw FormatException(
+        'Nieprawidłowy plik. Wybierz plik z rozszerzeniem .$_fileExtension',
+      );
+    }
+
+    final bytes = pickedFile.bytes;
     if (bytes == null) {
       throw const FormatException('Nie udało się odczytać pliku');
     }
