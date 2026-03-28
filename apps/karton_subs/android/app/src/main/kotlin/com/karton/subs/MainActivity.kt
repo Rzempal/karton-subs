@@ -1,4 +1,4 @@
-package com.example.karton_subs
+package com.karton.subs
 
 import io.flutter.embedding.android.FlutterActivity
 
