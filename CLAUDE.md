@@ -99,7 +99,7 @@ For multi-step tasks, state a brief plan:
 | `docs/standards/contributing.md`  | Jak wprowadzać zmiany            |
 | `docs/standards/testing.md`       | Strategia testów                 |
 | `docs/standards/design-review.md` | Audyt UI/UX                      |
-| `docs/standards/ota-update-setup.md` | Setup OTA updates (Flutter)  |
+| `docs/ota-update-setup/`            | Setup OTA updates (Flutter) — templates, checklist, troubleshooting |
 
 ### Reguła pierwszeństwa (token-efficient)
 

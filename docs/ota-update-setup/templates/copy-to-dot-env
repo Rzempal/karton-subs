@@ -1,0 +1,29 @@
+# ============================================================
+# .env — Konfiguracja OTA Deploy
+# ============================================================
+# Skopiuj do root projektu jako ".env"
+# NIGDY nie commituj tego pliku! Upewnij sie ze .gitignore zawiera: .env
+# ============================================================
+
+# --- Serwer (Hostido) ---
+DEPLOY_HOST=host361978.hostido.net.pl
+DEPLOY_USER=host361978
+DEPLOY_PASS=
+DEPLOY_PROTOCOL=sftp
+
+# --- Sciezka na serwerze ---
+# WAZNE: Zmien "NAZWA-APLIKACJI" na nazwe swojej aplikacji!
+# Musi sie konczyc na /NAZWA-APLIKACJI/
+DEPLOY_REMOTE_PATH=/home/host361978/domains/michalrapala.app/public_html/releases/NAZWA-APLIKACJI/
+
+# --- Publiczny URL ---
+# WAZNE: NIE KOMENTUJ tej linii! Inaczej apkUrl w version.json bedzie zly (404).
+# Musi matchowac DEPLOY_REMOTE_PATH i app_config.dart
+DEPLOY_PUBLIC_URL=https://michalrapala.app/releases/NAZWA-APLIKACJI
+
+# --- Narzedzia ---
+WINSCP_PATH=C:\Program Files (x86)\WinSCP\WinSCP.com
+
+# --- SSH ---
+DEPLOY_KEY_PATH=C:\Users\rzemp\.ssh\karton.ppk
+DEPLOY_PORT=64321
