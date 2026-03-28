@@ -1,0 +1,10 @@
+{
+    "dart.flutterSdkPath": "C:\\tools\\flutter",
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "cmake.sourceDirectory": "REMOVED_PERSONAL_PATH",
+    "editor.formatOnSave": true,
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    }
+}
