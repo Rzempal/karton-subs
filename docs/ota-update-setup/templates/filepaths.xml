@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kopiuj as-is do: android/app/src/main/res/xml/filepaths.xml
+  UWAGA: MUSI byc <files-path>, NIE <external-path>!
+  ota_update zapisuje APK do wewnetrznego storage aplikacji.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="internal_apk_storage" path="ota_update/"/>
+</paths>

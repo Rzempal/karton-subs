@@ -1,0 +1,24 @@
+<!--
+  Wklej ten blok do AndroidManifest.xml WEWNATRZ <application>.
+  Oba elementy sa WYMAGANE — brak ktorégokolwiek = crash po pobraniu APK.
+  ${applicationId} rozwiaze sie automatycznie z build.gradle.kts.
+-->
+
+<!-- 1. FileProvider — WYMAGANY przez ota_update (Android 7+) -->
+<provider
+    android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"
+    android:authorities="${applicationId}.ota_update_provider"
+    android:exported="false"
+    android:grantUriPermissions="true">
+    <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/filepaths" />
+</provider>
+
+<!-- 2. Receiver — WYMAGANY przez ota_update do obslugi wyniku instalacji -->
+<receiver android:name="sk.fourq.otaupdate.InstallResultReceiver"
+    android:exported="false">
+    <intent-filter>
+        <action android:name="${applicationId}.ACTION_INSTALL_COMPLETE"/>
+    </intent-filter>
+</receiver>
