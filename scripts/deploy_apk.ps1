@@ -412,7 +412,7 @@ if (-not $SkipBuild) {
 
     try {
         # Filtruj komunikaty tree-shaking (informacyjne, nie bledy)
-        cmd /c "flutter build apk --release --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
+        cmd /c "flutter build apk --release --flavor $Channel --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
 
         if ($LASTEXITCODE -ne 0) {
             Pop-Location
@@ -439,7 +439,7 @@ else {
 
 # 2. Kopiowanie
 Show-Warning "[2/4] Kopiowanie do releases..."
-$SOURCE_APK = Join-Path $MOBILE_DIR "build\app\outputs\flutter-apk\app-release.apk"
+$SOURCE_APK = Join-Path $MOBILE_DIR "build\app\outputs\flutter-apk\app-$Channel-release.apk"
 $DEST_APK = Join-Path $RELEASES_DIR $APK_NAME
 
 if (-not (Test-Path $RELEASES_DIR)) { New-Item -ItemType Directory -Path $RELEASES_DIR | Out-Null }

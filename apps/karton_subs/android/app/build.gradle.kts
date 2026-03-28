@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.karton_subs"
+    namespace = "com.karton.subs"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,14 +21,25 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.karton_subs"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "channel"
+
+    productFlavors {
+        create("production") {
+            dimension = "channel"
+            applicationId = "com.karton.subs"
+            resValue("string", "app_name", "Karton na subskrypcje")
+        }
+        create("internal") {
+            dimension = "channel"
+            applicationId = "com.karton.subs.dev"
+            resValue("string", "app_name", "karton-subs-dev")
+        }
     }
 
     buildTypes {
