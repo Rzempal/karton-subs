@@ -62,6 +62,24 @@ Dla projektow Flutter mobile:
 
 ---
 
+## 2026-03-28: ota_update 7.x — wymagana kompletna konfiguracja Android
+
+### Problem
+OTA crash po pobraniu APK. Kolejne proby naprawy (generyczny FileProvider, zla klasa, brak Receivera, zly filepaths.xml) zajely kilka iteracji, bo dokumentacja pakietu jest rozproszona.
+
+### Rozwiazanie
+Pakiet `ota_update: ^7.1.0` wymaga **trzech** elementow w AndroidManifest.xml:
+1. `OtaUpdateFileProvider` (klasa `sk.fourq.otaupdate.OtaUpdateFileProvider`, NIE generyczny `androidx.core.content.FileProvider`)
+2. `InstallResultReceiver` (`sk.fourq.otaupdate.InstallResultReceiver`)
+3. `filepaths.xml` z `<files-path path="ota_update/"/>` (NIE `<external-path>`)
+
+Plus: `WRITE_EXTERNAL_STORAGE` bez `maxSdkVersion`, desugaring w build.gradle.kts.
+
+### Wniosek
+Utworzono `docs/ota-update-setup/` z gotowymi templates i checklist. Przy nastepnym projekcie: kopiuj templates, zamien placeholdery, odhacz checklist.
+
+---
+
 ## 2026-01-15: Separacja procesu Review
 
 ### Problem
