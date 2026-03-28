@@ -2,23 +2,41 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Deploy APK",
+      "label": "Deploy DEV",
       "type": "shell",
-      "command": "pwsh",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\scripts\\deploy_apk.ps1"
-      ],
+      "command": ".\\scripts\\deploy_apk.ps1 -Channel internal",
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
+        "panel": "new",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy PROD",
+      "type": "shell",
+      "command": ".\\scripts\\deploy_apk.ps1",
+      "options": {
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-ExecutionPolicy", "Bypass", "-Command"]
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
       },
       "problemMatcher": []
     }
