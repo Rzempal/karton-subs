@@ -312,6 +312,7 @@ class _OtaSection extends StatelessWidget {
             trailing: IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () => svc.checkForUpdate(),
+              tooltip: 'Sprawdź ponownie',
             ),
           );
         }
