@@ -35,5 +35,11 @@ GoogleService-Info.plist
 *.ipa
 apps/*/build/
 
+# Flutter — generated files
+pubspec.lock
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
 # Claude Code — local/machine-specific settings
 settings.local.json
