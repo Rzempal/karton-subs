@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
+import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
 import '../services/pdf_export_service.dart';
@@ -24,6 +25,8 @@ class AnalyticsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    // Watch controller to rebuild when subscriptions change
+    context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
     final subs = storage.getSubscriptions();
     final categories = storage.getCategories();
