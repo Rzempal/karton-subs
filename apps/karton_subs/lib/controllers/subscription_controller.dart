@@ -42,15 +42,15 @@ class SubscriptionController extends ChangeNotifier {
     String? categoryId,
     bool activeOnly = true,
   }) {
-    var list = activeOnly ? active : all;
+    var list = List<Subscription>.from(activeOnly ? active : all);
     if (categoryId != null) {
       list = list.where((s) => s.categoryId == categoryId).toList();
     }
-    return list
-      ..sort((a, b) {
-        if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+    list.sort((a, b) {
+      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+      return a.name.compareTo(b.name);
+    });
+    return list;
   }
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
