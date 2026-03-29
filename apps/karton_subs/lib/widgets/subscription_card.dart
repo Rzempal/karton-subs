@@ -261,17 +261,21 @@ class _QuickLogButton extends StatelessWidget {
             final ctrl = context.read<SubscriptionController>();
             await ctrl.logUsage(subscription.id);
             if (context.mounted) {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Zalogowano użycie: ${subscription.name} (${count + 1})'),
-                  duration: const Duration(seconds: 4),
-                  action: SnackBarAction(
-                    label: 'Cofnij',
-                    onPressed: () => ctrl.removeLastUsage(subscription.id),
+              final messenger = ScaffoldMessenger.maybeOf(context);
+              if (messenger != null) {
+                messenger.clearSnackBars();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Zalogowano użycie: ${subscription.name} (${count + 1})'),
+                    duration: const Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                    action: SnackBarAction(
+                      label: 'Cofnij',
+                      onPressed: () => ctrl.removeLastUsage(subscription.id),
+                    ),
                   ),
-                ),
-              );
+                );
+              }
             }
           },
         ),
