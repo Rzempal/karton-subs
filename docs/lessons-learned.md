@@ -80,6 +80,30 @@ Utworzono `docs/ota-update-setup/` z gotowymi templates i checklist. Przy nastep
 
 ---
 
+## 2026-03-28: Android namespace vs. package mismatch — crash przy starcie
+
+### Problem
+Po zmianie `applicationId` i `namespace` w `build.gradle.kts` (np. z `com.example.karton_subs` na
+`com.karton.subs`) aplikacja crashowala przy starcie z `ClassNotFoundException: com.karton.subs.MainActivity`.
+
+Przyczyna: `MainActivity.kt` nadal miala stary `package com.example.karton_subs` i lezala
+w katalogu `com/example/karton_subs/`. Android szuka klasy pod `namespace + ".MainActivity"`, wiec
+mismatch = crash. Flutter nie daje czytelnego komunikatu — tylko klasyczny Android RuntimeException.
+
+### Rozwiazanie
+Po zmianie `namespace` w `build.gradle.kts` **trzeba recznie**:
+1. Zmienic `package` w `MainActivity.kt` na nowy namespace
+2. Przeniesc plik do katalogu zgodnego z nowym package (`com/karton/subs/MainActivity.kt`)
+3. Usunac stary katalog (`com/example/...`)
+4. `flutter clean && flutter pub get` — wyczysc cache
+
+### Wniosek
+Przy kazdej zmianie `namespace` / `applicationId` w Android: sprawdz synchronizacje package w
+`MainActivity.kt` i lokalizacje pliku w drzewie katalogow. `grep -r "stary.package" android/` jest
+szybkim sposobem na wykrycie wszystkich pozostalosci.
+
+---
+
 ## 2026-01-15: Separacja procesu Review
 
 ### Problem
