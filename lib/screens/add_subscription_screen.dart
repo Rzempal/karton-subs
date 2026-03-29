@@ -416,7 +416,20 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   Future<void> _toggleActive() async {
     final sub = widget.subscription!;
-    final updated = sub.copyWith(isActive: !sub.isActive);
+    final Subscription updated;
+    if (sub.isActive) {
+      // Anulowanie — zapisz datę
+      updated = sub.copyWith(
+        isActive: false,
+        cancelledDate: DateTime.now(),
+      );
+    } else {
+      // Reaktywacja — wyczyść datę
+      updated = sub.copyWith(
+        isActive: true,
+        clearCancelledDate: true,
+      );
+    }
     await widget.storageService.saveSubscription(updated);
     if (mounted) Navigator.of(context).pop(true);
   }

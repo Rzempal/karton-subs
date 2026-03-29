@@ -31,14 +31,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final active = subscriptions.where((s) => s.isActive).toList();
 
     const analytics = AnalyticsService();
-    final monthlyTotal = analytics.getMonthlyTotal(subscriptions);
-    final yearlyTotal = analytics.getYearlyProjection(subscriptions);
     final defaultCurrency = widget.storageService.defaultCurrency;
+    final monthlyTotal = analytics.getMonthlyTotal(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
+    final yearlyTotal = analytics.getYearlyProjection(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
     final ghostCount = analytics.getGhostSubscriptions(subscriptions).length;
-    final categoryTotals = analytics.getCategoryBreakdown(subscriptions);
+    final categoryTotals = analytics.getCategoryBreakdown(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
     final budgetStatus = analytics.getBudgetStatus(
       subscriptions,
       widget.storageService.budgetLimit,
+      targetCurrency: defaultCurrency,
     );
 
     return Scaffold(
