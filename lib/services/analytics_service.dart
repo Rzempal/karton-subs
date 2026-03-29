@@ -2,6 +2,7 @@
 
 import '../models/subscription.dart';
 import '../models/category.dart';
+import 'currency_service.dart';
 
 /// Punkt danych trendu wydatków (miesiąc → kwota)
 class MonthlyDataPoint {
@@ -39,28 +40,49 @@ class BudgetStatus {
   });
 }
 
-/// Serwis obliczeniowy — czyste funkcje, brak stanu
+/// Serwis obliczeniowy — czyste funkcje, brak stanu.
+///
+/// Wszystkie kwoty normalizowane do [targetCurrency] przez [CurrencyService].
 class AnalyticsService {
+  static const _currencyService = CurrencyService();
+
   const AnalyticsService();
 
-  /// Suma miesięczna aktywnych subskrypcji (normalizowana)
-  double getMonthlyTotal(List<Subscription> subscriptions) {
+  /// Miesięczna kwota subskrypcji przeliczona na walutę docelową
+  double _monthlyInCurrency(Subscription s, Currency target) {
+    return _currencyService.convertMonthlyAmount(s, target);
+  }
+
+  /// Suma miesięczna aktywnych subskrypcji (normalizowana do targetCurrency)
+  double getMonthlyTotal(
+    List<Subscription> subscriptions, {
+    Currency? targetCurrency,
+  }) {
+    final target = targetCurrency ?? Currency.PLN;
     return subscriptions
         .where((s) => s.isActive)
-        .fold<double>(0, (sum, s) => sum + s.monthlyAmount);
+        .fold<double>(0, (sum, s) => sum + _monthlyInCurrency(s, target));
   }
 
   /// Projekcja roczna
-  double getYearlyProjection(List<Subscription> subscriptions) {
-    return getMonthlyTotal(subscriptions) * 12;
+  double getYearlyProjection(
+    List<Subscription> subscriptions, {
+    Currency? targetCurrency,
+  }) {
+    return getMonthlyTotal(subscriptions, targetCurrency: targetCurrency) * 12;
   }
 
   /// Podział wydatków wg kategorii: Map<categoryId, kwota miesięczna>
-  Map<String, double> getCategoryBreakdown(List<Subscription> subscriptions) {
+  Map<String, double> getCategoryBreakdown(
+    List<Subscription> subscriptions, {
+    Currency? targetCurrency,
+  }) {
+    final target = targetCurrency ?? Currency.PLN;
     final breakdown = <String, double>{};
     for (final sub in subscriptions.where((s) => s.isActive)) {
       final catId = sub.categoryId ?? 'cat-other';
-      breakdown[catId] = (breakdown[catId] ?? 0) + sub.monthlyAmount;
+      breakdown[catId] =
+          (breakdown[catId] ?? 0) + _monthlyInCurrency(sub, target);
     }
     return breakdown;
   }
@@ -72,22 +94,24 @@ class AnalyticsService {
 
   /// Ranking koszt/użycie (posortowany malejąco — najdroższe pierwsze)
   List<CostPerUseEntry> getCostPerUseRanking(
-    List<Subscription> subscriptions,
-  ) {
+    List<Subscription> subscriptions, {
+    Currency? targetCurrency,
+  }) {
+    final target = targetCurrency ?? Currency.PLN;
     final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
     final entries = <CostPerUseEntry>[];
 
     for (final sub in subscriptions.where((s) => s.isActive)) {
+      final monthlyInTarget = _monthlyInCurrency(sub, target);
       final recentUses =
           sub.usageLog.where((e) => e.date.isAfter(thirtyDaysAgo)).length;
       if (recentUses > 0) {
         entries.add(CostPerUseEntry(
           subscription: sub,
-          costPerUse: sub.monthlyAmount / recentUses,
+          costPerUse: monthlyInTarget / recentUses,
           usageCount: recentUses,
         ));
       } else if (sub.usageLog.isNotEmpty) {
-        // Ma historię użycia, ale nie w ostatnich 30 dniach
         entries.add(CostPerUseEntry(
           subscription: sub,
           costPerUse: double.infinity,
@@ -110,13 +134,12 @@ class AnalyticsService {
 
   /// Trend wydatków — retrospektywne obliczenie na podstawie
   /// startDate/cancelledDate subskrypcji.
-  ///
-  /// Dla każdego miesiąca wstecz oblicza sumę miesięczną subskrypcji,
-  /// które były aktywne w danym miesiącu.
   List<MonthlyDataPoint> getSpendingTrend(
     List<Subscription> subscriptions, {
     int months = 6,
+    Currency? targetCurrency,
   }) {
+    final target = targetCurrency ?? Currency.PLN;
     final now = DateTime.now();
     final points = <MonthlyDataPoint>[];
 
@@ -126,16 +149,13 @@ class AnalyticsService {
 
       double total = 0;
       for (final sub in subscriptions) {
-        // Subskrypcja istniała w tym miesiącu jeśli:
-        // - startDate <= koniec miesiąca
-        // - (isActive LUB cancelledDate >= początek miesiąca)
         final startedBeforeEndOfMonth = !sub.startDate.isAfter(endOfMonth);
         final wasActiveInMonth = sub.isActive ||
             (sub.cancelledDate != null &&
                 !sub.cancelledDate!.isBefore(month));
 
         if (startedBeforeEndOfMonth && wasActiveInMonth) {
-          total += sub.monthlyAmount;
+          total += _monthlyInCurrency(sub, target);
         }
       }
 
@@ -148,11 +168,13 @@ class AnalyticsService {
   /// Status budżetu — ile wydano vs limit
   BudgetStatus? getBudgetStatus(
     List<Subscription> subscriptions,
-    double? budgetLimit,
-  ) {
+    double? budgetLimit, {
+    Currency? targetCurrency,
+  }) {
     if (budgetLimit == null || budgetLimit <= 0) return null;
 
-    final spent = getMonthlyTotal(subscriptions);
+    final spent =
+        getMonthlyTotal(subscriptions, targetCurrency: targetCurrency);
     final percentage = spent / budgetLimit;
 
     return BudgetStatus(
