@@ -271,10 +271,50 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               ),
               const SizedBox(height: 24),
               _UsageLogSection(subscriptionId: widget.existing!.id),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () => _confirmDelete(context),
+                icon: const Icon(LucideIcons.trash2, color: Colors.red),
+                label: const Text('Usuń subskrypcję',
+                    style: TextStyle(color: Colors.red)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
             ],
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Usuń subskrypcję'),
+        content: Text(
+          'Czy na pewno chcesz trwale usunąć "${widget.existing!.name}"?\n\n'
+          'Ta operacja jest nieodwracalna.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await context
+                  .read<SubscriptionController>()
+                  .delete(widget.existing!.id);
+              if (mounted) Navigator.of(context).pop(true);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Usuń'),
+          ),
+        ],
       ),
     );
   }
