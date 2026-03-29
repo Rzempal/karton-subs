@@ -56,6 +56,8 @@ void main() async {
 class KartonApp extends StatelessWidget {
   const KartonApp({super.key});
 
+  static final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
@@ -63,6 +65,7 @@ class KartonApp extends StatelessWidget {
     return MaterialApp(
       title: 'Karton na subskrypcje',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeProvider.themeMode,

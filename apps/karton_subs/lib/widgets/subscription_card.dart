@@ -7,6 +7,7 @@ import '../models/category.dart';
 import '../services/storage_service.dart';
 import '../services/currency_service.dart';
 import '../controllers/subscription_controller.dart';
+import '../main.dart' show KartonApp;
 import '../theme/app_theme.dart';
 
 class SubscriptionCard extends StatelessWidget {
@@ -174,8 +175,16 @@ class SubscriptionCard extends StatelessWidget {
     if (!subscription.isActive) {
       return isDark ? AppColors.darkSurface : AppColors.lightSurface;
     }
-    if (subscription.isGhost) return AppColors.negativeBg;
-    if (_isRenewingSoon()) return AppColors.warningBg;
+    if (subscription.isGhost) {
+      return isDark
+          ? AppColors.negative.withValues(alpha: 0.1)
+          : AppColors.negativeBg;
+    }
+    if (_isRenewingSoon()) {
+      return isDark
+          ? AppColors.warning.withValues(alpha: 0.1)
+          : AppColors.warningBg;
+    }
     return isDark ? AppColors.darkSurface : AppColors.lightSurface;
   }
 
@@ -312,7 +321,7 @@ class _QuickLogButton extends StatelessWidget {
             final ctrl = context.read<SubscriptionController>();
             await ctrl.logUsage(subscription.id);
             if (context.mounted) {
-              final messenger = ScaffoldMessenger.maybeOf(context);
+              final messenger = KartonApp.scaffoldMessengerKey.currentState;
               if (messenger != null) {
                 messenger.clearSnackBars();
                 messenger.showSnackBar(
