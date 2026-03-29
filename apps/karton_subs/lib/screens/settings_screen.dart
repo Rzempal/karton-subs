@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
+import '../controllers/subscription_controller.dart';
 import '../services/backup_service.dart';
 import '../services/storage_service.dart';
 import '../services/theme_provider.dart';
@@ -16,6 +17,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeProvider>();
+    final ctrl = context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
     final currency = storage.getCurrency();
 
@@ -43,7 +45,10 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: currency,
                 title: Text('${c.label} (${c.symbol})'),
                 onChanged: (v) {
-                  if (v != null) storage.setCurrency(v);
+                  if (v != null) {
+                    storage.setCurrency(v);
+                    ctrl.refresh();
+                  }
                 },
               )),
           ListTile(
@@ -55,7 +60,7 @@ class SettingsScreen extends StatelessWidget {
                   : 'Nie ustawiono',
             ),
             trailing: const Icon(LucideIcons.chevronRight),
-            onTap: () => _showBudgetLimitDialog(context, storage, currency),
+            onTap: () => _showBudgetLimitDialog(context, storage, currency, ctrl),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -101,6 +106,7 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   storage.setDevDateOverride(null);
                   Subscription.devDateOverride = null;
+                  ctrl.refresh();
                 },
               ),
             const Divider(indent: 16, endIndent: 16),
@@ -135,6 +141,9 @@ class SettingsScreen extends StatelessWidget {
     if (picked != null) {
       storage.setDevDateOverride(picked);
       Subscription.devDateOverride = picked;
+      if (context.mounted) {
+        context.read<SubscriptionController>().refresh();
+      }
     }
   }
 
@@ -142,6 +151,7 @@ class SettingsScreen extends StatelessWidget {
     BuildContext context,
     StorageService storage,
     String currency,
+    SubscriptionController ctrl,
   ) {
     final current = storage.getBudgetLimit();
     final controller = TextEditingController(
@@ -165,6 +175,7 @@ class SettingsScreen extends StatelessWidget {
             TextButton(
               onPressed: () {
                 storage.setBudgetLimit(null);
+                ctrl.refresh();
                 Navigator.pop(ctx);
               },
               child: const Text('Usuń limit'),
@@ -179,6 +190,7 @@ class SettingsScreen extends StatelessWidget {
               if (value != null && value > 0) {
                 storage.setBudgetLimit(value);
               }
+              ctrl.refresh();
               Navigator.pop(ctx);
             },
             child: const Text('Zapisz'),
