@@ -247,30 +247,21 @@
 // Lucide icon paths (exact)
 // ============================================================
 
-// Subscription symbol: RotateCcw + DollarSign from Lucide
-// Both use viewBox="0 0 24 24", stroke-width="2", centered at (12,12)
-function subscriptionSymbolSVG(color, outerScale) {
-    // outerScale maps Lucide 24x24 to the desired pixel size
-    const sw = 2; // Lucide stroke-width
-    const ds = 0.45; // dollar scale (fits inside circle with gap)
-    const dsw = sw / ds; // compensated stroke-width for dollar (2/0.45≈4.44)
-    const attrs = `fill="none" stroke="${color}" stroke-linecap="round" stroke-linejoin="round"`;
+// Gem symbol from Lucide (viewBox 0 0 24 24, stroke-width 2)
+function gemSymbolSVG(color, outerScale) {
+    const sw = 2;
+    const attrs = `fill="none" stroke="${color}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"`;
 
     return `<g transform="scale(${outerScale}) translate(-12,-12)">
-        <!-- RotateCcw (outer ring + arrow) -->
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke-width="${sw}" ${attrs}/>
-        <path d="M3 3v5h5" stroke-width="${sw}" ${attrs}/>
-    </g>
-    <g transform="scale(${outerScale * ds}) translate(-12,-12)">
-        <!-- DollarSign (inside circle) -->
-        <line x1="12" y1="2" x2="12" y2="22" stroke-width="${dsw}" ${attrs}/>
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke-width="${dsw}" ${attrs}/>
+        <path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z" ${attrs}/>
+        <path d="M10.5 3 8 9l4 13 4-13-2.5-6" ${attrs}/>
+        <path d="M2 9h20" ${attrs}/>
     </g>`;
 }
 
 // Skewed version for the right face of the box
 function skewedSymbolSVG(cx, cy, color, scale) {
-    return `<g transform="translate(${cx},${cy}) skewY(-25)">${subscriptionSymbolSVG(color, scale)}</g>`;
+    return `<g transform="translate(${cx},${cy}) skewY(-25)">${gemSymbolSVG(color, scale)}</g>`;
 }
 
 // ============================================================
@@ -289,8 +280,8 @@ const CS = () => {
     };
 };
 
-// Lucide circle r=9 → target r≈22 on the box face → scale = 22/9 ≈ 2.44
-const SYMBOL_SCALE = 22.0 / 9.0;
+// Lucide gem 24x24 → target ~48px on the box face → scale ≈ 2.2
+const SYMBOL_SCALE = 2.2;
 
 function closedBoxSVG(size, c) {
     return `<svg width="${size}" height="${size}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -445,10 +436,11 @@ function render() {
 // DEV BADGE
 // ============================================================
 function devBadgeSVG() {
-    return `<g transform="translate(72,72)">
-      <rect x="0" y="0" width="34" height="16" rx="3" fill="#EF4444"/>
-      <rect x="0.5" y="0.5" width="33" height="15" rx="2.5" fill="none" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
-      <text x="17" y="12" text-anchor="middle" font-family="monospace,sans-serif" font-weight="bold" font-size="10" fill="white">DEV</text>
+    // Positioned within adaptive icon safe zone (18-90dp)
+    return `<g transform="translate(59,75)">
+      <rect x="0" y="0" width="28" height="12" rx="2.5" fill="#EF4444"/>
+      <rect x="0.25" y="0.25" width="27.5" height="11.5" rx="2.25" fill="none" stroke="white" stroke-opacity="0.3" stroke-width="0.5"/>
+      <text x="14" y="9.5" text-anchor="middle" font-family="monospace,sans-serif" font-weight="bold" font-size="9" fill="white">DEV</text>
     </g>`;
 }
 
