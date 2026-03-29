@@ -114,6 +114,21 @@ class StorageService {
     await _settingsBox.put('currency', currencyCode);
   }
 
+  /// Dev-only: override daty do testowania ghost detection
+  DateTime? getDevDateOverride() {
+    final v = _settingsBox.get('devDateOverride') as String?;
+    if (v == null) return null;
+    return DateTime.tryParse(v);
+  }
+
+  Future<void> setDevDateOverride(DateTime? date) async {
+    if (date == null) {
+      await _settingsBox.delete('devDateOverride');
+    } else {
+      await _settingsBox.put('devDateOverride', date.toIso8601String());
+    }
+  }
+
   double? getBudgetLimit() {
     final v = _settingsBox.get('budgetLimit');
     return v != null ? (v as num).toDouble() : null;

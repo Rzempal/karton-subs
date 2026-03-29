@@ -12,6 +12,8 @@ import 'services/backup_service.dart';
 import 'services/storage_service.dart';
 import 'services/theme_provider.dart';
 import 'services/update_service.dart';
+import 'models/subscription.dart';
+import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -22,6 +24,11 @@ void main() async {
 
   final storage = StorageService();
   await storage.init();
+
+  // Dev-only: restore date override
+  if (AppConfig.isInternal) {
+    Subscription.devDateOverride = storage.getDevDateOverride();
+  }
 
   final themeProvider = ThemeProvider();
   await themeProvider.init();

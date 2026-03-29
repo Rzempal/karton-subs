@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../models/usage_event.dart';
 import '../services/storage_service.dart';
+import '../services/analytics_service.dart';
 import '../services/app_logger.dart';
 
 /// Zarządza stanem subskrypcji: CRUD + usage log + computed analytics.
@@ -10,6 +11,7 @@ class SubscriptionController extends ChangeNotifier {
   static final _log = AppLogger.get('SubscriptionController');
   final StorageService _storage;
   static const _uuid = Uuid();
+  static const _analytics = AnalyticsService();
 
   SubscriptionController(this._storage);
 
@@ -17,10 +19,20 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get active => _storage.getActiveSubscriptions();
   List<Subscription> get ghosts => _storage.getGhostSubscriptions();
 
-  double get totalMonthly => _storage.getTotalMonthly();
+  Currency get _targetCurrency {
+    final code = _storage.getCurrency();
+    return Currency.values.firstWhere(
+      (c) => c.name == code || c.label == code,
+      orElse: () => Currency.PLN,
+    );
+  }
+
+  double get totalMonthly =>
+      _analytics.getMonthlyTotal(all, target: _targetCurrency);
   double get totalYearly => totalMonthly * 12;
 
-  Map<String, double> get categoryBreakdown => _storage.getCategoryBreakdown();
+  Map<String, double> get categoryBreakdown =>
+      _analytics.getCategoryBreakdown(all, target: _targetCurrency);
 
   List<Subscription> get pinned =>
       active.where((s) => s.isPinned).toList()
@@ -128,5 +140,14 @@ class SubscriptionController extends ChangeNotifier {
     final updated = sub.copyWith(usageLog: [...sub.usageLog, event]);
     await update(updated);
     _log.info('Usage logged for: ${sub.name}');
+  }
+
+  Future<void> removeLastUsage(String subscriptionId) async {
+    final sub = _storage.getSubscription(subscriptionId);
+    if (sub == null || sub.usageLog.isEmpty) return;
+    final updatedLog = List<UsageEvent>.from(sub.usageLog)..removeLast();
+    final updated = sub.copyWith(usageLog: updatedLog);
+    await update(updated);
+    _log.info('Last usage removed for: ${sub.name}');
   }
 }

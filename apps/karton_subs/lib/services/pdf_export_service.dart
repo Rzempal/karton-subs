@@ -11,24 +11,17 @@ import 'analytics_service.dart';
 class PdfExportService {
   const PdfExportService();
 
-  String _d(String text) {
-    const map = {
-      'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n',
-      'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-      'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N',
-      'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z',
-    };
-    return text.replaceAllMapped(
-      RegExp('[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]'),
-      (m) => map[m.group(0)] ?? m.group(0)!,
-    );
-  }
-
-  pw.Document _build(
+  Future<pw.Document> _build(
     List<Subscription> subs,
     List<Category> categories,
     String currencyLabel,
-  ) {
+  ) async {
+    // Font z obsługą polskich znaków
+    final font = await PdfGoogleFonts.robotoRegular();
+    final fontBold = await PdfGoogleFonts.robotoBold();
+    final baseStyle = pw.TextStyle(font: font, fontSize: 8);
+    final boldStyle = pw.TextStyle(font: fontBold, fontSize: 9);
+
     final pdf = pw.Document();
     final dateStr = DateFormat('dd.MM.yyyy').format(DateTime.now());
     final nf = NumberFormat('#,##0.00', 'pl_PL');
@@ -49,15 +42,16 @@ class PdfExportService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
+        theme: pw.ThemeData.withFont(base: font, bold: fontBold),
         header: (ctx) => pw.Container(
           margin: const pw.EdgeInsets.only(bottom: 20),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('Karton na subskrypcje',
-                  style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                  style: pw.TextStyle(font: fontBold, fontSize: 16)),
               pw.Text(dateStr,
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey700)),
             ],
           ),
         ),
@@ -69,7 +63,7 @@ class PdfExportService {
               pw.Divider(color: PdfColors.grey400),
               pw.SizedBox(height: 4),
               pw.Text('Strona ${ctx.pageNumber} z ${ctx.pagesCount}',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+                  style: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey500)),
             ],
           ),
         ),
@@ -81,10 +75,10 @@ class PdfExportService {
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
-                _item('Miesiecznie', '${nf.format(monthlyTotal)} $currencyLabel'),
-                _item('Rocznie', '${nf.format(yearlyTotal)} $currencyLabel'),
-                _item('Aktywne', '${active.length}'),
-                _item('Anulowane', '${cancelled.length}'),
+                _item('Miesięcznie', '${nf.format(monthlyTotal)} $currencyLabel', fontBold, font),
+                _item('Rocznie', '${nf.format(yearlyTotal)} $currencyLabel', fontBold, font),
+                _item('Aktywne', '${active.length}', fontBold, font),
+                _item('Anulowane', '${cancelled.length}', fontBold, font),
               ],
             ),
           ),
@@ -92,15 +86,15 @@ class PdfExportService {
 
           if (active.isNotEmpty) ...[
             pw.Text('Aktywne subskrypcje',
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(font: fontBold, fontSize: 12)),
             pw.SizedBox(height: 8),
             pw.TableHelper.fromTextArray(
               context: ctx,
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              headerStyle: boldStyle,
               headerDecoration: const pw.BoxDecoration(
                 border: pw.Border(bottom: pw.BorderSide(width: 1, color: PdfColors.black)),
               ),
-              cellStyle: const pw.TextStyle(fontSize: 8),
+              cellStyle: baseStyle,
               cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               columnWidths: {
                 0: const pw.FlexColumnWidth(3),
@@ -112,10 +106,10 @@ class PdfExportService {
               data: active.map((s) {
                 final cat = findCat(s.categoryId);
                 return [
-                  _d(s.name),
+                  s.name,
                   '${nf.format(s.amount)} ${s.currency.symbol}',
                   '${nf.format(s.monthlyAmount)} $currencyLabel',
-                  _d(cat?.name ?? 'Inne'),
+                  cat?.name ?? 'Inne',
                 ];
               }).toList(),
             ),
@@ -124,15 +118,15 @@ class PdfExportService {
           if (cancelled.isNotEmpty) ...[
             pw.SizedBox(height: 20),
             pw.Text('Anulowane subskrypcje',
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(font: fontBold, fontSize: 12)),
             pw.SizedBox(height: 8),
             pw.TableHelper.fromTextArray(
               context: ctx,
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+              headerStyle: boldStyle,
               headerDecoration: const pw.BoxDecoration(
                 border: pw.Border(bottom: pw.BorderSide(width: 1, color: PdfColors.grey600)),
               ),
-              cellStyle: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+              cellStyle: pw.TextStyle(font: font, fontSize: 8, color: PdfColors.grey600),
               cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               columnWidths: {
                 0: const pw.FlexColumnWidth(3),
@@ -143,9 +137,9 @@ class PdfExportService {
               data: cancelled.map((s) {
                 final cat = findCat(s.categoryId);
                 return [
-                  _d(s.name),
+                  s.name,
                   '${nf.format(s.amount)} ${s.currency.symbol}',
-                  _d(cat?.name ?? 'Inne'),
+                  cat?.name ?? 'Inne',
                 ];
               }).toList(),
             ),
@@ -157,11 +151,11 @@ class PdfExportService {
     return pdf;
   }
 
-  pw.Widget _item(String label, String value) {
+  pw.Widget _item(String label, String value, pw.Font bold, pw.Font base) {
     return pw.Column(children: [
-      pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+      pw.Text(value, style: pw.TextStyle(font: bold, fontSize: 14)),
       pw.SizedBox(height: 2),
-      pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+      pw.Text(label, style: pw.TextStyle(font: base, fontSize: 9, color: PdfColors.grey600)),
     ]);
   }
 
@@ -170,7 +164,7 @@ class PdfExportService {
     List<Category> categories,
     String currencyLabel,
   ) async {
-    final pdf = _build(subs, categories, currencyLabel);
+    final pdf = await _build(subs, categories, currencyLabel);
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     await Printing.sharePdf(
       bytes: await pdf.save(),
