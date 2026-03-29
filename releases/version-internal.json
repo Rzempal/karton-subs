@@ -1,13 +1,29 @@
 ﻿{
     "changelog":  [
                       {
-                          "version":  "0.1.26032800",
+                          "version":  "0.1.26032915",
+                          "notes":  "- bug fixes"
+                      },
+                      {
+                          "version":  "0.1.26032904",
+                          "notes":  "fix crash"
+                      },
+                      {
+                          "version":  "0.1.26032903",
+                          "notes":  "- bug fixes"
+                      },
+                      {
+                          "version":  "0.1.26032901",
+                          "notes":  "faza 2"
+                      },
+                      {
+                          "version":  "0.1.26032900",
                           "notes":  "- bug fixes"
                       }
                   ],
-    "version":  "0.1.26032800",
+    "version":  "0.1.26032915",
     "releaseNotes":  "- bug fixes",
-    "versionCode":  126032800,
-    "releaseDate":  "2026-03-28T14:23:56Z",
-    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.1.26032800.apk"
+    "versionCode":  126032915,
+    "releaseDate":  "2026-03-29T18:17:50Z",
+    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.1.26032915.apk"
 }

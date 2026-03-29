@@ -1,14 +1,20 @@
 ﻿# Karton na subskrypcje - Historia zmian
 
+## v0.1.26032900
+- bug fixes
+
 ## v0.1.26032808
 - bug fixes
+
 
 ## v0.1.26032806
 - bug fixes
 
 
+
 ## v0.1.26032805
 - bug fixes
+
 
 
 
@@ -18,8 +24,10 @@
 
 
 
+
 ## v0.1.26032803
 OTA
+
 
 
 
@@ -33,8 +41,10 @@ OTA
 
 
 
+
 ## v0.1.26032801
 - bug fixes
+
 
 
 

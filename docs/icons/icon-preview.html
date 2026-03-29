@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karton na Subskrypcje - Icon Preview</title>
+    <style>
+        :root {
+            --bg-app: #0F1419;
+            --surface: #1A2332;
+            --text-primary: #F1F5F9;
+            --text-secondary: #94A3B8;
+            --border: #1E3A5F;
+
+            --box-top: #B0BEC5;
+            --box-right: #90A4AE;
+            --box-left: #78909C;
+            --box-inner: #263238;
+            --box-flap: #8093A0;
+
+            --tape-light: #2563EB;
+            --tape-dark: #1E3A5F;
+
+            --banknote: #16A34A;
+            --banknote-dark: #15803D;
+            --card: #1B2A4A;
+            --card-chip: #FBBF24;
+            --coin: #D97706;
+            --coin-inner: #F59E0B;
+        }
+
+        [data-theme="light"] {
+            --bg-app: #FAFAFA;
+            --surface: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #64748B;
+            --border: #E2E8F0;
+
+            --box-top: #CFD8DC;
+            --box-right: #B0BEC5;
+            --box-left: #90A4AE;
+            --box-inner: #37474F;
+            --box-flap: #A0B0BA;
+
+            --tape-light: #1B2A4A;
+            --tape-dark: #0F172A;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-app);
+            color: var(--text-primary);
+            font-family: -apple-system, 'Inter', sans-serif;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        h1 { margin-bottom: 4px; font-size: 1.6rem; }
+        .subtitle {
+            color: var(--text-secondary);
+            font-family: monospace;
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+        }
+
+        .theme-toggle {
+            position: fixed; top: 20px; right: 20px;
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--text-primary); padding: 8px 16px;
+            border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+        }
+
+        section {
+            width: 100%; max-width: 1100px; margin-top: 40px;
+        }
+        section h2 {
+            font-size: 1.1rem; margin-bottom: 20px;
+            padding-bottom: 10px; border-bottom: 1px solid var(--border);
+        }
+
+        .icon-row {
+            display: flex; flex-wrap: wrap; gap: 30px;
+            justify-content: center; align-items: flex-end;
+        }
+        .icon-cell {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .icon-cell .label {
+            font-size: 0.7rem; color: var(--text-secondary); font-family: monospace;
+        }
+
+        .launcher-grid {
+            display: grid; grid-template-columns: repeat(4, 80px);
+            gap: 20px; justify-content: center; padding: 30px;
+            background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+        }
+        .launcher-app {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .launcher-app .name { font-size: 0.65rem; color: var(--text-secondary); }
+
+        .launcher-mask-circle { width: 60px; height: 60px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .launcher-mask-squircle { width: 60px; height: 60px; border-radius: 22%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .launcher-mask-rounded { width: 60px; height: 60px; border-radius: 30%; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+
+        .mono-bg-blue { background: #d0bcff; }
+        .mono-bg-green { background: #bdfcc9; }
+        .mono-bg-dark { background: #303030; }
+        .mono-bg-light { background: #f5f5f5; }
+
+        .transform-row {
+            display: flex; align-items: center; justify-content: center; gap: 24px;
+            padding: 30px; background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+        }
+        .transform-arrow { font-size: 2rem; color: var(--text-secondary); opacity: 0.5; }
+
+        svg { overflow: visible; }
+    </style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()">Light / Dark</button>
+
+<h1>Karton na Subskrypcje</h1>
+<p class="subtitle">Icon Set Preview &mdash; Ledger Glass Design System</p>
+
+<section>
+    <h2>1. Ikona zamknieta (Closed) &mdash; rozne rozmiary</h2>
+    <div class="icon-row" id="closed-sizes"></div>
+</section>
+
+<section>
+    <h2>2. Ikona otwarta (Open) &mdash; rozne rozmiary</h2>
+    <div class="icon-row" id="open-sizes"></div>
+</section>
+
+<section>
+    <h2>3. Transformacja: balagan finansowy → porzadek</h2>
+    <div class="transform-row">
+        <div class="icon-cell">
+            <div id="transform-open"></div>
+            <span class="label">balagan</span>
+        </div>
+        <span class="transform-arrow">→</span>
+        <div class="icon-cell">
+            <div id="transform-closed"></div>
+            <span class="label">porzadek</span>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>4. Adaptive Icon &mdash; symulacja launchera Android</h2>
+    <div class="launcher-grid">
+        <div class="launcher-app">
+            <div class="launcher-mask-circle" id="launcher-circle"></div>
+            <span class="name">Circle</span>
+        </div>
+        <div class="launcher-app">
+            <div class="launcher-mask-squircle" id="launcher-squircle"></div>
+            <span class="name">Squircle</span>
+        </div>
+        <div class="launcher-app">
+            <div class="launcher-mask-rounded" id="launcher-rounded"></div>
+            <span class="name">Rounded</span>
+        </div>
+        <div class="launcher-app">
+            <div class="launcher-mask-squircle" id="launcher-square"></div>
+            <span class="name">Square</span>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>5. Monochrome &mdash; Material You themed</h2>
+    <div class="icon-row">
+        <div class="icon-cell">
+            <div class="launcher-mask-circle mono-bg-blue" id="mono-blue"></div>
+            <span class="label">Blue theme</span>
+        </div>
+        <div class="icon-cell">
+            <div class="launcher-mask-circle mono-bg-green" id="mono-green"></div>
+            <span class="label">Green theme</span>
+        </div>
+        <div class="icon-cell">
+            <div class="launcher-mask-circle mono-bg-dark" id="mono-dark"></div>
+            <span class="label">Dark theme</span>
+        </div>
+        <div class="icon-cell">
+            <div class="launcher-mask-circle mono-bg-light" id="mono-light"></div>
+            <span class="label">Light theme</span>
+        </div>
+    </div>
+</section>
+
+<section>
+    <h2>6. Nav Bar (mono) &mdash; 24px</h2>
+    <div class="icon-row" style="gap: 40px;">
+        <div class="icon-cell">
+            <div style="background:#1A2332;padding:12px;border-radius:12px;" id="nav-dark"></div>
+            <span class="label">Dark nav</span>
+        </div>
+        <div class="icon-cell">
+            <div style="background:#FFFFFF;padding:12px;border-radius:12px;border:1px solid #E2E8F0;" id="nav-light"></div>
+            <span class="label">Light nav</span>
+        </div>
+    </div>
+</section>
+
+<script>
+// ============================================================
+// Lucide icon paths (exact)
+// ============================================================
+
+// Subscription symbol: RotateCcw + DollarSign from Lucide
+// Both use viewBox="0 0 24 24", stroke-width="2", centered at (12,12)
+function subscriptionSymbolSVG(color, outerScale) {
+    // outerScale maps Lucide 24x24 to the desired pixel size
+    const sw = 2; // Lucide stroke-width
+    const ds = 0.45; // dollar scale (fits inside circle with gap)
+    const dsw = sw / ds; // compensated stroke-width for dollar (2/0.45≈4.44)
+    const attrs = `fill="none" stroke="${color}" stroke-linecap="round" stroke-linejoin="round"`;
+
+    return `<g transform="scale(${outerScale}) translate(-12,-12)">
+        <!-- RotateCcw (outer ring + arrow) -->
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" stroke-width="${sw}" ${attrs}/>
+        <path d="M3 3v5h5" stroke-width="${sw}" ${attrs}/>
+    </g>
+    <g transform="scale(${outerScale * ds}) translate(-12,-12)">
+        <!-- DollarSign (inside circle) -->
+        <line x1="12" y1="2" x2="12" y2="22" stroke-width="${dsw}" ${attrs}/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke-width="${dsw}" ${attrs}/>
+    </g>`;
+}
+
+// Skewed version for the right face of the box
+function skewedSymbolSVG(cx, cy, color, scale) {
+    return `<g transform="translate(${cx},${cy}) skewY(-25)">${subscriptionSymbolSVG(color, scale)}</g>`;
+}
+
+// ============================================================
+// SVG BUILDERS
+// ============================================================
+const CS = () => {
+    const s = getComputedStyle(document.documentElement);
+    const v = name => s.getPropertyValue(name).trim();
+    return {
+        boxTop: v('--box-top'), boxRight: v('--box-right'), boxLeft: v('--box-left'),
+        boxInner: v('--box-inner'), boxFlap: v('--box-flap'),
+        tapeLight: v('--tape-light'), tapeDark: v('--tape-dark'),
+        banknote: v('--banknote'), banknoteDark: v('--banknote-dark'),
+        card: v('--card'), cardChip: v('--card-chip'),
+        coin: v('--coin'), coinInner: v('--coin-inner'),
+    };
+};
+
+// Lucide circle r=9 → target r≈22 on the box face → scale = 22/9 ≈ 2.44
+const SYMBOL_SCALE = 22.0 / 9.0;
+
+function closedBoxSVG(size, c) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(10,10) scale(0.9)">
+        <polygon points="100,24 186,64 100,104 14,64" fill="${c.boxTop}"/>
+        <polygon points="35,73.8 65,87.7 151,47.7 121,33.8" fill="${c.tapeLight}"/>
+        <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
+        ${skewedSymbolSVG(145, 127, c.tapeLight, SYMBOL_SCALE)}
+        <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
+      </g>
+    </svg>`;
+}
+
+function openBoxSVG(size, c) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(10,15) scale(0.9)">
+        <polygon points="14,64 100,34 85,5 5,30" fill="${c.boxFlap}" opacity="0.9"/>
+        <polygon points="186,64 100,34 115,5 195,30" fill="${c.boxFlap}" opacity="0.9"/>
+        <polygon points="100,108 186,64 100,34 14,64" fill="${c.boxInner}"/>
+
+        <g transform="translate(100,50) rotate(5)">
+          <rect x="-20" y="-12" width="40" height="24" rx="2" fill="${c.banknote}"/>
+          <rect x="-20" y="-12" width="14" height="24" rx="2" fill="${c.banknoteDark}"/>
+          <circle cx="0" cy="0" r="7" fill="white" opacity="0.3"/>
+        </g>
+
+        <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
+        <!-- Tape on left face (same as closed) -->
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
+
+        <g transform="translate(45,55) rotate(35)">
+          <rect x="-16" y="-10" width="32" height="20" rx="2" fill="${c.card}"/>
+          <rect x="-10" y="-4" width="8" height="6" rx="1" fill="${c.cardChip}"/>
+          <rect x="-16" y="3" width="32" height="4" fill="white" opacity="0.15"/>
+        </g>
+
+        <g transform="translate(155,60) rotate(-15)">
+          ${[0,-6,-12].map(y => `
+            <ellipse cx="0" cy="${y}" rx="11" ry="5" fill="${c.coin}"/>
+            <ellipse cx="0" cy="${y}" rx="8" ry="3.5" fill="${c.coinInner}"/>
+          `).join('')}
+        </g>
+
+        <g transform="translate(75,15) rotate(-20)">
+          <rect x="-14" y="-24" width="28" height="48" rx="2" fill="#F1F5F9"/>
+          <rect x="-10" y="-18" width="20" height="2" fill="#94A3B8"/>
+          <rect x="-10" y="-12" width="16" height="2" fill="#94A3B8"/>
+          <rect x="-10" y="-6" width="20" height="2" fill="#94A3B8"/>
+          <rect x="-10" y="0" width="12" height="2" fill="#94A3B8"/>
+          <line x1="-10" y1="8" x2="10" y2="8" stroke="#64748B" stroke-width="1"/>
+          <rect x="0" y="12" width="10" height="3" fill="#1B2A4A"/>
+        </g>
+
+        ${skewedSymbolSVG(145, 127, c.tapeLight, SYMBOL_SCALE * 0.8)}
+      </g>
+    </svg>`;
+}
+
+function monoClosedSVG(size, fgColor) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(10,10) scale(0.9)">
+        <polygon points="100,24 186,64 100,104 14,64" fill="${fgColor}" opacity="0.15"/>
+        <polygon points="35,73.8 65,87.7 151,47.7 121,33.8" fill="${fgColor}"/>
+        <polygon points="12,68 98,108 98,186 12,146" fill="${fgColor}" opacity="0.5"/>
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${fgColor}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${fgColor}" opacity="0.3"/>
+        ${skewedSymbolSVG(145, 127, fgColor, SYMBOL_SCALE)}
+        <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${fgColor}"/>
+      </g>
+    </svg>`;
+}
+
+function launcherSVG(size, c) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+      <rect width="108" height="108" fill="#0F1419"/>
+      <defs>
+        <radialGradient id="glow" cx="54" cy="54" r="70" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#60A5FA" stop-opacity="0.5"/>
+          <stop offset="0.4" stop-color="#2563EB" stop-opacity="0.3"/>
+          <stop offset="1" stop-color="#0F1419" stop-opacity="1"/>
+        </radialGradient>
+      </defs>
+      <rect width="108" height="108" fill="url(#glow)"/>
+      <circle cx="54" cy="54" r="25" fill="white" opacity="0.06"/>
+
+      <g transform="translate(22,20) scale(0.32)">
+        <path d="M12,68 L98,108 L98,186 L188,146 L188,68 L100,24 Z" fill="black" opacity="0.3"/>
+        <polygon points="100,24 186,64 100,104 14,64" fill="${c.boxTop}"/>
+        <polygon points="35,73.8 65,87.7 151,47.7 121,33.8" fill="${c.tapeLight}"/>
+        <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
+        ${skewedSymbolSVG(145, 127, c.tapeLight, SYMBOL_SCALE)}
+        <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
+        <defs>
+          <linearGradient id="gloss" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="white" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="white" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="100,24 186,64 100,104 14,64" fill="url(#gloss)"/>
+        <polyline points="14,64 100,24 186,64" fill="none" stroke="white" stroke-opacity="0.4" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </svg>`;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+    const c = CS();
+
+    document.getElementById('closed-sizes').innerHTML = [32, 48, 64, 80, 120, 160].map(s =>
+        `<div class="icon-cell">${closedBoxSVG(s, c)}<span class="label">${s}px</span></div>`
+    ).join('');
+
+    document.getElementById('open-sizes').innerHTML = [48, 80, 120, 160].map(s =>
+        `<div class="icon-cell">${openBoxSVG(s, c)}<span class="label">${s}px</span></div>`
+    ).join('');
+
+    document.getElementById('transform-open').innerHTML = openBoxSVG(100, c);
+    document.getElementById('transform-closed').innerHTML = closedBoxSVG(100, c);
+
+    ['launcher-circle', 'launcher-squircle', 'launcher-rounded', 'launcher-square'].forEach(id => {
+        document.getElementById(id).innerHTML = launcherSVG(60, c);
+    });
+
+    [['mono-blue','#381e72'],['mono-green','#00522b'],['mono-dark','#e2e2e2'],['mono-light','#303030']].forEach(([id, color]) => {
+        document.getElementById(id).innerHTML = monoClosedSVG(44, color);
+    });
+
+    document.getElementById('nav-dark').innerHTML = monoClosedSVG(24, '#93C5FD');
+    document.getElementById('nav-light').innerHTML = monoClosedSVG(24, '#1B2A4A');
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    setTimeout(render, 50);
+}
+
+render();
+</script>
+</body>
+</html>
