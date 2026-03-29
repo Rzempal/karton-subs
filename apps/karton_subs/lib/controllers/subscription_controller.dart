@@ -141,7 +141,7 @@ class SubscriptionController extends ChangeNotifier {
     if (sub == null) return;
     final event = UsageEvent(
       id: _uuid.v4(),
-      date: DateTime.now(),
+      date: Subscription.devDateOverride ?? DateTime.now(),
       note: note,
     );
     final updated = sub.copyWith(usageLog: [...sub.usageLog, event]);
