@@ -59,6 +59,7 @@ class Subscription {
   final int? reminderDaysBefore;
   final List<UsageEvent> usageLog;
   final DateTime dataDodania;
+  final DateTime? cancelledDate;
 
   const Subscription({
     required this.id,
@@ -79,6 +80,7 @@ class Subscription {
     this.reminderDaysBefore,
     this.usageLog = const [],
     required this.dataDodania,
+    this.cancelledDate,
   });
 
   /// Kwota znormalizowana do miesięcznej
@@ -151,6 +153,9 @@ class Subscription {
           .map((e) => UsageEvent.fromJson(e as Map<String, dynamic>))
           .toList(),
       dataDodania: DateTime.parse(json['dataDodania'] as String),
+      cancelledDate: json['cancelledDate'] != null
+          ? DateTime.parse(json['cancelledDate'] as String)
+          : null,
     );
   }
 
@@ -175,6 +180,8 @@ class Subscription {
           'reminderDaysBefore': reminderDaysBefore,
         'usageLog': usageLog.map((e) => e.toJson()).toList(),
         'dataDodania': dataDodania.toIso8601String(),
+        if (cancelledDate != null)
+          'cancelledDate': cancelledDate!.toIso8601String(),
       };
 
   Subscription copyWith({
@@ -196,6 +203,8 @@ class Subscription {
     int? reminderDaysBefore,
     List<UsageEvent>? usageLog,
     DateTime? dataDodania,
+    DateTime? cancelledDate,
+    bool clearCancelledDate = false,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -216,6 +225,9 @@ class Subscription {
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       usageLog: usageLog ?? this.usageLog,
       dataDodania: dataDodania ?? this.dataDodania,
+      cancelledDate: clearCancelledDate
+          ? null
+          : (cancelledDate ?? this.cancelledDate),
     );
   }
 

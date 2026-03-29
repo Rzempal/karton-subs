@@ -3,6 +3,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'controllers/subscription_controller.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
 import 'services/app_logger.dart';
@@ -74,6 +75,7 @@ class _MainShellState extends State<_MainShell> {
 
   static const _screens = [
     DashboardScreen(),
+    AnalyticsScreen(),
     SubscriptionListScreen(),
     SettingsScreen(),
   ];
@@ -93,6 +95,11 @@ class _MainShellState extends State<_MainShell> {
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.pie_chart_outline),
+            selectedIcon: Icon(Icons.pie_chart),
+            label: 'Analityka',
           ),
           NavigationDestination(
             icon: Icon(Icons.list_outlined),
