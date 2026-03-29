@@ -164,6 +164,18 @@ class StorageService {
     return result;
   }
 
-  List<Subscription> getGhostSubscriptions() =>
-      getActiveSubscriptions().where((s) => s.isGhost).toList();
+  Set<String> getExcludedGhostCategoryIds() =>
+      _categoriesCache.values
+          .where((c) => c.excludeFromGhostAnalysis)
+          .map((c) => c.id)
+          .toSet();
+
+  List<Subscription> getGhostSubscriptions() {
+    final excluded = getExcludedGhostCategoryIds();
+    return getActiveSubscriptions()
+        .where((s) =>
+            s.isGhost &&
+            !excluded.contains(s.categoryId ?? 'cat_other'))
+        .toList();
+  }
 }
