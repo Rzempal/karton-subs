@@ -10,6 +10,7 @@ import 'services/update_service.dart';
 import 'controllers/selection_controller.dart';
 import 'theme/app_theme.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/subscriptions_screen.dart';
 import 'screens/settings_screen.dart';
 import 'config/app_config.dart';
@@ -81,6 +82,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     final screens = [
       DashboardScreen(storageService: storageService),
+      AnalyticsScreen(storageService: storageService),
       SubscriptionsScreen(
         storageService: storageService,
         selectionController: _selectionController,
@@ -110,6 +112,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(LucideIcons.barChart3),
             selectedIcon: Icon(LucideIcons.barChart3),
             label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(LucideIcons.pieChart),
+            selectedIcon: Icon(LucideIcons.pieChart),
+            label: 'Analityka',
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.repeat),
