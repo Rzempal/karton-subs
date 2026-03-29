@@ -82,6 +82,7 @@ class Subscription {
   final int? reminderDaysBefore;
   final List<UsageEvent> usageLog;
   final DateTime dataDodania;
+  final DateTime? cancelledDate;
 
   const Subscription({
     required this.id,
@@ -101,6 +102,7 @@ class Subscription {
     this.reminderDaysBefore,
     this.usageLog = const [],
     required this.dataDodania,
+    this.cancelledDate,
   });
 
   /// Tworzy nową subskrypcję z wygenerowanym UUID
@@ -250,6 +252,9 @@ class Subscription {
               .toList() ??
           const [],
       dataDodania: DateTime.parse(json['dataDodania'] as String),
+      cancelledDate: json['cancelledDate'] != null
+          ? DateTime.parse(json['cancelledDate'] as String)
+          : null,
     );
   }
 
@@ -272,6 +277,8 @@ class Subscription {
       if (reminderDaysBefore != null) 'reminderDaysBefore': reminderDaysBefore,
       'usageLog': usageLog.map((e) => e.toJson()).toList(),
       'dataDodania': dataDodania.toIso8601String(),
+      if (cancelledDate != null)
+        'cancelledDate': cancelledDate!.toIso8601String(),
     };
   }
 
@@ -300,6 +307,8 @@ class Subscription {
     int? reminderDaysBefore,
     bool clearReminderDaysBefore = false,
     List<UsageEvent>? usageLog,
+    DateTime? cancelledDate,
+    bool clearCancelledDate = false,
   }) {
     return Subscription(
       id: id,
@@ -325,6 +334,9 @@ class Subscription {
           : (reminderDaysBefore ?? this.reminderDaysBefore),
       usageLog: usageLog ?? this.usageLog,
       dataDodania: dataDodania,
+      cancelledDate: clearCancelledDate
+          ? null
+          : (cancelledDate ?? this.cancelledDate),
     );
   }
 }
