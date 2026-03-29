@@ -6,6 +6,7 @@ class Category {
   final String colorHex;
   final String iconName;
   final int order;
+  final bool excludeFromGhostAnalysis;
 
   const Category({
     required this.id,
@@ -13,6 +14,7 @@ class Category {
     required this.colorHex,
     required this.iconName,
     required this.order,
+    this.excludeFromGhostAnalysis = false,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,7 @@ class Category {
       colorHex: json['colorHex'] as String,
       iconName: json['iconName'] as String,
       order: json['order'] as int,
+      excludeFromGhostAnalysis: json['excludeFromGhostAnalysis'] as bool? ?? false,
     );
   }
 
@@ -31,6 +34,7 @@ class Category {
         'colorHex': colorHex,
         'iconName': iconName,
         'order': order,
+        'excludeFromGhostAnalysis': excludeFromGhostAnalysis,
       };
 
   Color get color {
@@ -44,6 +48,7 @@ class Category {
     String? colorHex,
     String? iconName,
     int? order,
+    bool? excludeFromGhostAnalysis,
   }) {
     return Category(
       id: id ?? this.id,
@@ -51,6 +56,7 @@ class Category {
       colorHex: colorHex ?? this.colorHex,
       iconName: iconName ?? this.iconName,
       order: order ?? this.order,
+      excludeFromGhostAnalysis: excludeFromGhostAnalysis ?? this.excludeFromGhostAnalysis,
     );
   }
 
@@ -66,7 +72,7 @@ class Category {
 final List<Category> defaultCategories = [
   const Category(id: 'cat_streaming', name: 'Streaming', colorHex: '#2563EB', iconName: 'play_circle', order: 0),
   const Category(id: 'cat_music', name: 'Muzyka', colorHex: '#7C3AED', iconName: 'headphones', order: 1),
-  const Category(id: 'cat_cloud', name: 'Cloud', colorHex: '#0891B2', iconName: 'cloud', order: 2),
+  const Category(id: 'cat_cloud', name: 'Cloud', colorHex: '#0891B2', iconName: 'cloud', order: 2, excludeFromGhostAnalysis: true),
   const Category(id: 'cat_software', name: 'Software', colorHex: '#EA580C', iconName: 'code', order: 3),
   const Category(id: 'cat_fitness', name: 'Fitness', colorHex: '#16A34A', iconName: 'fitness_center', order: 4),
   const Category(id: 'cat_gaming', name: 'Gaming', colorHex: '#DB2777', iconName: 'sports_esports', order: 5),
