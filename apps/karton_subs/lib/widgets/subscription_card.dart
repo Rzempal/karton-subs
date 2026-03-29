@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
@@ -54,7 +55,7 @@ class SubscriptionCard extends StatelessWidget {
                     Row(
                       children: [
                         if (subscription.isPinned) ...[
-                          Icon(Icons.push_pin, size: 12,
+                          Icon(LucideIcons.pin, size: 12,
                               color: theme.colorScheme.primary),
                           const SizedBox(width: 4),
                         ],
@@ -141,12 +142,7 @@ class SubscriptionCard extends StatelessWidget {
     return isDark ? AppColors.darkSurface : AppColors.lightSurface;
   }
 
-  bool _isRenewingSoon() {
-    final next = subscription.nextRenewalDate;
-    if (next == null) return false;
-    final days = next.difference(DateTime.now()).inDays;
-    return days >= 0 && days <= (subscription.reminderDaysBefore ?? 3);
-  }
+  bool _isRenewingSoon() => subscription.isRenewalSoon;
 
   String _formatAmount(double amount, Currency currency) {
     final nf = NumberFormat('#,##0.00', 'pl_PL');
@@ -196,14 +192,14 @@ class _CategoryDot extends StatelessWidget {
 
   IconData _categoryIcon(String? name) {
     return switch (name) {
-      'play_circle' => Icons.play_circle_outline,
-      'headphones' => Icons.headphones,
-      'cloud' => Icons.cloud_outlined,
-      'code' => Icons.code,
-      'fitness_center' => Icons.fitness_center,
-      'sports_esports' => Icons.sports_esports,
-      'school' => Icons.school_outlined,
-      _ => Icons.folder_outlined,
+      'play_circle' || 'play-circle' => LucideIcons.playCircle,
+      'headphones' => LucideIcons.headphones,
+      'cloud' => LucideIcons.cloud,
+      'code' => LucideIcons.code,
+      'fitness_center' || 'dumbbell' => LucideIcons.dumbbell,
+      'sports_esports' || 'gamepad-2' => LucideIcons.gamepad2,
+      'school' || 'graduation-cap' => LucideIcons.graduationCap,
+      _ => LucideIcons.folder,
     };
   }
 }
@@ -221,7 +217,7 @@ class _GhostBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 10, color: AppColors.negative),
+          Icon(LucideIcons.alertTriangle, size: 10, color: AppColors.negative),
           const SizedBox(width: 2),
           Text(
             'Ghost',
@@ -245,7 +241,7 @@ class _QuickLogButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: const Icon(Icons.check_circle_outline, size: 20),
+      icon: const Icon(LucideIcons.checkCircle, size: 20),
       tooltip: 'Użyłem dziś',
       onPressed: () async {
         await context.read<SubscriptionController>().logUsage(subscription.id);

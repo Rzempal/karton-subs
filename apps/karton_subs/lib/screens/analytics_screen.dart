@@ -3,6 +3,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
@@ -48,7 +49,7 @@ class AnalyticsScreen extends StatelessWidget {
         title: const Text('Analityka'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(LucideIcons.fileText),
             tooltip: 'Eksportuj PDF',
             onPressed: () => _exportPdf(context, subs, categories, currencyLabel),
           ),
@@ -251,7 +252,7 @@ class _GhostAlertCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: AppColors.negative, size: 20),
+              const Icon(LucideIcons.ghost, color: AppColors.negative, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Nieużywane subskrypcje',

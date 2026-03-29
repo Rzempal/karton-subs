@@ -50,7 +50,6 @@ class Subscription {
   final int? customCycleDays;
   final String? categoryId;
   final DateTime startDate;
-  final DateTime? nextRenewalDate;
   final String? cancellationUrl;
   final String? iconName;
   final String? colorHex;
@@ -71,7 +70,6 @@ class Subscription {
     this.customCycleDays,
     this.categoryId,
     required this.startDate,
-    this.nextRenewalDate,
     this.cancellationUrl,
     this.iconName,
     this.colorHex,
@@ -101,6 +99,33 @@ class Subscription {
   }
 
   double get yearlyAmount => monthlyAmount * 12;
+
+  /// Następna data odnowienia (computed z startDate + billingCycle)
+  DateTime get nextRenewalDate {
+    var next = startDate;
+    final now = DateTime.now();
+    while (next.isBefore(now)) {
+      switch (billingCycle) {
+        case BillingCycle.weekly:
+          next = next.add(const Duration(days: 7));
+        case BillingCycle.monthly:
+          next = DateTime(next.year, next.month + 1, next.day);
+        case BillingCycle.quarterly:
+          next = DateTime(next.year, next.month + 3, next.day);
+        case BillingCycle.yearly:
+          next = DateTime(next.year + 1, next.month, next.day);
+        case BillingCycle.custom:
+          next = next.add(Duration(days: customCycleDays ?? 30));
+      }
+    }
+    return next;
+  }
+
+  /// Dni do odnowienia
+  int get daysUntilRenewal => nextRenewalDate.difference(DateTime.now()).inDays;
+
+  /// Czy odnowienie jest bliskie
+  bool get isRenewalSoon => isActive && daysUntilRenewal <= (reminderDaysBefore ?? 3);
 
   int? get daysSinceLastUse {
     if (usageLog.isEmpty) return null;
@@ -140,9 +165,6 @@ class Subscription {
       customCycleDays: json['customCycleDays'] as int?,
       categoryId: json['categoryId'] as String?,
       startDate: DateTime.parse(json['startDate'] as String),
-      nextRenewalDate: json['nextRenewalDate'] != null
-          ? DateTime.parse(json['nextRenewalDate'] as String)
-          : null,
       cancellationUrl: json['cancellationUrl'] as String?,
       iconName: json['iconName'] as String?,
       colorHex: json['colorHex'] as String?,
@@ -169,8 +191,6 @@ class Subscription {
         if (customCycleDays != null) 'customCycleDays': customCycleDays,
         if (categoryId != null) 'categoryId': categoryId,
         'startDate': startDate.toIso8601String(),
-        if (nextRenewalDate != null)
-          'nextRenewalDate': nextRenewalDate!.toIso8601String(),
         if (cancellationUrl != null) 'cancellationUrl': cancellationUrl,
         if (iconName != null) 'iconName': iconName,
         if (colorHex != null) 'colorHex': colorHex,
@@ -188,19 +208,25 @@ class Subscription {
     String? id,
     String? name,
     String? description,
+    bool clearDescription = false,
     double? amount,
     Currency? currency,
     BillingCycle? billingCycle,
     int? customCycleDays,
+    bool clearCustomCycleDays = false,
     String? categoryId,
+    bool clearCategoryId = false,
     DateTime? startDate,
-    DateTime? nextRenewalDate,
     String? cancellationUrl,
+    bool clearCancellationUrl = false,
     String? iconName,
+    bool clearIconName = false,
     String? colorHex,
+    bool clearColorHex = false,
     bool? isPinned,
     bool? isActive,
     int? reminderDaysBefore,
+    bool clearReminderDaysBefore = false,
     List<UsageEvent>? usageLog,
     DateTime? dataDodania,
     DateTime? cancelledDate,
@@ -209,20 +235,25 @@ class Subscription {
     return Subscription(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
+      description: clearDescription ? null : (description ?? this.description),
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       billingCycle: billingCycle ?? this.billingCycle,
-      customCycleDays: customCycleDays ?? this.customCycleDays,
-      categoryId: categoryId ?? this.categoryId,
+      customCycleDays: clearCustomCycleDays
+          ? null
+          : (customCycleDays ?? this.customCycleDays),
+      categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       startDate: startDate ?? this.startDate,
-      nextRenewalDate: nextRenewalDate ?? this.nextRenewalDate,
-      cancellationUrl: cancellationUrl ?? this.cancellationUrl,
-      iconName: iconName ?? this.iconName,
-      colorHex: colorHex ?? this.colorHex,
+      cancellationUrl: clearCancellationUrl
+          ? null
+          : (cancellationUrl ?? this.cancellationUrl),
+      iconName: clearIconName ? null : (iconName ?? this.iconName),
+      colorHex: clearColorHex ? null : (colorHex ?? this.colorHex),
       isPinned: isPinned ?? this.isPinned,
       isActive: isActive ?? this.isActive,
-      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+      reminderDaysBefore: clearReminderDaysBefore
+          ? null
+          : (reminderDaysBefore ?? this.reminderDaysBefore),
       usageLog: usageLog ?? this.usageLog,
       dataDodania: dataDodania ?? this.dataDodania,
       cancelledDate: clearCancelledDate

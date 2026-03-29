@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/subscription_controller.dart';
 import '../models/subscription.dart';
@@ -26,7 +27,7 @@ class DashboardScreen extends StatelessWidget {
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const AddSubscriptionScreen()),
         ),
-        icon: const Icon(Icons.add),
+        icon: const Icon(LucideIcons.plus),
         label: const Text('Dodaj'),
       ),
       body: RefreshIndicator(
@@ -197,7 +198,7 @@ class _GhostAlert extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.negative),
+          const Icon(LucideIcons.alertTriangle, color: AppColors.negative),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -348,7 +349,7 @@ class _EmptySubscriptions extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(Icons.add_card_outlined, size: 48,
+            Icon(LucideIcons.creditCard, size: 48,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text('Dodaj pierwszą subskrypcję',

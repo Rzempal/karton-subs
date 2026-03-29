@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/subscription_controller.dart';
 import '../models/category.dart';
@@ -34,7 +35,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         title: const Text('Subskrypcje'),
         actions: [
           IconButton(
-            icon: Icon(_showInactive ? Icons.visibility_off : Icons.visibility),
+            icon: Icon(_showInactive ? LucideIcons.eyeOff : LucideIcons.eye),
             tooltip: _showInactive ? 'Ukryj nieaktywne' : 'Pokaż nieaktywne',
             onPressed: () => setState(() => _showInactive = !_showInactive),
           ),
@@ -42,7 +43,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openAdd(context),
-        child: const Icon(Icons.add),
+        child: const Icon(LucideIcons.plus),
       ),
       body: Column(
         children: [
@@ -92,7 +93,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(sub.isPinned ? Icons.push_pin_outlined : Icons.push_pin),
+              leading: Icon(sub.isPinned ? LucideIcons.pinOff : LucideIcons.pin),
               title: Text(sub.isPinned ? 'Odepnij' : 'Przypnij na górze'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -100,7 +101,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
               },
             ),
             ListTile(
-              leading: Icon(sub.isActive ? Icons.pause_circle_outline : Icons.play_circle_outline),
+              leading: Icon(sub.isActive ? LucideIcons.xCircle : LucideIcons.checkCircle),
               title: Text(sub.isActive ? 'Anuluj subskrypcję' : 'Wznów subskrypcję'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -108,7 +109,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              leading: const Icon(LucideIcons.trash2, color: Colors.red),
               title: const Text('Usuń', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -209,7 +210,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.inbox_outlined, size: 48,
+          Icon(LucideIcons.inbox, size: 48,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 12),
           Text(

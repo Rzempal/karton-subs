@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../models/quick_add_templates.dart';
@@ -170,9 +171,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             const SizedBox(height: 8),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today_outlined),
+              leading: const Icon(LucideIcons.calendar),
               title: Text(DateFormat('d MMMM yyyy', 'pl').format(_startDate)),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: const Icon(LucideIcons.chevronRight),
               onTap: _pickDate,
             ),
             const SizedBox(height: 24),
@@ -184,7 +185,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               decoration: const InputDecoration(
                 labelText: 'Link do anulowania',
                 hintText: 'https://...',
-                prefixIcon: Icon(Icons.link),
+                prefixIcon: Icon(LucideIcons.link),
               ),
               keyboardType: TextInputType.url,
             ),
