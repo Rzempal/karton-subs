@@ -265,11 +265,4 @@ class Subscription {
           : (cancelledDate ?? this.cancelledDate),
     );
   }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is Subscription && id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
 }
