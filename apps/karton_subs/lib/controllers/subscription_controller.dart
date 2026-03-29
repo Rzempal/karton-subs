@@ -76,6 +76,8 @@ class SubscriptionController extends ChangeNotifier {
     String? cancellationUrl,
     String? colorHex,
     int? reminderDaysBefore,
+    int? sharedWith,
+    String? paymentMethod,
   }) async {
     final sub = Subscription(
       id: _uuid.v4(),
@@ -90,6 +92,8 @@ class SubscriptionController extends ChangeNotifier {
       cancellationUrl: cancellationUrl,
       colorHex: colorHex,
       reminderDaysBefore: reminderDaysBefore,
+      sharedWith: sharedWith,
+      paymentMethod: paymentMethod,
       dataDodania: DateTime.now(),
     );
     await add(sub);

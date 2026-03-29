@@ -270,20 +270,33 @@ class _GhostAlertCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...ghosts.map((g) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
-                Expanded(child: Text(g.name, style: theme.textTheme.bodyMedium)),
-                Text(
-                  '${nf.format(g.monthlyAmount)} $currencySymbol/mies',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                // Red status dot
+                Container(
+                  width: 8, height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.negative,
+                    shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${g.daysSinceLastUse} dni',
-                  style: theme.textTheme.labelMedium?.copyWith(color: AppColors.negative),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(g.name, style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      )),
+                      Text(
+                        'Ostatnie użycie: ${g.daysSinceLastUse} dni temu · ${nf.format(g.monthlyAmount)} $currencySymbol/mies',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: AppColors.negative.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

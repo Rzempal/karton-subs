@@ -63,6 +63,8 @@ class Subscription {
   final List<UsageEvent> usageLog;
   final DateTime dataDodania;
   final DateTime? cancelledDate;
+  final int? sharedWith;
+  final String? paymentMethod;
 
   const Subscription({
     required this.id,
@@ -83,10 +85,12 @@ class Subscription {
     this.usageLog = const [],
     required this.dataDodania,
     this.cancelledDate,
+    this.sharedWith,
+    this.paymentMethod,
   });
 
-  /// Kwota znormalizowana do miesięcznej
-  double get monthlyAmount {
+  /// Pełna kwota znormalizowana do miesięcznej (bez podziału)
+  double get monthlyAmountFull {
     switch (billingCycle) {
       case BillingCycle.weekly:
         return amount * 52 / 12;
@@ -100,6 +104,13 @@ class Subscription {
         final days = customCycleDays ?? 30;
         return amount * 30 / days;
     }
+  }
+
+  /// Kwota miesięczna po podziale na współdzielących
+  double get monthlyAmount {
+    final full = monthlyAmountFull;
+    if (sharedWith != null && sharedWith! > 1) return full / sharedWith!;
+    return full;
   }
 
   double get yearlyAmount => monthlyAmount * 12;
@@ -182,6 +193,8 @@ class Subscription {
       cancelledDate: json['cancelledDate'] != null
           ? DateTime.parse(json['cancelledDate'] as String)
           : null,
+      sharedWith: json['sharedWith'] as int?,
+      paymentMethod: json['paymentMethod'] as String?,
     );
   }
 
@@ -206,6 +219,8 @@ class Subscription {
         'dataDodania': dataDodania.toIso8601String(),
         if (cancelledDate != null)
           'cancelledDate': cancelledDate!.toIso8601String(),
+        if (sharedWith != null) 'sharedWith': sharedWith,
+        if (paymentMethod != null) 'paymentMethod': paymentMethod,
       };
 
   Subscription copyWith({
@@ -235,6 +250,10 @@ class Subscription {
     DateTime? dataDodania,
     DateTime? cancelledDate,
     bool clearCancelledDate = false,
+    int? sharedWith,
+    bool clearSharedWith = false,
+    String? paymentMethod,
+    bool clearPaymentMethod = false,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -263,6 +282,26 @@ class Subscription {
       cancelledDate: clearCancelledDate
           ? null
           : (cancelledDate ?? this.cancelledDate),
+      sharedWith: clearSharedWith
+          ? null
+          : (sharedWith ?? this.sharedWith),
+      paymentMethod: clearPaymentMethod
+          ? null
+          : (paymentMethod ?? this.paymentMethod),
     );
   }
+}
+
+/// Predefiniowane metody płatności
+class PaymentMethods {
+  static const List<String> all = [
+    'Przelew bankowy',
+    'Karta kredytowa',
+    'Karta debetowa',
+    'Revolut',
+    'PayPal',
+    'BLIK',
+    'Gotówka',
+    'Inne',
+  ];
 }
