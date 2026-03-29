@@ -329,6 +329,7 @@ class _QuickLogButton extends StatelessWidget {
                     content: Text('Zalogowano użycie: ${subscription.name} (${count + 1})'),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
+                    showCloseIcon: true,
                     action: SnackBarAction(
                       label: 'Cofnij',
                       onPressed: () => ctrl.removeLastUsage(subscription.id),
