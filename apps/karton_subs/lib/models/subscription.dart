@@ -41,6 +41,10 @@ enum Currency {
 }
 
 class Subscription {
+  /// Dev-only: override DateTime.now() do testowania ghost detection
+  static DateTime? devDateOverride;
+  static DateTime get _now => devDateOverride ?? DateTime.now();
+
   final String id;
   final String name;
   final String? description;
@@ -103,7 +107,7 @@ class Subscription {
   /// Następna data odnowienia (computed z startDate + billingCycle)
   DateTime get nextRenewalDate {
     var next = startDate;
-    final now = DateTime.now();
+    final now = _now;
     while (next.isBefore(now)) {
       switch (billingCycle) {
         case BillingCycle.weekly:
@@ -122,7 +126,7 @@ class Subscription {
   }
 
   /// Dni do odnowienia
-  int get daysUntilRenewal => nextRenewalDate.difference(DateTime.now()).inDays;
+  int get daysUntilRenewal => nextRenewalDate.difference(_now).inDays;
 
   /// Czy odnowienie jest bliskie
   bool get isRenewalSoon => isActive && daysUntilRenewal <= (reminderDaysBefore ?? 3);
@@ -130,7 +134,7 @@ class Subscription {
   int? get daysSinceLastUse {
     if (usageLog.isEmpty) return null;
     final last = usageLog.reduce((a, b) => a.date.isAfter(b.date) ? a : b);
-    return DateTime.now().difference(last.date).inDays;
+    return _now.difference(last.date).inDays;
   }
 
   /// Ghost: aktywna, opłacana, ale nieużywana > 30 dni
@@ -143,7 +147,7 @@ class Subscription {
 
   double? get costPerUse {
     if (usageLog.isEmpty) return null;
-    final months = DateTime.now().difference(startDate).inDays / 30;
+    final months = _now.difference(startDate).inDays / 30;
     if (months <= 0) return null;
     return (monthlyAmount * months) / usageLog.length;
   }

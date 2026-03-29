@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../services/storage_service.dart';
+import '../services/currency_service.dart';
 import '../controllers/subscription_controller.dart';
 import '../theme/app_theme.dart';
 
@@ -28,6 +29,15 @@ class SubscriptionCard extends StatelessWidget {
     final category = subscription.categoryId != null
         ? storage.getCategory(subscription.categoryId!)
         : null;
+    final defaultCurrencyCode = storage.getCurrency();
+    final defaultCurrency = Currency.values.firstWhere(
+      (c) => c.name == defaultCurrencyCode || c.label == defaultCurrencyCode,
+      orElse: () => Currency.PLN,
+    );
+    const currencyService = CurrencyService();
+    final convertedMonthly = currencyService.convertMonthlyAmount(
+      subscription, defaultCurrency,
+    );
 
     final borderColor = _borderColor(isDark);
     final bgColor = _bgColor(isDark);
@@ -108,7 +118,7 @@ class SubscriptionCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${_formatAmount(subscription.monthlyAmount, subscription.currency)}/mies.',
+                    '${_formatAmount(convertedMonthly, defaultCurrency)}/mies.',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: isDark
                           ? AppColors.darkTextMuted
@@ -240,20 +250,54 @@ class _QuickLogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: const Icon(LucideIcons.checkCircle, size: 20),
-      tooltip: 'Użyłem dziś',
-      onPressed: () async {
-        await context.read<SubscriptionController>().logUsage(subscription.id);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Zalogowano użycie: ${subscription.name}'),
-              duration: const Duration(seconds: 2),
+    final count = subscription.usageLog.length;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(LucideIcons.checkCircle, size: 20),
+          tooltip: 'Użyłem dziś ($count)',
+          onPressed: () async {
+            final ctrl = context.read<SubscriptionController>();
+            await ctrl.logUsage(subscription.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Zalogowano użycie: ${subscription.name} (${count + 1})'),
+                  duration: const Duration(seconds: 4),
+                  action: SnackBarAction(
+                    label: 'Cofnij',
+                    onPressed: () => ctrl.removeLastUsage(subscription.id),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+        if (count > 0)
+          Positioned(
+            right: 4,
+            top: 4,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: AppColors.positive,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text(
+                '$count',
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-          );
-        }
-      },
+          ),
+      ],
     );
   }
 }
