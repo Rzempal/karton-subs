@@ -2,6 +2,7 @@
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 
@@ -19,37 +20,32 @@ class BudgetProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final nf = NumberFormat('#,##0', 'pl_PL');
 
     final Color barColor;
-    final Color backgroundColor;
     final String statusText;
 
     if (status.percentage >= 1.0) {
       barColor = AppColors.negative;
-      statusText = 'Przekroczono budżet!';
+      statusText = 'Przekroczono!';
     } else if (status.percentage >= 0.8) {
       barColor = AppColors.warning;
-      statusText = 'Zbliżasz się do limitu';
+      statusText = 'Blisko limitu';
     } else {
       barColor = AppColors.positive;
       statusText = 'W budżecie';
     }
 
-    backgroundColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppGeometry.spacingLg),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Budżet miesięczny',
-                  style: theme.textTheme.headlineMedium,
-                ),
+                Text('Budżet miesięczny', style: theme.textTheme.titleMedium),
                 Text(
                   statusText,
                   style: theme.textTheme.labelMedium?.copyWith(
@@ -59,50 +55,41 @@ class BudgetProgressBar extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppGeometry.spacingMd),
-            // Progress bar
+            const SizedBox(height: 12),
             ClipRRect(
-              borderRadius: BorderRadius.circular(AppGeometry.radiusChip),
-              child: SizedBox(
-                height: 10,
-                child: LinearProgressIndicator(
-                  value: status.percentage.clamp(0.0, 1.0),
-                  backgroundColor: backgroundColor,
-                  valueColor: AlwaysStoppedAnimation(barColor),
-                  minHeight: 10,
-                ),
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: status.percentage.clamp(0.0, 1.0),
+                backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                valueColor: AlwaysStoppedAnimation(barColor),
+                minHeight: 10,
               ),
             ),
-            const SizedBox(height: AppGeometry.spacingSm),
-            // Kwoty
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${status.spent.toStringAsFixed(0)} $currencySymbol',
+                  '${nf.format(status.spent)} $currencySymbol',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: barColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
                 Text(
-                  'z ${status.limit.toStringAsFixed(0)} $currencySymbol',
+                  'z ${nf.format(status.limit)} $currencySymbol',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
             if (status.isOverBudget) ...[
-              const SizedBox(height: AppGeometry.spacingSm),
+              const SizedBox(height: 4),
               Text(
-                'Przekroczenie: ${(status.spent - status.limit).toStringAsFixed(0)} $currencySymbol',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.negative,
-                ),
+                'Przekroczenie: ${nf.format(status.spent - status.limit)} $currencySymbol',
+                style: theme.textTheme.labelMedium?.copyWith(color: AppColors.negative),
               ),
             ],
           ],

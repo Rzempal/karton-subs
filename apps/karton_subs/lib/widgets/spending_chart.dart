@@ -23,10 +23,8 @@ class SpendingChart extends StatelessWidget {
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark
-        ? AppColors.darkTextSecondary
-        : AppColors.lightTextSecondary;
-    final lineColor = isDark ? AppColors.darkAccent : AppColors.lightAccent;
+    final textColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final lineColor = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
     final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     final maxY = data.map((d) => d.amount).reduce((a, b) => a > b ? a : b);
@@ -34,15 +32,12 @@ class SpendingChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppGeometry.spacingLg),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Trend wydatków',
-              style: theme.textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppGeometry.spacingLg),
+            Text('Trend wydatków', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 20),
             SizedBox(
               height: 200,
               child: LineChart(
@@ -51,10 +46,8 @@ class SpendingChart extends StatelessWidget {
                     show: true,
                     drawVerticalLine: false,
                     horizontalInterval: roundedMaxY / 4,
-                    getDrawingHorizontalLine: (value) => FlLine(
-                      color: gridColor,
-                      strokeWidth: 0.5,
-                    ),
+                    getDrawingHorizontalLine: (value) =>
+                        FlLine(color: gridColor, strokeWidth: 0.5),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(
@@ -62,17 +55,13 @@ class SpendingChart extends StatelessWidget {
                         showTitles: true,
                         reservedSize: 48,
                         interval: roundedMaxY / 4,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            '${value.toInt()}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: textColor,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          );
-                        },
+                        getTitlesWidget: (value, meta) => Text(
+                          '${value.toInt()}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: textColor,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
                       ),
                     ),
                     bottomTitles: AxisTitles(
@@ -80,28 +69,20 @@ class SpendingChart extends StatelessWidget {
                         showTitles: true,
                         interval: 1,
                         getTitlesWidget: (value, meta) {
-                          final index = value.toInt();
-                          if (index < 0 || index >= data.length) {
-                            return const SizedBox.shrink();
-                          }
+                          final i = value.toInt();
+                          if (i < 0 || i >= data.length) return const SizedBox.shrink();
                           return Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              DateFormat('MMM').format(data[index].month),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: textColor,
-                              ),
+                              DateFormat('MMM', 'pl').format(data[i].month),
+                              style: theme.textTheme.labelSmall?.copyWith(color: textColor),
                             ),
                           );
                         },
                       ),
                     ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: false),
                   minX: 0,
@@ -110,12 +91,9 @@ class SpendingChart extends StatelessWidget {
                   maxY: roundedMaxY,
                   lineBarsData: [
                     LineChartBarData(
-                      spots: data.asMap().entries.map((entry) {
-                        return FlSpot(
-                          entry.key.toDouble(),
-                          entry.value.amount,
-                        );
-                      }).toList(),
+                      spots: data.asMap().entries
+                          .map((e) => FlSpot(e.key.toDouble(), e.value.amount))
+                          .toList(),
                       isCurved: true,
                       curveSmoothness: 0.3,
                       color: lineColor,
@@ -123,13 +101,8 @@ class SpendingChart extends StatelessWidget {
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: true,
-                        getDotPainter: (spot, percent, bar, index) {
-                          return FlDotCirclePainter(
-                            radius: 3,
-                            color: lineColor,
-                            strokeWidth: 0,
-                          );
-                        },
+                        getDotPainter: (spot, pct, bar, idx) =>
+                            FlDotCirclePainter(radius: 3, color: lineColor, strokeWidth: 0),
                       ),
                       belowBarData: BarAreaData(
                         show: true,
@@ -139,20 +112,16 @@ class SpendingChart extends StatelessWidget {
                   ],
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipItems: (touchedSpots) {
-                        return touchedSpots.map((spot) {
-                          return LineTooltipItem(
-                            '${spot.y.toStringAsFixed(0)} $currencySymbol',
-                            TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightSurface,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                          );
-                        }).toList();
-                      },
+                      getTooltipItems: (spots) => spots
+                          .map((s) => LineTooltipItem(
+                                '${s.y.toStringAsFixed(0)} $currencySymbol',
+                                TextStyle(
+                                  color: isDark ? AppColors.darkTextPrimary : Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ))
+                          .toList(),
                     ),
                   ),
                 ),

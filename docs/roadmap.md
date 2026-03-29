@@ -93,7 +93,8 @@
 | Grupowanie subskrypcji (np. "Rodzina") | Sredni |
 | Shared subscriptions (split costs) | Niski |
 | Auto-detect z SMS/email (parsowanie potwierdzen) | Niski (prywatnosc!) |
+| SelectionController (multi-select batch operations) | Sredni — wymaga przebudowy subscription_list_screen |
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-26
+> **Ostatnia aktualizacja:** 2026-03-29
