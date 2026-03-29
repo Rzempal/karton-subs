@@ -247,24 +247,21 @@
 // Lucide icon paths (exact)
 // ============================================================
 
-// 3D filled gem crystal — pre-baked isometric projection onto right face
-function filledGemSVG(palette) {
-    // palette: { f1..f6: facet fills, outline: stroke, edge: stroke }
+// Flat gem with gradient fill — matching tape style
+function flatGemSVG(colorTop, colorBottom, id) {
     return `
-        <path d="M135.1,114.6 L142,111.4 L137.1,124.4 L125.3,129.9 Z" fill="${palette.f1}"/>
-        <path d="M142,111.4 L148,108.6 L152.9,117.1 L137.1,124.4 Z" fill="${palette.f2}"/>
-        <path d="M148,108.6 L154.9,105.4 L164.7,111.6 L152.9,117.1 Z" fill="${palette.f3}"/>
-        <path d="M125.3,129.9 L137.1,124.4 L145,144 Z" fill="${palette.f4}"/>
-        <path d="M137.1,124.4 L152.9,117.1 L145,144 Z" fill="${palette.f5}"/>
-        <path d="M152.9,117.1 L164.7,111.6 L145,144 Z" fill="${palette.f6}"/>
-        <path d="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z" fill="none" stroke="${palette.outline}" stroke-width="1.2" stroke-linejoin="round"/>
-        <path d="M142,111.4 L137.1,124.4 L145,144 L152.9,117.1 L148,108.6 M125.3,129.9 L164.7,111.6" fill="none" stroke="${palette.edge}" stroke-width="0.8" stroke-linecap="round"/>
-        <path d="M138,113.5 L150,107.9" fill="none" stroke="white" stroke-width="1" stroke-opacity="0.4" stroke-linecap="round"/>`;
+        <defs>
+          <linearGradient id="gem-${id}" x1="145" y1="105" x2="145" y2="144" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="${colorTop}"/>
+            <stop offset="1" stop-color="${colorBottom}"/>
+          </linearGradient>
+        </defs>
+        <path d="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z" fill="url(#gem-${id})"/>`;
 }
 
-const GEM_BLUE = { f1:'#3B82F6', f2:'#60A5FA', f3:'#2563EB', f4:'#1E3A8A', f5:'#1D4ED8', f6:'#1E40AF', outline:'#1E3A8A', edge:'#1E3A8A' };
-const GEM_RED = { f1:'#EF4444', f2:'#F87171', f3:'#DC2626', f4:'#7F1D1D', f5:'#B91C1C', f6:'#991B1B', outline:'#7F1D1D', edge:'#7F1D1D' };
-const GEM_MONO = (color) => ({ f1:color, f2:color, f3:color, f4:color, f5:color, f6:color, outline:color, edge:color });
+function flatGemMonoSVG(color) {
+    return `<path d="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z" fill="${color}"/>`;
+}
 
 // ============================================================
 // SVG BUILDERS
@@ -290,7 +287,7 @@ function closedBoxSVG(size, c) {
         <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
         <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
         <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
-        ${filledGemSVG(GEM_BLUE)}
+        ${flatGemSVG('#3B82F6','#1E3A5F','blue')}
         <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
       </g>
     </svg>`;
@@ -337,7 +334,7 @@ function openBoxSVG(size, c) {
           <rect x="0" y="12" width="10" height="3" fill="#1B2A4A"/>
         </g>
 
-        ${filledGemSVG(GEM_BLUE)}
+        ${flatGemSVG('#3B82F6','#1E3A5F','blue')}
       </g>
     </svg>`;
 }
@@ -350,7 +347,7 @@ function monoClosedSVG(size, fgColor) {
         <polygon points="12,68 98,108 98,186 12,146" fill="${fgColor}" opacity="0.5"/>
         <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${fgColor}"/>
         <polygon points="188,68 188,146 102,186 102,108" fill="${fgColor}" opacity="0.3"/>
-        ${filledGemSVG(GEM_MONO(fgColor))}
+        ${flatGemMonoSVG(fgColor)}
         <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${fgColor}"/>
       </g>
     </svg>`;
@@ -376,7 +373,7 @@ function launcherSVG(size, c) {
         <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
         <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
         <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
-        ${filledGemSVG(GEM_BLUE)}
+        ${flatGemSVG('#3B82F6','#1E3A5F','blue')}
         <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
         <defs>
           <linearGradient id="gloss" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
@@ -454,7 +451,7 @@ function launcherDevSVG(size, c) {
         <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
         <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
         <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
-        ${filledGemSVG(GEM_RED)}
+        ${flatGemSVG('#EF4444','#7F1D1D','red')}
         <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
         <defs>
           <linearGradient id="gloss-dev" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
@@ -528,7 +525,7 @@ function foregroundSVGExport(size, c) {
         <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
         <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
         <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
-        ${filledGemSVG(GEM_BLUE)}
+        ${flatGemSVG('#3B82F6','#1E3A5F','blue')}
         <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
         <defs>
           <linearGradient id="gloss-exp" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
