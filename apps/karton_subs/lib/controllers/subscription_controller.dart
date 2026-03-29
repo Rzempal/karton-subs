@@ -15,6 +15,9 @@ class SubscriptionController extends ChangeNotifier {
 
   SubscriptionController(this._storage);
 
+  /// Wymusza odświeżenie UI (np. po zmianie ustawień waluty/budżetu)
+  void refresh() => notifyListeners();
+
   List<Subscription> get all => _storage.getSubscriptions();
   List<Subscription> get active => _storage.getActiveSubscriptions();
   List<Subscription> get ghosts => _storage.getGhostSubscriptions();
