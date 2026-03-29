@@ -1,0 +1,13 @@
+﻿{
+    "changelog":  [
+                      {
+                          "version":  "0.1.26032800",
+                          "notes":  "- bug fixes"
+                      }
+                  ],
+    "version":  "0.1.26032800",
+    "releaseNotes":  "- bug fixes",
+    "versionCode":  126032800,
+    "releaseDate":  "2026-03-28T14:23:56Z",
+    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.1.26032800.apk"
+}
