@@ -9,7 +9,7 @@
 | Faza | Nazwa | Status |
 |------|-------|--------|
 | 1 | MVP -- CRUD + Dashboard | ✅ Ukonczona (2026-03-26) |
-| 2 | Analytics + Wykresy | Planowana |
+| 2 | Analytics + Wykresy | ✅ Ukonczona (2026-03-29) |
 | 3 | Powiadomienia + Usage Tracking | Planowana |
 | 4 | Polish + Release | Planowana |
 
@@ -37,18 +37,23 @@
 
 ---
 
-## Faza 2: Analytics + Wykresy
+## Faza 2: Analytics + Wykresy ✅
 
 **Cel:** Wizualizacja wydatkow i inteligentne insighty.
 
-| Zadanie | Opis |
-|---------|------|
-| AnalyticsService | Engine obliczen (monthly total, category breakdown, trends) |
-| Ekran: Analytics | Wykresy (fl_chart): spending over time, category pie/bar |
-| Yearly projection | "W tym tempie wydasz X PLN/rok" |
-| PDF raport | Eksport tabeli subskrypcji do PDF |
-| Multi-waluta | Przelicznik walut (statyczne kursy, manual) |
-| Budget limit | Opcjonalny prog ostrzezen ("Przekroczono 500 PLN/mies") |
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| AnalyticsService | Engine obliczen (monthly total, category breakdown, trends) | ✅ |
+| Ekran: Analytics | Wykresy (fl_chart): spending over time, category pie/bar | ✅ |
+| Yearly projection | "W tym tempie wydasz X PLN/rok" | ✅ |
+| PDF raport | Eksport tabeli subskrypcji do PDF (Roboto TTF, polskie znaki) | ✅ |
+| Multi-waluta | Przelicznik walut (statyczne kursy PLN/EUR/USD/GBP) | ✅ |
+| Budget limit | Opcjonalny prog ostrzezen z UI w Ustawieniach | ✅ |
+| Wspolna subskrypcja | Dzielenie kosztow na X osob | ✅ Bonus |
+| Metoda platnosci | Przelew, Revolut, Karta, PayPal, BLIK... | ✅ Bonus |
+| Zarzadzanie kategoriami | Edycja/dodawanie/usuwanie kategorii | ✅ Bonus |
+| Status dot | Zielony/szary/czerwony zamiast ghost badge | ✅ Bonus |
+| Developer Tools | Override daty (kanaly dev) do testowania ghost detection | ✅ Bonus |
 
 ---
 
@@ -91,7 +96,7 @@
 | Widgety home screen | Sredni |
 | Wear OS companion | Niski |
 | Grupowanie subskrypcji (np. "Rodzina") | Sredni |
-| Shared subscriptions (split costs) | Niski |
+| ~~Shared subscriptions (split costs)~~ | ✅ Zrealizowane w Fazie 2 |
 | Auto-detect z SMS/email (parsowanie potwierdzen) | Niski (prywatnosc!) |
 | SelectionController (multi-select batch operations) | Sredni — wymaga przebudowy subscription_list_screen |
 
