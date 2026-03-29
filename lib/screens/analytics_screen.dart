@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
+import '../services/pdf_export_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/category_breakdown.dart';
@@ -21,6 +22,22 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   static const _analytics = AnalyticsService();
+  static const _pdfService = PdfExportService();
+
+  Future<void> _exportPdf(BuildContext context) async {
+    try {
+      final subscriptions = widget.storageService.getSubscriptions();
+      final categories = widget.storageService.getCategories();
+      final currency = widget.storageService.defaultCurrency;
+      await _pdfService.sharePdf(subscriptions, categories, currency);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Błąd eksportu PDF: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,15 +47,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final categories = widget.storageService.getCategories();
     final defaultCurrency = widget.storageService.defaultCurrency;
 
-    final monthlyTotal = _analytics.getMonthlyTotal(subscriptions);
-    final yearlyProjection = _analytics.getYearlyProjection(subscriptions);
-    final categoryBreakdown = _analytics.getCategoryBreakdown(subscriptions);
-    final spendingTrend = _analytics.getSpendingTrend(subscriptions, months: 6);
-    final costPerUse = _analytics.getCostPerUseRanking(subscriptions);
+    final monthlyTotal = _analytics.getMonthlyTotal(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
+    final yearlyProjection = _analytics.getYearlyProjection(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
+    final categoryBreakdown = _analytics.getCategoryBreakdown(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
+    final spendingTrend = _analytics.getSpendingTrend(
+      subscriptions,
+      months: 6,
+      targetCurrency: defaultCurrency,
+    );
+    final costPerUse = _analytics.getCostPerUseRanking(
+      subscriptions,
+      targetCurrency: defaultCurrency,
+    );
     final ghosts = _analytics.getGhostSubscriptions(subscriptions);
     final budgetStatus = _analytics.getBudgetStatus(
       subscriptions,
       widget.storageService.budgetLimit,
+      targetCurrency: defaultCurrency,
     );
 
     return Scaffold(
@@ -50,6 +84,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               'Analityka',
               style: theme.textTheme.headlineMedium,
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(LucideIcons.fileText),
+                tooltip: 'Eksportuj PDF',
+                onPressed: () => _exportPdf(context),
+              ),
+            ],
           ),
 
           // Yearly projection card
