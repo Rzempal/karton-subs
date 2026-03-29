@@ -119,3 +119,43 @@ Zastosowano standard branżowy rozdzielający te dwa procesy:
 - Zwiększa jakość warstwy wizualnej poprzez dedykowaną checklistę.
 
 ---
+
+## 2026-03-29: operator == na modelu blokuje odswiezanie UI w Provider
+
+### Problem
+`Subscription.operator ==` porownywal tylko `id`. Po `logUsage()` nowy obiekt mial to samo `id`
+ale inne `usageLog` — Flutter uznawal widget za niezmieniony i nie przebudowywal `SubscriptionCard`.
+
+### Rozwiazanie
+Usunieto `operator ==` i `hashCode` z modelu. Domyslne porownanie referencji = kazdy `copyWith()` tworzy nowy obiekt.
+
+### Wniosek
+W modelach z Provider/ChangeNotifier: **nie nadpisuj operator ==** chyba ze porownujesz WSZYSTKIE pola.
+
+---
+
+## 2026-03-29: replace_all na getterze rekurencyjnym
+
+### Problem
+`replace_all: true` zamienilo `DateTime.now()` na `_now` rowniez w definicji gettera `_now`, tworzac nieskonczona rekursje.
+
+### Rozwiazanie
+Nigdy nie uzywaj `replace_all` na wyrazeniach ktore moga wystapic w definicji docelowej.
+
+### Wniosek
+`replace_all` jest niebezpieczny gdy pattern jest ogolny. Zawsze sprawdz czy zamiana nie wplywa na definicje zamiennika.
+
+---
+
+## 2026-03-29: Duplikat kodu lib/ vs apps/
+
+### Problem
+Dwie bazy kodu z roznymi nazwami pol, wzorcami i ikonami. Zmiany trafily do zlego katalogu.
+
+### Rozwiazanie
+Usunieto duplikat. Jeden build target: `apps/karton_subs/`. Najlepsze elementy przeniesione przed usunieciem.
+
+### Wniosek
+Nigdy nie utrzymuj dwoch wersji kodu. Przy nowej sesji: **zawsze sprawdz gdzie jest build target**.
+
+---
