@@ -159,3 +159,29 @@ Usunieto duplikat. Jeden build target: `apps/karton_subs/`. Najlepsze elementy p
 Nigdy nie utrzymuj dwoch wersji kodu. Przy nowej sesji: **zawsze sprawdz gdzie jest build target**.
 
 ---
+
+## 12. Adaptive Icon Safe Zone (2026-03-29)
+
+### Problem
+Badge DEV na ikonie launchera byl obcinany przez maski launchera (kolo, squircle). Umieszczony na pozycji (72,72) z szerokoscia 34dp konczyl sie na x=106, podczas gdy safe zone adaptive icon konczy sie na x=90.
+
+### Rozwiazanie
+Canvas adaptive icon to 108x108dp, ale tylko centralne 72x72dp (18-90 na kazdej osi) jest gwarantowane jako widoczne. Wszystkie elementy foreground musza miescic sie w tym zakresie. Badge przeniesiony na (59,75)→(87,87).
+
+### Wniosek
+Przy projektowaniu adaptive icon: **nigdy nie umieszczaj istotnych elementow poza zakresem 18-90dp** na canvas 108dp. Stosuj margines min. 3dp od krawedzi safe zone.
+
+---
+
+## 13. Zlozone ikony stroke-based nie skaluja sie dobrze (2026-03-29)
+
+### Problem
+Symbol RotateCcw+DollarSign (dwa nalozne ikony Lucide) renderowal sie jako nieczytelna plama przy rozmiarach mipmap (48-192px). Zbyt wiele nakladajacych sie linii stroke.
+
+### Rozwiazanie
+Zamiana na pojedyncza, prostsza ikone (Lucide Gem) z mniejsza liczba sciezek i bez nakladania elementow.
+
+### Wniosek
+Przy wyborze symboli na ikone launchera: **preferuj proste, wypelnione ksztalty lub pojedyncze ikony**. Unikaj kompozycji wielu ikon stroke-based — nie przetrwaja skalowania do 48px.
+
+---
