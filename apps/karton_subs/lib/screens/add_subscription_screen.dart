@@ -314,7 +314,12 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
     try {
       if (_isEditing) {
-        await ctrl.update(widget.existing!.copyWith(
+        // Pobierz aktualny obiekt (może mieć nowe usageLogs dodane w tej sesji)
+        final current = ctrl.all.firstWhere(
+          (s) => s.id == widget.existing!.id,
+          orElse: () => widget.existing!,
+        );
+        await ctrl.update(current.copyWith(
           name: _nameCtrl.text.trim(),
           description: _descCtrl.text.trim().isEmpty
               ? null
