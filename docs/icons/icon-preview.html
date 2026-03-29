@@ -12,11 +12,11 @@
             --text-secondary: #94A3B8;
             --border: #1E3A5F;
 
-            --box-top: #B0BEC5;
-            --box-right: #90A4AE;
-            --box-left: #78909C;
-            --box-inner: #263238;
-            --box-flap: #8093A0;
+            --box-top: #D4A574;
+            --box-right: #B8896A;
+            --box-left: #9B7653;
+            --box-inner: #5C3D2E;
+            --box-flap: #C49B72;
 
             --tape-light: #2563EB;
             --tape-dark: #1E3A5F;
@@ -36,11 +36,11 @@
             --text-secondary: #64748B;
             --border: #E2E8F0;
 
-            --box-top: #CFD8DC;
-            --box-right: #B0BEC5;
-            --box-left: #90A4AE;
-            --box-inner: #37474F;
-            --box-flap: #A0B0BA;
+            --box-top: #E0BFA0;
+            --box-right: #C9A882;
+            --box-left: #AD8C66;
+            --box-inner: #6B4C38;
+            --box-flap: #D4B08C;
 
             --tape-light: #1B2A4A;
             --tape-dark: #0F172A;
@@ -120,6 +120,14 @@
         .transform-arrow { font-size: 2rem; color: var(--text-secondary); opacity: 0.5; }
 
         svg { overflow: visible; }
+
+        .export-btn {
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--text-primary); padding: 10px 18px;
+            border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+            font-family: monospace; transition: background 0.2s;
+        }
+        .export-btn:hover { background: var(--border); }
     </style>
 </head>
 <body>
@@ -199,7 +207,29 @@
 </section>
 
 <section>
-    <h2>6. Nav Bar (mono) &mdash; 24px</h2>
+    <h2>6. DEV Badge Variant</h2>
+    <div class="icon-row" id="dev-variants"></div>
+</section>
+
+<section>
+    <h2>7. Export PNG &mdash; Adaptive Icon Layers</h2>
+    <p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:16px;">
+        Eksportuje warstwy adaptive icon (108&times;108dp) oraz fallback PNG w rozmiarach mipmap.
+    </p>
+    <div class="icon-row" style="gap:12px; flex-wrap:wrap;">
+        <button class="export-btn" onclick="exportLayer('background')">Background 108dp</button>
+        <button class="export-btn" onclick="exportLayer('foreground')">Foreground 108dp</button>
+        <button class="export-btn" onclick="exportLayer('combined')">Combined 108dp</button>
+        <button class="export-btn" onclick="exportLayer('combined-dev')">Combined DEV 108dp</button>
+        <span style="width:100%;height:0;"></span>
+        <button class="export-btn" onclick="exportAllMipmaps(false)">All mipmap PNGs (prod)</button>
+        <button class="export-btn" onclick="exportAllMipmaps(true)">All mipmap PNGs (dev)</button>
+    </div>
+    <p id="export-status" style="color:var(--text-secondary);font-size:0.75rem;margin-top:10px;font-family:monospace;"></p>
+</section>
+
+<section>
+    <h2>8. Nav Bar (mono) &mdash; 24px</h2>
     <div class="icon-row" style="gap: 40px;">
         <div class="icon-cell">
             <div style="background:#1A2332;padding:12px;border-radius:12px;" id="nav-dark"></div>
@@ -395,8 +425,170 @@ function render() {
         document.getElementById(id).innerHTML = monoClosedSVG(44, color);
     });
 
+    // DEV variants
+    document.getElementById('dev-variants').innerHTML = [
+        ['launcher-dev-circle', 'launcher-mask-circle', 'Circle'],
+        ['launcher-dev-squircle', 'launcher-mask-squircle', 'Squircle'],
+        ['launcher-dev-rounded', 'launcher-mask-rounded', 'Rounded'],
+    ].map(([id, mask, label]) =>
+        `<div class="icon-cell">
+            <div class="${mask}">${launcherDevSVG(60, c)}</div>
+            <span class="label">${label} DEV</span>
+        </div>`
+    ).join('') + `<div class="icon-cell">${launcherDevSVG(80, c)}<span class="label">80px unmasked</span></div>`;
+
     document.getElementById('nav-dark').innerHTML = monoClosedSVG(24, '#93C5FD');
     document.getElementById('nav-light').innerHTML = monoClosedSVG(24, '#1B2A4A');
+}
+
+// ============================================================
+// DEV BADGE
+// ============================================================
+function devBadgeSVG() {
+    return `<g transform="translate(72,72)">
+      <rect x="0" y="0" width="34" height="16" rx="3" fill="#EF4444"/>
+      <rect x="0.5" y="0.5" width="33" height="15" rx="2.5" fill="none" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+      <text x="17" y="12" text-anchor="middle" font-family="monospace,sans-serif" font-weight="bold" font-size="10" fill="white">DEV</text>
+    </g>`;
+}
+
+function launcherDevSVG(size, c) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+      <rect width="108" height="108" fill="#0F1419"/>
+      <defs>
+        <radialGradient id="glow-dev" cx="54" cy="54" r="70" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#60A5FA" stop-opacity="0.5"/>
+          <stop offset="0.4" stop-color="#2563EB" stop-opacity="0.3"/>
+          <stop offset="1" stop-color="#0F1419" stop-opacity="1"/>
+        </radialGradient>
+      </defs>
+      <rect width="108" height="108" fill="url(#glow-dev)"/>
+      <circle cx="54" cy="54" r="25" fill="white" opacity="0.06"/>
+
+      <g transform="translate(22,20) scale(0.32)">
+        <path d="M12,68 L98,108 L98,186 L188,146 L188,68 L100,24 Z" fill="black" opacity="0.3"/>
+        <polygon points="100,24 186,64 100,104 14,64" fill="${c.boxTop}"/>
+        <polygon points="35,73.8 65,87.7 151,47.7 121,33.8" fill="${c.tapeLight}"/>
+        <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
+        ${skewedSymbolSVG(145, 127, c.tapeLight, SYMBOL_SCALE)}
+        <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
+        <defs>
+          <linearGradient id="gloss-dev" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="white" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="white" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="100,24 186,64 100,104 14,64" fill="url(#gloss-dev)"/>
+        <polyline points="14,64 100,24 186,64" fill="none" stroke="white" stroke-opacity="0.4" stroke-width="2" stroke-linecap="round"/>
+      </g>
+      ${devBadgeSVG()}
+    </svg>`;
+}
+
+// ============================================================
+// PNG EXPORT
+// ============================================================
+const MIPMAP_SIZES = {
+    'mipmap-mdpi':    48,
+    'mipmap-hdpi':    72,
+    'mipmap-xhdpi':   96,
+    'mipmap-xxhdpi': 144,
+    'mipmap-xxxhdpi':192,
+};
+
+function svgToCanvas(svgString, size) {
+    return new Promise((resolve) => {
+        const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, size, size);
+            URL.revokeObjectURL(url);
+            resolve(canvas);
+        };
+        img.src = url;
+    });
+}
+
+function downloadCanvas(canvas, filename) {
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+}
+
+function backgroundSVGExport(size) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+      <rect width="108" height="108" fill="#0F1419"/>
+      <defs>
+        <radialGradient id="glow-exp" cx="54" cy="54" r="70" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#60A5FA" stop-opacity="0.5"/>
+          <stop offset="0.4" stop-color="#2563EB" stop-opacity="0.3"/>
+          <stop offset="1" stop-color="#0F1419" stop-opacity="1"/>
+        </radialGradient>
+      </defs>
+      <rect width="108" height="108" fill="url(#glow-exp)"/>
+      <circle cx="54" cy="54" r="25" fill="white" opacity="0.06"/>
+    </svg>`;
+}
+
+function foregroundSVGExport(size, c) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(22,20) scale(0.32)">
+        <path d="M12,68 L98,108 L98,186 L188,146 L188,68 L100,24 Z" fill="black" opacity="0.3"/>
+        <polygon points="100,24 186,64 100,104 14,64" fill="${c.boxTop}"/>
+        <polygon points="35,73.8 65,87.7 151,47.7 121,33.8" fill="${c.tapeLight}"/>
+        <polygon points="12,68 98,108 98,186 12,146" fill="${c.boxLeft}"/>
+        <polygon points="35,78.7 65,92.7 65,140 35,125" fill="${c.tapeDark}"/>
+        <polygon points="188,68 188,146 102,186 102,108" fill="${c.boxRight}"/>
+        ${skewedSymbolSVG(145, 127, c.tapeLight, SYMBOL_SCALE)}
+        <polygon points="35,73.8 65,87.7 65,92.7 35,78.7" fill="${c.tapeDark}"/>
+        <defs>
+          <linearGradient id="gloss-exp" x1="100" y1="24" x2="100" y2="104" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="white" stop-opacity="0.5"/>
+            <stop offset="1" stop-color="white" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="100,24 186,64 100,104 14,64" fill="url(#gloss-exp)"/>
+        <polyline points="14,64 100,24 186,64" fill="none" stroke="white" stroke-opacity="0.4" stroke-width="2" stroke-linecap="round"/>
+      </g>
+    </svg>`;
+}
+
+async function exportLayer(type) {
+    const c = CS();
+    const size = 432; // 108dp * 4x for high quality
+    let svg;
+    switch(type) {
+        case 'background': svg = backgroundSVGExport(size); break;
+        case 'foreground': svg = foregroundSVGExport(size, c); break;
+        case 'combined':   svg = launcherSVG(size, c); break;
+        case 'combined-dev': svg = launcherDevSVG(size, c); break;
+    }
+    const canvas = await svgToCanvas(svg, size);
+    downloadCanvas(canvas, `ic_launcher_${type}_${size}px.png`);
+    document.getElementById('export-status').textContent = `Exported: ic_launcher_${type}_${size}px.png`;
+}
+
+async function exportAllMipmaps(isDev) {
+    const c = CS();
+    const variant = isDev ? 'dev' : 'prod';
+    const status = document.getElementById('export-status');
+    status.textContent = 'Exporting...';
+
+    for (const [name, size] of Object.entries(MIPMAP_SIZES)) {
+        const svg = isDev ? launcherDevSVG(size, c) : launcherSVG(size, c);
+        const canvas = await svgToCanvas(svg, size);
+        downloadCanvas(canvas, `${name}_ic_launcher_${variant}_${size}px.png`);
+        await new Promise(r => setTimeout(r, 300)); // delay between downloads
+    }
+    status.textContent = `Exported all ${variant} mipmap PNGs (${Object.keys(MIPMAP_SIZES).length} files)`;
 }
 
 function toggleTheme() {
