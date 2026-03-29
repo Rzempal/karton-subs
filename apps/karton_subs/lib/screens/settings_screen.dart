@@ -10,6 +10,7 @@ import '../services/theme_provider.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../config/app_config.dart';
+import 'category_management_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -35,6 +36,16 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(_themeName(theme.themeMode)),
             trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => _showThemePicker(context, theme),
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.tag),
+            title: const Text('Zarządzaj kategoriami'),
+            trailing: const Icon(LucideIcons.chevronRight),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CategoryManagementScreen(),
+              ),
+            ),
           ),
           const Divider(indent: 16, endIndent: 16),
 

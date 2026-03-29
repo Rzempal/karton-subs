@@ -106,6 +106,12 @@ class StorageService {
     _categoriesCache[cat.id] = cat;
   }
 
+  Future<void> deleteCategory(String id) async {
+    await _categoriesBox.delete(id);
+    _categoriesCache.remove(id);
+    _log.info('Deleted category: $id');
+  }
+
   // ── Settings ───────────────────────────────────────────────────────────────
 
   String getCurrency() => _settingsBox.get('currency', defaultValue: 'PLN') as String;
