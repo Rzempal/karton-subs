@@ -96,7 +96,17 @@ class SubscriptionController extends ChangeNotifier {
   Future<void> toggleActive(String id) async {
     final sub = _storage.getSubscription(id);
     if (sub == null) return;
-    await update(sub.copyWith(isActive: !sub.isActive));
+    if (sub.isActive) {
+      await update(sub.copyWith(
+        isActive: false,
+        cancelledDate: DateTime.now(),
+      ));
+    } else {
+      await update(sub.copyWith(
+        isActive: true,
+        clearCancelledDate: true,
+      ));
+    }
   }
 
   Future<void> togglePin(String id) async {
