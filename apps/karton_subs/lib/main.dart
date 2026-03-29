@@ -98,31 +98,63 @@ class _MainShellState extends State<_MainShell> {
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(LucideIcons.barChart3),
-            selectedIcon: Icon(LucideIcons.barChart3),
-            label: 'Dashboard',
+      bottomNavigationBar: _buildNavigationBar(),
+    );
+  }
+
+  Widget _buildNavigationBar() {
+    final navBar = NavigationBar(
+      selectedIndex: _currentIndex,
+      onDestinationSelected: (i) => setState(() => _currentIndex = i),
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(LucideIcons.barChart3),
+          selectedIcon: Icon(LucideIcons.barChart3),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(LucideIcons.pieChart),
+          selectedIcon: Icon(LucideIcons.pieChart),
+          label: 'Analityka',
+        ),
+        NavigationDestination(
+          icon: Icon(LucideIcons.repeat),
+          selectedIcon: Icon(LucideIcons.repeat),
+          label: 'Subskrypcje',
+        ),
+        NavigationDestination(
+          icon: Icon(LucideIcons.settings),
+          selectedIcon: Icon(LucideIcons.settings),
+          label: 'Ustawienia',
+        ),
+      ],
+    );
+
+    if (!AppConfig.isInternal) return navBar;
+
+    // Dev: red gradient background on navigation bar
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF7F1D1D), Color(0xFF991B1B)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Colors.transparent,
+            indicatorColor: Colors.white.withValues(alpha: 0.15),
+            iconTheme: WidgetStateProperty.all(
+              const IconThemeData(color: Colors.white),
+            ),
+            labelTextStyle: WidgetStateProperty.all(
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.pieChart),
-            selectedIcon: Icon(LucideIcons.pieChart),
-            label: 'Analityka',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.repeat),
-            selectedIcon: Icon(LucideIcons.repeat),
-            label: 'Subskrypcje',
-          ),
-          NavigationDestination(
-            icon: Icon(LucideIcons.settings),
-            selectedIcon: Icon(LucideIcons.settings),
-            label: 'Ustawienia',
-          ),
-        ],
+        ),
+        child: navBar,
       ),
     );
   }
