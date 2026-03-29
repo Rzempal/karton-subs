@@ -311,14 +311,13 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
     final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
     final ctrl = context.read<SubscriptionController>();
+    final storage = context.read<StorageService>();
 
     try {
       if (_isEditing) {
-        // Pobierz aktualny obiekt (może mieć nowe usageLogs dodane w tej sesji)
-        final current = ctrl.all.firstWhere(
-          (s) => s.id == widget.existing!.id,
-          orElse: () => widget.existing!,
-        );
+        // Pobierz aktualny obiekt z cache (ma świeże usageLogs)
+        final current =
+            storage.getSubscription(widget.existing!.id) ?? widget.existing!;
         await ctrl.update(current.copyWith(
           name: _nameCtrl.text.trim(),
           description: _descCtrl.text.trim().isEmpty
