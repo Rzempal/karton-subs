@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+  <!-- Scaling Group (Center 22,20 | Scale 0.32) -->
+  <group
+      android:translateX="22"
+      android:translateY="20"
+      android:scaleX="0.32"
+      android:scaleY="0.32">
+
+      <!-- Shadow -->
+      <path android:pathData="M12,68 L98,108 L98,186 L188,146 L188,68 L100,24 Z"
+            android:fillColor="#000000"
+            android:fillAlpha="0.3"/>
+
+      <!-- Box: Top Face (Blue Grey 200) -->
+      <path android:pathData="M100,24 L186,64 L100,104 L14,64 Z"
+            android:fillColor="#B0BEC5"/>
+
+      <!-- Tape: Top (Bright Blue) -->
+      <path android:pathData="M35,73.8 L65,87.7 L151,47.7 L121,33.8 Z"
+            android:fillColor="#2563EB"/>
+
+      <!-- Box: Left Face (Blue Grey 400) -->
+      <path android:pathData="M12,68 L98,108 L98,186 L12,146 Z"
+            android:fillColor="#78909C"/>
+
+      <!-- Tape: Left (Dark Blue Border) -->
+      <path android:pathData="M35,78.7 L65,92.7 L65,140 L35,125 Z"
+            android:fillColor="#1E3A5F"/>
+
+      <!-- Box: Right Face (Blue Grey 300) -->
+      <path android:pathData="M188,68 L188,146 L102,186 L102,108 Z"
+            android:fillColor="#90A4AE"/>
+
+      <!-- Subscription Symbol: Lucide RotateCcw + DollarSign -->
+      <!-- Placed on right face, centered at (145,127), scale 1.8, skewY via group -->
+      <group
+          android:translateX="145"
+          android:translateY="127"
+          android:rotation="-15"
+          android:pivotX="0"
+          android:pivotY="0">
+          <!-- RotateCcw outer ring -->
+          <group
+              android:scaleX="2.44"
+              android:scaleY="2.44"
+              android:translateX="-12"
+              android:translateY="-12"
+              android:pivotX="0"
+              android:pivotY="0">
+              <path android:pathData="M3,12 a9,9 0 1,0 9,-9 a9.75,9.75 0 0,0 -6.74,2.74 L3,8"
+                    android:strokeColor="#2563EB"
+                    android:strokeWidth="2"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:fillColor="#00000000"/>
+              <path android:pathData="M3,3 L3,8 L8,8"
+                    android:strokeColor="#2563EB"
+                    android:strokeWidth="2"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:fillColor="#00000000"/>
+          </group>
+          <!-- DollarSign (scaled 0.45x inside circle with gap) -->
+          <group
+              android:scaleX="1.098"
+              android:scaleY="1.098"
+              android:translateX="-12"
+              android:translateY="-12"
+              android:pivotX="0"
+              android:pivotY="0">
+              <path android:pathData="M12,2 L12,22"
+                    android:strokeColor="#2563EB"
+                    android:strokeWidth="4.44"
+                    android:strokeLineCap="round"
+                    android:fillColor="#00000000"/>
+              <path android:pathData="M17,5 L9.5,5 a3.5,3.5 0 0,0 0,7 L14.5,12 a3.5,3.5 0 0,1 0,7 L6,19"
+                    android:strokeColor="#2563EB"
+                    android:strokeWidth="4.44"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:fillColor="#00000000"/>
+          </group>
+      </group>
+
+      <!-- Tape: Connector -->
+      <path android:pathData="M35,73.8 L65,87.7 L65,92.7 L35,78.7 Z"
+            android:fillColor="#1E3A5F"/>
+
+      <!-- Glass Overlay (Gloss) -->
+      <path android:pathData="M100,24 L186,64 L100,104 L14,64 Z">
+        <aapt:attr name="android:fillColor">
+          <gradient
+              android:startX="100"
+              android:startY="24"
+              android:endX="100"
+              android:endY="104"
+              android:type="linear">
+            <item android:offset="0.0" android:color="#80FFFFFF"/>
+            <item android:offset="1.0" android:color="#00FFFFFF"/>
+          </gradient>
+        </aapt:attr>
+      </path>
+
+      <!-- Rim Light Stroke -->
+      <path android:pathData="M14,64 L100,24 L186,64"
+            android:strokeColor="#66FFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"/>
+
+  </group>
+</vector>
