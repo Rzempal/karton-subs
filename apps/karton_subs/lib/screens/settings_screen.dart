@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../services/backup_service.dart';
@@ -24,11 +25,11 @@ class SettingsScreen extends StatelessWidget {
           const _SectionDivider('Wygląd'),
           ListTile(
             leading: Icon(theme.isDarkMode
-                ? Icons.dark_mode_outlined
-                : Icons.light_mode_outlined),
+                ? LucideIcons.moon
+                : LucideIcons.sun),
             title: const Text('Motyw'),
             subtitle: Text(_themeName(theme.themeMode)),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(LucideIcons.chevronRight),
             onTap: () => _showThemePicker(context, theme),
           ),
           const Divider(indent: 16, endIndent: 16),
@@ -76,7 +77,7 @@ class SettingsScreen extends StatelessWidget {
           const _SectionDivider('Informacje'),
           Consumer<UpdateService>(
             builder: (_, svc, _) => ListTile(
-              leading: const Icon(Icons.info_outline),
+              leading: const Icon(LucideIcons.info),
               title: const Text('Wersja aplikacji'),
               trailing: Text(
                 svc.currentVersionName ?? '1.0.0',
@@ -122,17 +123,17 @@ class SettingsScreen extends StatelessWidget {
                   RadioListTile<ThemeMode>(
                     value: ThemeMode.system,
                     title: const Text('Systemowy'),
-                    secondary: const Icon(Icons.brightness_auto_outlined),
+                    secondary: const Icon(LucideIcons.monitor),
                   ),
                   RadioListTile<ThemeMode>(
                     value: ThemeMode.light,
                     title: const Text('Jasny'),
-                    secondary: const Icon(Icons.light_mode_outlined),
+                    secondary: const Icon(LucideIcons.sun),
                   ),
                   RadioListTile<ThemeMode>(
                     value: ThemeMode.dark,
                     title: const Text('Ciemny'),
-                    secondary: const Icon(Icons.dark_mode_outlined),
+                    secondary: const Icon(LucideIcons.moon),
                   ),
                 ],
               ),
@@ -166,27 +167,27 @@ class _BackupSectionState extends State<_BackupSection> {
     return Column(
       children: [
         ListTile(
-          leading: const Icon(Icons.upload_outlined),
+          leading: const Icon(LucideIcons.upload),
           title: const Text('Eksportuj backup'),
           subtitle: const Text('Zaszyfrowany plik .subkarton (klucz urządzenia)'),
           trailing: _isBusy
               ? const SizedBox(width: 20, height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.chevron_right),
+              : const Icon(LucideIcons.chevronRight),
           onTap: _isBusy ? null : _export,
         ),
         ListTile(
-          leading: const Icon(Icons.upload_file_outlined),
+          leading: const Icon(LucideIcons.uploadCloud),
           title: const Text('Eksportuj z hasłem'),
           subtitle: const Text('Do przenoszenia między urządzeniami'),
-          trailing: _isBusy ? null : const Icon(Icons.chevron_right),
+          trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
           onTap: _isBusy ? null : _exportWithPassword,
         ),
         ListTile(
-          leading: const Icon(Icons.download_outlined),
+          leading: const Icon(LucideIcons.download),
           title: const Text('Importuj backup'),
           subtitle: const Text('Przywróć z pliku .subkarton'),
-          trailing: _isBusy ? null : const Icon(Icons.chevron_right),
+          trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
           onTap: _isBusy ? null : _import,
         ),
       ],
@@ -306,7 +307,7 @@ class _OtaSection extends StatelessWidget {
         }
         if (svc.status == UpdateStatus.launchingInstaller) {
           return const ListTile(
-            leading: Icon(Icons.install_mobile_outlined),
+            leading: Icon(LucideIcons.smartphone),
             title: Text('Uruchamianie instalatora…'),
             subtitle: Text('Zaakceptuj instalację w oknie systemowym'),
           );
@@ -316,19 +317,19 @@ class _OtaSection extends StatelessWidget {
         }
         if (svc.isUpToDate) {
           return ListTile(
-            leading: const Icon(Icons.check_circle_outline,
+            leading: const Icon(LucideIcons.checkCircle,
                 color: AppColors.positive),
             title: const Text('Aplikacja jest aktualna'),
             subtitle: Text('Sprawdzono: ${_formatTime(svc.lastCheckTime)}'),
             trailing: IconButton(
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(LucideIcons.refreshCw),
               onPressed: () => svc.checkForUpdate(),
               tooltip: 'Sprawdź ponownie',
             ),
           );
         }
         return ListTile(
-          leading: const Icon(Icons.system_update_outlined),
+          leading: const Icon(LucideIcons.download),
           title: const Text('Sprawdź aktualizacje'),
           subtitle: svc.status == UpdateStatus.checking
               ? const Text('Sprawdzanie…')
@@ -340,7 +341,7 @@ class _OtaSection extends StatelessWidget {
               ? const SizedBox(
                   width: 20, height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.chevron_right),
+              : const Icon(LucideIcons.chevronRight),
           onTap: svc.status == UpdateStatus.checking
               ? null
               : () => svc.checkForUpdate(),
@@ -373,7 +374,7 @@ class _UpdateAvailableTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.system_update_outlined, color: AppColors.positive),
+            const Icon(LucideIcons.download, color: AppColors.positive),
             const SizedBox(width: 8),
             Text('Dostępna aktualizacja ${svc.latestVersion}',
                 style: const TextStyle(
@@ -391,12 +392,12 @@ class _UpdateAvailableTile extends StatelessWidget {
             children: [
               FilledButton.icon(
                 onPressed: () => svc.startUpdate(),
-                icon: const Icon(Icons.download_outlined),
+                icon: const Icon(LucideIcons.download),
                 label: const Text('Pobierz i zainstaluj'),
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(LucideIcons.refreshCw),
                 onPressed: () => svc.checkForUpdate(),
                 tooltip: 'Sprawdź ponownie',
               ),

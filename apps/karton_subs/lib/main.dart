@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'controllers/subscription_controller.dart';
 import 'screens/dashboard_screen.dart';
@@ -92,23 +93,23 @@ class _MainShellState extends State<_MainShell> {
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            icon: Icon(LucideIcons.barChart3),
+            selectedIcon: Icon(LucideIcons.barChart3),
             label: 'Dashboard',
           ),
           NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
+            icon: Icon(LucideIcons.pieChart),
+            selectedIcon: Icon(LucideIcons.pieChart),
             label: 'Analityka',
           ),
           NavigationDestination(
-            icon: Icon(Icons.list_outlined),
-            selectedIcon: Icon(Icons.list),
+            icon: Icon(LucideIcons.repeat),
+            selectedIcon: Icon(LucideIcons.repeat),
             label: 'Subskrypcje',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
+            icon: Icon(LucideIcons.settings),
+            selectedIcon: Icon(LucideIcons.settings),
             label: 'Ustawienia',
           ),
         ],
