@@ -445,10 +445,11 @@ function render() {
 // DEV BADGE
 // ============================================================
 function devBadgeSVG() {
-    return `<g transform="translate(72,72)">
-      <rect x="0" y="0" width="34" height="16" rx="3" fill="#EF4444"/>
-      <rect x="0.5" y="0.5" width="33" height="15" rx="2.5" fill="none" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
-      <text x="17" y="12" text-anchor="middle" font-family="monospace,sans-serif" font-weight="bold" font-size="10" fill="white">DEV</text>
+    // Positioned within adaptive icon safe zone (18-90dp)
+    return `<g transform="translate(59,75)">
+      <rect x="0" y="0" width="28" height="12" rx="2.5" fill="#EF4444"/>
+      <rect x="0.25" y="0.25" width="27.5" height="11.5" rx="2.25" fill="none" stroke="white" stroke-opacity="0.3" stroke-width="0.5"/>
+      <text x="14" y="9.5" text-anchor="middle" font-family="monospace,sans-serif" font-weight="bold" font-size="9" fill="white">DEV</text>
     </g>`;
 }
 
