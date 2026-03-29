@@ -3,7 +3,7 @@
 import '../models/subscription.dart';
 import 'currency_service.dart';
 
-DateTime get _now => Subscription.devDateOverride ?? _now;
+DateTime get _now => Subscription.devDateOverride ?? DateTime.now();
 
 class MonthlyDataPoint {
   final DateTime month;

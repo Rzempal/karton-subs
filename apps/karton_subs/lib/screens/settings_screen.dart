@@ -38,20 +38,14 @@ class SettingsScreen extends StatelessWidget {
 
           // ── Waluta ──────────────────────────────────────────────────────
           const _SectionDivider('Waluta domyślna'),
-          RadioGroup<String>(
-            groupValue: currency,
-            onChanged: (v) {
-              if (v != null) storage.setCurrency(v);
-            },
-            child: Column(
-              children: Currency.values
-                  .map((c) => RadioListTile<String>(
-                        value: c.label,
-                        title: Text('${c.label} (${c.symbol})'),
-                      ))
-                  .toList(),
-            ),
-          ),
+          ...Currency.values.map((c) => RadioListTile<String>(
+                value: c.label,
+                groupValue: currency,
+                title: Text('${c.label} (${c.symbol})'),
+                onChanged: (v) {
+                  if (v != null) storage.setCurrency(v);
+                },
+              )),
           ListTile(
             leading: const Icon(LucideIcons.target),
             title: const Text('Limit budżetowy'),
@@ -214,33 +208,36 @@ class SettingsScreen extends StatelessWidget {
               title: Text('Wybierz motyw',
                   style: TextStyle(fontWeight: FontWeight.w600)),
             ),
-            RadioGroup<ThemeMode>(
-              groupValue: provider.themeMode,
-              onChanged: (v) {
-                if (v != null) {
-                  provider.setThemeMode(v);
-                  Navigator.pop(ctx);
-                }
-              },
-              child: Column(
-                children: [
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.system,
-                    title: const Text('Systemowy'),
-                    secondary: const Icon(LucideIcons.monitor),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.light,
-                    title: const Text('Jasny'),
-                    secondary: const Icon(LucideIcons.sun),
-                  ),
-                  RadioListTile<ThemeMode>(
-                    value: ThemeMode.dark,
-                    title: const Text('Ciemny'),
-                    secondary: const Icon(LucideIcons.moon),
-                  ),
-                ],
-              ),
+            Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.system,
+                  groupValue: provider.themeMode,
+                  title: const Text('Systemowy'),
+                  secondary: const Icon(LucideIcons.monitor),
+                  onChanged: (v) {
+                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.light,
+                  groupValue: provider.themeMode,
+                  title: const Text('Jasny'),
+                  secondary: const Icon(LucideIcons.sun),
+                  onChanged: (v) {
+                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  value: ThemeMode.dark,
+                  groupValue: provider.themeMode,
+                  title: const Text('Ciemny'),
+                  secondary: const Icon(LucideIcons.moon),
+                  onChanged: (v) {
+                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 8),
           ],
