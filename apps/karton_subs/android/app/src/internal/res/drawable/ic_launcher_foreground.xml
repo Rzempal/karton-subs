@@ -115,35 +115,35 @@
 
   </group>
 
-  <!-- DEV Badge (bottom-right corner) -->
-  <!-- Badge background -->
-  <path android:pathData="M72,72 L106,72 A3,3 0 0,1 106,72 L106,88 A3,3 0 0,1 103,91 L72,91 A3,3 0 0,1 69,88 L69,75 A3,3 0 0,1 72,72 Z"
+  <!-- DEV Badge (bottom-right, within 72dp safe zone: 18-90) -->
+  <!-- Badge background: 28x12dp, right edge at x=87, bottom at y=87 -->
+  <path android:pathData="M61.5,75 L84.5,75 A2.5,2.5 0 0,1 87,77.5 L87,84.5 A2.5,2.5 0 0,1 84.5,87 L61.5,87 A2.5,2.5 0 0,1 59,84.5 L59,77.5 A2.5,2.5 0 0,1 61.5,75 Z"
         android:fillColor="#EF4444"/>
   <!-- Badge border -->
-  <path android:pathData="M72,72 L106,72 A3,3 0 0,1 106,72 L106,88 A3,3 0 0,1 103,91 L72,91 A3,3 0 0,1 69,88 L69,75 A3,3 0 0,1 72,72 Z"
+  <path android:pathData="M61.5,75 L84.5,75 A2.5,2.5 0 0,1 87,77.5 L87,84.5 A2.5,2.5 0 0,1 84.5,87 L61.5,87 A2.5,2.5 0 0,1 59,84.5 L59,77.5 A2.5,2.5 0 0,1 61.5,75 Z"
         android:strokeColor="#FFFFFF"
         android:strokeWidth="0.5"
         android:strokeAlpha="0.3"
         android:fillColor="#00000000"/>
 
   <!-- DEV text: D -->
-  <path android:pathData="M75,78 L75,86 M75,78 L78,78 A4,4 0 0,1 78,86 L75,86"
+  <path android:pathData="M64,78 L64,84 M64,78 L66.5,78 A3,3 0 0,1 66.5,84 L64,84"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.8"
+        android:strokeWidth="1.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000"/>
   <!-- DEV text: E -->
-  <path android:pathData="M84,78 L84,86 M84,78 L89,78 M84,82 L88,82 M84,86 L89,86"
+  <path android:pathData="M71,78 L71,84 M71,78 L75,78 M71,81 L74,81 M71,84 L75,84"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.8"
+        android:strokeWidth="1.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000"/>
   <!-- DEV text: V -->
-  <path android:pathData="M93,78 L96,86 L99,78"
+  <path android:pathData="M78,78 L80,84 L82,78"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.8"
+        android:strokeWidth="1.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000"/>
