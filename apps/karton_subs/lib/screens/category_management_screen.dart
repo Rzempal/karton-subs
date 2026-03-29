@@ -196,6 +196,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
   late TextEditingController _nameCtrl;
   late String _colorHex;
   late String _iconName;
+  late bool _excludeFromGhost;
 
   static const _palette = [
     '#2563EB', '#7C3AED', '#0891B2', '#EA580C',
@@ -210,6 +211,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
     _colorHex = widget.existing?.colorHex ?? _palette[0];
     _iconName = widget.existing?.iconName ?? 'folder';
+    _excludeFromGhost = widget.existing?.excludeFromGhostAnalysis ?? false;
   }
 
   @override
@@ -312,7 +314,20 @@ class _CategoryEditorState extends State<_CategoryEditor> {
               },
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+
+          // Wykluczenie z analizy ghost
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Pomijaj w analizie nieużywanych'),
+            subtitle: Text(
+              'Subskrypcje w tej kategorii nie będą oznaczane jako nieużywane',
+              style: theme.textTheme.bodySmall,
+            ),
+            value: _excludeFromGhost,
+            onChanged: (v) => setState(() => _excludeFromGhost = v),
+          ),
+          const SizedBox(height: 16),
 
           SizedBox(
             width: double.infinity,
@@ -336,6 +351,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             name: name,
             colorHex: _colorHex,
             iconName: _iconName,
+            excludeFromGhostAnalysis: _excludeFromGhost,
           )
         : Category(
             id: const Uuid().v4(),
@@ -343,6 +359,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             colorHex: _colorHex,
             iconName: _iconName,
             order: 99,
+            excludeFromGhostAnalysis: _excludeFromGhost,
           );
 
     await widget.onSave(cat);

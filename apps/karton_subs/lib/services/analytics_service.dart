@@ -65,8 +65,15 @@ class AnalyticsService {
     return breakdown;
   }
 
-  List<Subscription> getGhostSubscriptions(List<Subscription> subs) =>
-      subs.where((s) => s.isGhost).toList();
+  List<Subscription> getGhostSubscriptions(
+    List<Subscription> subs, {
+    Set<String> excludedCategoryIds = const {},
+  }) =>
+      subs
+          .where((s) =>
+              s.isGhost &&
+              !excludedCategoryIds.contains(s.categoryId ?? 'cat_other'))
+          .toList();
 
   List<CostPerUseEntry> getCostPerUseRanking(
     List<Subscription> subs, {
