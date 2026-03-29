@@ -344,40 +344,38 @@ class _BackupSectionState extends State<_BackupSection> {
   }
 
   Future<void> _import() async {
-    // Sprawdź czy plik wymaga hasła — FilePicker otworzy, BackupService zadecyduje
     setState(() => _isBusy = true);
     try {
-      final result = await context.read<BackupService>().importFromFile();
+      // 1. Wybierz plik (raz)
+      final backup = context.read<BackupService>();
+      final fileInfo = await backup.pickFile();
+
+      // 2. Sprawdź czy wymaga hasła
+      String? password;
+      if (fileInfo.needsPassword && mounted) {
+        password = await _askPassword(title: 'Hasło backupu');
+        if (password == null) {
+          if (mounted) setState(() => _isBusy = false);
+          return;
+        }
+      }
+
+      // 3. Importuj z tych samych bytes (bez ponownego file pickera)
+      final result = await backup.importFromBytes(
+        fileInfo,
+        password: password,
+      );
+
       if (mounted) {
+        context.read<SubscriptionController>().refresh();
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-            'Import zakończony: ${result.subscriptionsImported} subskrypcji',
+            'Import zakończony: ${result.subscriptionsImported} subskrypcji, ${result.categoriesImported} kategorii',
           ),
         ));
       }
     } on FormatException catch (e) {
-      // Możliwe że plik wymaga hasła
-      if (e.message.contains('hasła') && mounted) {
-        final password = await _askPassword(title: 'Hasło backupu');
-        if (password != null && mounted) {
-          try {
-            // ignore: use_build_context_synchronously
-            final result = await context
-                .read<BackupService>()
-                .importFromFile(password: password);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(
-                    'Import zakończony: ${result.subscriptionsImported} subskrypcji'),
-              ));
-            }
-          } catch (e2) {
-            if (mounted) _showError(e2.toString());
-          }
-        }
-      } else if (mounted) {
-        _showError(e.message);
-      }
+      if (mounted) _showError(e.message);
     } catch (e) {
       if (mounted) _showError(e.toString());
     } finally {
