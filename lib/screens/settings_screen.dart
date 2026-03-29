@@ -111,6 +111,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          // Currency rates info
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppGeometry.spacingSm,
+              left: AppGeometry.spacingXs,
+            ),
+            child: Text(
+              'Kursy walut: 1 EUR = 4,28 PLN · 1 USD = 3,95 PLN · 1 GBP = 5,02 PLN',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary,
+              ),
+            ),
+          ),
+
           const SizedBox(height: AppGeometry.spacingLg),
 
           // ==================== BACKUP ====================
