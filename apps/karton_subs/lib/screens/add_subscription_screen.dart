@@ -201,11 +201,33 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                     )
                   : Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj subskrypcję'),
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _toggleActive,
+                icon: Icon(
+                  widget.existing!.isActive
+                      ? LucideIcons.xCircle
+                      : LucideIcons.checkCircle,
+                ),
+                label: Text(
+                  widget.existing!.isActive
+                      ? 'Anuluj subskrypcję'
+                      : 'Reaktywuj subskrypcję',
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _toggleActive() async {
+    final ctrl = context.read<SubscriptionController>();
+    await ctrl.toggleActive(widget.existing!.id);
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   void _applyTemplate(SubscriptionTemplate t) {

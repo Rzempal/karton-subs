@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
@@ -7,6 +8,7 @@ import '../services/storage_service.dart';
 import '../services/theme_provider.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
+import '../config/app_config.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -50,6 +52,17 @@ class SettingsScreen extends StatelessWidget {
                   .toList(),
             ),
           ),
+          ListTile(
+            leading: const Icon(LucideIcons.target),
+            title: const Text('Limit budżetowy'),
+            subtitle: Text(
+              storage.getBudgetLimit() != null
+                  ? '${storage.getBudgetLimit()!.toStringAsFixed(0)} $currency/mies'
+                  : 'Nie ustawiono',
+            ),
+            trailing: const Icon(LucideIcons.chevronRight),
+            onTap: () => _showBudgetLimitDialog(context, storage, currency),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
@@ -73,6 +86,32 @@ class SettingsScreen extends StatelessWidget {
           _OtaSection(),
           const Divider(indent: 16, endIndent: 16),
 
+          // ── Developer Tools (internal only) ─────────────────────────────
+          if (AppConfig.isInternal) ...[
+            const _SectionDivider('Developer Tools'),
+            ListTile(
+              leading: const Icon(LucideIcons.calendar),
+              title: const Text('Override daty'),
+              subtitle: Text(
+                storage.getDevDateOverride() != null
+                    ? DateFormat('dd.MM.yyyy').format(storage.getDevDateOverride()!)
+                    : 'Wyłączony (używa aktualnej daty)',
+              ),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () => _showDevDatePicker(context, storage),
+            ),
+            if (storage.getDevDateOverride() != null)
+              ListTile(
+                leading: const Icon(LucideIcons.x),
+                title: const Text('Wyłącz override daty'),
+                onTap: () {
+                  storage.setDevDateOverride(null);
+                  Subscription.devDateOverride = null;
+                },
+              ),
+            const Divider(indent: 16, endIndent: 16),
+          ],
+
           // ── Informacje ──────────────────────────────────────────────────
           const _SectionDivider('Informacje'),
           Consumer<UpdateService>(
@@ -84,6 +123,71 @@ class SettingsScreen extends StatelessWidget {
                 style: const TextStyle(color: Colors.grey),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDevDatePicker(BuildContext context, StorageService storage) async {
+    final current = storage.getDevDateOverride() ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      helpText: 'Ustaw datę testową',
+    );
+    if (picked != null) {
+      storage.setDevDateOverride(picked);
+      Subscription.devDateOverride = picked;
+    }
+  }
+
+  void _showBudgetLimitDialog(
+    BuildContext context,
+    StorageService storage,
+    String currency,
+  ) {
+    final current = storage.getBudgetLimit();
+    final controller = TextEditingController(
+      text: current != null ? current.toStringAsFixed(0) : '',
+    );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Limit budżetowy'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: 'np. 500',
+            suffixText: '$currency/mies',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          if (current != null)
+            TextButton(
+              onPressed: () {
+                storage.setBudgetLimit(null);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Usuń limit'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(controller.text.trim());
+              if (value != null && value > 0) {
+                storage.setBudgetLimit(value);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Zapisz'),
           ),
         ],
       ),

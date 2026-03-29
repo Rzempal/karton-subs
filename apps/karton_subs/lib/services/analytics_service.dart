@@ -3,6 +3,8 @@
 import '../models/subscription.dart';
 import 'currency_service.dart';
 
+DateTime get _now => Subscription.devDateOverride ?? _now;
+
 class MonthlyDataPoint {
   final DateTime month;
   final double amount;
@@ -71,7 +73,7 @@ class AnalyticsService {
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
-    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    final thirtyDaysAgo = _now.subtract(const Duration(days: 30));
     final entries = <CostPerUseEntry>[];
 
     for (final sub in subs.where((s) => s.isActive)) {
@@ -109,7 +111,7 @@ class AnalyticsService {
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
-    final now = DateTime.now();
+    final now = _now;
     final points = <MonthlyDataPoint>[];
 
     for (int i = months - 1; i >= 0; i--) {
