@@ -29,6 +29,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   BillingCycle _cycle = BillingCycle.monthly;
   String? _categoryId;
   DateTime _startDate = DateTime.now();
+  int? _sharedWith;
+  String? _paymentMethod;
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.existing != null;
@@ -47,6 +49,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _cycle = s.billingCycle;
       _categoryId = s.categoryId;
       _startDate = s.startDate;
+      _sharedWith = s.sharedWith;
+      _paymentMethod = s.paymentMethod;
     }
   }
 
@@ -189,6 +193,55 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               ),
               keyboardType: TextInputType.url,
             ),
+            const SizedBox(height: 16),
+
+            // Wspólna subskrypcja
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int?>(
+                    value: _sharedWith,
+                    decoration: const InputDecoration(
+                      labelText: 'Dzielona na',
+                      prefixIcon: Icon(LucideIcons.users),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Nie dzielona'),
+                      ),
+                      for (int i = 2; i <= 10; i++)
+                        DropdownMenuItem(
+                          value: i,
+                          child: Text('$i osób'),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _sharedWith = v),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Metoda płatności
+            DropdownButtonFormField<String?>(
+              value: _paymentMethod,
+              decoration: const InputDecoration(
+                labelText: 'Metoda płatności',
+                prefixIcon: Icon(LucideIcons.creditCard),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Nie wybrano'),
+                ),
+                ...PaymentMethods.all.map((m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(m),
+                    )),
+              ],
+              onChanged: (v) => setState(() => _paymentMethod = v),
+            ),
             const SizedBox(height: 32),
 
             FilledButton(
@@ -266,6 +319,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           description: _descCtrl.text.trim().isEmpty
               ? null
               : _descCtrl.text.trim(),
+          clearDescription: _descCtrl.text.trim().isEmpty,
           amount: amount,
           currency: _currency,
           billingCycle: _cycle,
@@ -274,6 +328,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
               ? null
               : _cancelUrlCtrl.text.trim(),
+          clearCancellationUrl: _cancelUrlCtrl.text.trim().isEmpty,
+          sharedWith: _sharedWith,
+          clearSharedWith: _sharedWith == null,
+          paymentMethod: _paymentMethod,
+          clearPaymentMethod: _paymentMethod == null,
         ));
       } else {
         await ctrl.create(
@@ -289,6 +348,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
               ? null
               : _cancelUrlCtrl.text.trim(),
+          sharedWith: _sharedWith,
+          paymentMethod: _paymentMethod,
         );
       }
       if (mounted) Navigator.of(context).pop(true);
