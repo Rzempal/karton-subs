@@ -24,6 +24,22 @@ class BackupExportResult {
   BackupExportResult(this.filePath);
 }
 
+/// Wynik odczytu pliku backupu (przed dekryptowaniem)
+class BackupFileInfo {
+  final Uint8List bytes;
+  final String fileName;
+  final BackupFormat format;
+  BackupFileInfo({required this.bytes, required this.fileName, required this.format});
+
+  bool get needsPassword =>
+      format is EncryptedBackup &&
+      (format as EncryptedBackup).keyType == BackupKeyType.password;
+
+  bool get isDeviceKey =>
+      format is EncryptedBackup &&
+      (format as EncryptedBackup).keyType == BackupKeyType.device;
+}
+
 /// Orkiestracja eksportu/importu .subkarton.
 /// BackupCryptoService zajmuje się szyfrowaniem,
 /// ten serwis zajmuje się serializacją i plikami.
@@ -56,9 +72,9 @@ class BackupService {
 
   // ── Import ─────────────────────────────────────────────────────────────────
 
-  /// Otwiera file picker, dekryptuje i importuje dane.
-  /// Rzuca wyjątek jeśli plik jest uszkodzony lub hasło złe.
-  Future<BackupImportResult> importFromFile({String? password}) async {
+  /// Otwiera file picker i zwraca info o pliku (bez dekryptowania).
+  /// Rzuca wyjątek jeśli nie wybrano pliku lub format nieznany.
+  Future<BackupFileInfo> pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       withData: true,
@@ -69,7 +85,7 @@ class BackupService {
     }
 
     final pickedFile = result.files.first;
-    if (pickedFile.name.toLowerCase().endsWith('.$_fileExtension') == false) {
+    if (!pickedFile.name.toLowerCase().endsWith('.$_fileExtension')) {
       throw FormatException(
         'Nieprawidłowy plik. Wybierz plik z rozszerzeniem .$_fileExtension',
       );
@@ -81,6 +97,19 @@ class BackupService {
     }
 
     final format = _crypto.detectFormat(bytes);
+    return BackupFileInfo(
+      bytes: bytes,
+      fileName: pickedFile.name,
+      format: format,
+    );
+  }
+
+  /// Importuje dane z wcześniej odczytanego pliku.
+  Future<BackupImportResult> importFromBytes(
+    BackupFileInfo fileInfo, {
+    String? password,
+  }) async {
+    final format = fileInfo.format;
     String jsonString;
 
     if (format is PlainJsonBackup) {
@@ -99,6 +128,12 @@ class BackupService {
     }
 
     return await _applyJsonPayload(jsonString);
+  }
+
+  /// Legacy: otwiera file picker + importuje (dla kompatybilności).
+  Future<BackupImportResult> importFromFile({String? password}) async {
+    final fileInfo = await pickFile();
+    return importFromBytes(fileInfo, password: password);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
