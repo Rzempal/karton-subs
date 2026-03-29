@@ -38,43 +38,20 @@
       <path android:pathData="M188,68 L188,146 L102,186 L102,108 Z"
             android:fillColor="#B8896A"/>
 
-      <!-- 3D Gem Crystal — pre-baked isometric, filled facets (red/dev) -->
-      <!-- Facet 1: top-left (medium) -->
-      <path android:pathData="M135.1,114.6 L142,111.4 L137.1,124.4 L125.3,129.9 Z"
-            android:fillColor="#EF4444"/>
-      <!-- Facet 2: top-center (highlight) -->
-      <path android:pathData="M142,111.4 L148,108.6 L152.9,117.1 L137.1,124.4 Z"
-            android:fillColor="#F87171"/>
-      <!-- Facet 3: top-right (medium-bright) -->
-      <path android:pathData="M148,108.6 L154.9,105.4 L164.7,111.6 L152.9,117.1 Z"
-            android:fillColor="#DC2626"/>
-      <!-- Facet 4: bottom-left (dark) -->
-      <path android:pathData="M125.3,129.9 L137.1,124.4 L145,144 Z"
-            android:fillColor="#7F1D1D"/>
-      <!-- Facet 5: bottom-center (medium-dark) -->
-      <path android:pathData="M137.1,124.4 L152.9,117.1 L145,144 Z"
-            android:fillColor="#B91C1C"/>
-      <!-- Facet 6: bottom-right (dark) -->
-      <path android:pathData="M152.9,117.1 L164.7,111.6 L145,144 Z"
-            android:fillColor="#991B1B"/>
-      <!-- Gem outline stroke -->
-      <path android:pathData="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z"
-            android:strokeColor="#7F1D1D"
-            android:strokeWidth="1.2"
-            android:strokeLineJoin="round"
-            android:fillColor="#00000000"/>
-      <!-- Facet edge lines -->
-      <path android:pathData="M142,111.4 L137.1,124.4 L145,144 L152.9,117.1 L148,108.6 M125.3,129.9 L164.7,111.6"
-            android:strokeColor="#7F1D1D"
-            android:strokeWidth="0.8"
-            android:strokeLineCap="round"
-            android:fillColor="#00000000"/>
-      <!-- Highlight glint on top edge -->
-      <path android:pathData="M138,113.5 L150,107.9"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1"
-            android:strokeAlpha="0.4"
-            android:strokeLineCap="round"/>
+      <!-- Gem — flat fill with gradient (light→dark red, dev variant) -->
+      <path android:pathData="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z">
+        <aapt:attr name="android:fillColor">
+          <gradient
+              android:startX="145"
+              android:startY="105"
+              android:endX="145"
+              android:endY="144"
+              android:type="linear">
+            <item android:offset="0.0" android:color="#FFEF4444"/>
+            <item android:offset="1.0" android:color="#FF7F1D1D"/>
+          </gradient>
+        </aapt:attr>
+      </path>
 
       <!-- Tape: Connector -->
       <path android:pathData="M35,73.8 L65,87.7 L65,92.7 L35,78.7 Z"

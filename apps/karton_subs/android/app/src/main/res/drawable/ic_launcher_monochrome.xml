@@ -30,23 +30,9 @@
       <path android:pathData="M35,73.8 L65,87.7 L65,140 L35,125 Z"
             android:fillColor="#FF000000"/>
 
-      <!-- Gem — filled facets with varying opacity -->
-      <path android:pathData="M135.1,114.6 L142,111.4 L137.1,124.4 L125.3,129.9 Z"
-            android:fillColor="#000000" android:fillAlpha="0.3"/>
-      <path android:pathData="M142,111.4 L148,108.6 L152.9,117.1 L137.1,124.4 Z"
-            android:fillColor="#000000" android:fillAlpha="0.15"/>
-      <path android:pathData="M148,108.6 L154.9,105.4 L164.7,111.6 L152.9,117.1 Z"
-            android:fillColor="#000000" android:fillAlpha="0.35"/>
-      <path android:pathData="M125.3,129.9 L137.1,124.4 L145,144 Z"
-            android:fillColor="#000000" android:fillAlpha="0.55"/>
-      <path android:pathData="M137.1,124.4 L152.9,117.1 L145,144 Z"
-            android:fillColor="#000000" android:fillAlpha="0.45"/>
-      <path android:pathData="M152.9,117.1 L164.7,111.6 L145,144 Z"
-            android:fillColor="#000000" android:fillAlpha="0.5"/>
+      <!-- Gem — flat filled -->
       <path android:pathData="M135.1,114.6 L154.9,105.4 L164.7,111.6 L145,144 L125.3,129.9 Z"
-            android:strokeColor="#FF000000"
-            android:strokeWidth="2"
-            android:strokeLineJoin="round"/>
+            android:fillColor="#FF000000"/>
 
   </group>
 </vector>
