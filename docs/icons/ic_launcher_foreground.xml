@@ -39,10 +39,11 @@
             android:fillColor="#B8896A"/>
 
       <!-- Gem Symbol (Lucide gem) on right face -->
+      <!-- Right face center: (145,127), top edge angle: -25° -->
       <group
           android:translateX="145"
           android:translateY="127"
-          android:rotation="-15"
+          android:rotation="-25"
           android:pivotX="0"
           android:pivotY="0">
           <group
@@ -50,8 +51,8 @@
               android:scaleY="2.2"
               android:translateX="-12"
               android:translateY="-12"
-              android:pivotX="0"
-              android:pivotY="0">
+              android:pivotX="12"
+              android:pivotY="12">
               <!-- Gem outline -->
               <path android:pathData="M17,3 a2,2 0 0,1 1.6,0.8 l3,4 a2,2 0 0,1 0.013,2.382 l-7.99,10.986 a2,2 0 0,1 -3.247,0 l-7.99,-10.986 A2,2 0 0,1 2.4,7.8 l2.998,-3.997 A2,2 0 0,1 7,3 z"
                     android:strokeColor="#2563EB"
