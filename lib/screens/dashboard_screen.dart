@@ -6,8 +6,10 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../services/storage_service.dart';
+import '../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/subscription_card.dart';
+import '../widgets/budget_progress_bar.dart';
 import 'add_subscription_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -28,20 +30,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final categories = widget.storageService.getCategories();
     final active = subscriptions.where((s) => s.isActive).toList();
 
-    final monthlyTotal = active.fold<double>(
-      0,
-      (sum, s) => sum + s.monthlyAmount,
-    );
-    final yearlyTotal = monthlyTotal * 12;
+    const analytics = AnalyticsService();
+    final monthlyTotal = analytics.getMonthlyTotal(subscriptions);
+    final yearlyTotal = analytics.getYearlyProjection(subscriptions);
     final defaultCurrency = widget.storageService.defaultCurrency;
-    final ghostCount = active.where((s) => s.isGhost).length;
-
-    // Category breakdown
-    final categoryTotals = <String, double>{};
-    for (final sub in active) {
-      final catId = sub.categoryId ?? 'cat-other';
-      categoryTotals[catId] = (categoryTotals[catId] ?? 0) + sub.monthlyAmount;
-    }
+    final ghostCount = analytics.getGhostSubscriptions(subscriptions).length;
+    final categoryTotals = analytics.getCategoryBreakdown(subscriptions);
+    final budgetStatus = analytics.getBudgetStatus(
+      subscriptions,
+      widget.storageService.budgetLimit,
+    );
 
     return Scaffold(
       body: CustomScrollView(
@@ -124,6 +122,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+
+          // Budget Progress Bar
+          if (budgetStatus != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppGeometry.spacingBase,
+                ),
+                child: BudgetProgressBar(
+                  status: budgetStatus,
+                  currencySymbol: defaultCurrency.symbol,
+                ),
+              ),
+            ),
 
           // Category Breakdown Bar
           if (categoryTotals.isNotEmpty)
