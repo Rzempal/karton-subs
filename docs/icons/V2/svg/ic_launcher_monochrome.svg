@@ -1,0 +1,24 @@
+<svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <mask id="mono-cube-mask">
+            <path d="M3 13.1a2 2 0 0 0-1 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z" fill="white" transform="translate(24,20) scale(2.5)"/>
+            <path d="M11.7 14.2 L7 17 L2.3 14.2Z" fill="white" transform="translate(24,20) scale(2.5)"/>
+            <path d="M3 13.1a2 2 0 0 0-1 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
+            <path d="M11.7 14.2 7 17l-4.7-2.8" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
+            <path d="M7 17v5" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
+        </mask>
+    </defs>
+
+    <!-- Frame (single color #000) -->
+    <g transform="translate(24,20) scale(2.5)" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 9V7a2 2 0 0 0-2-2h-6"/>
+        <path d="m15 2-3 3 3 3"/>
+        <path d="M8 5H6a2 2 0 0 0-2 2v1.5"/>
+        <path d="M20 13v5a2 2 0 0 1-2 2H14.5"/>
+    </g>
+
+    <!-- Cube filled (single color, masked edges) -->
+    <g mask="url(#mono-cube-mask)">
+        <rect width="108" height="108" fill="#000000"/>
+    </g>
+</svg>
