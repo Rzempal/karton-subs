@@ -1,0 +1,10 @@
+<svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="bg-grad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stop-color="#081428"/>
+            <stop offset="0.45" stop-color="#0F2A5C"/>
+            <stop offset="1" stop-color="#1A4080"/>
+        </linearGradient>
+    </defs>
+    <rect width="108" height="108" fill="url(#bg-grad)"/>
+</svg>

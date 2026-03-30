@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karton na Subskrypcje — Final Icon Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0d0d14;--sc:#161620;--sch:#1e1e2a;--olv:#2a2a38;--os:#e4dff0;--osv:#8a85a0}
+        [data-theme="light"]{--bg:#FDFBFF;--sc:#F2F0F7;--sch:#E8E5EE;--olv:#C9C5D0;--os:#1C1B22;--osv:#6a6578}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:var(--bg);color:var(--os);font-family:'Google Sans',system-ui,sans-serif;padding:0;min-height:100vh;transition:background .35s,color .35s}
+
+        .tog{position:fixed;top:16px;right:16px;z-index:10;background:var(--sch);border:1px solid var(--olv);color:var(--os);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:.78rem}
+
+        /* Hero banner */
+        .banner{padding:80px 20px 60px;text-align:center;position:relative;overflow:hidden}
+        .banner::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#081428 0%,#0F2A5C 50%,#1A4080 100%);opacity:.3}
+        [data-theme="light"] .banner::before{opacity:.08}
+        .banner>*{position:relative;z-index:1}
+        .banner h1{font-size:2.2rem;font-weight:600;letter-spacing:-.03em;margin-bottom:8px}
+        .banner p{color:var(--osv);font-family:'JetBrains Mono',monospace;font-size:.78rem;margin-bottom:32px}
+        .banner-icons{display:flex;gap:24px;justify-content:center;align-items:center}
+        .banner-icon{border-radius:28px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.5)}
+
+        .content{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+        section{margin-top:56px}
+        section h2{font-size:.74rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--osv);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--olv)}
+        .card{background:var(--sc);border:1px solid var(--olv);border-radius:24px;padding:32px}
+        .row{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:flex-end}
+        .cell{display:flex;flex-direction:column;align-items:center;gap:8px}
+        .lbl{font-size:.58rem;color:var(--osv);font-family:'JetBrains Mono',monospace;text-align:center}
+
+        .l-mask{overflow:hidden;display:flex;align-items:center;justify-content:center}
+        .l-circle{border-radius:50%}.l-squircle{border-radius:22%}.l-rounded{border-radius:30%}
+        .pill{border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+        .nav-mock{display:flex;gap:28px;align-items:center;justify-content:center;padding:12px 24px;border-radius:16px}
+        .nav-it{display:flex;flex-direction:column;align-items:center;gap:3px}
+        .nav-it .nl{font-size:.54rem}
+        .nav-pill{border-radius:14px;padding:4px 18px;display:flex;align-items:center;justify-content:center}
+
+        .spec-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.75rem}
+        .spec-grid dt{color:var(--osv);font-family:'JetBrains Mono',monospace;font-size:.68rem;text-align:right}
+        .spec-grid dd{color:var(--os)}
+
+        .asset-table{width:100%;border-collapse:collapse;font-size:.72rem}
+        .asset-table th{text-align:left;color:var(--osv);font-weight:500;padding:8px 12px;border-bottom:1px solid var(--olv);font-family:'JetBrains Mono',monospace;font-size:.64rem;text-transform:uppercase;letter-spacing:.05em}
+        .asset-table td{padding:8px 12px;border-bottom:1px solid var(--olv);color:var(--os);font-family:'JetBrains Mono',monospace;font-size:.68rem}
+
+        svg{overflow:visible}
+    </style>
+</head>
+<body>
+<button class="tog" onclick="toggleTheme()">☀ / ☾</button>
+
+<div class="banner" id="banner"></div>
+
+<div class="content">
+    <section><h2>1 · Adaptive Icon — Android Launcher</h2><div class="card"><div class="row" id="s-launcher"></div></div></section>
+    <section><h2>2 · DEV Variant</h2><div class="card"><div class="row" id="s-dev"></div></div></section>
+    <section><h2>3 · Monochrome — Material You Dynamic Color</h2><div class="card"><div class="row" id="s-mono"></div></div></section>
+    <section><h2>4 · Foreground on surface</h2><div class="card"><div class="row" id="s-surface"></div></div></section>
+    <section><h2>5 · Navigation Bar</h2><div class="card" id="s-nav"></div></section>
+    <section><h2>6 · Rozmiary Mipmap</h2><div class="card"><div class="row" id="s-mipmap"></div></div></section>
+    <section><h2>7 · Specyfikacja</h2><div class="card"><dl class="spec-grid" id="s-spec"></dl></div></section>
+    <section><h2>8 · Asset manifest</h2><div class="card" style="overflow-x:auto"><table class="asset-table" id="s-assets"></table></div></section>
+</div>
+
+<script>
+const ST='stroke-linecap="round" stroke-linejoin="round"';
+const CUBE_TOP='M11.7 14.2 7 17l-4.7-2.8';
+const CUBE_BODY='M3 13.1a2 2 0 0 0-1 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z';
+const CUBE_VERT='M7 17v5';
+const CUBE_TOP_Z='M11.7 14.2 L7 17 L2.3 14.2Z';
+const ARR_ARM='M20 9V7a2 2 0 0 0-2-2h-6';
+const ARR_TIP='m15 2-3 3 3 3';
+let _u=0; function uid(){return 'k'+ (_u++);}
+
+function maskDef(id,tx){
+    return `<mask id="${id}">
+        <path d="${CUBE_BODY}" fill="white" transform="${tx}"/>
+        <path d="${CUBE_TOP_Z}" fill="white" transform="${tx}"/>
+        <path d="${CUBE_BODY}" stroke="black" stroke-width="1.8" fill="none" ${ST} transform="${tx}"/>
+        <path d="${CUBE_TOP}" stroke="black" stroke-width="1.8" fill="none" ${ST} transform="${tx}"/>
+        <path d="${CUBE_VERT}" stroke="black" stroke-width="1.8" fill="none" ${ST} transform="${tx}"/>
+    </mask>`;
+}
+
+function framePaths(col,extra=''){
+    return `<path d="${ARR_ARM}" stroke="${col}" stroke-width="2" ${ST} fill="none" ${extra}/>
+        <path d="${ARR_TIP}" stroke="${col}" stroke-width="2" ${ST} fill="none" ${extra}/>
+        <path d="M8 5H6a2 2 0 0 0-2 2v1.5" stroke="${col}" stroke-width="2" ${ST} fill="none" ${extra}/>
+        <path d="M20 13v5a2 2 0 0 1-2 2H14.5" stroke="${col}" stroke-width="2" ${ST} fill="none" ${extra}/>`;
+}
+
+// Full multicolor adaptive icon
+function adaptiveFull(sz){
+    const m=uid(),g=uid();
+    return `<svg width="${sz}" height="${sz}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="${g}" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stop-color="#081428"/>
+                <stop offset="0.45" stop-color="#0F2A5C"/>
+                <stop offset="1" stop-color="#1A4080"/>
+            </linearGradient>
+            ${maskDef(m,'translate(24,20) scale(2.5)')}
+        </defs>
+        <rect width="108" height="108" fill="url(#${g})"/>
+        <g transform="translate(24,20) scale(2.5)">${framePaths('#FFFFFF')}</g>
+        <g mask="url(#${m})"><rect width="108" height="108" fill="#D4A574"/></g>
+    </svg>`;
+}
+
+// DEV variant
+function adaptiveDev(sz){
+    const m=uid(),g=uid();
+    return `<svg width="${sz}" height="${sz}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="${g}" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stop-color="#081428"/>
+                <stop offset="0.45" stop-color="#0F2A5C"/>
+                <stop offset="1" stop-color="#1A4080"/>
+            </linearGradient>
+            ${maskDef(m,'translate(24,20) scale(2.5)')}
+        </defs>
+        <rect width="108" height="108" fill="url(#${g})"/>
+        <g transform="translate(24,20) scale(2.5)">${framePaths('#FFFFFF','stroke-dasharray="3.5 2.5"')}</g>
+        <g mask="url(#${m})"><rect width="108" height="108" fill="#D4A574" opacity="0.6"/></g>
+        <circle cx="82" cy="26" r="8" fill="#081428"/>
+        <circle cx="82" cy="26" r="6" fill="#F2B8B5"/>
+        <circle cx="82" cy="26" r="3.5" fill="#B3261E"/>
+    </svg>`;
+}
+
+// Mono on colored bg
+function monoAdaptive(sz,fg,bg){
+    const m=uid();
+    return `<svg width="${sz}" height="${sz}" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+        <defs>${maskDef(m,'translate(24,20) scale(2.5)')}</defs>
+        <rect width="108" height="108" fill="${bg}"/>
+        <g transform="translate(24,20) scale(2.5)">${framePaths(fg)}</g>
+        <g mask="url(#${m})"><rect width="108" height="108" fill="${fg}"/></g>
+    </svg>`;
+}
+
+// Foreground only (on any bg)
+function fgOnly(sz,frameCol,cubeCol,bgCol){
+    const m=uid();
+    return `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <defs>${maskDef(m,'')}</defs>
+        ${bgCol ? `<rect width="24" height="24" fill="${bgCol}"/>` : ''}
+        ${framePaths(frameCol)}
+        <g mask="url(#${m})"><rect width="24" height="24" fill="${cubeCol}"/></g>
+    </svg>`;
+}
+
+function render(){
+    // Banner
+    document.getElementById('banner').innerHTML = `
+        <h1>Karton na Subskrypcje</h1>
+        <p>Final Icon — Variant C · Multicolor · Cardboard + White</p>
+        <div class="banner-icons">
+            <div class="banner-icon" style="width:80px;height:80px">${adaptiveFull(80)}</div>
+            <div class="banner-icon" style="width:120px;height:120px">${adaptiveFull(120)}</div>
+            <div class="banner-icon" style="width:80px;height:80px">${adaptiveFull(80)}</div>
+        </div>`;
+
+    // 1 Launcher
+    const masks=[['l-circle','Circle'],['l-squircle','Squircle'],['l-rounded','Rounded'],['l-squircle','Square']];
+    document.getElementById('s-launcher').innerHTML = masks.map(([m,n])=>
+        `<div class="cell"><div class="l-mask ${m}" style="width:72px;height:72px">${adaptiveFull(72)}</div><span class="lbl">${n}</span></div>`
+    ).join('');
+
+    // 2 DEV
+    document.getElementById('s-dev').innerHTML = masks.slice(0,3).map(([m,n])=>
+        `<div class="cell"><div class="l-mask ${m}" style="width:72px;height:72px">${adaptiveDev(72)}</div><span class="lbl">DEV ${n}</span></div>`
+    ).join('') +
+    `<div class="cell"><div class="l-mask l-squircle" style="width:72px;height:72px">${adaptiveFull(72)}</div><span class="lbl">PROD ref</span></div>`;
+
+    // 3 Mono
+    const monoThemes=[
+        {bg:'#D0BCFF',fg:'#381E72',n:'Purple'},{bg:'#A8C7FA',fg:'#062E6F',n:'Blue'},
+        {bg:'#7FCFCF',fg:'#003737',n:'Teal'},{bg:'#bdfcc9',fg:'#00522b',n:'Green'},
+        {bg:'#FFD8A8',fg:'#5C3D0E',n:'Orange'},{bg:'#303030',fg:'#E2E2E2',n:'Dark'},
+        {bg:'#F5F5F5',fg:'#1A1A1A',n:'Light'},
+    ];
+    document.getElementById('s-mono').innerHTML = monoThemes.map(t=>
+        `<div class="cell"><div class="pill" style="width:60px;height:60px;background:${t.bg}">${monoAdaptive(44,t.fg,t.bg)}</div><span class="lbl">${t.n}</span></div>`
+    ).join('');
+
+    // 4 Surface
+    document.getElementById('s-surface').innerHTML = `
+        <div class="cell"><div style="background:#111116;padding:20px;border-radius:16px">${fgOnly(56,'#E6E0E9','#E6E0E9','#111116')}</div><span class="lbl">Mono dark</span></div>
+        <div class="cell"><div style="background:#F2F0F7;padding:20px;border-radius:16px;border:1px solid #C9C5D0">${fgOnly(56,'#1C1B22','#1C1B22','#F2F0F7')}</div><span class="lbl">Mono light</span></div>
+        <div class="cell"><div style="background:#111116;padding:20px;border-radius:16px">${fgOnly(56,'#FFFFFF','#D4A574','#111116')}</div><span class="lbl">Multi dark</span></div>
+        <div class="cell"><div style="background:#F2F0F7;padding:20px;border-radius:16px;border:1px solid #C9C5D0">${fgOnly(56,'#49454F','#9B7653','#F2F0F7')}</div><span class="lbl">Multi light</span></div>`;
+
+    // 5 Nav
+    document.getElementById('s-nav').innerHTML = `<div style="display:flex;flex-direction:column;gap:16px;align-items:center">
+        <div class="cell">
+            <div class="nav-mock" style="background:#1a2333">
+                <div class="nav-it">${fgOnly(22,'#8E9AAF','#8E9AAF','#1a2333')}<span class="nl" style="color:#8E9AAF">Główna</span></div>
+                <div class="nav-it"><div class="nav-pill" style="background:#0F1A3A">${fgOnly(22,'#A8C7FA','#D4A574','#0F1A3A')}</div><span class="nl" style="color:#A8C7FA">Subskrypcje</span></div>
+                <div class="nav-it">${fgOnly(22,'#8E9AAF','#8E9AAF','#1a2333')}<span class="nl" style="color:#8E9AAF">Statystyki</span></div>
+                <div class="nav-it">${fgOnly(22,'#8E9AAF','#8E9AAF','#1a2333')}<span class="nl" style="color:#8E9AAF">Profil</span></div>
+            </div><span class="lbl">Dark</span>
+        </div>
+        <div class="cell">
+            <div class="nav-mock" style="background:#EBF2FC;border:1px solid #C9D5E0">
+                <div class="nav-it">${fgOnly(22,'#5F6F82','#5F6F82','#EBF2FC')}<span class="nl" style="color:#5F6F82">Główna</span></div>
+                <div class="nav-it"><div class="nav-pill" style="background:#D3E3FD">${fgOnly(22,'#0B57D0','#9B7653','#D3E3FD')}</div><span class="nl" style="color:#0B57D0">Subskrypcje</span></div>
+                <div class="nav-it">${fgOnly(22,'#5F6F82','#5F6F82','#EBF2FC')}<span class="nl" style="color:#5F6F82">Statystyki</span></div>
+                <div class="nav-it">${fgOnly(22,'#5F6F82','#5F6F82','#EBF2FC')}<span class="nl" style="color:#5F6F82">Profil</span></div>
+            </div><span class="lbl">Light</span>
+        </div>
+    </div>`;
+
+    // 6 Mipmap sizes
+    const mipmaps = [
+        {name:'mdpi',sz:48},{name:'hdpi',sz:72},{name:'xhdpi',sz:96},
+        {name:'xxhdpi',sz:144},{name:'xxxhdpi',sz:192}
+    ];
+    document.getElementById('s-mipmap').innerHTML = mipmaps.map(m=>
+        `<div class="cell">
+            <div class="l-mask l-squircle" style="width:${Math.min(m.sz,96)}px;height:${Math.min(m.sz,96)}px">
+                ${adaptiveFull(Math.min(m.sz,96))}
+            </div>
+            <span class="lbl">${m.name}<br>${m.sz}×${m.sz}</span>
+        </div>`
+    ).join('');
+
+    // 7 Spec
+    document.getElementById('s-spec').innerHTML = `
+        <dt>Design</dt><dd>Variant C — filled cube (negative edges) + outlined frame</dd>
+        <dt>Źródła Lucide</dt><dd><code>rotate-ccw-square</code> (broken arms) + <code>file-box</code> cube</dd>
+        <dt>ViewBox</dt><dd>24×24 (icon) / 108×108 (adaptive)</dd>
+        <dt>Tło</dt><dd>Linear gradient BL→TR: #081428 → #0F2A5C → #1A4080</dd>
+        <dt>Ramka</dt><dd>#FFFFFF (white)</dd>
+        <dt>Cube fill</dt><dd>#D4A574 (cardboard tan)</dd>
+        <dt>Cube edges</dt><dd>Transparent (SVG mask — gradient prześwieca)</dd>
+        <dt>Stroke</dt><dd>2px, round cap+join</dd>
+        <dt>Edge cut</dt><dd>1.8px (mask black stroke)</dd>
+        <dt>Safe zone</dt><dd>Centered, scale 2.5× in 108dp</dd>
+        <dt>DEV</dt><dd>Dashed frame (3.5/2.5) + error dot (r=6, #B3261E)</dd>
+        <dt>Monochrome</dt><dd>Single-color version, same mask technique</dd>
+    `;
+
+    // 8 Assets
+    document.getElementById('s-assets').innerHTML = `
+        <thead><tr><th>Plik</th><th>Rozmiar</th><th>Opis</th></tr></thead>
+        <tbody>
+        <tr><td>svg/ic_launcher_background.svg</td><td>108×108</td><td>Adaptive background layer</td></tr>
+        <tr><td>svg/ic_launcher_foreground.svg</td><td>108×108</td><td>Adaptive foreground (white frame + cardboard cube)</td></tr>
+        <tr><td>svg/ic_launcher_monochrome.svg</td><td>108×108</td><td>Material You monochrome layer</td></tr>
+        <tr><td>svg/ic_launcher_foreground_dev.svg</td><td>108×108</td><td>DEV foreground (dashed + badge)</td></tr>
+        <tr><td>svg/ic_launcher_combined.svg</td><td>108×108</td><td>Combined bg+fg (fallback)</td></tr>
+        <tr><td>svg/ic_launcher_combined_dev.svg</td><td>108×108</td><td>Combined DEV variant</td></tr>
+        <tr><td colspan="3" style="padding-top:12px;color:var(--osv)">Mipmap PNGs (×5 densities each):</td></tr>
+        <tr><td>mipmap-*/ic_launcher.png</td><td>48–192px</td><td>Combined fallback</td></tr>
+        <tr><td>mipmap-*/ic_launcher_foreground.png</td><td>48–192px</td><td>Foreground layer</td></tr>
+        <tr><td>mipmap-*/ic_launcher_background.png</td><td>48–192px</td><td>Background layer</td></tr>
+        <tr><td>mipmap-*/ic_launcher_monochrome.png</td><td>48–192px</td><td>Monochrome layer</td></tr>
+        <tr><td>mipmap-*/ic_launcher_dev.png</td><td>48–192px</td><td>DEV combined</td></tr>
+        <tr><td colspan="3" style="padding-top:12px;color:var(--osv)">Web / Play Store:</td></tr>
+        <tr><td>ic_launcher_web_512.png</td><td>512×512</td><td>Play Store listing</td></tr>
+        <tr><td>ic_launcher_web_1024.png</td><td>1024×1024</td><td>High-res marketing</td></tr>
+        <tr><td>ic_launcher_dev_web_512.png</td><td>512×512</td><td>DEV variant web</td></tr>
+        </tbody>`;
+}
+
+function toggleTheme(){document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';setTimeout(render,60);}
+render();
+</script>
+</body>
+</html>
