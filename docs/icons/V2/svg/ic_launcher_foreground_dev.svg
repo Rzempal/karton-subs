@@ -1,16 +1,18 @@
 <svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
     <defs>
-        <mask id="dev-cube-mask">
+        <mask id="cube-mask">
+            <!-- White = opaque cube faces -->
             <path d="M3 13.1a2 2 0 0 0-1 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z" fill="white" transform="translate(24,20) scale(2.5)"/>
             <path d="M11.7 14.2 L7 17 L2.3 14.2Z" fill="white" transform="translate(24,20) scale(2.5)"/>
+            <!-- Black = transparent edge cuts -->
             <path d="M3 13.1a2 2 0 0 0-1 1.76v3.24a2 2 0 0 0 .969 1.78L6 21.7a2 2 0 0 0 2.03.01L11 19.9a2 2 0 0 0 1-1.76V14.9a2 2 0 0 0-.97-1.78L8 11.3a2 2 0 0 0-2.03-.01z" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
             <path d="M11.7 14.2 7 17l-4.7-2.8" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
             <path d="M7 17v5" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="translate(24,20) scale(2.5)"/>
         </mask>
     </defs>
 
-    <!-- Frame: dashed arrows + broken square (white) -->
-    <g transform="translate(24,20) scale(2.5)" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.5 2.5">
+    <!-- Frame: arrows + broken square arms (white) — same as production -->
+    <g transform="translate(24,20) scale(2.5)" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 9V7a2 2 0 0 0-2-2h-6"/>
         <path d="m15 2-3 3 3 3"/>
         <path d="M8 5H6a2 2 0 0 0-2 2v1.5"/>
@@ -18,12 +20,12 @@
     </g>
 
     <!-- Cube: cardboard fill with transparent edge mask -->
-    <g mask="url(#dev-cube-mask)">
-        <rect width="108" height="108" fill="#D4A574" opacity="0.6"/>
+    <g mask="url(#cube-mask)">
+        <rect width="108" height="108" fill="#D4A574"/>
     </g>
 
-    <!-- DEV dot badge -->
-    <circle cx="82" cy="26" r="8" fill="#081428"/>
-    <circle cx="82" cy="26" r="6" fill="#F2B8B5"/>
-    <circle cx="82" cy="26" r="3.5" fill="#B3261E"/>
+    <!-- DEV red dot badge — center of icon -->
+    <circle cx="54" cy="54" r="8" fill="#081428"/>
+    <circle cx="54" cy="54" r="6" fill="#F2B8B5"/>
+    <circle cx="54" cy="54" r="3.5" fill="#B3261E"/>
 </svg>
