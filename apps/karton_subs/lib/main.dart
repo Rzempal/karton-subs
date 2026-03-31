@@ -12,6 +12,7 @@ import 'services/backup_service.dart';
 import 'services/storage_service.dart';
 import 'services/theme_provider.dart';
 import 'services/update_service.dart';
+import 'services/notification_service.dart';
 import 'models/subscription.dart';
 import 'config/app_config.dart';
 import 'theme/app_theme.dart';
@@ -37,16 +38,23 @@ void main() async {
   // OTA check w tle — nie blokujemy startu
   updateService.init();
 
+  // Local notifications
+  const notificationService = NotificationService();
+  await notificationService.init();
+  // Reschedule all on startup (covers reboot, app update, etc.)
+  await notificationService.rescheduleAll(storage.getSubscriptions());
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         Provider.value(value: storage),
         ChangeNotifierProvider(
-          create: (_) => SubscriptionController(storage),
+          create: (_) => SubscriptionController(storage, notificationService),
         ),
         ChangeNotifierProvider.value(value: updateService),
         Provider(create: (_) => BackupService(storage)),
+        Provider.value(value: notificationService),
       ],
       child: const KartonApp(),
     ),

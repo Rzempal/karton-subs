@@ -1,0 +1,169 @@
+// notification_service.dart — Local scheduled notifications for trials & renewals
+
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import '../models/subscription.dart';
+import 'app_logger.dart';
+
+class NotificationService {
+  static final _log = AppLogger.get('NotificationService');
+  static final _plugin = FlutterLocalNotificationsPlugin();
+  static bool _initialized = false;
+
+  const NotificationService();
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+
+  Future<void> init() async {
+    if (_initialized) return;
+
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Europe/Warsaw'));
+
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettings = InitializationSettings(android: androidSettings);
+
+    await _plugin.initialize(initSettings);
+    _initialized = true;
+    _log.info('NotificationService initialized');
+  }
+
+  // ── Public API ───────────────────────────────────────────────────────────
+
+  /// Schedule all relevant notifications for a subscription.
+  Future<void> scheduleForSubscription(Subscription sub) async {
+    // Cancel existing first
+    await cancelForSubscription(sub.id);
+
+    if (!sub.isActive) return;
+
+    if (sub.isTrialActive) {
+      await _scheduleTrialReminders(sub);
+    }
+
+    if (!sub.isTrial || sub.isTrialExpired) {
+      await _scheduleRenewalReminder(sub);
+    }
+  }
+
+  /// Cancel all notifications for a subscription.
+  Future<void> cancelForSubscription(String subscriptionId) async {
+    final baseId = _baseId(subscriptionId);
+    for (int offset = 0; offset < 4; offset++) {
+      await _plugin.cancel(baseId + offset);
+    }
+  }
+
+  /// Reschedule all notifications (e.g. after app restart).
+  Future<void> rescheduleAll(List<Subscription> subs) async {
+    await _plugin.cancelAll();
+    for (final sub in subs) {
+      await scheduleForSubscription(sub);
+    }
+    _log.info('Rescheduled notifications for ${subs.length} subscriptions');
+  }
+
+  // ── Trial reminders ──────────────────────────────────────────────────────
+
+  Future<void> _scheduleTrialReminders(Subscription sub) async {
+    final end = sub.trialEndDate;
+    if (end == null) return;
+
+    final postAmount = sub.postTrialAmount ?? sub.amount;
+    final currency = sub.currency.symbol;
+
+    // 7 days before
+    await _scheduleAt(
+      id: _baseId(sub.id) + 0,
+      dateTime: end.subtract(const Duration(days: 7)),
+      title: 'Trial ${sub.name} kończy się za tydzień',
+      body: 'Po trialu: $postAmount $currency/${_cycleLabel(sub.billingCycle)}',
+    );
+
+    // 1 day before
+    await _scheduleAt(
+      id: _baseId(sub.id) + 1,
+      dateTime: end.subtract(const Duration(days: 1)),
+      title: 'Jutro kończy się trial ${sub.name}',
+      body: 'Anuluj teraz lub przygotuj się na $postAmount $currency/${_cycleLabel(sub.billingCycle)}',
+    );
+
+    // On the day
+    await _scheduleAt(
+      id: _baseId(sub.id) + 2,
+      dateTime: end,
+      title: 'Trial ${sub.name} zakończony',
+      body: 'Od teraz płacisz $postAmount $currency/${_cycleLabel(sub.billingCycle)}',
+    );
+  }
+
+  // ── Renewal reminder ─────────────────────────────────────────────────────
+
+  Future<void> _scheduleRenewalReminder(Subscription sub) async {
+    final daysBefore = sub.reminderDaysBefore ?? 3;
+    final reminderDate = sub.nextRenewalDate.subtract(Duration(days: daysBefore));
+
+    final amount = sub.amount;
+    final currency = sub.currency.symbol;
+
+    await _scheduleAt(
+      id: _baseId(sub.id) + 3,
+      dateTime: reminderDate,
+      title: '${sub.name} odnawia się za $daysBefore dni',
+      body: 'Kwota: $amount $currency/${_cycleLabel(sub.billingCycle)}',
+    );
+  }
+
+  // ── Scheduling helper ────────────────────────────────────────────────────
+
+  Future<void> _scheduleAt({
+    required int id,
+    required DateTime dateTime,
+    required String title,
+    required String body,
+  }) async {
+    final now = DateTime.now();
+    // Don't schedule notifications in the past
+    if (dateTime.isBefore(now)) return;
+
+    final tzDateTime = tz.TZDateTime.from(dateTime, tz.local);
+
+    const androidDetails = AndroidNotificationDetails(
+      'karton_subs_reminders',
+      'Przypomnienia',
+      channelDescription: 'Powiadomienia o trialach i odnowieniach subskrypcji',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzDateTime,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      _log.warning('Failed to schedule notification $id: $e');
+    }
+  }
+
+  // ── ID scheme ────────────────────────────────────────────────────────────
+  // Deterministic: subscriptionId.hashCode * 10 + offset
+  // offset: 0=trial7d, 1=trial1d, 2=trialDay, 3=renewal
+
+  int _baseId(String subscriptionId) =>
+      (subscriptionId.hashCode.abs() % 100000000) * 10;
+
+  String _cycleLabel(BillingCycle cycle) => switch (cycle) {
+        BillingCycle.weekly => 'tydz',
+        BillingCycle.monthly => 'mies',
+        BillingCycle.quarterly => 'kw',
+        BillingCycle.yearly => 'rok',
+        BillingCycle.custom => 'cykl',
+      };
+}
