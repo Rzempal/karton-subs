@@ -38,11 +38,10 @@ void main() async {
   // OTA check w tle — nie blokujemy startu
   updateService.init();
 
-  // Local notifications
+  // Local notifications (non-blocking — app works without them)
   const notificationService = NotificationService();
   await notificationService.init();
-  // Reschedule all on startup (covers reboot, app update, etc.)
-  await notificationService.rescheduleAll(storage.getSubscriptions(), storage: storage);
+  notificationService.rescheduleAll(storage.getSubscriptions(), storage: storage);
 
   runApp(
     MultiProvider(
