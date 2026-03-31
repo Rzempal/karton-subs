@@ -22,10 +22,10 @@ class SpendingChart extends StatelessWidget {
     if (data.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final lineColor = isDark ? AppColors.darkPrimary : AppColors.lightPrimary;
-    final gridColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final c = context.semanticColors;
+    final textColor = c.textSecondary;
+    final lineColor = c.primary;
+    final gridColor = c.border;
 
     final maxY = data.map((d) => d.amount).reduce((a, b) => a > b ? a : b);
     final roundedMaxY = maxY == 0 ? 100.0 : (maxY * 1.2);
@@ -116,7 +116,7 @@ class SpendingChart extends StatelessWidget {
                           .map((s) => LineTooltipItem(
                                 '${s.y.toStringAsFixed(0)} $currencySymbol',
                                 TextStyle(
-                                  color: isDark ? AppColors.darkTextPrimary : Colors.white,
+                                  color: c.textPrimary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
