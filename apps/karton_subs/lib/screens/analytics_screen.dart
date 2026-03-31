@@ -24,7 +24,7 @@ class AnalyticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
     // Watch controller to rebuild when subscriptions change
     context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
@@ -32,7 +32,7 @@ class AnalyticsScreen extends StatelessWidget {
     final categories = storage.getCategories();
     final currencyLabel = storage.getCurrency();
     final currencyEnum = Currency.values.firstWhere(
-      (c) => c.name == currencyLabel,
+      (cc) => cc.name == currencyLabel,
       orElse: () => Currency.PLN,
     );
 
@@ -63,9 +63,7 @@ class AnalyticsScreen extends StatelessWidget {
         children: [
           // Yearly projection card
           Card(
-            color: isDark
-                ? AppColors.darkPrimary.withValues(alpha: 0.15)
-                : AppColors.lightPrimary,
+            color: c.heroCardBg,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -75,14 +73,14 @@ class AnalyticsScreen extends StatelessWidget {
                   Text(
                     'Projekcja roczna',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : Colors.white70,
+                      color: c.heroCardTextSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${nf.format(yearlyProjection)} $currencyLabel',
                     style: theme.textTheme.displayLarge?.copyWith(
-                      color: isDark ? AppColors.darkTextPrimary : Colors.white,
+                      color: c.heroCardText,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -90,7 +88,7 @@ class AnalyticsScreen extends StatelessWidget {
                   Text(
                     'W tym tempie wydasz tyle w ciągu roku (${nf.format(monthlyTotal)} $currencyLabel/mies)',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : Colors.white70,
+                      color: c.heroCardTextSecondary,
                     ),
                   ),
                 ],
@@ -174,7 +172,7 @@ class _CostPerUseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
     final nf = NumberFormat('#,##0.00', 'pl_PL');
 
     return Card(
@@ -188,7 +186,7 @@ class _CostPerUseCard extends StatelessWidget {
             Text(
               'Ostatnie 30 dni',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                color: c.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -207,7 +205,7 @@ class _CostPerUseCard extends StatelessWidget {
                     Text(
                       '${entry.usageCount}x',
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        color: c.textSecondary,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -217,7 +215,7 @@ class _CostPerUseCard extends StatelessWidget {
                         ? 'brak użyć'
                         : '${nf.format(entry.costPerUse)} $currencySymbol/użycie',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: entry.costPerUse == double.infinity ? AppColors.negative : null,
+                      color: entry.costPerUse == double.infinity ? c.negative : null,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -240,44 +238,44 @@ class _GhostAlertCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final c = context.semanticColors;
     final nf = NumberFormat('#,##0', 'pl_PL');
     final totalWasted = ghosts.fold(0.0, (sum, s) => sum + s.monthlyAmount);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.negativeBg,
+        color: c.negativeBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.negative.withValues(alpha: 0.3)),
+        border: Border.all(color: c.negative.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.ghost, color: AppColors.negative, size: 20),
+              Icon(LucideIcons.ghost, color: c.negative, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Nieużywane subskrypcje',
-                style: theme.textTheme.titleMedium?.copyWith(color: AppColors.negative),
+                style: theme.textTheme.titleMedium?.copyWith(color: c.negative),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             'Tracisz ${nf.format(totalWasted)} $currencySymbol/mies na nieużywane usługi',
-            style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.negative),
+            style: theme.textTheme.bodyMedium?.copyWith(color: c.negative),
           ),
           const SizedBox(height: 12),
           ...ghosts.map((g) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
-                // Red status dot
                 Container(
                   width: 8, height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.negative,
+                  decoration: BoxDecoration(
+                    color: c.negative,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -292,7 +290,7 @@ class _GhostAlertCard extends StatelessWidget {
                       Text(
                         'Ostatnie użycie: ${g.daysSinceLastUse} dni temu · ${nf.format(g.monthlyAmount)} $currencySymbol/mies',
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: AppColors.negative.withValues(alpha: 0.8),
+                          color: c.negative.withValues(alpha: 0.8),
                         ),
                       ),
                     ],

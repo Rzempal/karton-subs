@@ -25,14 +25,14 @@ class SubscriptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
     final storage = context.read<StorageService>();
     final category = subscription.categoryId != null
         ? storage.getCategory(subscription.categoryId!)
         : null;
     final defaultCurrencyCode = storage.getCurrency();
     final defaultCurrency = Currency.values.firstWhere(
-      (c) => c.name == defaultCurrencyCode || c.label == defaultCurrencyCode,
+      (cur) => cur.name == defaultCurrencyCode || cur.label == defaultCurrencyCode,
       orElse: () => Currency.PLN,
     );
     const currencyService = CurrencyService();
@@ -40,8 +40,8 @@ class SubscriptionCard extends StatelessWidget {
       subscription, defaultCurrency,
     );
 
-    final borderColor = _borderColor(isDark);
-    final bgColor = _bgColor(isDark);
+    final borderColor = _borderColor(c);
+    final bgColor = _bgColor(c);
     final isCancelled = !subscription.isActive;
 
     return Card(
@@ -104,25 +104,19 @@ class SubscriptionCard extends StatelessWidget {
                           Text(
                             _cycleLabel(subscription.billingCycle),
                             style: theme.textTheme.labelMedium?.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextMuted
-                                  : AppColors.lightTextMuted,
+                              color: c.textMuted,
                             ),
                           ),
                           if (subscription.sharedWith != null &&
                               subscription.sharedWith! > 1) ...[
                             const SizedBox(width: 8),
                             Icon(LucideIcons.users, size: 12,
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted),
+                                color: c.textMuted),
                             const SizedBox(width: 2),
                             Text(
                               '1/${subscription.sharedWith}',
                               style: theme.textTheme.labelMedium?.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
+                                color: c.textMuted,
                               ),
                             ),
                           ],
@@ -144,9 +138,7 @@ class SubscriptionCard extends StatelessWidget {
                     Text(
                       '${_formatAmount(convertedMonthly, defaultCurrency)}/mies.',
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
+                        color: c.textMuted,
                       ),
                     ),
                   ],
@@ -161,31 +153,27 @@ class SubscriptionCard extends StatelessWidget {
     );
   }
 
-  Color _borderColor(bool isDark) {
+  Color _borderColor(AppSemanticColors c) {
     if (subscription.isGhost) {
-      return AppColors.negative.withValues(alpha: 0.3);
+      return c.negative.withValues(alpha: 0.3);
     }
     if (_isRenewingSoon()) {
-      return AppColors.warning.withValues(alpha: 0.3);
+      return c.warning.withValues(alpha: 0.3);
     }
-    return isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    return c.border;
   }
 
-  Color _bgColor(bool isDark) {
+  Color _bgColor(AppSemanticColors c) {
     if (!subscription.isActive) {
-      return isDark ? AppColors.darkSurface : AppColors.lightSurface;
+      return c.surface;
     }
     if (subscription.isGhost) {
-      return isDark
-          ? AppColors.negative.withValues(alpha: 0.1)
-          : AppColors.negativeBg;
+      return c.negativeBg;
     }
     if (_isRenewingSoon()) {
-      return isDark
-          ? AppColors.warning.withValues(alpha: 0.1)
-          : AppColors.warningBg;
+      return c.warningBg;
     }
-    return isDark ? AppColors.darkSurface : AppColors.lightSurface;
+    return c.surface;
   }
 
   bool _isRenewingSoon() => subscription.isRenewalSoon;
@@ -213,13 +201,14 @@ class _StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final Color color;
     if (!subscription.isActive) {
-      color = AppColors.darkTextMuted; // szary
+      color = c.textMuted; // szary
     } else if (subscription.isGhost) {
-      color = AppColors.negative; // czerwony
+      color = c.negative; // czerwony
     } else {
-      color = AppColors.positive; // zielony
+      color = c.positive; // zielony
     }
     return Container(
       width: 8,
@@ -310,6 +299,7 @@ class _QuickLogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final count = subscription.usageLog.length;
     return Stack(
       clipBehavior: Clip.none,
@@ -347,7 +337,7 @@ class _QuickLogButton extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
-                color: AppColors.positive,
+                color: c.positive,
                 shape: BoxShape.circle,
               ),
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),

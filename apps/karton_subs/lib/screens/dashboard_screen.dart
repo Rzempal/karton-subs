@@ -16,7 +16,6 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SubscriptionController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -35,7 +34,7 @@ class DashboardScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
           children: [
-            _MonthlySummaryCard(ctrl: ctrl, isDark: isDark),
+            _MonthlySummaryCard(ctrl: ctrl),
             const SizedBox(height: 16),
             if (ctrl.ghosts.isNotEmpty) ...[
               _GhostAlert(ghosts: ctrl.ghosts),
@@ -83,18 +82,18 @@ class DashboardScreen extends StatelessWidget {
 
 class _MonthlySummaryCard extends StatelessWidget {
   final SubscriptionController ctrl;
-  final bool isDark;
 
-  const _MonthlySummaryCard({required this.ctrl, required this.isDark});
+  const _MonthlySummaryCard({required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final c = context.semanticColors;
     final nf = NumberFormat('#,##0.00', 'pl_PL');
     final currency = context.read<StorageService>().getCurrency();
 
     return Card(
-      color: isDark ? AppColors.darkPrimary.withValues(alpha: 0.15) : AppColors.lightPrimary,
+      color: c.heroCardBg,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -104,14 +103,14 @@ class _MonthlySummaryCard extends StatelessWidget {
             Text(
               'Łączny koszt miesięczny',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : Colors.white70,
+                color: c.heroCardTextSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '${nf.format(ctrl.totalMonthly)} $currency',
               style: theme.textTheme.displayLarge?.copyWith(
-                color: isDark ? AppColors.darkTextPrimary : Colors.white,
+                color: c.heroCardText,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -119,7 +118,7 @@ class _MonthlySummaryCard extends StatelessWidget {
             Text(
               '${nf.format(ctrl.totalYearly)} $currency / rok',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : Colors.white70,
+                color: c.heroCardTextSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -128,14 +127,12 @@ class _MonthlySummaryCard extends StatelessWidget {
                 _StatChip(
                   label: 'Aktywne',
                   value: '${ctrl.active.length}',
-                  isDark: isDark,
                 ),
                 const SizedBox(width: 8),
                 if (ctrl.ghosts.isNotEmpty)
                   _StatChip(
                     label: 'Ghost',
                     value: '${ctrl.ghosts.length}',
-                    isDark: isDark,
                     isWarning: true,
                   ),
               ],
@@ -150,23 +147,22 @@ class _MonthlySummaryCard extends StatelessWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  final bool isDark;
   final bool isWarning;
 
   const _StatChip({
     required this.label,
     required this.value,
-    required this.isDark,
     this.isWarning = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: isWarning
-            ? AppColors.negative.withValues(alpha: 0.2)
+            ? c.negative.withValues(alpha: 0.2)
             : Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -175,7 +171,7 @@ class _StatChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: isWarning ? AppColors.negativeBg : Colors.white,
+          color: isWarning ? c.negativeBg.withValues(alpha: 1.0) : Colors.white,
         ),
       ),
     );
@@ -189,16 +185,17 @@ class _GhostAlert extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.negativeBg,
+        color: c.negativeBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.negative.withValues(alpha: 0.3)),
+        border: Border.all(color: c.negative.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.alertTriangle, color: AppColors.negative),
+          Icon(LucideIcons.alertTriangle, color: c.negative),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -206,16 +203,16 @@ class _GhostAlert extends StatelessWidget {
               children: [
                 Text(
                   '${ghosts.length} ${ghosts.length == 1 ? 'ghost subscription' : 'ghost subscriptions'}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.negative,
+                    color: c.negative,
                   ),
                 ),
                 Text(
                   'Płacisz za serwisy, z których nie korzystasz od >30 dni.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.negative.withValues(alpha: 0.8),
+                    color: c.negative.withValues(alpha: 0.8),
                   ),
                 ),
               ],
