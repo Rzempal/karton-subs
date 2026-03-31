@@ -78,9 +78,7 @@ class SettingsScreen extends StatelessWidget {
             child: Text(
               'Kursy walut: 1 EUR = 4,28 PLN · 1 USD = 3,95 PLN · 1 GBP = 5,02 PLN',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.darkTextMuted
-                    : AppColors.lightTextMuted,
+                color: context.semanticColors.textMuted,
               ),
             ),
           ),
@@ -411,7 +409,7 @@ class _BackupSectionState extends State<_BackupSection> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Błąd: $msg'),
-        backgroundColor: AppColors.negative,
+        backgroundColor: context.semanticColors.negative,
       ),
     );
   }
@@ -439,8 +437,8 @@ class _OtaSection extends StatelessWidget {
         }
         if (svc.isUpToDate) {
           return ListTile(
-            leading: const Icon(LucideIcons.checkCircle,
-                color: AppColors.positive),
+            leading: Icon(LucideIcons.checkCircle,
+                color: context.semanticColors.positive),
             title: const Text('Aplikacja jest aktualna'),
             subtitle: Text('Sprawdzono: ${_formatTime(svc.lastCheckTime)}'),
             trailing: IconButton(
@@ -457,7 +455,7 @@ class _OtaSection extends StatelessWidget {
               ? const Text('Sprawdzanie…')
               : svc.errorMessage != null
                   ? Text(svc.errorMessage!,
-                      style: const TextStyle(color: AppColors.negative))
+                      style: TextStyle(color: context.semanticColors.negative))
                   : null,
           trailing: svc.status == UpdateStatus.checking
               ? const SizedBox(
@@ -484,23 +482,24 @@ class _UpdateAvailableTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.positiveBg,
+        color: c.positiveBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.positive.withValues(alpha: 0.3)),
+        border: Border.all(color: c.positive.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(LucideIcons.download, color: AppColors.positive),
+            Icon(LucideIcons.download, color: c.positive),
             const SizedBox(width: 8),
             Text('Dostępna aktualizacja ${svc.latestVersion}',
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, color: AppColors.positive)),
+                style: TextStyle(
+                    fontWeight: FontWeight.w600, color: c.positive)),
           ]),
           if (svc.changelog.isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -537,6 +536,7 @@ class _DownloadProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Column(
@@ -547,8 +547,8 @@ class _DownloadProgress extends StatelessWidget {
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: progress / 100,
-            backgroundColor: AppColors.positive.withValues(alpha: 0.15),
-            valueColor: const AlwaysStoppedAnimation(AppColors.positive),
+            backgroundColor: c.positive.withValues(alpha: 0.15),
+            valueColor: AlwaysStoppedAnimation(c.positive),
             minHeight: 6,
             borderRadius: BorderRadius.circular(3),
           ),

@@ -19,20 +19,20 @@ class BudgetProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
     final nf = NumberFormat('#,##0', 'pl_PL');
 
     final Color barColor;
     final String statusText;
 
     if (status.percentage >= 1.0) {
-      barColor = AppColors.negative;
+      barColor = c.negative;
       statusText = 'Przekroczono!';
     } else if (status.percentage >= 0.8) {
-      barColor = AppColors.warning;
+      barColor = c.warning;
       statusText = 'Blisko limitu';
     } else {
-      barColor = AppColors.positive;
+      barColor = c.positive;
       statusText = 'W budżecie';
     }
 
@@ -60,7 +60,7 @@ class BudgetProgressBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: status.percentage.clamp(0.0, 1.0),
-                backgroundColor: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                backgroundColor: c.border,
                 valueColor: AlwaysStoppedAnimation(barColor),
                 minHeight: 10,
               ),
@@ -79,7 +79,7 @@ class BudgetProgressBar extends StatelessWidget {
                 Text(
                   'z ${nf.format(status.limit)} $currencySymbol',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: c.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -89,7 +89,7 @@ class BudgetProgressBar extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Przekroczenie: ${nf.format(status.spent - status.limit)} $currencySymbol',
-                style: theme.textTheme.labelMedium?.copyWith(color: AppColors.negative),
+                style: theme.textTheme.labelMedium?.copyWith(color: c.negative),
               ),
             ],
           ],

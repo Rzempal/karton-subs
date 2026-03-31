@@ -420,7 +420,7 @@ class _QuickAddBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.semanticColors;
     final popular = QuickAddTemplates.all.take(6).toList();
 
     return Column(
@@ -458,9 +458,7 @@ class _QuickAddBar extends StatelessWidget {
                 label: Text(t.name),
                 avatar: CircleAvatar(backgroundColor: color, radius: 8),
                 onPressed: () => onSelected(t),
-                backgroundColor: isDark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.lightSurfaceVariant,
+                backgroundColor: c.surfaceVariant,
                 side: BorderSide.none,
               );
             },
@@ -566,7 +564,7 @@ class _UsageLogSection extends StatelessWidget {
 
     final usageLog = sub.usageLog;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,7 +587,7 @@ class _UsageLogSection extends StatelessWidget {
           Text(
             'Brak zalogowanych użyć',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              color: c.textMuted,
             ),
           )
         else
@@ -616,7 +614,7 @@ class _UsageLogSection extends StatelessWidget {
           Text(
             '...i ${usageLog.length - 10} więcej',
             style: theme.textTheme.labelMedium?.copyWith(
-              color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+              color: c.textMuted,
             ),
           ),
       ],

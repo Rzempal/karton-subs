@@ -30,7 +30,7 @@ class CategoryBreakdownChart extends StatelessWidget {
     if (categoryTotals.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final c = context.semanticColors;
     final nf = NumberFormat('#,##0', 'pl_PL');
     final total = categoryTotals.values.fold(0.0, (a, b) => a + b);
     final sorted = categoryTotals.entries.toList()
@@ -100,9 +100,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                                 '${nf.format(e.value.value)} $currencySymbol',
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   fontFeatures: const [FontFeature.tabularFigures()],
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary,
+                                  color: c.textSecondary,
                                 ),
                               ),
                             ],
