@@ -185,3 +185,29 @@ Zamiana na pojedyncza, prostsza ikone (Lucide Gem) z mniejsza liczba sciezek i b
 Przy wyborze symboli na ikone launchera: **preferuj proste, wypelnione ksztalty lub pojedyncze ikony**. Unikaj kompozycji wielu ikon stroke-based — nie przetrwaja skalowania do 48px.
 
 ---
+
+## 14. SVG→PNG rendering: przegladarka vs resvg (2026-03-31)
+
+### Problem
+PNG ikony wyrenderowane z przegladarki (Canvas export) mialy niską jakosc — brak detali masek SVG, zdegradowane krawedzie sześcianu. SVG zrodlowe wygladaly poprawnie.
+
+### Rozwiazanie
+Uzycie `@resvg/resvg-js` (natywny silnik Rust w WASM) do programowego renderowania PNG z SVG. Poprawna obsluga SVG mask, gradientow i stroke na wszystkich rozmiarach.
+
+### Wniosek
+Przy generowaniu PNG z SVG zawierajacych maski/gradienty: **nigdy nie polegaj na eksporcie z przegladarki**. Uzyj dedykowanego renderera SVG (resvg, Inkscape CLI, rsvg-convert). Przegladarki zle obsluguja `<mask>` na malych rozmiarach.
+
+---
+
+## 15. Android resource merging w multi-flavor (2026-03-31)
+
+### Problem
+Usuniecie `mipmap-anydpi-v26/ic_launcher.xml` z flavora `internal` spowodowalo, ze Android na API 26+ uzywal adaptive icon XML z flavora `main` — ladujac produkcyjny foreground zamiast deweloperskiego.
+
+### Rozwiazanie
+Dodanie pelnego zestawu adaptive icon layers (foreground, background, monochrome + XML) do flavora `internal`, nadpisujac zasoby z `main`.
+
+### Wniosek
+W Android multi-flavor: **kazdy flavor ktory ma wygladac inaczej MUSI jawnie nadpisac wszystkie warstwy adaptive icon**. Usuniecie XML nie blokuje fallbacku — Android dziedziczy z `main`. Brak pliku ≠ brak ikony.
+
+---
