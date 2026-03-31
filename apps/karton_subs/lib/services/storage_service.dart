@@ -148,6 +148,26 @@ class StorageService {
     }
   }
 
+  // ── Notification preferences ───────────────────────────────────────────────
+
+  bool getNotifyTrialReminders() =>
+      _settingsBox.get('notifyTrialReminders', defaultValue: true) as bool;
+
+  Future<void> setNotifyTrialReminders(bool value) async =>
+      _settingsBox.put('notifyTrialReminders', value);
+
+  bool getNotifyRenewalReminders() =>
+      _settingsBox.get('notifyRenewalReminders', defaultValue: true) as bool;
+
+  Future<void> setNotifyRenewalReminders(bool value) async =>
+      _settingsBox.put('notifyRenewalReminders', value);
+
+  bool getNotifyGhostWarnings() =>
+      _settingsBox.get('notifyGhostWarnings', defaultValue: true) as bool;
+
+  Future<void> setNotifyGhostWarnings(bool value) async =>
+      _settingsBox.put('notifyGhostWarnings', value);
+
   // ── Analytics helpers ──────────────────────────────────────────────────────
 
   double getTotalMonthly({String? currencyCode}) {

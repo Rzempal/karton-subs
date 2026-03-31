@@ -5,17 +5,19 @@ import '../models/usage_event.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
 import '../services/currency_service.dart';
+import '../services/notification_service.dart';
 import '../services/app_logger.dart';
 
 /// Zarządza stanem subskrypcji: CRUD + usage log + computed analytics.
 class SubscriptionController extends ChangeNotifier {
   static final _log = AppLogger.get('SubscriptionController');
   final StorageService _storage;
+  final NotificationService _notifications;
   static const _uuid = Uuid();
   static const _analytics = AnalyticsService();
   static const _currencyService = CurrencyService();
 
-  SubscriptionController(this._storage);
+  SubscriptionController(this._storage, this._notifications);
 
   /// Wymusza odświeżenie UI (np. po zmianie ustawień waluty/budżetu)
   void refresh() => notifyListeners();
@@ -74,6 +76,7 @@ class SubscriptionController extends ChangeNotifier {
 
   Future<void> add(Subscription sub) async {
     await _storage.saveSubscription(sub);
+    await _notifications.scheduleForSubscription(sub, storage: _storage);
     _log.info('Added: ${sub.name}');
     notifyListeners();
   }
@@ -122,11 +125,13 @@ class SubscriptionController extends ChangeNotifier {
 
   Future<void> update(Subscription sub) async {
     await _storage.saveSubscription(sub);
+    await _notifications.scheduleForSubscription(sub, storage: _storage);
     _log.info('Updated: ${sub.name}');
     notifyListeners();
   }
 
   Future<void> delete(String id) async {
+    await _notifications.cancelForSubscription(id);
     await _storage.deleteSubscription(id);
     _log.info('Deleted: $id');
     notifyListeners();

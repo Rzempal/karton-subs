@@ -57,6 +57,9 @@ dependencies:
   printing: ^5.13.5
   # Icons
   lucide_icons: ^0.257.0
+  # Local notifications
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:
