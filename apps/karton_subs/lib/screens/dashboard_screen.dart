@@ -36,6 +36,10 @@ class DashboardScreen extends StatelessWidget {
           children: [
             _MonthlySummaryCard(ctrl: ctrl),
             const SizedBox(height: 16),
+            if (ctrl.expiringTrials.isNotEmpty) ...[
+              _TrialExpiringAlert(trials: ctrl.expiringTrials),
+              const SizedBox(height: 16),
+            ],
             if (ctrl.ghosts.isNotEmpty) ...[
               _GhostAlert(ghosts: ctrl.ghosts),
               const SizedBox(height: 16),
@@ -121,6 +125,15 @@ class _MonthlySummaryCard extends StatelessWidget {
                 color: c.heroCardTextSecondary,
               ),
             ),
+            if (ctrl.postTrialMonthlyIncrease > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                '+ ${nf.format(ctrl.postTrialMonthlyIncrease)} $currency/mies po trialach',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: c.heroCardTextSecondary,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -129,6 +142,14 @@ class _MonthlySummaryCard extends StatelessWidget {
                   value: '${ctrl.active.length}',
                 ),
                 const SizedBox(width: 8),
+                if (ctrl.trials.isNotEmpty)
+                  _StatChip(
+                    label: 'Trial',
+                    value: '${ctrl.trials.length}',
+                    isTrial: true,
+                  ),
+                if (ctrl.trials.isNotEmpty && ctrl.ghosts.isNotEmpty)
+                  const SizedBox(width: 8),
                 if (ctrl.ghosts.isNotEmpty)
                   _StatChip(
                     label: 'Ghost',
@@ -148,22 +169,36 @@ class _StatChip extends StatelessWidget {
   final String label;
   final String value;
   final bool isWarning;
+  final bool isTrial;
 
   const _StatChip({
     required this.label,
     required this.value,
     this.isWarning = false,
+    this.isTrial = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.semanticColors;
+
+    final Color bgColor;
+    final Color textColor;
+    if (isWarning) {
+      bgColor = c.negative.withValues(alpha: 0.2);
+      textColor = Colors.white;
+    } else if (isTrial) {
+      bgColor = c.trial.withValues(alpha: 0.2);
+      textColor = Colors.white;
+    } else {
+      bgColor = Colors.white.withValues(alpha: 0.15);
+      textColor = Colors.white;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: isWarning
-            ? c.negative.withValues(alpha: 0.2)
-            : Colors.white.withValues(alpha: 0.15),
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -171,7 +206,7 @@ class _StatChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: isWarning ? c.negativeBg.withValues(alpha: 1.0) : Colors.white,
+          color: textColor,
         ),
       ),
     );
@@ -218,6 +253,73 @@ class _GhostAlert extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrialExpiringAlert extends StatelessWidget {
+  final List<Subscription> trials;
+
+  const _TrialExpiringAlert({required this.trials});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    final nf = NumberFormat('#,##0.00', 'pl_PL');
+    final currency = context.read<StorageService>().getCurrency();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.warningBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.warning.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.clock, color: c.warning),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '${trials.length} ${trials.length == 1 ? 'trial kończy się' : 'triale kończą się'} w tym tygodniu',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: c.warning,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...trials.map((s) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${s.name} · za ${s.trialDaysRemaining} dni',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: c.warning.withValues(alpha: 0.8),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '→ ${nf.format(s.postTrialAmount ?? s.amount)} $currency/mies',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: c.warning,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );

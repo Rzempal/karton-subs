@@ -43,6 +43,8 @@ class AnalyticsScreen extends StatelessWidget {
     final spendingTrend = _analytics.getSpendingTrend(subs, months: 6, target: currencyEnum);
     final costPerUse = _analytics.getCostPerUseRanking(subs, target: currencyEnum);
     final ghosts = _analytics.getGhostSubscriptions(subs);
+    final activeTrials = subs.where((s) => s.isTrialActive).toList()
+      ..sort((a, b) => (a.trialDaysRemaining ?? 99).compareTo(b.trialDaysRemaining ?? 99));
     final budgetStatus = _analytics.getBudgetStatus(
       subs, storage.getBudgetLimit(), target: currencyEnum,
     );
@@ -118,6 +120,15 @@ class AnalyticsScreen extends StatelessWidget {
             currencySymbol: currencyLabel,
           ),
 
+          // Active trials
+          if (activeTrials.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _TrialCostsCard(
+              trials: activeTrials,
+              currencySymbol: currencyLabel,
+            ),
+          ],
+
           // Cost per use ranking
           if (costPerUse.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -160,6 +171,77 @@ class AnalyticsScreen extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+class _TrialCostsCard extends StatelessWidget {
+  final List<Subscription> trials;
+  final String currencySymbol;
+
+  const _TrialCostsCard({required this.trials, required this.currencySymbol});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final nf = NumberFormat('#,##0.00', 'pl_PL');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.trialBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.trial.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.clock, color: c.trial, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Nadchodzące koszty z triali',
+                style: theme.textTheme.titleMedium?.copyWith(color: c.trial),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...trials.map((s) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s.name,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  'za ${s.trialDaysRemaining} dni',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: (s.trialDaysRemaining ?? 99) <= 3
+                        ? c.warning
+                        : c.trial,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '${nf.format(s.postTrialAmount ?? s.amount)} $currencySymbol/mies',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
   }
 }
 
@@ -211,11 +293,15 @@ class _CostPerUseCard extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Text(
-                    entry.costPerUse == double.infinity
-                        ? 'brak użyć'
-                        : '${nf.format(entry.costPerUse)} $currencySymbol/użycie',
+                    entry.subscription.isTrialActive
+                        ? 'trial'
+                        : entry.costPerUse == double.infinity
+                            ? 'brak użyć'
+                            : '${nf.format(entry.costPerUse)} $currencySymbol/użycie',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: entry.costPerUse == double.infinity ? c.negative : null,
+                      color: entry.subscription.isTrialActive
+                          ? c.trial
+                          : entry.costPerUse == double.infinity ? c.negative : null,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),

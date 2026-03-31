@@ -4,6 +4,7 @@ import '../models/subscription.dart';
 import '../models/usage_event.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
+import '../services/currency_service.dart';
 import '../services/app_logger.dart';
 
 /// Zarządza stanem subskrypcji: CRUD + usage log + computed analytics.
@@ -12,6 +13,7 @@ class SubscriptionController extends ChangeNotifier {
   final StorageService _storage;
   static const _uuid = Uuid();
   static const _analytics = AnalyticsService();
+  static const _currencyService = CurrencyService();
 
   SubscriptionController(this._storage);
 
@@ -21,6 +23,10 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get all => _storage.getSubscriptions();
   List<Subscription> get active => _storage.getActiveSubscriptions();
   List<Subscription> get ghosts => _storage.getGhostSubscriptions();
+  List<Subscription> get trials =>
+      active.where((s) => s.isTrialActive).toList();
+  List<Subscription> get expiringTrials =>
+      trials.where((s) => (s.trialDaysRemaining ?? 99) <= 7).toList();
 
   Currency get _targetCurrency {
     final code = _storage.getCurrency();
@@ -33,6 +39,14 @@ class SubscriptionController extends ChangeNotifier {
   double get totalMonthly =>
       _analytics.getMonthlyTotal(all, target: _targetCurrency);
   double get totalYearly => totalMonthly * 12;
+
+  /// Suma miesięczna po zakończeniu aktywnych triali
+  double get postTrialMonthlyIncrease {
+    final t = _targetCurrency;
+    return trials.fold(0.0, (sum, s) {
+      return sum + _currencyService.convert(s.postTrialMonthlyAmount, s.currency, t);
+    });
+  }
 
   Map<String, double> get categoryBreakdown =>
       _analytics.getCategoryBreakdown(all, target: _targetCurrency);
@@ -78,6 +92,9 @@ class SubscriptionController extends ChangeNotifier {
     int? reminderDaysBefore,
     int? sharedWith,
     String? paymentMethod,
+    bool isTrial = false,
+    DateTime? trialEndDate,
+    double? postTrialAmount,
   }) async {
     final sub = Subscription(
       id: _uuid.v4(),
@@ -94,6 +111,9 @@ class SubscriptionController extends ChangeNotifier {
       reminderDaysBefore: reminderDaysBefore,
       sharedWith: sharedWith,
       paymentMethod: paymentMethod,
+      isTrial: isTrial,
+      trialEndDate: trialEndDate,
+      postTrialAmount: postTrialAmount,
       dataDodania: DateTime.now(),
     );
     await add(sub);

@@ -107,6 +107,36 @@ class SubscriptionCard extends StatelessWidget {
                               color: c.textMuted,
                             ),
                           ),
+                          if (subscription.isTrialActive) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: (subscription.trialDaysRemaining ?? 99) <= 3
+                                    ? c.warning.withValues(alpha: 0.15)
+                                    : c.trial.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(LucideIcons.clock, size: 10,
+                                      color: (subscription.trialDaysRemaining ?? 99) <= 3
+                                          ? c.warning : c.trial),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'Trial · ${subscription.trialDaysRemaining} dni',
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      fontSize: 10,
+                                      color: (subscription.trialDaysRemaining ?? 99) <= 3
+                                          ? c.warning : c.trial,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           if (subscription.sharedWith != null &&
                               subscription.sharedWith! > 1) ...[
                             const SizedBox(width: 8),
@@ -129,18 +159,35 @@ class SubscriptionCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      _formatAmount(subscription.amount, subscription.currency),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    if (subscription.isTrialActive) ...[
+                      Text(
+                        _formatAmount(subscription.amount, subscription.currency),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: c.trial,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${_formatAmount(convertedMonthly, defaultCurrency)}/mies.',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: c.textMuted,
+                      Text(
+                        '→ ${_formatAmount(subscription.postTrialAmount ?? subscription.amount, subscription.currency)}/mies.',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: c.textMuted,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
+                    ] else ...[
+                      Text(
+                        _formatAmount(subscription.amount, subscription.currency),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      Text(
+                        '${_formatAmount(convertedMonthly, defaultCurrency)}/mies.',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: c.textMuted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(width: 4),
@@ -154,6 +201,11 @@ class SubscriptionCard extends StatelessWidget {
   }
 
   Color _borderColor(AppSemanticColors c) {
+    if (subscription.isTrialActive) {
+      final days = subscription.trialDaysRemaining ?? 99;
+      if (days <= 3) return c.warning.withValues(alpha: 0.3);
+      return c.trial.withValues(alpha: 0.3);
+    }
     if (subscription.isGhost) {
       return c.negative.withValues(alpha: 0.3);
     }
@@ -166,6 +218,11 @@ class SubscriptionCard extends StatelessWidget {
   Color _bgColor(AppSemanticColors c) {
     if (!subscription.isActive) {
       return c.surface;
+    }
+    if (subscription.isTrialActive) {
+      final days = subscription.trialDaysRemaining ?? 99;
+      if (days <= 3) return c.warningBg;
+      return c.trialBg;
     }
     if (subscription.isGhost) {
       return c.negativeBg;
@@ -205,6 +262,8 @@ class _StatusDot extends StatelessWidget {
     final Color color;
     if (!subscription.isActive) {
       color = c.textMuted; // szary
+    } else if (subscription.isTrialActive) {
+      color = c.trial; // niebieski
     } else if (subscription.isGhost) {
       color = c.negative; // czerwony
     } else {
