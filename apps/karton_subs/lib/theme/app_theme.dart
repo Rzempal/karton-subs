@@ -36,6 +36,156 @@ class AppColors {
   static const Color darkTextMuted = Color(0xFF64748B);
 }
 
+// ── Semantic Color Tokens ─────────────────────────────────────────────────
+/// Theme-aware semantic colors resolved via [ThemeExtension].
+/// Widgets use `Theme.of(context).extension<AppSemanticColors>()!` or the
+/// `context.semanticColors` shorthand — zero `isDark` checks needed.
+class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
+  final Color positive;
+  final Color positiveBg;
+  final Color negative;
+  final Color negativeBg;
+  final Color warning;
+  final Color warningBg;
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+  final Color border;
+  final Color surface;
+  final Color surfaceVariant;
+  final Color primary;
+  final Color heroCardBg;
+  final Color heroCardText;
+  final Color heroCardTextSecondary;
+
+  const AppSemanticColors({
+    required this.positive,
+    required this.positiveBg,
+    required this.negative,
+    required this.negativeBg,
+    required this.warning,
+    required this.warningBg,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.border,
+    required this.surface,
+    required this.surfaceVariant,
+    required this.primary,
+    required this.heroCardBg,
+    required this.heroCardText,
+    required this.heroCardTextSecondary,
+  });
+
+  // ── Light ────────────────────────────────────────────────────────────────
+  static const light = AppSemanticColors(
+    positive: AppColors.positive,
+    positiveBg: AppColors.positiveBg,
+    negative: AppColors.negative,
+    negativeBg: AppColors.negativeBg,
+    warning: AppColors.warning,
+    warningBg: AppColors.warningBg,
+    textPrimary: AppColors.lightTextPrimary,
+    textSecondary: AppColors.lightTextSecondary,
+    textMuted: AppColors.lightTextMuted,
+    border: AppColors.lightBorder,
+    surface: AppColors.lightSurface,
+    surfaceVariant: AppColors.lightSurfaceVariant,
+    primary: AppColors.lightPrimary,
+    heroCardBg: AppColors.lightPrimary,
+    heroCardText: Colors.white,
+    heroCardTextSecondary: Colors.white70,
+  );
+
+  // ── Dark — status foreground brightened (400 vs 600) for contrast ───────
+  static final dark = AppSemanticColors(
+    positive: const Color(0xFF4ADE80),   // Green-400
+    positiveBg: const Color(0xFF4ADE80).withValues(alpha: 0.10),
+    negative: const Color(0xFFF87171),   // Red-400
+    negativeBg: const Color(0xFFF87171).withValues(alpha: 0.10),
+    warning: const Color(0xFFFBBF24),    // Amber-400
+    warningBg: const Color(0xFFFBBF24).withValues(alpha: 0.10),
+    textPrimary: AppColors.darkTextPrimary,
+    textSecondary: AppColors.darkTextSecondary,
+    textMuted: AppColors.darkTextMuted,
+    border: AppColors.darkBorder,
+    surface: AppColors.darkSurface,
+    surfaceVariant: AppColors.darkSurfaceVariant,
+    primary: AppColors.darkPrimary,
+    heroCardBg: AppColors.darkPrimary.withValues(alpha: 0.15),
+    heroCardText: AppColors.darkTextPrimary,
+    heroCardTextSecondary: AppColors.darkTextSecondary,
+  );
+
+  @override
+  AppSemanticColors copyWith({
+    Color? positive,
+    Color? positiveBg,
+    Color? negative,
+    Color? negativeBg,
+    Color? warning,
+    Color? warningBg,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textMuted,
+    Color? border,
+    Color? surface,
+    Color? surfaceVariant,
+    Color? primary,
+    Color? heroCardBg,
+    Color? heroCardText,
+    Color? heroCardTextSecondary,
+  }) {
+    return AppSemanticColors(
+      positive: positive ?? this.positive,
+      positiveBg: positiveBg ?? this.positiveBg,
+      negative: negative ?? this.negative,
+      negativeBg: negativeBg ?? this.negativeBg,
+      warning: warning ?? this.warning,
+      warningBg: warningBg ?? this.warningBg,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textMuted: textMuted ?? this.textMuted,
+      border: border ?? this.border,
+      surface: surface ?? this.surface,
+      surfaceVariant: surfaceVariant ?? this.surfaceVariant,
+      primary: primary ?? this.primary,
+      heroCardBg: heroCardBg ?? this.heroCardBg,
+      heroCardText: heroCardText ?? this.heroCardText,
+      heroCardTextSecondary: heroCardTextSecondary ?? this.heroCardTextSecondary,
+    );
+  }
+
+  @override
+  AppSemanticColors lerp(AppSemanticColors? other, double t) {
+    if (other is! AppSemanticColors) return this;
+    return AppSemanticColors(
+      positive: Color.lerp(positive, other.positive, t)!,
+      positiveBg: Color.lerp(positiveBg, other.positiveBg, t)!,
+      negative: Color.lerp(negative, other.negative, t)!,
+      negativeBg: Color.lerp(negativeBg, other.negativeBg, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningBg: Color.lerp(warningBg, other.warningBg, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceVariant: Color.lerp(surfaceVariant, other.surfaceVariant, t)!,
+      primary: Color.lerp(primary, other.primary, t)!,
+      heroCardBg: Color.lerp(heroCardBg, other.heroCardBg, t)!,
+      heroCardText: Color.lerp(heroCardText, other.heroCardText, t)!,
+      heroCardTextSecondary: Color.lerp(heroCardTextSecondary, other.heroCardTextSecondary, t)!,
+    );
+  }
+}
+
+/// Shorthand: `context.semanticColors`
+extension SemanticColorsExtension on BuildContext {
+  AppSemanticColors get semanticColors =>
+      Theme.of(this).extension<AppSemanticColors>()!;
+}
+
 class AppTheme {
   AppTheme._();
 
@@ -74,6 +224,9 @@ class AppTheme {
       brightness: brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+
+      // Semantic color extension
+      extensions: [isDark ? AppSemanticColors.dark : AppSemanticColors.light],
 
       // Typography — tabular figures dla kwot finansowych
       textTheme: const TextTheme(
