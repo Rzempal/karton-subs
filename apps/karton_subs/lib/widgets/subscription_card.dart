@@ -44,6 +44,18 @@ class SubscriptionCard extends StatelessWidget {
     final bgColor = _bgColor(c);
     final isCancelled = !subscription.isActive;
 
+    // ── Right column: amount + contextual subtitle ──
+    final nf = NumberFormat('#,##0.00', 'pl_PL');
+    final amountStr = '${nf.format(subscription.amount)} ${subscription.currency.symbol}';
+    final cycleSuffix = _cycleSuffix(subscription.billingCycle);
+
+    // Determine contextual subtitle (or null if redundant)
+    final subtitle = _buildSubtitle(
+      nf: nf,
+      convertedMonthly: convertedMonthly,
+      defaultCurrency: defaultCurrency,
+    );
+
     return Card(
       color: bgColor,
       shape: RoundedRectangleBorder(
@@ -66,9 +78,9 @@ class SubscriptionCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Row 1: name ──
                       Row(
                         children: [
-                          // Status dot
                           _StatusDot(subscription: subscription),
                           const SizedBox(width: 6),
                           if (subscription.isPinned) ...[
@@ -90,85 +102,57 @@ class SubscriptionCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Row(
+                      // ── Row 2: category + sharing + trial badge (no cycle) ──
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          if (category != null) ...[
+                          if (category != null)
                             Text(
                               category.name,
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: category.color,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                          ],
-                          Text(
-                            _cycleLabel(subscription.billingCycle),
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: c.textMuted,
-                            ),
-                          ),
-                          if (subscription.isTrialActive) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: (subscription.trialDaysRemaining ?? 99) <= 3
-                                    ? c.warning.withValues(alpha: 0.15)
-                                    : c.trial.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(LucideIcons.clock, size: 10,
-                                      color: (subscription.trialDaysRemaining ?? 99) <= 3
-                                          ? c.warning : c.trial),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    'Trial · ${subscription.trialDaysRemaining} dni',
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                      fontSize: 10,
-                                      color: (subscription.trialDaysRemaining ?? 99) <= 3
-                                          ? c.warning : c.trial,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
                           if (subscription.sharedWith != null &&
-                              subscription.sharedWith! > 1) ...[
-                            const SizedBox(width: 8),
-                            Icon(LucideIcons.users, size: 12,
-                                color: c.textMuted),
-                            const SizedBox(width: 2),
-                            Text(
-                              '1/${subscription.sharedWith}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: c.textMuted,
-                              ),
+                              subscription.sharedWith! > 1)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.users, size: 12,
+                                    color: c.textMuted),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '1/${subscription.sharedWith}',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: c.textMuted,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          if (subscription.isTrialActive)
+                            _TrialBadge(subscription: subscription),
                         ],
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
+                // ── Right column: amount/cycle + subtitle ──
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     if (subscription.isTrialActive) ...[
                       Text(
-                        _formatAmount(subscription.amount, subscription.currency),
+                        '$amountStr/$cycleSuffix',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                           color: c.trial,
                         ),
                       ),
                       Text(
-                        '→ ${_formatAmount(subscription.postTrialAmount ?? subscription.amount, subscription.currency)}/mies.',
+                        '→ ${nf.format(subscription.postTrialAmount ?? subscription.amount)} ${subscription.currency.symbol}/$cycleSuffix',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: c.textMuted,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -176,17 +160,19 @@ class SubscriptionCard extends StatelessWidget {
                       ),
                     ] else ...[
                       Text(
-                        _formatAmount(subscription.amount, subscription.currency),
+                        '$amountStr/$cycleSuffix',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
-                      Text(
-                        '${_formatAmount(convertedMonthly, defaultCurrency)}/mies.',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: c.textMuted,
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: c.textMuted,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
                     ],
                   ],
                 ),
@@ -198,6 +184,37 @@ class SubscriptionCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Contextual subtitle — only shown when it adds information.
+  /// Priority: foreign currency > sharing > non-monthly cycle.
+  /// Returns null if subtitle would be redundant with the main amount.
+  String? _buildSubtitle({
+    required NumberFormat nf,
+    required double convertedMonthly,
+    required Currency defaultCurrency,
+  }) {
+    final isForeignCurrency = subscription.currency != defaultCurrency;
+    final isShared = subscription.sharedWith != null && subscription.sharedWith! > 1;
+    final isNonMonthly = subscription.billingCycle != BillingCycle.monthly;
+
+    // Foreign currency → show converted monthly in default currency
+    if (isForeignCurrency) {
+      return '${nf.format(convertedMonthly)} ${defaultCurrency.symbol}/mies.';
+    }
+
+    // Shared → show per-person amount
+    if (isShared) {
+      return '${nf.format(subscription.monthlyAmount)} ${subscription.currency.symbol}/os.';
+    }
+
+    // Non-monthly → show monthly equivalent
+    if (isNonMonthly) {
+      return '${nf.format(subscription.monthlyAmountFull)} ${subscription.currency.symbol}/mies.';
+    }
+
+    // Monthly, same currency, not shared → subtitle is redundant
+    return null;
   }
 
   Color _borderColor(AppSemanticColors c) {
@@ -235,19 +252,50 @@ class SubscriptionCard extends StatelessWidget {
 
   bool _isRenewingSoon() => subscription.isRenewalSoon;
 
-  String _formatAmount(double amount, Currency currency) {
-    final nf = NumberFormat('#,##0.00', 'pl_PL');
-    return '${nf.format(amount)} ${currency.symbol}';
-  }
+  /// Short cycle suffix for amount display (e.g. "37,99 zł/mies.")
+  String _cycleSuffix(BillingCycle cycle) => switch (cycle) {
+        BillingCycle.weekly => 'tydz.',
+        BillingCycle.monthly => 'mies.',
+        BillingCycle.quarterly => 'kw.',
+        BillingCycle.yearly => 'rok',
+        BillingCycle.custom => 'cykl',
+      };
+}
 
-  String _cycleLabel(BillingCycle cycle) {
-    return switch (cycle) {
-      BillingCycle.weekly => 'tygodniowo',
-      BillingCycle.monthly => 'miesięcznie',
-      BillingCycle.quarterly => 'kwartalnie',
-      BillingCycle.yearly => 'rocznie',
-      BillingCycle.custom => 'własny cykl',
-    };
+class _TrialBadge extends StatelessWidget {
+  final Subscription subscription;
+  const _TrialBadge({required this.subscription});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    final theme = Theme.of(context);
+    final days = subscription.trialDaysRemaining ?? 99;
+    final isUrgent = days <= 3;
+    final color = isUrgent ? c.warning : c.trial;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.clock, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(
+            'Trial · $days dni',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
