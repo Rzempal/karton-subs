@@ -85,6 +85,7 @@ class NotificationService {
 
   /// Cancel all notifications for a subscription.
   Future<void> cancelForSubscription(String subscriptionId) async {
+    if (!_initialized) return;
     final baseId = _baseId(subscriptionId);
     for (int offset = 0; offset < 5; offset++) {
       await _plugin.cancel(baseId + offset);

@@ -76,7 +76,7 @@ class SubscriptionController extends ChangeNotifier {
 
   Future<void> add(Subscription sub) async {
     await _storage.saveSubscription(sub);
-    await _notifications.scheduleForSubscription(sub, storage: _storage);
+    _notifications.scheduleForSubscription(sub, storage: _storage);
     _log.info('Added: ${sub.name}');
     notifyListeners();
   }
@@ -125,13 +125,13 @@ class SubscriptionController extends ChangeNotifier {
 
   Future<void> update(Subscription sub) async {
     await _storage.saveSubscription(sub);
-    await _notifications.scheduleForSubscription(sub, storage: _storage);
+    _notifications.scheduleForSubscription(sub, storage: _storage);
     _log.info('Updated: ${sub.name}');
     notifyListeners();
   }
 
   Future<void> delete(String id) async {
-    await _notifications.cancelForSubscription(id);
+    _notifications.cancelForSubscription(id);
     await _storage.deleteSubscription(id);
     _log.info('Deleted: $id');
     notifyListeners();
