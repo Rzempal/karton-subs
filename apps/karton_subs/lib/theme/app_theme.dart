@@ -57,6 +57,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
   final Color heroCardBg;
   final Color heroCardText;
   final Color heroCardTextSecondary;
+  final Color trial;
+  final Color trialBg;
 
   const AppSemanticColors({
     required this.positive,
@@ -75,6 +77,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     required this.heroCardBg,
     required this.heroCardText,
     required this.heroCardTextSecondary,
+    required this.trial,
+    required this.trialBg,
   });
 
   // ── Light ────────────────────────────────────────────────────────────────
@@ -95,6 +99,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     heroCardBg: AppColors.lightPrimary,
     heroCardText: Colors.white,
     heroCardTextSecondary: Colors.white70,
+    trial: Color(0xFF2563EB),        // Blue-600
+    trialBg: Color(0xFFEFF6FF),      // Blue-50
   );
 
   // ── Dark — status foreground brightened (400 vs 600) for contrast ───────
@@ -115,6 +121,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     heroCardBg: AppColors.darkPrimary.withValues(alpha: 0.15),
     heroCardText: AppColors.darkTextPrimary,
     heroCardTextSecondary: AppColors.darkTextSecondary,
+    trial: const Color(0xFF60A5FA),   // Blue-400
+    trialBg: const Color(0xFF60A5FA).withValues(alpha: 0.10),
   );
 
   @override
@@ -135,6 +143,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     Color? heroCardBg,
     Color? heroCardText,
     Color? heroCardTextSecondary,
+    Color? trial,
+    Color? trialBg,
   }) {
     return AppSemanticColors(
       positive: positive ?? this.positive,
@@ -153,6 +163,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       heroCardBg: heroCardBg ?? this.heroCardBg,
       heroCardText: heroCardText ?? this.heroCardText,
       heroCardTextSecondary: heroCardTextSecondary ?? this.heroCardTextSecondary,
+      trial: trial ?? this.trial,
+      trialBg: trialBg ?? this.trialBg,
     );
   }
 
@@ -176,6 +188,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       heroCardBg: Color.lerp(heroCardBg, other.heroCardBg, t)!,
       heroCardText: Color.lerp(heroCardText, other.heroCardText, t)!,
       heroCardTextSecondary: Color.lerp(heroCardTextSecondary, other.heroCardTextSecondary, t)!,
+      trial: Color.lerp(trial, other.trial, t)!,
+      trialBg: Color.lerp(trialBg, other.trialBg, t)!,
     );
   }
 }
