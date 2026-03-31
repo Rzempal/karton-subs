@@ -205,6 +205,8 @@ class NotificationService {
         tzDateTime,
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
       _log.warning('Failed to schedule notification $id: $e');
