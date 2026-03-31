@@ -65,6 +65,9 @@ class Subscription {
   final DateTime? cancelledDate;
   final int? sharedWith;
   final String? paymentMethod;
+  final bool isTrial;
+  final DateTime? trialEndDate;
+  final double? postTrialAmount;
 
   const Subscription({
     required this.id,
@@ -87,6 +90,9 @@ class Subscription {
     this.cancelledDate,
     this.sharedWith,
     this.paymentMethod,
+    this.isTrial = false,
+    this.trialEndDate,
+    this.postTrialAmount,
   });
 
   /// Pełna kwota znormalizowana do miesięcznej (bez podziału)
@@ -106,8 +112,10 @@ class Subscription {
     }
   }
 
-  /// Kwota miesięczna po podziale na współdzielących
+  /// Kwota miesięczna po podziale na współdzielących.
+  /// Zwraca 0 dla aktywnych triali (jeszcze nie płacisz).
   double get monthlyAmount {
+    if (isTrialActive) return 0;
     final full = monthlyAmountFull;
     if (sharedWith != null && sharedWith! > 1) return full / sharedWith!;
     return full;
@@ -163,6 +171,56 @@ class Subscription {
     return (monthlyAmount * months) / usageLog.length;
   }
 
+  // ── Trial ───────────────────────────────────────────────────────────────
+
+  /// Czy trial jest aktywny (jeszcze nie wygasł)
+  bool get isTrialActive =>
+      isTrial && trialEndDate != null && !trialEndDate!.isBefore(_now);
+
+  /// Czy trial wygasł (data minęła, ale isTrial nadal true)
+  bool get isTrialExpired =>
+      isTrial && trialEndDate != null && trialEndDate!.isBefore(_now);
+
+  /// Dni do końca triala (null jeśli nie trial)
+  int? get trialDaysRemaining {
+    if (!isTrial || trialEndDate == null) return null;
+    final days = trialEndDate!.difference(_now).inDays;
+    return days < 0 ? 0 : days;
+  }
+
+  /// Progres triala 0.0–1.0 (null jeśli nie trial)
+  double? get trialProgress {
+    if (!isTrial || trialEndDate == null) return null;
+    final totalDays = trialEndDate!.difference(startDate).inDays;
+    if (totalDays <= 0) return 1.0;
+    final elapsed = _now.difference(startDate).inDays;
+    return (elapsed / totalDays).clamp(0.0, 1.0);
+  }
+
+  /// Kwota miesięczna po zakończeniu triala
+  double get postTrialMonthlyAmount {
+    final base = postTrialAmount ?? amount;
+    final full = _monthlyFromAmount(base);
+    if (sharedWith != null && sharedWith! > 1) return full / sharedWith!;
+    return full;
+  }
+
+  double _monthlyFromAmount(double amt) {
+    switch (billingCycle) {
+      case BillingCycle.weekly:
+        return amt * 52 / 12;
+      case BillingCycle.monthly:
+        return amt;
+      case BillingCycle.quarterly:
+        return amt / 3;
+      case BillingCycle.yearly:
+        return amt / 12;
+      case BillingCycle.custom:
+        final days = customCycleDays ?? 30;
+        return amt * 30 / days;
+    }
+  }
+
   factory Subscription.fromJson(Map<String, dynamic> json) {
     return Subscription(
       id: json['id'] as String,
@@ -195,6 +253,11 @@ class Subscription {
           : null,
       sharedWith: json['sharedWith'] as int?,
       paymentMethod: json['paymentMethod'] as String?,
+      isTrial: json['isTrial'] as bool? ?? false,
+      trialEndDate: json['trialEndDate'] != null
+          ? DateTime.parse(json['trialEndDate'] as String)
+          : null,
+      postTrialAmount: (json['postTrialAmount'] as num?)?.toDouble(),
     );
   }
 
@@ -221,6 +284,10 @@ class Subscription {
           'cancelledDate': cancelledDate!.toIso8601String(),
         if (sharedWith != null) 'sharedWith': sharedWith,
         if (paymentMethod != null) 'paymentMethod': paymentMethod,
+        'isTrial': isTrial,
+        if (trialEndDate != null)
+          'trialEndDate': trialEndDate!.toIso8601String(),
+        if (postTrialAmount != null) 'postTrialAmount': postTrialAmount,
       };
 
   Subscription copyWith({
@@ -254,6 +321,11 @@ class Subscription {
     bool clearSharedWith = false,
     String? paymentMethod,
     bool clearPaymentMethod = false,
+    bool? isTrial,
+    DateTime? trialEndDate,
+    bool clearTrialEndDate = false,
+    double? postTrialAmount,
+    bool clearPostTrialAmount = false,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -288,6 +360,13 @@ class Subscription {
       paymentMethod: clearPaymentMethod
           ? null
           : (paymentMethod ?? this.paymentMethod),
+      isTrial: isTrial ?? this.isTrial,
+      trialEndDate: clearTrialEndDate
+          ? null
+          : (trialEndDate ?? this.trialEndDate),
+      postTrialAmount: clearPostTrialAmount
+          ? null
+          : (postTrialAmount ?? this.postTrialAmount),
     );
   }
 }
