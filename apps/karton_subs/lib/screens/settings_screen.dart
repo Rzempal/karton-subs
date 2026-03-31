@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/backup_service.dart';
+import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../services/theme_provider.dart';
 import '../services/update_service.dart';
@@ -82,6 +83,11 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+          const Divider(indent: 16, endIndent: 16),
+
+          // ── Powiadomienia ────────────────────────────────────────────────
+          const _SectionDivider('Powiadomienia'),
+          _NotificationSection(),
           const Divider(indent: 16, endIndent: 16),
 
           // ── Backup ──────────────────────────────────────────────────────
@@ -272,6 +278,68 @@ class SettingsScreen extends StatelessWidget {
         ThemeMode.light => 'Jasny',
         ThemeMode.dark => 'Ciemny',
       };
+}
+
+// ── Notification Section ──────────────────────────────────────────────────
+
+class _NotificationSection extends StatefulWidget {
+  @override
+  State<_NotificationSection> createState() => _NotificationSectionState();
+}
+
+class _NotificationSectionState extends State<_NotificationSection> {
+  bool? _trialReminders;
+  bool? _renewalReminders;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_trialReminders == null) {
+      final storage = context.read<StorageService>();
+      _trialReminders = storage.getNotifyTrialReminders();
+      _renewalReminders = storage.getNotifyRenewalReminders();
+    }
+  }
+
+  Future<void> _onChanged() async {
+    final storage = context.read<StorageService>();
+    final notifications = context.read<NotificationService>();
+    await notifications.rescheduleAll(
+      storage.getSubscriptions(),
+      storage: storage,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final storage = context.read<StorageService>();
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(LucideIcons.clock),
+          title: const Text('Przypomnienia o trialach'),
+          subtitle: const Text('3 dni, 1 dzień przed i w dniu końca'),
+          value: _trialReminders ?? true,
+          onChanged: (v) async {
+            setState(() => _trialReminders = v);
+            await storage.setNotifyTrialReminders(v);
+            await _onChanged();
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(LucideIcons.calendarClock),
+          title: const Text('Przypomnienia o odnowieniach'),
+          subtitle: const Text('Przed odnowieniem subskrypcji'),
+          value: _renewalReminders ?? true,
+          onChanged: (v) async {
+            setState(() => _renewalReminders = v);
+            await storage.setNotifyRenewalReminders(v);
+            await _onChanged();
+          },
+        ),
+      ],
+    );
+  }
 }
 
 // ── Backup Section ─────────────────────────────────────────────────────────

@@ -42,7 +42,7 @@ void main() async {
   const notificationService = NotificationService();
   await notificationService.init();
   // Reschedule all on startup (covers reboot, app update, etc.)
-  await notificationService.rescheduleAll(storage.getSubscriptions());
+  await notificationService.rescheduleAll(storage.getSubscriptions(), storage: storage);
 
   runApp(
     MultiProvider(
