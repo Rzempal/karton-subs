@@ -31,15 +31,19 @@ class NotificationService {
   Future<void> init() async {
     if (_initialized) return;
 
-    tz.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('Europe/Warsaw'));
+    try {
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('Europe/Warsaw'));
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
+      const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettings = InitializationSettings(android: androidSettings);
 
-    await _plugin.initialize(initSettings);
-    _initialized = true;
-    _log.info('NotificationService initialized');
+      await _plugin.initialize(initSettings);
+      _initialized = true;
+      _log.info('NotificationService initialized');
+    } catch (e) {
+      _log.warning('NotificationService init failed (non-fatal): $e');
+    }
   }
 
   // ── Preferences helper ──────────────────────────────────────────────────
@@ -59,6 +63,7 @@ class NotificationService {
     Subscription sub, {
     required StorageService storage,
   }) async {
+    if (!_initialized) return;
     await cancelForSubscription(sub.id);
 
     if (!sub.isActive) return;
@@ -91,6 +96,7 @@ class NotificationService {
     List<Subscription> subs, {
     required StorageService storage,
   }) async {
+    if (!_initialized) return;
     await _plugin.cancelAll();
     for (final sub in subs) {
       await scheduleForSubscription(sub, storage: storage);
