@@ -31,6 +31,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   DateTime _startDate = DateTime.now();
   int? _sharedWith;
   String? _paymentMethod;
+  bool _isTrial = false;
+  DateTime? _trialEndDate;
+  late final TextEditingController _postTrialAmountCtrl;
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.existing != null;
@@ -44,6 +47,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         text: s != null ? s.amount.toStringAsFixed(2) : '');
     _descCtrl = TextEditingController(text: s?.description ?? '');
     _cancelUrlCtrl = TextEditingController(text: s?.cancellationUrl ?? '');
+    _postTrialAmountCtrl = TextEditingController(
+        text: s?.postTrialAmount != null
+            ? s!.postTrialAmount!.toStringAsFixed(2)
+            : '');
     if (s != null) {
       _currency = s.currency;
       _cycle = s.billingCycle;
@@ -51,6 +58,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _startDate = s.startDate;
       _sharedWith = s.sharedWith;
       _paymentMethod = s.paymentMethod;
+      _isTrial = s.isTrial;
+      _trialEndDate = s.trialEndDate;
     }
   }
 
@@ -60,6 +69,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _amountCtrl.dispose();
     _descCtrl.dispose();
     _cancelUrlCtrl.dispose();
+    _postTrialAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -180,6 +190,58 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               trailing: const Icon(LucideIcons.chevronRight),
               onTap: _pickDate,
             ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Free trial'),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Okres próbny'),
+              subtitle: const Text('Subskrypcja na trialu'),
+              secondary: Icon(LucideIcons.clock,
+                  color: _isTrial
+                      ? context.semanticColors.trial
+                      : null),
+              value: _isTrial,
+              onChanged: (v) => setState(() {
+                _isTrial = v;
+                if (v && _amountCtrl.text.isEmpty) {
+                  _amountCtrl.text = '0.00';
+                }
+              }),
+            ),
+            if (_isTrial) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(LucideIcons.calendarClock),
+                title: Text(_trialEndDate != null
+                    ? DateFormat('d MMMM yyyy', 'pl').format(_trialEndDate!)
+                    : 'Wybierz datę końca triala'),
+                subtitle: _trialEndDate != null
+                    ? Text('Za ${_trialEndDate!.difference(DateTime.now()).inDays} dni')
+                    : null,
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: _pickTrialEndDate,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _postTrialAmountCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Kwota po trialu',
+                  hintText: 'np. 49.99 (puste = ta sama co kwota)',
+                  prefixIcon: Icon(LucideIcons.arrowRight),
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null;
+                  final parsed = double.tryParse(v.replaceAll(',', '.'));
+                  if (parsed == null || parsed < 0) return 'Nieprawidłowa kwota';
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 24),
 
             _SectionLabel('Opcjonalne'),
@@ -335,6 +397,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     });
   }
 
+  Future<void> _pickTrialEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _trialEndDate ?? DateTime.now().add(const Duration(days: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 730)),
+      helpText: 'Data końca triala',
+    );
+    if (picked != null) setState(() => _trialEndDate = picked);
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -354,6 +427,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     final storage = context.read<StorageService>();
 
     try {
+      final postTrialAmt = _postTrialAmountCtrl.text.trim().isNotEmpty
+          ? double.tryParse(_postTrialAmountCtrl.text.replaceAll(',', '.'))
+          : null;
+
       if (_isEditing) {
         // Pobierz aktualny obiekt z cache (ma świeże usageLogs)
         final current =
@@ -377,6 +454,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           clearSharedWith: _sharedWith == null,
           paymentMethod: _paymentMethod,
           clearPaymentMethod: _paymentMethod == null,
+          isTrial: _isTrial,
+          trialEndDate: _isTrial ? _trialEndDate : null,
+          clearTrialEndDate: !_isTrial,
+          postTrialAmount: _isTrial ? postTrialAmt : null,
+          clearPostTrialAmount: !_isTrial,
         ));
       } else {
         await ctrl.create(
@@ -394,6 +476,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               : _cancelUrlCtrl.text.trim(),
           sharedWith: _sharedWith,
           paymentMethod: _paymentMethod,
+          isTrial: _isTrial,
+          trialEndDate: _isTrial ? _trialEndDate : null,
+          postTrialAmount: _isTrial ? postTrialAmt : null,
         );
       }
       if (mounted) Navigator.of(context).pop(true);
