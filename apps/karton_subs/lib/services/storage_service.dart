@@ -162,6 +162,12 @@ class StorageService {
   Future<void> setNotifyRenewalReminders(bool value) async =>
       _settingsBox.put('notifyRenewalReminders', value);
 
+  bool getNotifyGhostWarnings() =>
+      _settingsBox.get('notifyGhostWarnings', defaultValue: true) as bool;
+
+  Future<void> setNotifyGhostWarnings(bool value) async =>
+      _settingsBox.put('notifyGhostWarnings', value);
+
   // ── Analytics helpers ──────────────────────────────────────────────────────
 
   double getTotalMonthly({String? currencyCode}) {

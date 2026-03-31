@@ -11,9 +11,11 @@ import 'storage_service.dart';
 class NotificationPreferences {
   final bool trialReminders;
   final bool renewalReminders;
+  final bool ghostWarnings;
   const NotificationPreferences({
     required this.trialReminders,
     required this.renewalReminders,
+    required this.ghostWarnings,
   });
 }
 
@@ -46,6 +48,7 @@ class NotificationService {
     return NotificationPreferences(
       trialReminders: storage.getNotifyTrialReminders(),
       renewalReminders: storage.getNotifyRenewalReminders(),
+      ghostWarnings: storage.getNotifyGhostWarnings(),
     );
   }
 
@@ -69,12 +72,16 @@ class NotificationService {
     if (prefs.renewalReminders && (!sub.isTrial || sub.isTrialExpired)) {
       await _scheduleRenewalReminder(sub);
     }
+
+    if (prefs.ghostWarnings) {
+      await _scheduleGhostWarning(sub);
+    }
   }
 
   /// Cancel all notifications for a subscription.
   Future<void> cancelForSubscription(String subscriptionId) async {
     final baseId = _baseId(subscriptionId);
-    for (int offset = 0; offset < 4; offset++) {
+    for (int offset = 0; offset < 5; offset++) {
       await _plugin.cancel(baseId + offset);
     }
   }
@@ -142,6 +149,32 @@ class NotificationService {
     );
   }
 
+  // ── Ghost warning ────────────────────────────────────────────────────────
+
+  Future<void> _scheduleGhostWarning(Subscription sub) async {
+    // Only for active, non-trial subs that have usage history
+    if (!sub.isActive || sub.isTrialActive) return;
+    if (sub.usageLog.isEmpty) return;
+    // Already a ghost — no need to schedule future warning
+    if (sub.isGhost) return;
+
+    final lastUse = sub.usageLog
+        .reduce((a, b) => a.date.isAfter(b.date) ? a : b)
+        .date;
+    // Ghost threshold: 31 days after last use
+    final ghostDate = lastUse.add(const Duration(days: 31));
+
+    final amount = sub.monthlyAmount.toStringAsFixed(0);
+    final currency = sub.currency.symbol;
+
+    await _scheduleAt(
+      id: _baseId(sub.id) + 4,
+      dateTime: ghostDate,
+      title: '${sub.name} — nieużywana od 30 dni',
+      body: 'Płacisz $amount $currency/mies za coś, czego nie używasz. Anulować?',
+    );
+  }
+
   // ── Scheduling helper ────────────────────────────────────────────────────
 
   Future<void> _scheduleAt({
@@ -180,7 +213,7 @@ class NotificationService {
 
   // ── ID scheme ────────────────────────────────────────────────────────────
   // Deterministic: subscriptionId.hashCode * 10 + offset
-  // offset: 0=trial3d, 1=trial1d, 2=trialDay, 3=renewal
+  // offset: 0=trial3d, 1=trial1d, 2=trialDay, 3=renewal, 4=ghost
 
   int _baseId(String subscriptionId) =>
       (subscriptionId.hashCode.abs() % 100000000) * 10;

@@ -290,6 +290,7 @@ class _NotificationSection extends StatefulWidget {
 class _NotificationSectionState extends State<_NotificationSection> {
   bool? _trialReminders;
   bool? _renewalReminders;
+  bool? _ghostWarnings;
 
   @override
   void didChangeDependencies() {
@@ -298,6 +299,7 @@ class _NotificationSectionState extends State<_NotificationSection> {
       final storage = context.read<StorageService>();
       _trialReminders = storage.getNotifyTrialReminders();
       _renewalReminders = storage.getNotifyRenewalReminders();
+      _ghostWarnings = storage.getNotifyGhostWarnings();
     }
   }
 
@@ -334,6 +336,17 @@ class _NotificationSectionState extends State<_NotificationSection> {
           onChanged: (v) async {
             setState(() => _renewalReminders = v);
             await storage.setNotifyRenewalReminders(v);
+            await _onChanged();
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(LucideIcons.ghost),
+          title: const Text('Ostrzeżenia o ghost subskrypcjach'),
+          subtitle: const Text('Gdy subskrypcja nieużywana >30 dni'),
+          value: _ghostWarnings ?? true,
+          onChanged: (v) async {
+            setState(() => _ghostWarnings = v);
+            await storage.setNotifyGhostWarnings(v);
             await _onChanged();
           },
         ),
