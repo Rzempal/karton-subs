@@ -311,7 +311,7 @@ class _TrialExpiringAlert extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '→ ${nf.format(s.postTrialAmount ?? s.amount)} $currency/mies',
+                  '→ ${nf.format(s.postTrialAmount ?? s.amount)} $currency/${_cycleSuffix(s.billingCycle)}',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: c.warning,
                     fontWeight: FontWeight.w600,
@@ -459,3 +459,11 @@ class _EmptySubscriptions extends StatelessWidget {
     );
   }
 }
+
+String _cycleSuffix(BillingCycle cycle) => switch (cycle) {
+      BillingCycle.weekly => 'tydz.',
+      BillingCycle.monthly => 'mies.',
+      BillingCycle.quarterly => 'kw.',
+      BillingCycle.yearly => 'rok',
+      BillingCycle.custom => 'cykl',
+    };
