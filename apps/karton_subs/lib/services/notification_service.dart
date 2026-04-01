@@ -220,6 +220,31 @@ class NotificationService {
     }
   }
 
+  // ── Dev: instant test notifications ──────────────────────────────────────
+
+  /// Show a notification immediately (for dev testing).
+  Future<void> showTestNotification({
+    required String title,
+    required String body,
+  }) async {
+    if (!_initialized) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'karton_subs_reminders',
+      'Przypomnienia',
+      channelDescription: 'Powiadomienia o trialach i odnowieniach subskrypcji',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const details = NotificationDetails(android: androidDetails);
+
+    try {
+      await _plugin.show(99999, title, body, details);
+    } catch (e) {
+      _log.warning('Failed to show test notification: $e');
+    }
+  }
+
   // ── ID scheme ────────────────────────────────────────────────────────────
   // Deterministic: subscriptionId.hashCode * 10 + offset
   // offset: 0=trial3d, 1=trial1d, 2=trialDay, 3=renewal, 4=ghost
