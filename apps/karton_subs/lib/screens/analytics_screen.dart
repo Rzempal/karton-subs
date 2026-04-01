@@ -230,7 +230,7 @@ class _TrialCostsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${nf.format(s.postTrialAmount ?? s.amount)} $currencySymbol/mies',
+                  '${nf.format(s.postTrialAmount ?? s.amount)} $currencySymbol/${_cycleSuffix(s.billingCycle)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -390,3 +390,11 @@ class _GhostAlertCard extends StatelessWidget {
     );
   }
 }
+
+String _cycleSuffix(BillingCycle cycle) => switch (cycle) {
+      BillingCycle.weekly => 'tydz.',
+      BillingCycle.monthly => 'mies.',
+      BillingCycle.quarterly => 'kw.',
+      BillingCycle.yearly => 'rok',
+      BillingCycle.custom => 'cykl',
+    };
