@@ -69,7 +69,11 @@ function Update-DeployLog {
         [string]$Duration
     )
 
-    $LOG_PATH = "DEPLOY_LOG_PATH_FROM_ENV"
+    $LOG_PATH = $env:DEPLOY_LOG_PATH
+    if (-not $LOG_PATH) {
+        Show-Warning "DEPLOY_LOG_PATH nie ustawiony w .env — pomijam logowanie"
+        return
+    }
     $MAX_ENTRIES = 100
 
     # Format fields

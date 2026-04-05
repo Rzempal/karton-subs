@@ -39,12 +39,12 @@ Stwórz plik `.env` w root projektu:
 
 ```ini
 # --- Deployment Config ---
-DEPLOY_HOST=michalrapala.app
-DEPLOY_USER=twoj_uzytkownik
-DEPLOY_PASS=twoje_haslo
+DEPLOY_HOST=your-server.example.com
+DEPLOY_USER=your_username
+DEPLOY_PASS=your_password
 DEPLOY_PROTOCOL=sftp
-DEPLOY_REMOTE_PATH=/domains/michalrapala.app/public_html/releases/
-DEPLOY_PUBLIC_URL=http://michalrapala.app/releases
+DEPLOY_REMOTE_PATH=/home/your_username/domains/your-domain.example.com/public_html/releases/
+DEPLOY_PUBLIC_URL=https://your-domain.example.com/releases
 ```
 
 ### Uruchomienie deploymentu

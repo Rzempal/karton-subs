@@ -13,7 +13,7 @@ class AppConfig {
 
   // >>> ZMIEN na swoja domene i nazwe aplikacji <<<
   static const String _baseReleasesUrl =
-      'https://michalrapala.app/releases/NAZWA-APLIKACJI';
+      'https://your-domain.example.com/releases/NAZWA-APLIKACJI';
 
   static String get versionJsonUrl => isInternal
       ? '$_baseReleasesUrl/internal/version-internal.json'
@@ -21,6 +21,6 @@ class AppConfig {
 
   // >>> ZMIEN sciezke na serwerze <<<
   static String get remoteReleasePath => isInternal
-      ? '/home/your_username/domains/michalrapala.app/public_html/releases/NAZWA-APLIKACJI/internal/'
-      : '/home/your_username/domains/michalrapala.app/public_html/releases/NAZWA-APLIKACJI/';
+      ? '/home/your_username/domains/your-domain.example.com/public_html/releases/NAZWA-APLIKACJI/internal/'
+      : '/home/your_username/domains/your-domain.example.com/public_html/releases/NAZWA-APLIKACJI/';
 }

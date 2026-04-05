@@ -5,7 +5,7 @@
 # NIGDY nie commituj tego pliku! Upewnij sie ze .gitignore zawiera: .env
 # ============================================================
 
-# --- Serwer (Hostido) ---
+# --- Serwer ---
 DEPLOY_HOST=your-server.example.com
 DEPLOY_USER=your_username
 DEPLOY_PASS=
@@ -14,12 +14,12 @@ DEPLOY_PROTOCOL=sftp
 # --- Sciezka na serwerze ---
 # WAZNE: Zmien "NAZWA-APLIKACJI" na nazwe swojej aplikacji!
 # Musi sie konczyc na /NAZWA-APLIKACJI/
-DEPLOY_REMOTE_PATH=/home/your_username/domains/michalrapala.app/public_html/releases/NAZWA-APLIKACJI/
+DEPLOY_REMOTE_PATH=/home/your_username/domains/your-domain.example.com/public_html/releases/NAZWA-APLIKACJI/
 
 # --- Publiczny URL ---
 # WAZNE: NIE KOMENTUJ tej linii! Inaczej apkUrl w version.json bedzie zly (404).
 # Musi matchowac DEPLOY_REMOTE_PATH i app_config.dart
-DEPLOY_PUBLIC_URL=https://michalrapala.app/releases/NAZWA-APLIKACJI
+DEPLOY_PUBLIC_URL=https://your-domain.example.com/releases/NAZWA-APLIKACJI
 
 # --- Narzedzia ---
 WINSCP_PATH=C:\Program Files (x86)\WinSCP\WinSCP.com

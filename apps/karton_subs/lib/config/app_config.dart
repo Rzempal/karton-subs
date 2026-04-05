@@ -15,7 +15,9 @@ class AppConfig {
       ? '$_baseReleasesUrl/internal/version-internal.json'
       : '$_baseReleasesUrl/version.json';
 
+  /// Remote path — used only by deploy_apk.ps1, read from .env at deploy time.
+  /// Kept here for backward compatibility until migration to GitHub Releases.
   static String get remoteReleasePath => isInternal
-      ? '/home/your_username/domains/michalrapala.app/public_html/releases/karton-subs/internal/'
-      : '/home/your_username/domains/michalrapala.app/public_html/releases/karton-subs/';
+      ? const String.fromEnvironment('DEPLOY_REMOTE_INTERNAL', defaultValue: '')
+      : const String.fromEnvironment('DEPLOY_REMOTE_PROD', defaultValue: '');
 }
