@@ -211,3 +211,26 @@ Dodanie pelnego zestawu adaptive icon layers (foreground, background, monochrome
 W Android multi-flavor: **kazdy flavor ktory ma wygladac inaczej MUSI jawnie nadpisac wszystkie warstwy adaptive icon**. Usuniecie XML nie blokuje fallbacku — Android dziedziczy z `main`. Brak pliku ≠ brak ikony.
 
 ---
+
+## 2026-04-05: flutter_local_notifications — 3 pulapki przy integracji
+
+### Problem
+Integracja `flutter_local_notifications` v18 spowodowala 3 problemy:
+1. **Build failure** — brakujacy wymagany parametr `uiLocalNotificationDateInterpretation` w `zonedSchedule()`
+2. **App crash na starcie** — `init()` rzucal wyjatki (timezone/plugin init) bez try-catch, blokujac `main()`
+3. **Zapis subskrypcji zawieszony** — `await _notifications.scheduleForSubscription()` w controllerze blokowal `update()`/`delete()` gdy plugin nie byl zainicjalizowany
+
+### Rozwiazanie
+1. Dodanie brakujacego parametru: `uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime`
+2. Owinięcie `init()` w try-catch + guard `if (!_initialized) return` we wszystkich metodach publicznych
+3. Notification calls jako **fire-and-forget** (bez `await`) w controllerze — zapis do storage zawsze przechodzi
+4. Runtime permission request: `requestNotificationsPermission()` + `requestExactAlarmsPermission()` w `init()` (wymagane na Android 13+)
+
+### Wniosek
+Przy integracji pluginu ktory moze failowac (notifications, bluetooth, camera):
+- **Nigdy nie blokuj CRUD operacji awaitowaniem pluginu** — fire-and-forget
+- **Zawsze try-catch w init** — plugin failure nie moze zabic aplikacji
+- **Guard `_initialized`** we wszystkich publicznych metodach
+- **Android 13+ wymaga runtime permission** — sam AndroidManifest nie wystarczy
+
+---

@@ -375,4 +375,24 @@ class AppColors {
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-25
+## Semantic Color Tokens (`AppSemanticColors`)
+
+> **ADR:** [ADR-002 Semantic Color Tokens](adr/ADR-002-semantic-color-tokens.md)
+
+Od wersji 0.2 kolory statusowe i kontekstowe sa dostarczane przez `ThemeExtension<AppSemanticColors>`,
+co eliminuje reczne sprawdzanie `isDark` w widgetach. Dostep: `context.semanticColors`.
+
+| Token | Light | Dark | Uzycie |
+|-------|-------|------|--------|
+| `positive` / `positiveBg` | Green-600 / `#F0FDF4` | Green-400 / Green@10% | Sukces, aktualna apka |
+| `negative` / `negativeBg` | Red-600 / `#FEF2F2` | Red-400 / Red@10% | Bledy, ghost alert |
+| `warning` / `warningBg` | Amber-600 / `#FFFBEB` | Amber-400 / Amber@10% | Odnowienie, trial expiring |
+| `trial` / `trialBg` | Blue-600 / `#EFF6FF` | Blue-400 / Blue@10% | Free trial |
+| `heroCardBg/Text` | Deep Navy / white | Primary@15% / Slate-100 | Glowna karta summary |
+| `textPrimary/Secondary/Muted` | Slate-900/500/400 | Slate-100/400/500 | Hierarchia tekstu |
+
+Dark mode: statusowe foregroundy jasniejsze (shade 400 vs 600), tla = kolor@10% opacity.
+
+---
+
+> **Ostatnia aktualizacja:** 2026-04-05
