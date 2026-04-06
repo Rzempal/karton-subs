@@ -4,7 +4,10 @@
       "Bash(flutter --version)",
       "Bash(flutter pub:*)",
       "Bash(dart analyze:*)",
-      "Bash(flutter build:*)"
+      "Bash(flutter build:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
