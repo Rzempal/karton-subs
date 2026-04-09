@@ -75,7 +75,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = context.read<StorageService>().getCategories();
+    final storage = context.read<StorageService>();
+    final categories = storage.getCategories();
+    final paymentMethods = storage.getPaymentMethods();
+    // Tolerancja orphana: jeśli istniejąca subskrypcja ma wartość spoza
+    // aktualnej listy (np. po usunięciu metody albo imporcie starego backupu),
+    // pokazujemy ją w dropdownie, żeby nie "znikła" po wejściu w edycję.
+    final hasOrphan = _paymentMethod != null &&
+        !paymentMethods.any((pm) => pm.name == _paymentMethod);
 
     return Scaffold(
       appBar: AppBar(
@@ -297,10 +304,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   value: null,
                   child: Text('Nie wybrano'),
                 ),
-                ...PaymentMethods.all.map((m) => DropdownMenuItem(
-                      value: m,
-                      child: Text(m),
+                ...paymentMethods.map((pm) => DropdownMenuItem(
+                      value: pm.name,
+                      child: Text(pm.name),
                     )),
+                if (hasOrphan)
+                  DropdownMenuItem(
+                    value: _paymentMethod,
+                    child: Text('${_paymentMethod!} (usunięta)'),
+                  ),
               ],
               onChanged: (v) => setState(() => _paymentMethod = v),
             ),

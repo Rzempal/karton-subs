@@ -12,6 +12,7 @@ import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../config/app_config.dart';
 import 'category_management_screen.dart';
+import 'payment_method_management_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -45,6 +46,16 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => const CategoryManagementScreen(),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.creditCard),
+            title: const Text('Metody płatności'),
+            trailing: const Icon(LucideIcons.chevronRight),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const PaymentMethodManagementScreen(),
               ),
             ),
           ),
@@ -449,10 +460,14 @@ class _BackupSectionState extends State<_BackupSection> {
 
       if (mounted) {
         context.read<SubscriptionController>().refresh();
+        final parts = [
+          '${result.subscriptionsImported} subskrypcji',
+          '${result.categoriesImported} kategorii',
+          if (result.paymentMethodsImported > 0)
+            '${result.paymentMethodsImported} metod płatności',
+        ];
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'Import zakończony: ${result.subscriptionsImported} subskrypcji, ${result.categoriesImported} kategorii',
-          ),
+          content: Text('Import zakończony: ${parts.join(', ')}'),
         ));
       }
     } on FormatException catch (e) {

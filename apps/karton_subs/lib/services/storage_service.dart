@@ -16,11 +16,13 @@ class StorageService {
 
   late Box<String> _subscriptionsBox;
   late Box<String> _categoriesBox;
+  late Box<String> _paymentMethodsBox;
   late Box<dynamic> _settingsBox;
 
   // In-memory cache
   final Map<String, Subscription> _subscriptionsCache = {};
   final Map<String, Category> _categoriesCache = {};
+  final Map<String, PaymentMethod> _paymentMethodsCache = {};
   bool _initialized = false;
 
   Future<void> init() async {
@@ -28,12 +30,16 @@ class StorageService {
     await Hive.initFlutter();
     _subscriptionsBox = await Hive.openBox<String>('subscriptions');
     _categoriesBox = await Hive.openBox<String>('categories');
+    _paymentMethodsBox = await Hive.openBox<String>('payment_methods');
     _settingsBox = await Hive.openBox('settings');
     _loadSubscriptionsCache();
     _loadCategoriesCache();
+    _loadPaymentMethodsCache();
     _seedDefaultCategories();
+    _seedDefaultPaymentMethods();
     _initialized = true;
-    _log.info('StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats)');
+    _log.info(
+        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods)');
   }
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
@@ -110,6 +116,49 @@ class StorageService {
     await _categoriesBox.delete(id);
     _categoriesCache.remove(id);
     _log.info('Deleted category: $id');
+  }
+
+  // ── Payment Methods ────────────────────────────────────────────────────────
+
+  void _loadPaymentMethodsCache() {
+    _paymentMethodsCache.clear();
+    for (final key in _paymentMethodsBox.keys) {
+      try {
+        final json = jsonDecode(_paymentMethodsBox.get(key as String)!);
+        _paymentMethodsCache[key] =
+            PaymentMethod.fromJson(json as Map<String, dynamic>);
+      } catch (e) {
+        _log.warning('Failed to parse payment method $key: $e');
+      }
+    }
+  }
+
+  void _seedDefaultPaymentMethods() {
+    if (_paymentMethodsCache.isNotEmpty) return;
+    for (final pm in defaultPaymentMethods) {
+      _paymentMethodsBox.put(pm.id, jsonEncode(pm.toJson()));
+      _paymentMethodsCache[pm.id] = pm;
+    }
+    _log.info('Seeded ${defaultPaymentMethods.length} default payment methods');
+  }
+
+  List<PaymentMethod> getPaymentMethods() {
+    final items = _paymentMethodsCache.values.toList();
+    items.sort((a, b) => a.order.compareTo(b.order));
+    return List.unmodifiable(items);
+  }
+
+  PaymentMethod? getPaymentMethod(String id) => _paymentMethodsCache[id];
+
+  Future<void> savePaymentMethod(PaymentMethod pm) async {
+    await _paymentMethodsBox.put(pm.id, jsonEncode(pm.toJson()));
+    _paymentMethodsCache[pm.id] = pm;
+  }
+
+  Future<void> deletePaymentMethod(String id) async {
+    await _paymentMethodsBox.delete(id);
+    _paymentMethodsCache.remove(id);
+    _log.info('Deleted payment method: $id');
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────

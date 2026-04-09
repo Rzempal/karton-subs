@@ -15,7 +15,12 @@ import 'app_logger.dart';
 class BackupImportResult {
   final int subscriptionsImported;
   final int categoriesImported;
-  BackupImportResult({required this.subscriptionsImported, required this.categoriesImported});
+  final int paymentMethodsImported;
+  BackupImportResult({
+    required this.subscriptionsImported,
+    required this.categoriesImported,
+    this.paymentMethodsImported = 0,
+  });
 }
 
 /// Wynik eksportu
@@ -141,32 +146,47 @@ class BackupService {
   String _buildJsonPayload() {
     final subs = _storage.getSubscriptions();
     final cats = _storage.getCategories();
+    final pms = _storage.getPaymentMethods();
     return jsonEncode({
-      'version': 1,
+      'version': 2,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
           .where((c) => !defaultCategories.any((d) => d.id == c.id))
           .map((c) => c.toJson())
           .toList(),
+      // Pełna lista metod płatności (nie pomijamy defaultów — po
+      // rename zachowują ten sam ID, ale zmienioną nazwę, więc filtr po ID
+      // byłby błędny). Przy imporcie upsert po ID.
+      'paymentMethods': pms.map((pm) => pm.toJson()).toList(),
     });
   }
 
   Future<BackupImportResult> _applyJsonPayload(String jsonString) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 1) {
+    if (version > 2) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
 
     int subsImported = 0;
     int catsImported = 0;
+    int pmsImported = 0;
 
     final catsRaw = data['categories'] as List<dynamic>? ?? [];
     for (final c in catsRaw) {
       final cat = Category.fromJson(c as Map<String, dynamic>);
       await _storage.saveCategory(cat);
       catsImported++;
+    }
+
+    // Backupy w wersji 1 nie zawierały metod płatności — pole pominięte,
+    // istniejące domyślne metody zostają bez zmian.
+    final pmsRaw = data['paymentMethods'] as List<dynamic>? ?? [];
+    for (final p in pmsRaw) {
+      final pm = PaymentMethod.fromJson(p as Map<String, dynamic>);
+      await _storage.savePaymentMethod(pm);
+      pmsImported++;
     }
 
     final subsRaw = data['subscriptions'] as List<dynamic>? ?? [];
@@ -176,10 +196,12 @@ class BackupService {
       subsImported++;
     }
 
-    _log.info('Import: $subsImported subs, $catsImported cats');
+    _log.info(
+        'Import: $subsImported subs, $catsImported cats, $pmsImported payment methods');
     return BackupImportResult(
       subscriptionsImported: subsImported,
       categoriesImported: catsImported,
+      paymentMethodsImported: pmsImported,
     );
   }
 
