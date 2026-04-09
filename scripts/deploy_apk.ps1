@@ -1,4 +1,4 @@
-# REFERENCE: Ten plik pochodzi z "Karton z lekami" (APPteczka).
+﻿# REFERENCE: Ten plik pochodzi z "Karton z lekami" (APPteczka).
 # Wymaga adaptacji: nazwy APK, remote paths, URL-e, nazwa aplikacji w logach.
 # Reusable: semantic versioning, versionCode formula, WinSCP upload, changelog, git tagging.
 
