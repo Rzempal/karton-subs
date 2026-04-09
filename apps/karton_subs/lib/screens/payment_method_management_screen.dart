@@ -234,7 +234,7 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
             ),
             autofocus: true,
             textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _save(),
+            onFieldSubmitted: (_) => _save(),
           ),
           const SizedBox(height: 16),
           SizedBox(
