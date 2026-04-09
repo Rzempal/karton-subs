@@ -371,16 +371,55 @@ class Subscription {
   }
 }
 
-/// Predefiniowane metody płatności
-class PaymentMethods {
-  static const List<String> all = [
-    'Przelew bankowy',
-    'Karta kredytowa',
-    'Karta debetowa',
-    'Revolut',
-    'PayPal',
-    'BLIK',
-    'Gotówka',
-    'Inne',
-  ];
+/// Metoda płatności — edytowalna przez użytkownika w Ustawieniach.
+///
+/// `id` jest stabilne (UUID), `name` może być zmieniane — przy rename
+/// kontroler propaguje nową nazwę do wszystkich subskrypcji (patrz
+/// `SubscriptionController.renamePaymentMethod`).
+///
+/// Subskrypcje nadal przechowują `paymentMethod` jako surową nazwę
+/// (`String?`), nie ID — decyzja świadoma (backward-compat z istniejącymi
+/// backupami i prostota modelu).
+class PaymentMethod {
+  final String id;
+  final String name;
+  final int order;
+
+  const PaymentMethod({
+    required this.id,
+    required this.name,
+    this.order = 0,
+  });
+
+  PaymentMethod copyWith({String? id, String? name, int? order}) =>
+      PaymentMethod(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        order: order ?? this.order,
+      );
+
+  factory PaymentMethod.fromJson(Map<String, dynamic> json) => PaymentMethod(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        order: (json['order'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'order': order,
+      };
 }
+
+/// Domyślne metody płatności — seed przy pierwszym uruchomieniu.
+/// Po inicjalizacji boxa użytkownik może je dowolnie edytować.
+const List<PaymentMethod> defaultPaymentMethods = [
+  PaymentMethod(id: 'pm_bank_transfer', name: 'Przelew bankowy', order: 0),
+  PaymentMethod(id: 'pm_credit_card', name: 'Karta kredytowa', order: 1),
+  PaymentMethod(id: 'pm_debit_card', name: 'Karta debetowa', order: 2),
+  PaymentMethod(id: 'pm_revolut', name: 'Revolut', order: 3),
+  PaymentMethod(id: 'pm_paypal', name: 'PayPal', order: 4),
+  PaymentMethod(id: 'pm_blik', name: 'BLIK', order: 5),
+  PaymentMethod(id: 'pm_cash', name: 'Gotówka', order: 6),
+  PaymentMethod(id: 'pm_other', name: 'Inne', order: 7),
+];
