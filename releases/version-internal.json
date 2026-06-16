@@ -1,7 +1,7 @@
 ﻿{
     "changelog":  [
                       {
-                          "version":  "0.2.26032925",
+                          "version":  "0.2.26040900",
                           "notes":  "- bug fixes"
                       },
                       {
@@ -29,9 +29,9 @@
                           "notes":  "- bug fixes"
                       }
                   ],
-    "version":  "0.2.26032925",
+    "version":  "0.2.26040900",
     "releaseNotes":  "- bug fixes",
-    "versionCode":  226032925,
-    "releaseDate":  "2026-03-29T23:44:15Z",
-    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.2.26032925.apk"
+    "versionCode":  226040900,
+    "releaseDate":  "2026-04-09T16:41:43Z",
+    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.2.26040900.apk"
 }

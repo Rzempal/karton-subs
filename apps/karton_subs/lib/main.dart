@@ -9,6 +9,7 @@ import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
 import 'services/app_logger.dart';
 import 'services/backup_service.dart';
+import 'services/excel_service.dart';
 import 'services/storage_service.dart';
 import 'services/theme_provider.dart';
 import 'services/update_service.dart';
@@ -53,6 +54,7 @@ void main() async {
         ),
         ChangeNotifierProvider.value(value: updateService),
         Provider(create: (_) => BackupService(storage)),
+        Provider(create: (_) => ExcelService(storage)),
         Provider.value(value: notificationService),
       ],
       child: const KartonApp(),

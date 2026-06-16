@@ -231,4 +231,40 @@ Do zdefiniowania w fazie implementacji:
 
 ---
 
+## Import/Eksport Excel (.xlsx)
+
+Format "otwarty", czytelny i edytowalny recznie — w odroznieniu od zaszyfrowanego
+backupu `.subkarton`. Serwis: `lib/services/excel_service.dart`.
+
+### Kolumny arkusza
+
+| Kolumna | Wymagana przy imporcie | Domyslna wartosc | Uwagi |
+|---------|------------------------|------------------|-------|
+| Nazwa | tak | — | Pusta = wiersz pominiety. Max 100 znakow. |
+| Kwota | tak | — | >0 i <= 1 000 000. Akceptuje `43,00` i `43.00`, separator tysiecy. |
+| Waluta | nie | PLN | PLN/EUR/USD/GBP (po nazwie lub etykiecie). |
+| Cykl | nie | miesiecznie | tygodniowo/miesiecznie/kwartalnie/rocznie/`co N dni`. |
+| Kategoria | nie | brak | Tylko dopasowanie po nazwie do istniejacych (nie tworzy nowych). |
+| Metoda platnosci | nie | brak | Tylko dopasowanie po nazwie do istniejacych. |
+| Aktywna | nie | tak | `nie/no/false/0/anulowana` = nieaktywna. |
+| Data startu | nie | dzis | ISO8601 lub `dd.MM.yyyy`. Poza zakresem 1990..+50 lat → dzis. |
+
+Naglowek jest wykrywany automatycznie. Brak rozpoznawalnego naglowka → uklad
+pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
+
+### Reguly bezpieczenstwa importu
+
+- Parsowanie poza glownym watkiem (`compute`) — duzy/spreparowany plik nie zawiesi UI.
+- Limity: rozmiar pliku 5 MB, liczba wierszy danych 2000.
+- Kazda subskrypcja dostaje NOWE id — import nigdy nie nadpisuje istniejacych.
+- Bledne wiersze sa pomijane i raportowane (nie przerywaja importu).
+
+### Reguly bezpieczenstwa eksportu
+
+- Komorki tekstowe zaczynajace sie od `= + - @ TAB CR` sa poprzedzane apostrofem
+  (ochrona przed wstrzknieciem formul / CSV injection u odbiorcy).
+- Eksport jest JAWNY (nieszyfrowany) — UI sygnalizuje to podpisem "plik nieszyfrowany".
+
+---
+
 > **Ostatnia aktualizacja:** 2026-03-25

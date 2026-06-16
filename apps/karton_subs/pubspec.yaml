@@ -55,6 +55,8 @@ dependencies:
   # PDF export
   pdf: ^3.11.2
   printing: ^5.13.5
+  # Excel import/export (.xlsx)
+  excel: ^4.0.0
   # Icons
   lucide_icons: ^0.257.0
   # Local notifications
