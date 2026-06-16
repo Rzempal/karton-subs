@@ -1,37 +1,41 @@
-﻿{
-    "changelog":  [
-                      {
-                          "version":  "0.2.26040900",
-                          "notes":  "- bug fixes"
-                      },
-                      {
-                          "version":  "0.2.26032918",
-                          "notes":  "zmiana ikony aplikacji"
-                      },
-                      {
-                          "version":  "0.1.26032917",
-                          "notes":  "- bug fixes"
-                      },
-                      {
-                          "version":  "0.1.26032904",
-                          "notes":  "fix crash"
-                      },
-                      {
-                          "version":  "0.1.26032903",
-                          "notes":  "- bug fixes"
-                      },
-                      {
-                          "version":  "0.1.26032901",
-                          "notes":  "faza 2"
-                      },
-                      {
-                          "version":  "0.1.26032900",
-                          "notes":  "- bug fixes"
-                      }
-                  ],
-    "version":  "0.2.26040900",
-    "releaseNotes":  "- bug fixes",
-    "versionCode":  226040900,
-    "releaseDate":  "2026-04-09T16:41:43Z",
-    "apkUrl":  "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.2.26040900.apk"
+{
+  "releaseNotes": "- Import i eksport subskrypcji do Excela (.xlsx)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.3.26061600.apk",
+  "changelog": [
+    {
+      "version": "0.3.26061600",
+      "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
+    },
+    {
+      "version": "0.2.26040900",
+      "notes": "- bug fixes"
+    },
+    {
+      "version": "0.2.26032918",
+      "notes": "zmiana ikony aplikacji"
+    },
+    {
+      "version": "0.1.26032917",
+      "notes": "- bug fixes"
+    },
+    {
+      "version": "0.1.26032904",
+      "notes": "fix crash"
+    },
+    {
+      "version": "0.1.26032903",
+      "notes": "- bug fixes"
+    },
+    {
+      "version": "0.1.26032901",
+      "notes": "faza 2"
+    },
+    {
+      "version": "0.1.26032900",
+      "notes": "- bug fixes"
+    }
+  ],
+  "releaseDate": "2026-06-16T18:51:55Z",
+  "version": "0.3.26061600",
+  "versionCode": 326061600
 }

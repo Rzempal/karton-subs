@@ -55,9 +55,19 @@ DEPLOY_PUBLIC_URL=https://your-domain.example.com/releases
 
 Parametry opcjonalne:
 
-- `-Channel internal` / `-Channel production`
+- `-Channel internal` / `-Channel production` (kanal `internal` = DEV)
 - `-SkipBuild`
 - `-SkipUpload`
+- `-BumpType patch|minor|major|changelog` — pomija interaktywne pytanie o typ wersji
+- `-ReleaseNotes "..."` — pomija interaktywne pytanie o release notes (wieloliniowe: `"- A`n- B"`)
+- `-CreateTag` — tworzy tag git (tylko dla `production`)
+
+Podanie `-BumpType` i `-ReleaseNotes` daje tryb w pelni automatyczny (bez `Read-Host`),
+np. deploy na DEV jednym poleceniem:
+
+```powershell
+./scripts/deploy_apk.ps1 -Channel internal -BumpType minor -ReleaseNotes "- Import/eksport Excel"
+```
 
 ---
 

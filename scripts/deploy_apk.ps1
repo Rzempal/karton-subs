@@ -5,11 +5,20 @@
 # deploy_apk.ps1
 # Skrypt do budowania i deploymentu APK (Build + Copy + Versioning + WinSCP Upload)
 # Uzycie: .\scripts\deploy_apk.ps1 [-SkipBuild] [-SkipUpload] [-Channel internal|production]
+#                                  [-BumpType patch|minor|major|changelog] [-ReleaseNotes "..."] [-CreateTag]
+#
+# -BumpType / -ReleaseNotes: gdy podane, pomijaja pytania interaktywne (tryb automatyczny,
+#   mozliwy do uruchomienia bez konsoli). Bez nich skrypt dziala jak dotychczas
+#   (pyta o typ wersji i release notes przez Read-Host).
+#   Wieloliniowe notatki: rozdziel je znakiem nowej linii, np. -ReleaseNotes "- A`n- B"
 
 param(
     [switch]$SkipBuild,
     [switch]$SkipUpload,
     [string]$Channel = "production",
+    [ValidateSet("", "patch", "minor", "major", "changelog")]
+    [string]$BumpType = "",
+    [string]$ReleaseNotes = "",
     [switch]$CreateTag
 )
 
@@ -294,28 +303,40 @@ else {
 Show-Info "Aktualna wersja w pubspec: $MAJOR.$MINOR"
 
 # ========================================
-# Bump Type Menu
+# Bump Type (parametr -BumpType lub menu interaktywne)
 # ========================================
-Write-Host ""
-Write-Host "  Typ wersji:" -ForegroundColor Yellow
-Write-Host "    [Enter] = patch      (tylko patch yyMMDDcc, notes = 'bug fixes')" -ForegroundColor Gray
-Write-Host "    minor   = bump MINOR ($MAJOR.$MINOR -> $MAJOR.$($MINOR+1)) + changelog" -ForegroundColor Gray
-Write-Host "    major   = bump MAJOR ($MAJOR.$MINOR -> $($MAJOR+1).0) + changelog" -ForegroundColor Gray
-Write-Host "    changelog = patch + wpisz changelog (bez bump)" -ForegroundColor Gray
-Write-Host ""
+if ($BumpType) {
+    $BumpType = $BumpType.Trim().ToLower()
+    Show-Info "Typ wersji (z parametru): $BumpType"
+}
+else {
+    Write-Host ""
+    Write-Host "  Typ wersji:" -ForegroundColor Yellow
+    Write-Host "    [Enter] = patch      (tylko patch yyMMDDcc, notes = 'bug fixes')" -ForegroundColor Gray
+    Write-Host "    minor   = bump MINOR ($MAJOR.$MINOR -> $MAJOR.$($MINOR+1)) + changelog" -ForegroundColor Gray
+    Write-Host "    major   = bump MAJOR ($MAJOR.$MINOR -> $($MAJOR+1).0) + changelog" -ForegroundColor Gray
+    Write-Host "    changelog = patch + wpisz changelog (bez bump)" -ForegroundColor Gray
+    Write-Host ""
 
-$BumpType = Read-Host "  Bump type"
-if (-not $BumpType) { $BumpType = "patch" }
-$BumpType = $BumpType.Trim().ToLower()
+    $BumpType = Read-Host "  Bump type"
+    if (-not $BumpType) { $BumpType = "patch" }
+    $BumpType = $BumpType.Trim().ToLower()
+}
 
 if ($BumpType -notin @("patch", "minor", "major", "changelog")) {
     Show-Error "Nieznany typ: $BumpType. Dozwolone: patch, minor, major, changelog"
     exit 1
 }
 
-# Release Notes
+# Release Notes (parametr -ReleaseNotes lub wejscie interaktywne)
 $RELEASE_NOTES = ""
-if ($BumpType -eq "patch") {
+if ($ReleaseNotes) {
+    # Normalizuj koncowki linii; akceptuj wieloliniowe (np. "- A`n- B")
+    $RELEASE_NOTES = ($ReleaseNotes -replace "`r`n", "`n").Trim()
+    Show-Info "Release notes (z parametru):"
+    Show-Info $RELEASE_NOTES
+}
+elseif ($BumpType -eq "patch") {
     $RELEASE_NOTES = "- bug fixes"
     Show-Info "Release notes: $RELEASE_NOTES"
 }
