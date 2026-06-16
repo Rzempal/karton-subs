@@ -7,7 +7,7 @@ When explaining technical topics:
 - When specialized terms are necessary, explain them briefly in plain language.
 - Focus on purpose, impact, and practical consequences rather than implementation details.
 - Prefer concrete examples over abstract concepts.
-- Explain decisions in terms of trade-offs, risks, effort, and expected outcomes.
+- Explain decisions in terms of trade-offs, risks, real monetary cost (paid services/subscriptions/domain), and expected outcomes - do not estimate time or effort.
 - Write for a technically skilled professional outside the software industry.
 The goal is not to simplify the content, but to make it understandable without a software-development background.
 
