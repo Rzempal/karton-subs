@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
+import '../models/budget_entry.dart';
 import 'backup_crypto_service.dart';
 import 'storage_service.dart';
 import 'app_logger.dart';
@@ -16,10 +17,12 @@ class BackupImportResult {
   final int subscriptionsImported;
   final int categoriesImported;
   final int paymentMethodsImported;
+  final int budgetEntriesImported;
   BackupImportResult({
     required this.subscriptionsImported,
     required this.categoriesImported,
     this.paymentMethodsImported = 0,
+    this.budgetEntriesImported = 0,
   });
 }
 
@@ -147,8 +150,9 @@ class BackupService {
     final subs = _storage.getSubscriptions();
     final cats = _storage.getCategories();
     final pms = _storage.getPaymentMethods();
+    final budget = _storage.getBudgetEntries();
     return jsonEncode({
-      'version': 2,
+      'version': 3,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -159,19 +163,22 @@ class BackupService {
       // rename zachowują ten sam ID, ale zmienioną nazwę, więc filtr po ID
       // byłby błędny). Przy imporcie upsert po ID.
       'paymentMethods': pms.map((pm) => pm.toJson()).toList(),
+      // Pozycje budżetu domowego (wpływy, rachunki, koszty cykliczne, jednorazowe).
+      'budgetEntries': budget.map((e) => e.toJson()).toList(),
     });
   }
 
   Future<BackupImportResult> _applyJsonPayload(String jsonString) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 2) {
+    if (version > 3) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
 
     int subsImported = 0;
     int catsImported = 0;
     int pmsImported = 0;
+    int budgetImported = 0;
 
     final catsRaw = data['categories'] as List<dynamic>? ?? [];
     for (final c in catsRaw) {
@@ -196,12 +203,21 @@ class BackupService {
       subsImported++;
     }
 
+    // Backupy w wersji < 3 nie zawierały pozycji budżetu — pole pominięte.
+    final budgetRaw = data['budgetEntries'] as List<dynamic>? ?? [];
+    for (final b in budgetRaw) {
+      final entry = BudgetEntry.fromJson(b as Map<String, dynamic>);
+      await _storage.saveBudgetEntry(entry);
+      budgetImported++;
+    }
+
     _log.info(
-        'Import: $subsImported subs, $catsImported cats, $pmsImported payment methods');
+        'Import: $subsImported subs, $catsImported cats, $pmsImported payment methods, $budgetImported budget entries');
     return BackupImportResult(
       subscriptionsImported: subsImported,
       categoriesImported: catsImported,
       paymentMethodsImported: pmsImported,
+      budgetEntriesImported: budgetImported,
     );
   }
 

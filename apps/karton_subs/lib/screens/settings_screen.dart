@@ -4,8 +4,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../models/subscription.dart';
 import '../controllers/subscription_controller.dart';
+import '../controllers/budget_controller.dart';
 import '../services/backup_service.dart';
-import '../services/excel_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../services/theme_provider.dart';
@@ -304,7 +304,6 @@ class _NotificationSection extends StatefulWidget {
 class _NotificationSectionState extends State<_NotificationSection> {
   bool? _trialReminders;
   bool? _renewalReminders;
-  bool? _ghostWarnings;
 
   @override
   void didChangeDependencies() {
@@ -313,7 +312,6 @@ class _NotificationSectionState extends State<_NotificationSection> {
       final storage = context.read<StorageService>();
       _trialReminders = storage.getNotifyTrialReminders();
       _renewalReminders = storage.getNotifyRenewalReminders();
-      _ghostWarnings = storage.getNotifyGhostWarnings();
     }
   }
 
@@ -350,17 +348,6 @@ class _NotificationSectionState extends State<_NotificationSection> {
           onChanged: (v) async {
             setState(() => _renewalReminders = v);
             await storage.setNotifyRenewalReminders(v);
-            await _onChanged();
-          },
-        ),
-        SwitchListTile(
-          secondary: const Icon(LucideIcons.ghost),
-          title: const Text('Ostrzeżenia o ghost subskrypcjach'),
-          subtitle: const Text('Gdy subskrypcja nieużywana >30 dni'),
-          value: _ghostWarnings ?? true,
-          onChanged: (v) async {
-            setState(() => _ghostWarnings = v);
-            await storage.setNotifyGhostWarnings(v);
             await _onChanged();
           },
         ),
@@ -406,24 +393,6 @@ class _BackupSectionState extends State<_BackupSection> {
           subtitle: const Text('Przywróć z pliku .subkarton'),
           trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
           onTap: _isBusy ? null : _import,
-        ),
-        const Divider(indent: 16, endIndent: 16),
-        ListTile(
-          leading: const Icon(LucideIcons.fileSpreadsheet),
-          title: const Text('Eksportuj do Excela'),
-          subtitle: const Text('Arkusz .xlsx — plik nieszyfrowany'),
-          trailing: _isBusy
-              ? const SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(LucideIcons.chevronRight),
-          onTap: _isBusy ? null : _exportExcel,
-        ),
-        ListTile(
-          leading: const Icon(LucideIcons.fileInput),
-          title: const Text('Importuj z Excela'),
-          subtitle: const Text('Wczytaj listę z pliku .xlsx'),
-          trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
-          onTap: _isBusy ? null : _importExcel,
         ),
       ],
     );
@@ -479,11 +448,14 @@ class _BackupSectionState extends State<_BackupSection> {
 
       if (mounted) {
         context.read<SubscriptionController>().refresh();
+        context.read<BudgetController>().refresh();
         final parts = [
           '${result.subscriptionsImported} subskrypcji',
           '${result.categoriesImported} kategorii',
           if (result.paymentMethodsImported > 0)
             '${result.paymentMethodsImported} metod płatności',
+          if (result.budgetEntriesImported > 0)
+            '${result.budgetEntriesImported} pozycji budżetu',
         ];
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Import zakończony: ${parts.join(', ')}'),
@@ -496,83 +468,6 @@ class _BackupSectionState extends State<_BackupSection> {
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
-  }
-
-  Future<void> _exportExcel() async {
-    setState(() => _isBusy = true);
-    try {
-      await context.read<ExcelService>().exportToFile();
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
-  Future<void> _importExcel() async {
-    setState(() => _isBusy = true);
-    try {
-      final excel = context.read<ExcelService>();
-      final result = await excel.pickAndParse();
-
-      // Zapis przez kontroler (planuje powiadomienia + odświeża UI).
-      if (mounted) {
-        final ctrl = context.read<SubscriptionController>();
-        for (final sub in result.subscriptions) {
-          await ctrl.add(sub);
-        }
-      }
-
-      if (mounted) await _showImportSummary(result);
-    } on FormatException catch (e) {
-      if (mounted) _showError(e.message);
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
-  Future<void> _showImportSummary(ExcelImportResult result) async {
-    final details = <String>[];
-    if (result.warnings.isNotEmpty) {
-      details.add('Ostrzeżenia:');
-      details.addAll(result.warnings.map((w) => '• $w'));
-    }
-    if (result.skipped.isNotEmpty) {
-      if (details.isNotEmpty) details.add('');
-      details.add('Pominięte wiersze (${result.skippedCount}):');
-      details.addAll(result.skipped.map((s) => '• $s'));
-    }
-
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Import z Excela'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Dodano ${result.importedCount} subskrypcji.'),
-              if (details.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  details.join('\n'),
-                  style: Theme.of(ctx).textTheme.bodySmall,
-                ),
-              ],
-            ],
-          ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<String?> _askPassword({required String title}) async {

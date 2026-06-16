@@ -12,6 +12,7 @@
 | 2 | Analytics + Wykresy | ✅ Ukonczona (2026-03-29) |
 | 3 | Powiadomienia + Usage Tracking | Planowana |
 | 4 | Polish + Release | Planowana |
+| 5 | Budzet domowy | W trakcie (B1+B2 gotowe 2026-06-16) |
 
 ---
 
@@ -88,6 +89,43 @@
 
 ---
 
+## Faza 5: Budzet domowy
+
+**Cel:** Rozszerzenie z trackera subskrypcji na menedzer budzetu domowego —
+wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
+
+> **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
+> — jeden model `BudgetEntry`, osobno od subskrypcji, hybryda czasu.
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Model BudgetEntry | 4 typy: income/bill/recurringCost/oneTimeExpense | ✅ |
+| cycle_math.dart | Wspolna normalizacja cyklu (dedup z Subscription) | ✅ |
+| Storage + box | `budget_entries` + CRUD (wzorzec istniejacy) | ✅ |
+| BudgetService | Wplywy, koszty (+subskrypcje), surplus, bilans miesiaca | ✅ |
+| BudgetController | Stan + nasluch SubscriptionController | ✅ |
+| Zakladka Budzet | Hero "zostaje/mies", wplywy/koszty, listy pozycji | ✅ B1 |
+| Wydatki jednorazowe | Selektor miesiaca + bilans + lista per miesiac | ✅ B2 |
+| Backup v3 | Eksport/import obejmuje `budgetEntries` | ✅ |
+| Testy BudgetService | Normalizacja, surplus, bilans, konwersja walut | ✅ |
+| Kategorie budzetu | Osobny box + breakdown wg kategorii | ⏳ B3 |
+| Powiadomienia budzetu | Alert przekroczenia / nadchodzacy duzy wydatek | ⏳ B3 |
+
+### Faza 5b: Restrukturyzacja nawigacji + Excel budzetu (2026-06-16)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| 4 zakladki | Dashboard / Subskrypcje / Budzet / Ustawienia (usunieto Analitykę) | ✅ |
+| Nowy Dashboard | Pelny przeglad budzet + subskrypcje | ✅ |
+| Subskrypcje | Pod-zakladki Lista / Statystyki (hero, trend, kategorie, limit, triale) | ✅ |
+| Excel w domenach | Eksport = CTA w naglowku; import pod „Dodaj" (subskrypcje + budzet) | ✅ |
+| Excel budzetu | Nowy arkusz + parser (typ, miesiac) + testy | ✅ |
+| Usuniete funkcje | ghost, koszt-za-uzycie, prognoza-karta, log „Uzylem" (przerost formy) | ✅ |
+
+> Pola modelu `usageLog`/`isGhost` pozostaja uspione (zgodnosc danych); pelna czystka — opcjonalnie pozniej.
+
+---
+
 ## Backlog (przyszlosc)
 
 | Pomysl | Priorytet |
@@ -102,4 +140,4 @@
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-29
+> **Ostatnia aktualizacja:** 2026-06-16

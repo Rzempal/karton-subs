@@ -3,10 +3,11 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'controllers/subscription_controller.dart';
+import 'controllers/budget_controller.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/analytics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
+import 'screens/budget_dashboard_screen.dart';
 import 'services/app_logger.dart';
 import 'services/backup_service.dart';
 import 'services/excel_service.dart';
@@ -52,6 +53,16 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => SubscriptionController(storage, notificationService),
         ),
+        ChangeNotifierProxyProvider<SubscriptionController, BudgetController>(
+          create: (ctx) => BudgetController(
+            storage,
+            ctx.read<SubscriptionController>(),
+          ),
+          // Kontroler trzyma własną referencję do SubscriptionController
+          // (przez konstruktor) i nasłuchuje go — nie tworzymy nowej instancji
+          // przy każdej zmianie, tylko zwracamy istniejącą.
+          update: (_, _, budget) => budget!,
+        ),
         ChangeNotifierProvider.value(value: updateService),
         Provider(create: (_) => BackupService(storage)),
         Provider(create: (_) => ExcelService(storage)),
@@ -95,8 +106,8 @@ class _MainShellState extends State<_MainShell> {
 
   static const _screens = [
     DashboardScreen(),
-    AnalyticsScreen(),
     SubscriptionListScreen(),
+    BudgetDashboardScreen(),
     SettingsScreen(),
   ];
 
@@ -117,19 +128,19 @@ class _MainShellState extends State<_MainShell> {
       onDestinationSelected: (i) => setState(() => _currentIndex = i),
       destinations: const [
         NavigationDestination(
-          icon: Icon(LucideIcons.barChart3),
-          selectedIcon: Icon(LucideIcons.barChart3),
+          icon: Icon(LucideIcons.layoutDashboard),
+          selectedIcon: Icon(LucideIcons.layoutDashboard),
           label: 'Dashboard',
-        ),
-        NavigationDestination(
-          icon: Icon(LucideIcons.pieChart),
-          selectedIcon: Icon(LucideIcons.pieChart),
-          label: 'Analityka',
         ),
         NavigationDestination(
           icon: Icon(LucideIcons.repeat),
           selectedIcon: Icon(LucideIcons.repeat),
           label: 'Subskrypcje',
+        ),
+        NavigationDestination(
+          icon: Icon(LucideIcons.wallet),
+          selectedIcon: Icon(LucideIcons.wallet),
+          label: 'Budżet',
         ),
         NavigationDestination(
           icon: Icon(LucideIcons.settings),

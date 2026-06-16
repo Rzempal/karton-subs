@@ -11,17 +11,6 @@ class MonthlyDataPoint {
   const MonthlyDataPoint({required this.month, required this.amount});
 }
 
-class CostPerUseEntry {
-  final Subscription subscription;
-  final double costPerUse;
-  final int usageCount;
-  const CostPerUseEntry({
-    required this.subscription,
-    required this.costPerUse,
-    required this.usageCount,
-  });
-}
-
 class BudgetStatus {
   final double spent;
   final double limit;
@@ -63,53 +52,6 @@ class AnalyticsService {
       breakdown[catId] = (breakdown[catId] ?? 0) + _monthly(sub, t);
     }
     return breakdown;
-  }
-
-  List<Subscription> getGhostSubscriptions(
-    List<Subscription> subs, {
-    Set<String> excludedCategoryIds = const {},
-  }) =>
-      subs
-          .where((s) =>
-              s.isGhost &&
-              !excludedCategoryIds.contains(s.categoryId ?? 'cat_other'))
-          .toList();
-
-  List<CostPerUseEntry> getCostPerUseRanking(
-    List<Subscription> subs, {
-    Currency? target,
-  }) {
-    final t = target ?? Currency.PLN;
-    final thirtyDaysAgo = _now.subtract(const Duration(days: 30));
-    final entries = <CostPerUseEntry>[];
-
-    for (final sub in subs.where((s) => s.isActive)) {
-      final monthlyInTarget = _monthly(sub, t);
-      final recentUses =
-          sub.usageLog.where((e) => e.date.isAfter(thirtyDaysAgo)).length;
-      if (recentUses > 0) {
-        entries.add(CostPerUseEntry(
-          subscription: sub,
-          costPerUse: monthlyInTarget / recentUses,
-          usageCount: recentUses,
-        ));
-      } else if (sub.usageLog.isNotEmpty) {
-        entries.add(CostPerUseEntry(
-          subscription: sub,
-          costPerUse: double.infinity,
-          usageCount: 0,
-        ));
-      }
-    }
-
-    entries.sort((a, b) {
-      if (a.costPerUse == double.infinity && b.costPerUse == double.infinity) return 0;
-      if (a.costPerUse == double.infinity) return -1;
-      if (b.costPerUse == double.infinity) return 1;
-      return b.costPerUse.compareTo(a.costPerUse);
-    });
-
-    return entries;
   }
 
   List<MonthlyDataPoint> getSpendingTrend(

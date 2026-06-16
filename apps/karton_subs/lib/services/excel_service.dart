@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/category.dart';
 import '../models/subscription.dart';
+import '../models/budget_entry.dart';
 import 'app_logger.dart';
 import 'storage_service.dart';
 
@@ -49,6 +50,20 @@ class ExcelService {
     'Metoda płatności',
     'Aktywna',
     'Data startu',
+  ];
+
+  static const _budgetSheetName = 'Budżet';
+
+  // Nagłówki kolumn budżetu — kolejność zgodna z [_BudgetHeaderField] niżej.
+  static const List<String> _budgetHeaders = [
+    'Typ',
+    'Nazwa',
+    'Kwota',
+    'Waluta',
+    'Cykl',
+    'Miesiąc',
+    'Notatka',
+    'Aktywna',
   ];
 
   // ── Eksport ────────────────────────────────────────────────────────────────
@@ -267,6 +282,113 @@ class ExcelService {
     List<Category> categories,
   ) =>
       _buildWorkbook(subs, categories);
+
+  // ── Budżet: eksport ──────────────────────────────────────────────────────────
+
+  /// Buduje arkusz ze wszystkich pozycji budżetu i udostępnia przez system share.
+  Future<void> exportBudgetToFile() async {
+    final entries = _storage.getBudgetEntries();
+    final bytes = _buildBudgetWorkbook(entries);
+
+    final dir = await getTemporaryDirectory();
+    final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final file = File('${dir.path}/budzet_$dateStr.xlsx');
+    await file.writeAsBytes(bytes);
+
+    await Share.shareXFiles(
+      [
+        XFile(
+          file.path,
+          mimeType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+      ],
+      subject: 'Karton na subskrypcje — budżet',
+    );
+
+    Future.delayed(const Duration(minutes: 2), () {
+      try {
+        if (file.existsSync()) file.deleteSync();
+      } catch (_) {
+        // best-effort; katalog cache jest sandboxowany.
+      }
+    });
+
+    _log.info('Wyeksportowano ${entries.length} pozycji budżetu do .xlsx');
+  }
+
+  static Uint8List _buildBudgetWorkbook(List<BudgetEntry> entries) {
+    final excel = Excel.createExcel();
+    excel.rename(excel.getDefaultSheet() ?? 'Sheet1', _budgetSheetName);
+    final sheet = excel[_budgetSheetName];
+
+    sheet.appendRow(
+        _budgetHeaders.map<CellValue?>((h) => TextCellValue(h)).toList());
+
+    for (final e in entries) {
+      sheet.appendRow(<CellValue?>[
+        TextCellValue(_budgetTypeLabel(e.type)),
+        TextCellValue(_sanitizeCell(e.name)),
+        DoubleCellValue(e.amount),
+        TextCellValue(e.currency.label),
+        TextCellValue(e.isOneTime ? '' : _cycleLabel(e.cycle, e.customCycleDays)),
+        TextCellValue(e.isOneTime ? (e.month ?? '') : ''),
+        TextCellValue(_sanitizeCell(e.note ?? '')),
+        TextCellValue(e.isActive ? 'tak' : 'nie'),
+      ]);
+    }
+
+    final bytes = excel.save();
+    if (bytes == null) {
+      throw const FormatException('Nie udało się zbudować arkusza budżetu');
+    }
+    return Uint8List.fromList(bytes);
+  }
+
+  static String _budgetTypeLabel(BudgetEntryType type) => switch (type) {
+        BudgetEntryType.income => 'Wpływ',
+        BudgetEntryType.bill => 'Rachunek',
+        BudgetEntryType.recurringCost => 'Koszt cykliczny',
+        BudgetEntryType.oneTimeExpense => 'Jednorazowy',
+      };
+
+  // ── Budżet: import ───────────────────────────────────────────────────────────
+
+  /// Otwiera file picker, parsuje arkusz budżetu poza głównym wątkiem, mapuje
+  /// wiersze na gotowe pozycje (nowe id). NIE zapisuje — zwraca wynik.
+  Future<BudgetExcelImportResult> pickAndParseBudget() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) {
+      throw const FormatException('Nie wybrano pliku');
+    }
+    final picked = result.files.first;
+    if (!picked.name.toLowerCase().endsWith('.xlsx')) {
+      throw const FormatException(
+          'Nieprawidłowy plik. Wybierz plik Excel (.xlsx)');
+    }
+    final bytes = picked.bytes;
+    if (bytes == null) {
+      throw const FormatException('Nie udało się odczytać pliku');
+    }
+    if (bytes.length > _maxFileBytes) {
+      throw const FormatException('Plik jest za duży (limit 5 MB)');
+    }
+
+    return await compute(_parseBudgetWorkbook, bytes);
+  }
+
+  /// Hook testowy: parsuje bajty .xlsx budżetu bez dostępu do bazy.
+  @visibleForTesting
+  static BudgetExcelImportResult parseBudgetBytesForTest(Uint8List bytes) =>
+      _parseBudgetWorkbook(bytes);
+
+  /// Hook testowy: buduje bajty arkusza budżetu (ścieżka eksportu) bez share/IO.
+  @visibleForTesting
+  static Uint8List buildBudgetWorkbookForTest(List<BudgetEntry> entries) =>
+      _buildBudgetWorkbook(entries);
 }
 
 /// Wynik importu — subskrypcje gotowe do zapisu + raport.
@@ -595,4 +717,203 @@ DateTime _parseDate(String? raw) {
   if (parsed == null) return fallback;
   if (parsed.year < 1990 || parsed.year > fallback.year + 50) return fallback;
   return parsed;
+}
+
+// ── Budżet: parsowanie (czysty Dart, bez dostępu do bazy) ──────────────────────
+
+/// Wynik importu budżetu — pozycje gotowe do zapisu (nowe id) + raport.
+class BudgetExcelImportResult {
+  final List<BudgetEntry> entries;
+  final List<String> skipped;
+  BudgetExcelImportResult({required this.entries, required this.skipped});
+
+  int get importedCount => entries.length;
+  int get skippedCount => skipped.length;
+}
+
+enum _BudgetHeaderField { type, name, amount, currency, cycle, month, note, active }
+
+/// Funkcja izolatu (compute): bajty .xlsx → gotowe pozycje budżetu + pominięcia.
+/// Budżet nie wymaga dopasowań w bazie, więc budujemy pozycje od razu tutaj.
+BudgetExcelImportResult _parseBudgetWorkbook(Uint8List bytes) {
+  final Excel excel;
+  try {
+    excel = Excel.decodeBytes(bytes);
+  } catch (_) {
+    throw const FormatException('Nie udało się odczytać pliku Excel (.xlsx)');
+  }
+  if (excel.tables.isEmpty) {
+    throw const FormatException('Plik nie zawiera żadnego arkusza');
+  }
+  final sheet = excel.tables.values.first;
+  final allRows = sheet.rows;
+  if (allRows.isEmpty) {
+    return BudgetExcelImportResult(entries: [], skipped: const ['Arkusz jest pusty']);
+  }
+
+  final headerMap = _detectBudgetHeader(allRows.first);
+  final hasHeader = headerMap.containsKey(_BudgetHeaderField.name) &&
+      headerMap.containsKey(_BudgetHeaderField.amount);
+
+  final Map<_BudgetHeaderField, int> col;
+  final int firstDataRow;
+  if (hasHeader) {
+    col = headerMap;
+    firstDataRow = 1;
+  } else {
+    col = const {_BudgetHeaderField.name: 0, _BudgetHeaderField.amount: 1};
+    firstDataRow = 0;
+  }
+
+  const uuid = Uuid();
+  final now = DateTime.now();
+  final entries = <BudgetEntry>[];
+  final skipped = <String>[];
+
+  for (var r = firstDataRow; r < allRows.length; r++) {
+    final dataIndex = r - firstDataRow + 1;
+    if (entries.length >= _maxDataRows) {
+      skipped.add('Pominięto wiersze powyżej limitu $_maxDataRows');
+      break;
+    }
+    final cells = allRows[r];
+    String? cell(_BudgetHeaderField f) {
+      final i = col[f];
+      if (i == null || i >= cells.length) return null;
+      return _cellText(cells[i]);
+    }
+
+    final isEmptyRow = cells.every((c) {
+      final t = _cellText(c);
+      return t == null || t.trim().isEmpty;
+    });
+    if (isEmptyRow) continue;
+
+    final rawName = cell(_BudgetHeaderField.name)?.trim();
+    if (rawName == null || rawName.isEmpty) {
+      skipped.add('Wiersz $dataIndex: brak nazwy');
+      continue;
+    }
+    final amount = _parseAmount(cell(_BudgetHeaderField.amount)?.trim());
+    if (amount == null) {
+      skipped.add('Wiersz $dataIndex ($rawName): nieprawidłowa kwota');
+      continue;
+    }
+    if (amount <= 0 || amount > _maxAmount) {
+      skipped.add('Wiersz $dataIndex ($rawName): kwota poza zakresem');
+      continue;
+    }
+
+    final name = rawName.length > _maxNameLength
+        ? rawName.substring(0, _maxNameLength)
+        : rawName;
+    final type = _parseBudgetType(cell(_BudgetHeaderField.type));
+    final isOneTime = type == BudgetEntryType.oneTimeExpense;
+    final (cycle, customDays) = _parseCycle(cell(_BudgetHeaderField.cycle));
+    final month = isOneTime
+        ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
+            BudgetEntry.monthKeyOf(now))
+        : null;
+
+    entries.add(BudgetEntry(
+      id: uuid.v4(),
+      name: name,
+      type: type,
+      amount: double.parse(amount.toStringAsFixed(2)),
+      currency: _parseCurrency(cell(_BudgetHeaderField.currency)),
+      cycle: cycle,
+      customCycleDays: isOneTime ? null : customDays,
+      month: month,
+      isActive: _parseActive(cell(_BudgetHeaderField.active)),
+      note: _blankToNull(cell(_BudgetHeaderField.note)),
+      dataDodania: now,
+    ));
+  }
+
+  return BudgetExcelImportResult(entries: entries, skipped: skipped);
+}
+
+Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
+  final map = <_BudgetHeaderField, int>{};
+  for (var i = 0; i < headerCells.length; i++) {
+    final raw = _cellText(headerCells[i]);
+    if (raw == null) continue;
+    final h = raw.toLowerCase().trim();
+    if (h.isEmpty) continue;
+
+    _BudgetHeaderField? field;
+    if (h.contains('typ') || h.contains('type')) {
+      field = _BudgetHeaderField.type;
+    } else if (h.contains('nazwa') || h.contains('name')) {
+      field = _BudgetHeaderField.name;
+    } else if (h.contains('kwota') || h.contains('amount') || h.contains('cena')) {
+      field = _BudgetHeaderField.amount;
+    } else if (h.contains('walut') || h.contains('currency')) {
+      field = _BudgetHeaderField.currency;
+    } else if (h.contains('cykl') || h.contains('cycle') || h.contains('okres')) {
+      field = _BudgetHeaderField.cycle;
+    } else if (h.contains('mies') || h.contains('month')) {
+      field = _BudgetHeaderField.month;
+    } else if (h.contains('notat') || h.contains('note') || h.contains('opis')) {
+      field = _BudgetHeaderField.note;
+    } else if (h.contains('aktyw') || h.contains('active') || h.contains('status')) {
+      field = _BudgetHeaderField.active;
+    }
+    if (field != null && !map.containsKey(field)) {
+      map[field] = i;
+    }
+  }
+  return map;
+}
+
+BudgetEntryType _parseBudgetType(String? raw) {
+  if (raw == null) return BudgetEntryType.recurringCost;
+  final t = raw.toLowerCase().trim();
+  if (t.contains('wpływ') ||
+      t.contains('wplyw') ||
+      t.contains('income') ||
+      t.contains('przychód') ||
+      t.contains('przychod')) {
+    return BudgetEntryType.income;
+  }
+  if (t.contains('rachunek') ||
+      t.contains('stał') ||
+      t.contains('stal') ||
+      t.contains('bill')) {
+    return BudgetEntryType.bill;
+  }
+  if (t.contains('jednoraz') || t.contains('onetime') || t.contains('one-time')) {
+    return BudgetEntryType.oneTimeExpense;
+  }
+  if (t.contains('cykl') || t.contains('recurring')) {
+    return BudgetEntryType.recurringCost;
+  }
+  return BudgetEntryType.recurringCost;
+}
+
+/// Parsuje miesiąc do formatu "YYYY-MM" z kilku zapisów (YYYY-MM, MM.YYYY, pełna data).
+String? _parseMonth(String? raw) {
+  if (raw == null) return null;
+  final t = raw.trim();
+  if (t.isEmpty) return null;
+
+  final ym = RegExp(r'^(\d{4})[-/.](\d{1,2})').firstMatch(t);
+  if (ym != null) {
+    final y = int.parse(ym.group(1)!);
+    final m = int.parse(ym.group(2)!);
+    if (m >= 1 && m <= 12) {
+      return '${y.toString().padLeft(4, '0')}-${m.toString().padLeft(2, '0')}';
+    }
+  }
+  final my = RegExp(r'^(\d{1,2})[-/.](\d{4})$').firstMatch(t);
+  if (my != null) {
+    final m = int.parse(my.group(1)!);
+    final y = int.parse(my.group(2)!);
+    if (m >= 1 && m <= 12) {
+      return '${y.toString().padLeft(4, '0')}-${m.toString().padLeft(2, '0')}';
+    }
+  }
+  final d = DateTime.tryParse(t);
+  if (d != null) return BudgetEntry.monthKeyOf(d);
+  return null;
 }

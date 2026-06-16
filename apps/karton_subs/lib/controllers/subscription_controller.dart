@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
-import '../models/usage_event.dart';
 import '../services/storage_service.dart';
 import '../services/analytics_service.dart';
 import '../services/currency_service.dart';
@@ -24,7 +23,6 @@ class SubscriptionController extends ChangeNotifier {
 
   List<Subscription> get all => _storage.getSubscriptions();
   List<Subscription> get active => _storage.getActiveSubscriptions();
-  List<Subscription> get ghosts => _storage.getGhostSubscriptions();
   List<Subscription> get trials =>
       active.where((s) => s.isTrialActive).toList();
   List<Subscription> get expiringTrials =>
@@ -157,30 +155,6 @@ class SubscriptionController extends ChangeNotifier {
     final sub = _storage.getSubscription(id);
     if (sub == null) return;
     await update(sub.copyWith(isPinned: !sub.isPinned));
-  }
-
-  // ── Usage log ──────────────────────────────────────────────────────────────
-
-  Future<void> logUsage(String subscriptionId, {String? note}) async {
-    final sub = _storage.getSubscription(subscriptionId);
-    if (sub == null) return;
-    final event = UsageEvent(
-      id: _uuid.v4(),
-      date: Subscription.devDateOverride ?? DateTime.now(),
-      note: note,
-    );
-    final updated = sub.copyWith(usageLog: [...sub.usageLog, event]);
-    await update(updated);
-    _log.info('Usage logged for: ${sub.name}');
-  }
-
-  Future<void> removeLastUsage(String subscriptionId) async {
-    final sub = _storage.getSubscription(subscriptionId);
-    if (sub == null || sub.usageLog.isEmpty) return;
-    final updatedLog = List<UsageEvent>.from(sub.usageLog)..removeLast();
-    final updated = sub.copyWith(usageLog: updatedLog);
-    await update(updated);
-    _log.info('Last usage removed for: ${sub.name}');
   }
 
   // ── Payment methods (bulk ops) ─────────────────────────────────────────────

@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
+import '../models/budget_entry.dart';
 import 'app_logger.dart';
 
 /// Hive-based storage — wzorzec z APPteczka, zaadaptowany na modele karton-subs.
-/// Boxy: 'subscriptions', 'categories', 'settings'.
+/// Boxy: 'subscriptions', 'categories', 'payment_methods', 'budget_entries', 'settings'.
 /// Dane przechowywane jako JSON string (brak type adapters = brak code gen).
 class StorageService {
   static final StorageService _instance = StorageService._internal();
@@ -17,12 +18,14 @@ class StorageService {
   late Box<String> _subscriptionsBox;
   late Box<String> _categoriesBox;
   late Box<String> _paymentMethodsBox;
+  late Box<String> _budgetEntriesBox;
   late Box<dynamic> _settingsBox;
 
   // In-memory cache
   final Map<String, Subscription> _subscriptionsCache = {};
   final Map<String, Category> _categoriesCache = {};
   final Map<String, PaymentMethod> _paymentMethodsCache = {};
+  final Map<String, BudgetEntry> _budgetEntriesCache = {};
   bool _initialized = false;
 
   Future<void> init() async {
@@ -31,15 +34,17 @@ class StorageService {
     _subscriptionsBox = await Hive.openBox<String>('subscriptions');
     _categoriesBox = await Hive.openBox<String>('categories');
     _paymentMethodsBox = await Hive.openBox<String>('payment_methods');
+    _budgetEntriesBox = await Hive.openBox<String>('budget_entries');
     _settingsBox = await Hive.openBox('settings');
     _loadSubscriptionsCache();
     _loadCategoriesCache();
     _loadPaymentMethodsCache();
+    _loadBudgetEntriesCache();
     _seedDefaultCategories();
     _seedDefaultPaymentMethods();
     _initialized = true;
     _log.info(
-        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods)');
+        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length} budget entries)');
   }
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
@@ -161,6 +166,38 @@ class StorageService {
     _log.info('Deleted payment method: $id');
   }
 
+  // ── Budget entries ─────────────────────────────────────────────────────────
+
+  void _loadBudgetEntriesCache() {
+    _budgetEntriesCache.clear();
+    for (final key in _budgetEntriesBox.keys) {
+      try {
+        final json = jsonDecode(_budgetEntriesBox.get(key as String)!);
+        _budgetEntriesCache[key] =
+            BudgetEntry.fromJson(json as Map<String, dynamic>);
+      } catch (e) {
+        _log.warning('Failed to parse budget entry $key: $e');
+      }
+    }
+  }
+
+  List<BudgetEntry> getBudgetEntries() =>
+      List.unmodifiable(_budgetEntriesCache.values);
+
+  BudgetEntry? getBudgetEntry(String id) => _budgetEntriesCache[id];
+
+  Future<void> saveBudgetEntry(BudgetEntry entry) async {
+    await _budgetEntriesBox.put(entry.id, jsonEncode(entry.toJson()));
+    _budgetEntriesCache[entry.id] = entry;
+    _log.info('Saved budget entry: ${entry.name}');
+  }
+
+  Future<void> deleteBudgetEntry(String id) async {
+    await _budgetEntriesBox.delete(id);
+    _budgetEntriesCache.remove(id);
+    _log.info('Deleted budget entry: $id');
+  }
+
   // ── Settings ───────────────────────────────────────────────────────────────
 
   String getCurrency() => _settingsBox.get('currency', defaultValue: 'PLN') as String;
@@ -210,41 +247,4 @@ class StorageService {
 
   Future<void> setNotifyRenewalReminders(bool value) async =>
       _settingsBox.put('notifyRenewalReminders', value);
-
-  bool getNotifyGhostWarnings() =>
-      _settingsBox.get('notifyGhostWarnings', defaultValue: true) as bool;
-
-  Future<void> setNotifyGhostWarnings(bool value) async =>
-      _settingsBox.put('notifyGhostWarnings', value);
-
-  // ── Analytics helpers ──────────────────────────────────────────────────────
-
-  double getTotalMonthly({String? currencyCode}) {
-    final subs = getActiveSubscriptions();
-    return subs.fold(0.0, (sum, s) => sum + s.monthlyAmount);
-  }
-
-  Map<String, double> getCategoryBreakdown() {
-    final result = <String, double>{};
-    for (final sub in getActiveSubscriptions()) {
-      final key = sub.categoryId ?? 'cat_other';
-      result[key] = (result[key] ?? 0.0) + sub.monthlyAmount;
-    }
-    return result;
-  }
-
-  Set<String> getExcludedGhostCategoryIds() =>
-      _categoriesCache.values
-          .where((c) => c.excludeFromGhostAnalysis)
-          .map((c) => c.id)
-          .toSet();
-
-  List<Subscription> getGhostSubscriptions() {
-    final excluded = getExcludedGhostCategoryIds();
-    return getActiveSubscriptions()
-        .where((s) =>
-            s.isGhost &&
-            !excluded.contains(s.categoryId ?? 'cat_other'))
-        .toList();
-  }
 }

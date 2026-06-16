@@ -69,16 +69,22 @@ lib/
 ├── config/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
-│   └── selection_controller.dart # Multi-select (batch operations)
+│   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
+│   └── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty)
 ├── models/
-│   ├── subscription.dart        # Glowna encja
+│   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
-│   └── usage_event.dart         # Logowanie uzycia
+│   ├── usage_event.dart         # Logowanie uzycia
+│   └── budget_entry.dart        # Pozycja budzetu (wplyw/rachunek/cykliczny/jednorazowy)
+├── utils/
+│   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # E2E encryption (AES-256-GCM)
 │   ├── storage_service.dart     # Hive + cache + CRUD
-│   ├── analytics_service.dart   # Obliczenia: totale, trendy, ghost detection
+│   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
+│   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
+│   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── notification_service.dart # Lokalne powiadomienia
 │   ├── update_service.dart      # OTA updates
 │   ├── theme_provider.dart      # Dark/Light/System toggle
@@ -86,19 +92,20 @@ lib/
 ├── theme/
 │   └── app_theme.dart           # Ledger Glass tokens + ThemeData
 ├── screens/
-│   ├── dashboard_screen.dart    # Glowny ekran: total, breakdown, alerty
-│   ├── add_subscription_screen.dart # Formularz dodawania
-│   ├── subscriptions_screen.dart # Lista subskrypcji
-│   ├── analytics_screen.dart    # Wykresy i statystyki
+│   ├── dashboard_screen.dart    # Dashboard: pelny przeglad budzet + subskrypcje
+│   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
+│   ├── add_subscription_screen.dart # Formularz subskrypcji
+│   ├── budget_dashboard_screen.dart  # Budzet: zarzadzanie pozycjami + Excel
+│   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (4 typy)
 │   └── settings_screen.dart     # Ustawienia, backup, OTA
 ├── widgets/
 │   ├── subscription_card.dart   # Karta subskrypcji
-│   ├── spending_chart.dart      # Wykres wydatkow
-│   ├── category_breakdown.dart  # Podzial na kategorie
-│   ├── budget_progress_bar.dart # Pasek budzetu
-│   ├── ghost_alert.dart         # Alert nieuzywanych subskrypcji
-│   └── filters_sheet.dart       # Filtry (kategoria, status, kwota)
-└── main.dart                    # Entry point, provider setup
+│   ├── budget_widgets.dart      # Wspolne widgety budzetu (surplus/flow/miesiac/karta)
+│   ├── spending_chart.dart      # Wykres trendu wydatkow
+│   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
+│   ├── budget_progress_bar.dart # Pasek limitu budzetu
+│   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
+└── main.dart                    # Entry point, provider setup (4 zakladki)
 ```
 
 ---
@@ -127,10 +134,45 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 |------------|---------|---------|
 | Monthly total | Wszystkie aktywne subskrypcje | Suma PLN/mies (normalizacja cykli) |
 | Category breakdown | Subskrypcje + kategorie | Map<Category, double> |
-| Cost per use | Subskrypcje + usage log | Ranking: najdrozszy koszt/uzycie |
-| Ghost detection | Subskrypcje + usage log | Lista: >30 dni bez uzycia + aktywna |
-| Yearly projection | Monthly total * 12 | Roczna prognoza |
-| Spending trend | Historia 3/6/12 mies. | Lista<MonthlyTotal> do wykresu |
+| Yearly projection | Monthly total * 12 | Suma roczna (figura „/rok") |
+| Spending trend | Historia 6 mies. | Lista<MonthlyDataPoint> do wykresu |
+| Budget status | Subskrypcje + limit | Procent wykorzystania limitu |
+
+> **Usuniete (2026-06-16):** ghost detection, cost-per-use, prognoza jako osobna karta,
+> log uzycia („Uzylem") — uznane za przerost formy. Szczegoly: [roadmap.md](roadmap.md).
+
+---
+
+## Nawigacja (4 zakladki)
+
+| Zakladka | Tresc |
+|----------|-------|
+| **Dashboard** | Pelny przeglad: surplus „zostaje/mies", wplywy/koszty (z subskrypcjami), bilans miesiaca |
+| **Subskrypcje** | Pod-zakladki Lista / Statystyki (hero koszt mies./rok, trend, kategorie, limit, triale); CTA Excel + PDF; import pod „Dodaj" |
+| **Budzet** | Zarzadzanie pozycjami (wplywy/koszty/jednorazowe); CTA Excel; import pod „Dodaj" |
+| **Ustawienia** | Motyw, kategorie, metody platnosci, limit, powiadomienia, backup `.subkarton`, OTA |
+
+---
+
+## Domena Budzet domowy (rownolegla warstwa)
+
+> **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
+
+Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
+dodatkowo czyta subskrypcje jako strumien kosztow.
+
+```
+BudgetController (ChangeNotifier)
+   │  nasluchuje SubscriptionController (odswiezenie przy zmianie subskrypcji)
+   ▼
+BudgetService  ──►  BudgetEntry[]  (box: budget_entries)
+   │
+   └──►  AnalyticsService.getMonthlyTotal(subscriptions)  ◄─ integracja
+```
+
+**Model czasu (hybryda):**
+- Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`
+- Wydatki jednorazowe: przypiete do miesiaca, koryguja `balanceForMonth`
 
 ---
 
@@ -147,4 +189,4 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-25
+> **Ostatnia aktualizacja:** 2026-06-16

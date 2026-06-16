@@ -344,8 +344,6 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              _UsageLogSection(subscriptionId: widget.existing!.id),
-              const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
                 icon: const Icon(LucideIcons.trash2, color: Colors.red),
@@ -444,7 +442,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           : null;
 
       if (_isEditing) {
-        // Pobierz aktualny obiekt z cache (ma świeże usageLogs)
+        // Pobierz aktualny obiekt z cache (świeży stan)
         final current =
             storage.getSubscription(widget.existing!.id) ?? widget.existing!;
         await ctrl.update(current.copyWith(
@@ -644,79 +642,6 @@ class _QuickAddBar extends StatelessWidget {
         'cat_fitness' => 'Fitness',
         _ => 'Inne',
       };
-}
-
-class _UsageLogSection extends StatelessWidget {
-  final String subscriptionId;
-  const _UsageLogSection({required this.subscriptionId});
-
-  @override
-  Widget build(BuildContext context) {
-    final ctrl = context.watch<SubscriptionController>();
-    final sub = ctrl.all.cast<Subscription?>().firstWhere(
-      (s) => s?.id == subscriptionId,
-      orElse: () => null,
-    );
-    if (sub == null) return const SizedBox.shrink();
-
-    final usageLog = sub.usageLog;
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _SectionLabel('Log użycia (${usageLog.length})'),
-            FilledButton.tonalIcon(
-              onPressed: () async {
-                await ctrl.logUsage(subscriptionId);
-              },
-              icon: const Icon(LucideIcons.checkCircle, size: 16),
-              label: const Text('Użyłem'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        if (usageLog.isEmpty)
-          Text(
-            'Brak zalogowanych użyć',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: c.textMuted,
-            ),
-          )
-        else
-          ...usageLog.reversed.take(10).map((event) {
-            final dateStr = DateFormat('dd.MM.yyyy HH:mm').format(event.date);
-            return ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.checkCircle, size: 16),
-              title: Text(dateStr, style: theme.textTheme.bodyMedium),
-              subtitle: event.note != null ? Text(event.note!) : null,
-              trailing: IconButton(
-                icon: const Icon(LucideIcons.x, size: 16),
-                tooltip: 'Usuń to użycie',
-                onPressed: () async {
-                  final updatedLog = List.of(sub.usageLog)
-                    ..removeWhere((e) => e.id == event.id);
-                  await ctrl.update(sub.copyWith(usageLog: updatedLog));
-                },
-              ),
-            );
-          }),
-        if (usageLog.length > 10)
-          Text(
-            '...i ${usageLog.length - 10} więcej',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: c.textMuted,
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 class _SectionLabel extends StatelessWidget {

@@ -38,7 +38,25 @@ erDiagram
         string iconName
         int order
     }
+
+    BUDGET_ENTRY {
+        uuid id PK
+        string name
+        string type
+        double amount
+        string currency
+        string cycle
+        int customCycleDays
+        string month
+        string categoryId
+        bool isActive
+        timestamp dataDodania
+    }
 ```
+
+> **BudgetEntry jest niezalezna od Subscription** — budzet to osobna, rownolegla
+> warstwa, ktora dodatkowo czyta subskrypcje jako strumien kosztow
+> (patrz [ADR-004](adr/ADR-004-model-budzetu-domowego.md)).
 
 ---
 
@@ -88,6 +106,52 @@ erDiagram
 | `order` | int | tak | Kolejnosc wyswietlania |
 
 **Limity:** max 20 kategorii
+
+---
+
+## Encja: BudgetEntry (budzet domowy)
+
+Jeden model dla wszystkich pozycji budzetu. Typ rozroznia 4 potrzeby; zachowanie
+(normalizacja cykliczna vs przypisanie do miesiaca) wynika z typu.
+
+| Pole | Typ | Wymagane | Opis |
+|------|-----|----------|------|
+| `id` | UUID | tak | Unikalny identyfikator |
+| `name` | string | tak | Nazwa pozycji |
+| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense |
+| `amount` | double | tak | Kwota (>0) w walucie `currency` |
+| `currency` | Currency | tak | PLN, EUR, USD, GBP |
+| `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
+| `customCycleDays` | int | nie | Liczba dni (gdy cycle == custom) |
+| `month` | string "YYYY-MM" | tak* | Miesiac przypisania (tylko oneTimeExpense) |
+| `categoryId` | UUID | nie | Kategoria budzetu (Faza 5b) |
+| `startDate` | ISO8601 | nie | Data rozpoczecia (typy cykliczne) |
+| `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
+| `note` | string | nie | Opcjonalna notatka |
+| `dataDodania` | ISO8601 | tak | Timestamp dodania |
+
+`* zaleznie od typu` — `cycle` dla cyklicznych, `month` dla jednorazowego.
+
+```dart
+enum BudgetEntryType { income, bill, recurringCost, oneTimeExpense }
+```
+
+**Computed:**
+- `monthlyAmount` — kwota/mies (typy cykliczne); `0` dla `oneTimeExpense`
+- `signedMonthlyAmount` — wplyw `+`, koszt `-`, jednorazowy `0`
+
+**Agregaty (`BudgetService`):**
+
+| Obliczenie | Wzor |
+|------------|------|
+| Wplywy/mies | suma `monthlyAmount` aktywnych wplywow |
+| Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
+| Zostaje/mies (surplus) | wplywy - koszty/mies |
+| Bilans miesiaca | surplus - wydatki jednorazowe danego miesiaca |
+
+Normalizacja cyklu wspoldzielona z subskrypcjami: `lib/utils/cycle_math.dart`.
+
+---
 
 ### Predefiniowane kategorie
 
@@ -215,6 +279,8 @@ class Category {
 |--------|------|
 | Hive Box: `subscriptions` | JSON subskrypcji (String values) |
 | Hive Box: `categories` | JSON kategorii |
+| Hive Box: `payment_methods` | JSON metod platnosci |
+| Hive Box: `budget_entries` | JSON pozycji budzetu domowego |
 | Hive Box: `settings` | Key-value: waluta domyslna, budzet, preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).
@@ -269,4 +335,4 @@ pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-25
+> **Ostatnia aktualizacja:** 2026-06-16

@@ -1,20 +1,23 @@
 # Karton na subskrypcje
 
-Mobilny tracker subskrypcji cyfrowych. Zero logowania, 100% prywatnosci, offline-first.
+Mobilny tracker subskrypcji cyfrowych **oraz menedzer budzetu domowego**.
+Zero logowania, 100% prywatnosci, offline-first.
 
 ---
 
 ## Czym jest Karton na subskrypcje
 
-Aplikacja mobilna do zarzadzania subskrypcjami cyfrowymi. Cel: pokazac dokladnie gdzie ida pieniadze, wykryc subskrypcje za ktore placisz ale nie korzystasz, i natychmiast podjac dzialanie.
+Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budzet domowy. Cel: pokazac dokladnie gdzie ida pieniadze i ile zostaje na koniec miesiaca.
 
 **Kluczowe funkcje:**
 - Zero logowania, zero rejestracji -- 100% prywatnosci, wszystko na urzadzeniu
-- Dzienne/tygodniowe/miesieczne/roczne podsumowania wydatkow
-- Smart alerty "placisz ale nie korzystasz"
-- Przypomnienia o odnowieniach
-- Przejrzysty interfejs skupiony na danych
-- Import i eksport listy subskrypcji do Excela (.xlsx)
+- Dashboard: pelny przeglad budzetu razem z subskrypcjami
+- Subskrypcje: podsumowanie miesieczne/roczne, trend, podzial wg kategorii, triale, limit
+- **Budzet domowy:** wplywy, koszty stale (rachunki), koszty cykliczne i wieksze
+  wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie" i bilansem miesiaca
+- Przypomnienia o odnowieniach i trialach
+- Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
+- Szyfrowany backup `.subkarton` (obejmuje subskrypcje i budzet)
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
@@ -49,11 +52,12 @@ karton-subs/
 │       ├── lib/
 │       │   ├── main.dart
 │       │   ├── config/         # AppConfig (build channels)
-│       │   ├── models/         # Subscription, Category, UsageEvent
-│       │   ├── services/       # StorageService (Hive), ThemeProvider, AppLogger
-│       │   ├── controllers/    # SubscriptionController
+│       │   ├── models/         # Subscription, Category, UsageEvent, BudgetEntry
+│       │   ├── services/       # StorageService (Hive), AnalyticsService, BudgetService
+│       │   ├── controllers/    # SubscriptionController, BudgetController
+│       │   ├── utils/          # cycle_math (normalizacja cyklu)
 │       │   ├── theme/          # Ledger Glass (AppTheme, AppColors)
-│       │   ├── screens/        # Dashboard, Lista, Dodaj, Ustawienia
+│       │   ├── screens/        # Dashboard, Subskrypcje, Budzet, Ustawienia
 │       │   └── widgets/        # SubscriptionCard
 │       └── pubspec.yaml
 ├── docs/

@@ -6,8 +6,6 @@ import '../models/subscription.dart';
 import '../models/category.dart';
 import '../services/storage_service.dart';
 import '../services/currency_service.dart';
-import '../controllers/subscription_controller.dart';
-import '../main.dart' show KartonApp;
 import '../theme/app_theme.dart';
 
 class SubscriptionCard extends StatelessWidget {
@@ -176,8 +174,6 @@ class SubscriptionCard extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(width: 4),
-                _QuickLogButton(subscription: subscription),
               ],
             ),
           ),
@@ -223,9 +219,6 @@ class SubscriptionCard extends StatelessWidget {
       if (days <= 3) return c.warning.withValues(alpha: 0.3);
       return c.trial.withValues(alpha: 0.3);
     }
-    if (subscription.isGhost) {
-      return c.negative.withValues(alpha: 0.3);
-    }
     if (_isRenewingSoon()) {
       return c.warning.withValues(alpha: 0.3);
     }
@@ -240,9 +233,6 @@ class SubscriptionCard extends StatelessWidget {
       final days = subscription.trialDaysRemaining ?? 99;
       if (days <= 3) return c.warningBg;
       return c.trialBg;
-    }
-    if (subscription.isGhost) {
-      return c.negativeBg;
     }
     if (_isRenewingSoon()) {
       return c.warningBg;
@@ -312,8 +302,6 @@ class _StatusDot extends StatelessWidget {
       color = c.textMuted; // szary
     } else if (subscription.isTrialActive) {
       color = c.trial; // niebieski
-    } else if (subscription.isGhost) {
-      color = c.negative; // czerwony
     } else {
       color = c.positive; // zielony
     }
@@ -398,68 +386,3 @@ const List<String> availableIconNames = [
   'car', 'home', 'shopping', 'music', 'camera',
   'globe', 'zap', 'coffee', 'star', 'folder',
 ];
-
-class _QuickLogButton extends StatelessWidget {
-  final Subscription subscription;
-
-  const _QuickLogButton({required this.subscription});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.semanticColors;
-    final count = subscription.usageLog.length;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        IconButton(
-          icon: const Icon(LucideIcons.checkCircle, size: 20),
-          tooltip: 'Użyłem dziś ($count)',
-          onPressed: () async {
-            final ctrl = context.read<SubscriptionController>();
-            await ctrl.logUsage(subscription.id);
-            if (context.mounted) {
-              final messenger = KartonApp.scaffoldMessengerKey.currentState;
-              if (messenger != null) {
-                messenger.clearSnackBars();
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Zalogowano użycie: ${subscription.name} (${count + 1})'),
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    showCloseIcon: true,
-                    action: SnackBarAction(
-                      label: 'Cofnij',
-                      onPressed: () => ctrl.removeLastUsage(subscription.id),
-                    ),
-                  ),
-                );
-              }
-            }
-          },
-        ),
-        if (count > 0)
-          Positioned(
-            right: 4,
-            top: 4,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: c.positive,
-                shape: BoxShape.circle,
-              ),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
