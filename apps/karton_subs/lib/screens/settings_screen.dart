@@ -617,13 +617,49 @@ class _OtaSection extends StatelessWidget {
     return Consumer<UpdateService>(
       builder: (context, svc, _) {
         if (svc.status == UpdateStatus.downloading) {
-          return _DownloadProgress(progress: svc.downloadProgress);
+          return Column(
+            children: [
+              _DownloadProgress(progress: svc.downloadProgress),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _UpdateProcessControls(svc: svc),
+              ),
+            ],
+          );
         }
         if (svc.status == UpdateStatus.launchingInstaller) {
-          return const ListTile(
-            leading: Icon(LucideIcons.smartphone),
-            title: Text('Uruchamianie instalatora…'),
-            subtitle: Text('Zaakceptuj instalację w oknie systemowym'),
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(LucideIcons.smartphone),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Uruchamianie instalatora…',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                            svc.showInstallerHint
+                                ? 'Okno instalatora się nie pojawiło? Zrestartuj proces.'
+                                : 'Zaakceptuj instalację w oknie systemowym',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _UpdateProcessControls(svc: svc),
+              ],
+            ),
           );
         }
         if (svc.updateAvailable) {
@@ -748,6 +784,32 @@ class _DownloadProgress extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Akcje dostepne podczas trwajacego procesu aktualizacji (pobieranie /
+/// uruchamianie instalatora): zawsze widoczny restart + anuluj — wyjscie z
+/// ewentualnie zawieszonego stanu.
+class _UpdateProcessControls extends StatelessWidget {
+  final UpdateService svc;
+  const _UpdateProcessControls({required this.svc});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        FilledButton.icon(
+          onPressed: () => svc.restartUpdate(),
+          icon: const Icon(LucideIcons.refreshCw, size: 18),
+          label: const Text('Zrestartuj aktualizację'),
+        ),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed: () => svc.reset(),
+          child: const Text('Anuluj'),
+        ),
+      ],
     );
   }
 }

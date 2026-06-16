@@ -1,33 +1,37 @@
-﻿{
-    "changelog":  [
-                      {
-                          "version":  "0.2.26040900",
-                          "notes":  "- bug fixes"
-                      },
-                      {
-                          "version":  "0.2.26032902",
-                          "notes":  "fix ikony"
-                      },
-                      {
-                          "version":  "0.2.26032901",
-                          "notes":  "zmiana ikony aplikacji"
-                      },
-                      {
-                          "version":  "0.1.26032900",
-                          "notes":  "- bug fixes"
-                      },
-                      {
-                          "version":  "0.1.26032803",
-                          "notes":  "OTA"
-                      },
-                      {
-                          "version":  "0.1.26032802",
-                          "notes":  "- bug fixes"
-                      }
-                  ],
-    "version":  "0.2.26040900",
-    "releaseNotes":  "- bug fixes",
-    "versionCode":  226040900,
-    "releaseDate":  "2026-04-09T16:45:26Z",
-    "apkUrl":  "https://michalrapala.app/releases/karton-subs/karton-subs_0.2.26040900.apk"
+{
+  "releaseDate": "2026-06-16T20:36:09Z",
+  "version": "0.3.26061600",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.3.26061600.apk",
+  "changelog": [
+    {
+      "version": "0.3.26061600",
+      "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
+    },
+    {
+      "version": "0.2.26040900",
+      "notes": "- bug fixes"
+    },
+    {
+      "version": "0.2.26032902",
+      "notes": "fix ikony"
+    },
+    {
+      "version": "0.2.26032901",
+      "notes": "zmiana ikony aplikacji"
+    },
+    {
+      "version": "0.1.26032900",
+      "notes": "- bug fixes"
+    },
+    {
+      "version": "0.1.26032803",
+      "notes": "OTA"
+    },
+    {
+      "version": "0.1.26032802",
+      "notes": "- bug fixes"
+    }
+  ],
+  "versionCode": 326061600,
+  "releaseNotes": "- Import i eksport subskrypcji do Excela (.xlsx)"
 }

@@ -173,6 +173,25 @@ class UpdateService extends ChangeNotifier {
     }
   }
 
+  /// Restartuje proces aktualizacji — wyjscie z zawieszonego stanu
+  /// (np. instalator systemowy nie wystartowal lub zostal zamkniety).
+  /// Ponawia pobieranie + instalacje; gdy nie znamy URL APK — najpierw
+  /// sprawdza aktualizacje, a potem uruchamia pobieranie.
+  Future<void> restartUpdate() async {
+    _installerHintTimer?.cancel();
+    _showInstallerHint = false;
+    _errorMessage = null;
+    _downloadProgress = 0.0;
+    notifyListeners();
+
+    if (_apkUrl != null) {
+      await startUpdate();
+    } else {
+      final available = await checkForUpdate();
+      if (available) await startUpdate();
+    }
+  }
+
   void reset() {
     _updateAvailable = false;
     _downloadProgress = 0.0;

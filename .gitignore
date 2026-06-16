@@ -35,6 +35,10 @@ GoogleService-Info.plist
 *.ipa
 apps/*/build/
 
+# Lokalne eksporty / generatory danych (moga zawierac dane osobiste — nie commitowac)
+*.xlsx
+apps/karton_subs/tool/gen_import_xlsx.dart
+
 # Flutter — generated files
 pubspec.lock
 .dart_tool/

@@ -14,6 +14,7 @@ Aplikacja mobilna do zarzadzania subskrypcjami cyfrowymi. Cel: pokazac dokladnie
 - Smart alerty "placisz ale nie korzystasz"
 - Przypomnienia o odnowieniach
 - Przejrzysty interfejs skupiony na danych
+- Import i eksport listy subskrypcji do Excela (.xlsx)
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
@@ -34,6 +35,7 @@ Aplikacja mobilna do zarzadzania subskrypcjami cyfrowymi. Cel: pokazac dokladnie
 | Aktualizacje | OTA (ota_update) |
 | Wykresy | fl_chart |
 | Powiadomienia | flutter_local_notifications |
+| Excel | excel (import/eksport .xlsx) |
 | Platformy | Android (iOS w przyszlosci) |
 
 ---
@@ -100,4 +102,4 @@ Reusable infrastructure: ~40% kodu (serwisy, kontrolery, konfiguracja).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-03-26
+> **Ostatnia aktualizacja:** 2026-06-16

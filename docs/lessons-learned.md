@@ -234,3 +234,25 @@ Przy integracji pluginu ktory moze failowac (notifications, bluetooth, camera):
 - **Android 13+ wymaga runtime permission** — sam AndroidManifest nie wystarczy
 
 ---
+
+## 2026-06-16: Stany dlugotrwalego procesu (OTA) musza miec zawsze wyjscie
+
+### Problem
+Ekran OTA w stanie `launchingInstaller` renderowal statyczny tekst bez zadnej akcji.
+Gdy systemowe okno instalatora sie nie pojawilo lub zostalo zamkniete (zdarzenie poza
+strumieniem `OtaUpdate`), UI wisial w nieskonczonosc bez mozliwosci restartu. Dodatkowo
+flaga `_showInstallerHint` (ratunkowa podpowiedz po 5 s) byla wyliczana w serwisie, ale
+UI nigdy jej nie czytal — martwy kod.
+
+### Rozwiazanie
+Dodano `UpdateService.restartUpdate()` oraz zawsze widoczne przyciski "Zrestartuj
+aktualizacje" + "Anuluj" w stanach `downloading` i `launchingInstaller`; wyswietlono
+podpowiedz ratunkowa, gdy `showInstallerHint == true`.
+
+### Wniosek
+Kazdy stan dlugotrwalego procesu async sterowanego strumieniem zdarzen pluginu (OTA,
+pobieranie, instalacja) MUSI miec zawsze dostepna akcje wyjscia/restartu — strumien moze
+nigdy nie dostarczyc zdarzenia terminalnego. Jesli serwis wystawia flage pomocnicza, UI
+musi ja faktycznie renderowac, inaczej to martwy kod.
+
+---
