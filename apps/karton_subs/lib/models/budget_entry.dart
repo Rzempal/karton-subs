@@ -1,9 +1,9 @@
 import 'subscription.dart' show BillingCycle, Currency;
 import '../utils/cycle_math.dart';
 
-/// Typ pozycji budżetu — odpowiada 1:1 czterem potrzebom domowego budżetu.
+/// Typ pozycji budżetu — domowe przepływy pieniężne.
 enum BudgetEntryType {
-  /// Wpływ (cykliczny, np. pensja).
+  /// Wpływ cykliczny (np. pensja).
   income,
 
   /// Koszt stały / rachunek (cykliczny, np. czynsz, prąd).
@@ -12,8 +12,11 @@ enum BudgetEntryType {
   /// Koszt cykliczny (mies./rocz., np. ubezpieczenie, karnet).
   recurringCost,
 
-  /// Większy wydatek jednorazowy — przypięty do konkretnego miesiąca.
+  /// Większy wydatek jednorazowy — przypięty do konkretnej daty.
   oneTimeExpense,
+
+  /// Wpływ jednorazowy (np. premia, bonus) — przypięty do konkretnej daty.
+  oneTimeIncome,
 }
 
 /// Pozycja budżetu domowego.
@@ -66,8 +69,11 @@ class BudgetEntry {
     required this.dataDodania,
   });
 
-  bool get isIncome => type == BudgetEntryType.income;
-  bool get isOneTime => type == BudgetEntryType.oneTimeExpense;
+  bool get isIncome =>
+      type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
+  bool get isOneTime =>
+      type == BudgetEntryType.oneTimeExpense ||
+      type == BudgetEntryType.oneTimeIncome;
   bool get isExpense => !isIncome;
 
   /// Kwota znormalizowana do miesięcznej (bez znaku).

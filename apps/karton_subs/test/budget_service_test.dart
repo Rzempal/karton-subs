@@ -156,6 +156,23 @@ void main() {
           closeTo(3000, 0.001));
       expect(_svc.oneTimeTotalForMonth(entries, '2026-08'), closeTo(0, 0.001));
     });
+
+    test('jednorazowy wpływ (premia) podnosi bilans tego miesiąca', () {
+      final withBonus = [
+        _entry(type: BudgetEntryType.income, amount: 5000),
+        _entry(
+            type: BudgetEntryType.oneTimeIncome,
+            amount: 2000,
+            month: '2026-07'),
+      ];
+      // Nie wchodzi do średniej miesięcznej.
+      expect(_svc.monthlyIncome(withBonus), closeTo(5000, 0.001));
+      // Lipiec: 5000 + 2000; sierpień: 5000.
+      expect(_svc.balanceForMonth(withBonus, const [], '2026-07'),
+          closeTo(7000, 0.001));
+      expect(_svc.balanceForMonth(withBonus, const [], '2026-08'),
+          closeTo(5000, 0.001));
+    });
   });
 
   group('BudgetService — konwersja walut', () {

@@ -8,7 +8,6 @@ import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/budget_widgets.dart';
-import 'add_budget_entry_screen.dart';
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
 class DashboardScreen extends StatefulWidget {
@@ -20,18 +19,28 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late DateTime _selectedMonth;
+  int? _selectedDay;
+
+  DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    final now = Subscription.devDateOverride ?? DateTime.now();
+    final now = _today;
     _selectedMonth = DateTime(now.year, now.month, 1);
+    _selectedDay = now.day; // bieżący miesiąc → domyślnie dziś
   }
 
   void _shiftMonth(int delta) {
     setState(() {
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month + delta, 1);
+      // Powrót do bieżącego miesiąca → zaznacz dziś; inny miesiąc → bez wyboru.
+      final t = _today;
+      _selectedDay =
+          (_selectedMonth.year == t.year && _selectedMonth.month == t.month)
+              ? t.day
+              : null;
     });
   }
 
@@ -77,19 +86,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 24),
+          _SubscriptionsSummaryCard(ctrl: subs, currency: currency),
+          const SizedBox(height: 24),
           BudgetMonthSection(
             month: _selectedMonth,
             balance: budget.balanceForMonth(monthKey),
-            oneTime: budget.oneTimeForMonth(monthKey),
             currency: currency,
+            calendar: budget.calendarForMonth(_selectedMonth),
+            selectedDay: _selectedDay,
+            today: _today,
             onPrev: () => _shiftMonth(-1),
             onNext: () => _shiftMonth(1),
-            onTapEntry: (e) => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => AddBudgetEntryScreen(existing: e),
-            )),
+            onSelectDay: (d) => setState(() => _selectedDay = d),
           ),
-          const SizedBox(height: 24),
-          _SubscriptionsSummaryCard(ctrl: subs, currency: currency),
         ],
       ),
     );

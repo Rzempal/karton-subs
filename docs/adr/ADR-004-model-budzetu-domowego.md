@@ -51,3 +51,21 @@ jest srednia miesieczna).
 - **Pelny rejestr miesieczny (ksiega transakcji)** — odrzucona na ten etap:
   duza przebudowa (nowy wymiar czasu, ekran kalendarza) nieproporcjonalna do potrzeby;
   hybryda daje dokladnosc dla jednorazowych bez ksiegi.
+
+## Aktualizacja 2026-06-17: kalendarz przeplywow + jednorazowy wplyw
+
+Rozszerzenie modelu pod kalendarz dni wplywow/wydatkow na Dashboardzie:
+
+- **Kotwica daty bez zmiany schematu:** istniejace, nieuzywane pole `startDate` pelni
+  role daty kalendarzowej — dokladna data pozycji jednorazowej; data pierwszego
+  wystapienia pozycji cyklicznej. Brak nowego pola = brak migracji.
+- **Rzutowanie wystapien:** `occurrencesInRange` (`lib/utils/cycle_math.dart`) liczy dni
+  wystapien w miesiacu wg cyklu (clamp dnia 31; krok kalendarzowy `DateTime(y,m,d+n)`
+  zamiast `Duration` — odpornosc na DST). Subskrypcje rzutowane z `startDate`+cyklu.
+- **Piaty typ `oneTimeIncome`** (premia/bonus): jednorazowy wplyw z data. Nie wchodzi do
+  sredniej miesiecznej; `balanceForMonth = surplus + jednorazowe wplywy − jednorazowe wydatki`.
+  Dodany jako kolejny typ (a nie refaktor na osie direction×recurrence) — addytywnie,
+  niskie ryzyko; `fromJson` z `orElse: recurringCost` chroni stare dane.
+
+**Konsekwencja (znana):** pozycje budzetu utworzone przed ta zmiana nie maja `startDate`,
+wiec nie pojawia sie na kalendarzu do czasu edycji (subskrypcje i nowe pozycje dzialaja od razu).

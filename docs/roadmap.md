@@ -124,6 +124,20 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 
 > Pola modelu `usageLog`/`isGhost` pozostaja uspione (zgodnosc danych); pelna czystka — opcjonalnie pozniej.
 
+### Faza 5c: Kalendarz przeplywow + jednorazowy wplyw (2026-06-17)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Reorder Dashboardu | Subskrypcje nad widokiem miesiaca | ✅ |
+| Kalendarz przeplywow | Siatka miesiaca z kropkami wplyw/wydatek; tap dnia → pozycje dnia | ✅ |
+| Kotwica daty | Reuse `startDate`; formularz zbiera date (jednorazowy dokladna, cykliczny opcjonalna) | ✅ |
+| Rzutowanie wystapien | `occurrencesInRange` (clamp dnia 31, fix DST); subskrypcje z `startDate`+cyklu | ✅ |
+| Jednorazowy wplyw | Typ `oneTimeIncome` (premia/bonus) z data; podnosi bilans miesiaca | ✅ |
+| Testy | `occurrencesInRange`, `calendarForMonth`, bilans z jednorazowym wplywem | ✅ |
+
+> Migracja: stare pozycje budzetu bez `startDate` nie pojawia sie na kalendarzu do czasu edycji.
+> Excel pozycji jednorazowych pozostaje na poziomie miesiaca (import → dzien 1.).
+
 ---
 
 ## Backlog (przyszlosc)

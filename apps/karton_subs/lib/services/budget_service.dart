@@ -7,10 +7,38 @@
 
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
+import '../utils/cycle_math.dart';
 import 'analytics_service.dart';
 import 'currency_service.dart';
 
 DateTime get _now => Subscription.devDateOverride ?? DateTime.now();
+
+/// Pojedyncze zdarzenie pieniezne danego dnia (kwota w walucie docelowej).
+class CalendarItem {
+  final String name;
+  final double amount;
+  final bool isIncome;
+  final bool isSubscription;
+  const CalendarItem({
+    required this.name,
+    required this.amount,
+    required this.isIncome,
+    this.isSubscription = false,
+  });
+}
+
+/// Przeplywy jednego dnia kalendarza.
+class DayCashflow {
+  final List<CalendarItem> items;
+  const DayCashflow(this.items);
+
+  bool get hasIncome => items.any((i) => i.isIncome);
+  bool get hasExpense => items.any((i) => !i.isIncome);
+  double get incomeTotal =>
+      items.where((i) => i.isIncome).fold(0.0, (s, i) => s + i.amount);
+  double get expenseTotal =>
+      items.where((i) => !i.isIncome).fold(0.0, (s, i) => s + i.amount);
+}
 
 class BudgetService {
   static const _currency = CurrencyService();
@@ -71,30 +99,52 @@ class BudgetService {
     String monthKey,
   ) =>
       entries
-          .where((e) => e.isActive && e.isOneTime && e.month == monthKey)
+          .where((e) =>
+              e.isActive && e.isOneTime && e.isExpense && e.month == monthKey)
           .toList();
+
+  /// Wpływy jednorazowe (np. premia) przypisane do danego miesiąca ("YYYY-MM").
+  List<BudgetEntry> oneTimeIncomesForMonth(
+    List<BudgetEntry> entries,
+    String monthKey,
+  ) =>
+      entries
+          .where((e) =>
+              e.isActive && e.isOneTime && e.isIncome && e.month == monthKey)
+          .toList();
+
+  double _sumAmount(List<BudgetEntry> list, Currency t) => list.fold(
+        0.0,
+        (sum, e) => sum + _currency.convert(e.amount, e.currency, t),
+      );
 
   /// Suma wydatków jednorazowych w danym miesiącu (w walucie docelowej).
   double oneTimeTotalForMonth(
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
-  }) {
-    final t = target ?? Currency.PLN;
-    return oneTimeExpensesForMonth(entries, monthKey).fold(
-      0.0,
-      (sum, e) => sum + _currency.convert(e.amount, e.currency, t),
-    );
-  }
+  }) =>
+      _sumAmount(
+          oneTimeExpensesForMonth(entries, monthKey), target ?? Currency.PLN);
 
-  /// Bilans wskazanego miesiąca: surplus − wydatki jednorazowe tego miesiąca.
+  /// Suma wpływów jednorazowych w danym miesiącu (w walucie docelowej).
+  double oneTimeIncomeTotalForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) =>
+      _sumAmount(
+          oneTimeIncomesForMonth(entries, monthKey), target ?? Currency.PLN);
+
+  /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki.
   double balanceForMonth(
     List<BudgetEntry> entries,
     List<Subscription> subs,
     String monthKey, {
     Currency? target,
   }) =>
-      monthlySurplus(entries, subs, target: target) -
+      monthlySurplus(entries, subs, target: target) +
+      oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
       oneTimeTotalForMonth(entries, monthKey, target: target);
 
   /// Nadchodzące wydatki jednorazowe (miesiąc ≥ bieżący), posortowane rosnąco.
@@ -126,5 +176,87 @@ class BudgetService {
       breakdown[key] = (breakdown[key] ?? 0) + _monthly(e, t);
     }
     return breakdown;
+  }
+
+  // ── Kalendarz przeplywow (per dzien miesiaca) ────────────────────────────────
+
+  /// Mapuje wplywy i wydatki na dni wskazanego miesiaca.
+  /// Klucz = dzien miesiaca (1..31), wartosc = przeplywy tego dnia.
+  ///
+  /// Zrodla: pozycje budzetu (cykliczne rzutowane wg `startDate`+cyklu;
+  /// jednorazowe wg `startDate`, z fallbackiem na 1. dzien przy starych danych
+  /// majacych tylko `month`) oraz odnowienia subskrypcji (`startDate`+cykl).
+  /// Kwoty w walucie docelowej.
+  Map<int, DayCashflow> calendarForMonth(
+    List<BudgetEntry> entries,
+    List<Subscription> subs,
+    DateTime monthStart, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final mStart = DateTime(monthStart.year, monthStart.month, 1);
+    final mEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
+    final byDay = <int, List<CalendarItem>>{};
+    void add(int day, CalendarItem it) => (byDay[day] ??= []).add(it);
+
+    for (final e in entries.where((e) => e.isActive)) {
+      if (e.isOneTime) {
+        final d = e.startDate ?? _monthFallbackDate(e.month);
+        if (d == null) continue;
+        if (!d.isBefore(mStart) && !d.isAfter(mEnd)) {
+          add(
+            d.day,
+            CalendarItem(
+              name: e.name,
+              amount: _currency.convert(e.amount, e.currency, t),
+              isIncome: e.isIncome,
+            ),
+          );
+        }
+      } else {
+        final anchor = e.startDate;
+        if (anchor == null) continue;
+        for (final d in occurrencesInRange(
+            anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {
+          add(
+            d.day,
+            CalendarItem(
+              name: e.name,
+              amount: _currency.convert(e.amount, e.currency, t),
+              isIncome: e.isIncome,
+            ),
+          );
+        }
+      }
+    }
+
+    for (final s in subs.where((s) => s.isActive)) {
+      for (final d in occurrencesInRange(
+          s.startDate, s.billingCycle, s.customCycleDays, mStart, mEnd)) {
+        add(
+          d.day,
+          CalendarItem(
+            name: s.name,
+            amount: _currency.convert(s.amount, s.currency, t),
+            isIncome: false,
+            isSubscription: true,
+          ),
+        );
+      }
+    }
+
+    return {
+      for (final entry in byDay.entries) entry.key: DayCashflow(entry.value)
+    };
+  }
+
+  DateTime? _monthFallbackDate(String? monthKey) {
+    if (monthKey == null) return null;
+    final parts = monthKey.split('-');
+    if (parts.length != 2) return null;
+    final y = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (y == null || m == null) return null;
+    return DateTime(y, m, 1);
   }
 }

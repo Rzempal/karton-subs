@@ -30,11 +30,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   late BudgetEntryType _type;
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
-  late DateTime _month; // pierwszy dzień wybranego miesiąca (oneTimeExpense)
+  late DateTime _oneTimeDate; // dokładna data wydatku jednorazowego
+  DateTime? _anchorDate; // data-kotwica pozycji cyklicznej (opcjonalna)
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.existing != null;
-  bool get _isOneTime => _type == BudgetEntryType.oneTimeExpense;
+  bool get _isOneTime =>
+      _type == BudgetEntryType.oneTimeExpense ||
+      _type == BudgetEntryType.oneTimeIncome;
 
   @override
   void initState() {
@@ -53,9 +56,12 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _currency = e.currency;
       _cycle = e.cycle;
     }
-    final parsedMonth =
+    // Data jednorazowego: startDate -> (fallback) 1. dzień z month -> dziś.
+    final fallbackMonth =
         e?.month != null ? DateTime.tryParse('${e!.month}-01') : null;
-    _month = parsedMonth ?? DateTime(now.year, now.month, 1);
+    _oneTimeDate = e?.startDate ?? fallbackMonth ?? DateTime(now.year, now.month, now.day);
+    // Kotwica cykliczna: startDate (gdy edytujemy pozycję cykliczną).
+    _anchorDate = (e != null && !e.isOneTime) ? e.startDate : null;
   }
 
   @override
@@ -158,16 +164,16 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Cykl (typy cykliczne) LUB miesiąc (jednorazowy).
+            // Data (jednorazowy) LUB cykl + data-kotwica (cykliczne).
             if (_isOneTime) ...[
-              _SectionLabel('Miesiąc wydatku'),
+              _SectionLabel('Data wydatku'),
               const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(LucideIcons.calendar),
-                title: Text(_monthLabel(_month)),
+                title: Text(_dateLabel(_oneTimeDate)),
                 trailing: const Icon(LucideIcons.chevronRight),
-                onTap: _pickMonth,
+                onTap: _pickOneTimeDate,
               ),
             ] else ...[
               _SectionLabel('Cykl rozliczeniowy'),
@@ -200,6 +206,25 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                   },
                 ),
               ],
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(LucideIcons.calendarClock),
+                title: Text(_anchorDate != null
+                    ? _dateLabel(_anchorDate!)
+                    : 'Data / dzień (opcjonalnie)'),
+                subtitle: Text(_anchorDate != null
+                    ? 'Wystąpienia liczone od tej daty (kalendarz)'
+                    : 'Bez daty pozycja nie pojawi się na kalendarzu'),
+                trailing: _anchorDate != null
+                    ? IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18),
+                        tooltip: 'Usuń datę',
+                        onPressed: () => setState(() => _anchorDate = null),
+                      )
+                    : const Icon(LucideIcons.chevronRight),
+                onTap: _pickAnchorDate,
+              ),
             ],
             const SizedBox(height: 24),
 
@@ -256,18 +281,31 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     );
   }
 
-  Future<void> _pickMonth() async {
+  Future<void> _pickOneTimeDate() async {
     final now = Subscription.devDateOverride ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _month,
+      initialDate: _oneTimeDate,
       firstDate: DateTime(now.year - 2, 1, 1),
       lastDate: DateTime(now.year + 5, 12, 31),
-      initialDatePickerMode: DatePickerMode.year,
-      helpText: 'Wybierz miesiąc wydatku',
+      helpText: 'Wybierz datę wydatku',
     );
     if (picked != null) {
-      setState(() => _month = DateTime(picked.year, picked.month, 1));
+      setState(() => _oneTimeDate = DateTime(picked.year, picked.month, picked.day));
+    }
+  }
+
+  Future<void> _pickAnchorDate() async {
+    final now = Subscription.devDateOverride ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _anchorDate ?? DateTime(now.year, now.month, now.day),
+      firstDate: DateTime(now.year - 5, 1, 1),
+      lastDate: DateTime(now.year + 5, 12, 31),
+      helpText: 'Data / pierwsze wystąpienie',
+    );
+    if (picked != null) {
+      setState(() => _anchorDate = DateTime(picked.year, picked.month, picked.day));
     }
   }
 
@@ -315,7 +353,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     final customDays = _cycle == BillingCycle.custom && !_isOneTime
         ? int.tryParse(_customDaysCtrl.text.trim())
         : null;
-    final monthKey = _isOneTime ? BudgetEntry.monthKeyOf(_month) : null;
+    final monthKey = _isOneTime ? BudgetEntry.monthKeyOf(_oneTimeDate) : null;
+    // Kotwica daty: jednorazowy = dokładna data; cykliczny = opcjonalna kotwica.
+    final startDate = _isOneTime ? _oneTimeDate : _anchorDate;
 
     try {
       if (_isEditing) {
@@ -329,6 +369,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           clearCustomCycleDays: customDays == null,
           month: monthKey,
           clearMonth: monthKey == null,
+          startDate: startDate,
+          clearStartDate: startDate == null,
           note: note,
           clearNote: note == null,
         ));
@@ -341,6 +383,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           cycle: _cycle,
           customCycleDays: customDays,
           month: monthKey,
+          startDate: startDate,
           note: note,
         );
       }
@@ -355,13 +398,15 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.bill => 'Nazwa rachunku *',
         BudgetEntryType.recurringCost => 'Nazwa kosztu *',
         BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
+        BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
       };
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
         BudgetEntryType.income => 'Wpływ',
         BudgetEntryType.bill => 'Rachunek',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
-        BudgetEntryType.oneTimeExpense => 'Jednorazowy',
+        BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
+        BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
       };
 
   String _cycleLabel(BillingCycle cycle) => switch (cycle) {
@@ -372,7 +417,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BillingCycle.custom => 'Własny cykl',
       };
 
-  String _monthLabel(DateTime d) => DateFormat('LLLL yyyy', 'pl').format(d);
+  String _dateLabel(DateTime d) => DateFormat('d MMMM yyyy', 'pl').format(d);
 }
 
 class _SectionLabel extends StatelessWidget {

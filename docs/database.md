@@ -111,45 +111,48 @@ erDiagram
 
 ## Encja: BudgetEntry (budzet domowy)
 
-Jeden model dla wszystkich pozycji budzetu. Typ rozroznia 4 potrzeby; zachowanie
-(normalizacja cykliczna vs przypisanie do miesiaca) wynika z typu.
+Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
+(normalizacja cykliczna vs przypisanie do konkretnej daty).
 
 | Pole | Typ | Wymagane | Opis |
 |------|-----|----------|------|
 | `id` | UUID | tak | Unikalny identyfikator |
 | `name` | string | tak | Nazwa pozycji |
-| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense |
+| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense / oneTimeIncome |
 | `amount` | double | tak | Kwota (>0) w walucie `currency` |
 | `currency` | Currency | tak | PLN, EUR, USD, GBP |
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
 | `customCycleDays` | int | nie | Liczba dni (gdy cycle == custom) |
-| `month` | string "YYYY-MM" | tak* | Miesiac przypisania (tylko oneTimeExpense) |
+| `month` | string "YYYY-MM" | tak* | Miesiac przypisania (typy jednorazowe) |
 | `categoryId` | UUID | nie | Kategoria budzetu (Faza 5b) |
-| `startDate` | ISO8601 | nie | Data rozpoczecia (typy cykliczne) |
+| `startDate` | ISO8601 | nie | **Kotwica daty kalendarza:** dokladna data jednorazowego; data pierwszego wystapienia cyklicznego |
 | `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
 | `note` | string | nie | Opcjonalna notatka |
 | `dataDodania` | ISO8601 | tak | Timestamp dodania |
 
-`* zaleznie od typu` — `cycle` dla cyklicznych, `month` dla jednorazowego.
+`* zaleznie od typu` — `cycle` dla cyklicznych, `month` dla jednorazowych.
 
 ```dart
-enum BudgetEntryType { income, bill, recurringCost, oneTimeExpense }
+enum BudgetEntryType { income, bill, recurringCost, oneTimeExpense, oneTimeIncome }
 ```
 
 **Computed:**
-- `monthlyAmount` — kwota/mies (typy cykliczne); `0` dla `oneTimeExpense`
+- `isIncome` — `income` lub `oneTimeIncome`; `isOneTime` — `oneTimeExpense` lub `oneTimeIncome`
+- `monthlyAmount` — kwota/mies (typy cykliczne); `0` dla jednorazowych
 - `signedMonthlyAmount` — wplyw `+`, koszt `-`, jednorazowy `0`
 
 **Agregaty (`BudgetService`):**
 
 | Obliczenie | Wzor |
 |------------|------|
-| Wplywy/mies | suma `monthlyAmount` aktywnych wplywow |
+| Wplywy/mies | suma `monthlyAmount` aktywnych wplywow cyklicznych |
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
 | Zostaje/mies (surplus) | wplywy - koszty/mies |
-| Bilans miesiaca | surplus - wydatki jednorazowe danego miesiaca |
+| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki danego miesiaca |
+| Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`) na dni miesiaca |
 
-Normalizacja cyklu wspoldzielona z subskrypcjami: `lib/utils/cycle_math.dart`.
+Normalizacja cyklu i rzutowanie wystapien: `lib/utils/cycle_math.dart`
+(`monthlyFromCycle`, `occurrencesInRange`).
 
 ---
 

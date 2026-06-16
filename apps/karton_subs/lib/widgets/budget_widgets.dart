@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
+import '../services/budget_service.dart';
 import '../theme/app_theme.dart';
+import 'cashflow_calendar.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 
@@ -13,7 +15,8 @@ String budgetTypeLabel(BudgetEntryType t) => switch (t) {
       BudgetEntryType.income => 'Wpływ',
       BudgetEntryType.bill => 'Rachunek',
       BudgetEntryType.recurringCost => 'Koszt cykliczny',
-      BudgetEntryType.oneTimeExpense => 'Jednorazowy',
+      BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
+      BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
     };
 
 String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
@@ -136,25 +139,29 @@ class BudgetFlowCard extends StatelessWidget {
   }
 }
 
-/// Sekcja miesiąca: selektor + bilans + lista wydatków jednorazowych.
+/// Sekcja miesiąca: selektor + bilans + kalendarz przepływów + szczegóły dnia.
 class BudgetMonthSection extends StatelessWidget {
   final DateTime month;
   final double balance;
-  final List<BudgetEntry> oneTime;
   final String currency;
+  final Map<int, DayCashflow> calendar;
+  final int? selectedDay;
+  final DateTime? today;
   final VoidCallback onPrev;
   final VoidCallback onNext;
-  final void Function(BudgetEntry) onTapEntry;
+  final ValueChanged<int> onSelectDay;
 
   const BudgetMonthSection({
     super.key,
     required this.month,
     required this.balance,
-    required this.oneTime,
     required this.currency,
+    required this.calendar,
+    required this.selectedDay,
+    required this.onSelectDay,
     required this.onPrev,
     required this.onNext,
-    required this.onTapEntry,
+    this.today,
   });
 
   @override
@@ -210,22 +217,20 @@ class BudgetMonthSection extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Wydatki jednorazowe', style: theme.textTheme.labelMedium),
-                Text('${oneTime.length}',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: c.textMuted)),
-              ],
+            CashflowCalendar(
+              monthStart: month,
+              data: calendar,
+              selectedDay: selectedDay,
+              today: today,
+              onSelectDay: onSelectDay,
             ),
-            const SizedBox(height: 4),
-            if (oneTime.isEmpty)
-              Text('Brak w tym miesiącu',
-                  style:
-                      theme.textTheme.bodySmall?.copyWith(color: c.textMuted))
-            else
-              ...oneTime.map((e) => _OneTimeRow(entry: e, onTap: () => onTapEntry(e))),
+            const SizedBox(height: 8),
+            _DayDetail(
+              month: month,
+              day: selectedDay,
+              flow: selectedDay != null ? calendar[selectedDay] : null,
+              currency: currency,
+            ),
           ],
         ),
       ),
@@ -233,29 +238,75 @@ class BudgetMonthSection extends StatelessWidget {
   }
 }
 
-class _OneTimeRow extends StatelessWidget {
-  final BudgetEntry entry;
-  final VoidCallback onTap;
-  const _OneTimeRow({required this.entry, required this.onTap});
+class _DayDetail extends StatelessWidget {
+  final DateTime month;
+  final int? day;
+  final DayCashflow? flow;
+  final String currency;
+
+  const _DayDetail({
+    required this.month,
+    required this.day,
+    required this.flow,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    return ListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(LucideIcons.receipt, size: 18, color: c.negative),
-      title: Text(entry.name, style: theme.textTheme.bodyMedium),
-      subtitle: entry.note != null ? Text(entry.note!) : null,
-      trailing: Text(
-        '−${budgetNf.format(entry.amount)} ${entry.currency.label}',
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: c.negative,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      ),
-      onTap: onTap,
+
+    if (day == null) {
+      return Text('Wybierz dzień, aby zobaczyć wpływy i wydatki.',
+          style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted));
+    }
+    final dateLabel =
+        DateFormat('d MMMM', 'pl').format(DateTime(month.year, month.month, day!));
+    final items = flow?.items ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(dateLabel, style: theme.textTheme.labelMedium),
+        const SizedBox(height: 4),
+        if (items.isEmpty)
+          Text('Brak wpływów i wydatków tego dnia',
+              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted))
+        else
+          ...items.map((it) {
+            final color = it.isIncome ? c.positive : c.negative;
+            final sign = it.isIncome ? '+' : '−';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Icon(
+                    it.isSubscription
+                        ? LucideIcons.repeat
+                        : (it.isIncome
+                            ? LucideIcons.trendingUp
+                            : LucideIcons.trendingDown),
+                    size: 16,
+                    color: color,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(it.name,
+                        style: theme.textTheme.bodyMedium,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  Text(
+                    '$sign${budgetNf.format(it.amount)} $currency',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: color,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+      ],
     );
   }
 }

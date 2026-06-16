@@ -48,16 +48,18 @@ class BudgetController extends ChangeNotifier {
 
   List<BudgetEntry> get all => _storage.getBudgetEntries();
 
+  /// Wpływy: cykliczne (pensja) + jednorazowe (premia/bonus).
   List<BudgetEntry> get incomes =>
-      all.where((e) => e.isIncome && !e.isOneTime).toList()
+      all.where((e) => e.isIncome).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
   List<BudgetEntry> get recurringExpenses =>
       all.where((e) => e.isExpense && !e.isOneTime).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
+  /// Wydatki jednorazowe (bez jednorazowych wpływów).
   List<BudgetEntry> get oneTimeExpenses {
-    final list = all.where((e) => e.isOneTime).toList();
+    final list = all.where((e) => e.isOneTime && e.isExpense).toList();
     list.sort((a, b) => (a.month ?? '').compareTo(b.month ?? ''));
     return list;
   }
@@ -91,6 +93,10 @@ class BudgetController extends ChangeNotifier {
 
   Map<String, double> get expenseBreakdown =>
       _budget.expenseBreakdownByCategory(all, target: _target);
+
+  /// Przeplywy per dzien dla wskazanego miesiaca (wplywy/wydatki/subskrypcje).
+  Map<int, DayCashflow> calendarForMonth(DateTime monthStart) =>
+      _budget.calendarForMonth(all, _subs, monthStart, target: _target);
 
   // ── CRUD ─────────────────────────────────────────────────────────────────
 

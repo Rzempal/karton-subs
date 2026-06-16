@@ -349,7 +349,8 @@ class ExcelService {
         BudgetEntryType.income => 'Wpływ',
         BudgetEntryType.bill => 'Rachunek',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
-        BudgetEntryType.oneTimeExpense => 'Jednorazowy',
+        BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
+        BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
       };
 
   // ── Budżet: import ───────────────────────────────────────────────────────────
@@ -808,7 +809,8 @@ BudgetExcelImportResult _parseBudgetWorkbook(Uint8List bytes) {
         ? rawName.substring(0, _maxNameLength)
         : rawName;
     final type = _parseBudgetType(cell(_BudgetHeaderField.type));
-    final isOneTime = type == BudgetEntryType.oneTimeExpense;
+    final isOneTime = type == BudgetEntryType.oneTimeExpense ||
+        type == BudgetEntryType.oneTimeIncome;
     final (cycle, customDays) = _parseCycle(cell(_BudgetHeaderField.cycle));
     final month = isOneTime
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
@@ -869,21 +871,24 @@ Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
 BudgetEntryType _parseBudgetType(String? raw) {
   if (raw == null) return BudgetEntryType.recurringCost;
   final t = raw.toLowerCase().trim();
-  if (t.contains('wpływ') ||
+  final isOneTime =
+      t.contains('jednoraz') || t.contains('onetime') || t.contains('one-time');
+  final isIncomeKw = t.contains('wpływ') ||
       t.contains('wplyw') ||
       t.contains('income') ||
       t.contains('przychód') ||
-      t.contains('przychod')) {
-    return BudgetEntryType.income;
-  }
+      t.contains('przychod') ||
+      t.contains('premia') ||
+      t.contains('bonus');
+
+  if (isOneTime && isIncomeKw) return BudgetEntryType.oneTimeIncome;
+  if (isOneTime) return BudgetEntryType.oneTimeExpense;
+  if (isIncomeKw) return BudgetEntryType.income;
   if (t.contains('rachunek') ||
       t.contains('stał') ||
       t.contains('stal') ||
       t.contains('bill')) {
     return BudgetEntryType.bill;
-  }
-  if (t.contains('jednoraz') || t.contains('onetime') || t.contains('one-time')) {
-    return BudgetEntryType.oneTimeExpense;
   }
   if (t.contains('cykl') || t.contains('recurring')) {
     return BudgetEntryType.recurringCost;

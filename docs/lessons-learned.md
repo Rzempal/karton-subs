@@ -256,3 +256,24 @@ nigdy nie dostarczyc zdarzenia terminalnego. Jesli serwis wystawia flage pomocni
 musi ja faktycznie renderowac, inaczej to martwy kod.
 
 ---
+
+## 2026-06-17: DateTime.add(Duration(days:)) dryfuje przez zmiane czasu (DST)
+
+### Problem
+Rzutowanie wystapien tygodniowych w `occurrencesInRange` krokiem `occ = occ.add(Duration(days: 7))`
+dawalo `2026-03-30 01:00` zamiast `2026-03-30 00:00`. Powod: przejscie na czas letni (ostatnia
+niedziela marca) — `Duration` to staly czas fizyczny (168 h), wiec po przekroczeniu granicy DST
+dodaje sie godzina, ktora kumuluje sie przy kolejnych krokach. Test rownosci dat go wykryl.
+
+### Rozwiazanie
+Krok przez konstrukcje kalendarzowa zamiast `Duration`:
+`occ = DateTime(occ.year, occ.month, occ.day + step)` — kazde wystapienie powstaje o polnocy
+lokalnej danego dnia, niezaleznie od DST. Cykle miesieczne/roczne juz tak liczylem (konstrukcja
+`DateTime(y, m, day)`), wiec dotyczylo to tylko krokow dniowych (weekly/custom).
+
+### Wniosek
+Do iteracji po datach kalendarzowych **nigdy nie uzywaj `add(Duration(days: n))`** — uzywaj
+`DateTime(y, m, d + n)`. `Duration` jest dla czasu fizycznego (timery, timeouty), nie dla
+"nastepnego dnia/tygodnia". Zawsze testuj rzutowanie dat na granicy marca/pazdziernika (DST).
+
+---

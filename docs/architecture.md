@@ -101,9 +101,11 @@ lib/
 ├── widgets/
 │   ├── subscription_card.dart   # Karta subskrypcji
 │   ├── budget_widgets.dart      # Wspolne widgety budzetu (surplus/flow/miesiac/karta)
+│   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
+│   ├── labeled_icon_button.dart # Akcja naglowka: ikona + etykieta (XLSX/PDF)
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (4 zakladki)
 ```
