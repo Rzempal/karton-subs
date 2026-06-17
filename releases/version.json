@@ -1,8 +1,13 @@
 {
-  "releaseDate": "2026-06-16T20:36:09Z",
-  "version": "0.3.26061600",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.3.26061600.apk",
   "changelog": [
+    {
+      "version": "0.5.26061701",
+      "notes": "- Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost\n- Plywajacy szklany pasek nawigacji\n- Menu Dodaj wysuwane nad przyciskiem\n- Personalizacja Dashboardu: zwijanie sekcji (full/compact)\n- Spojny system kolorow i zaokraglen (tokeny)"
+    },
+    {
+      "version": "0.4.26061700",
+      "notes": "- Nowy Dashboard: pelny przeglad budzetu razem z subskrypcjami\n- Budzet domowy (wspolny) obok osobistego + przelew miedzy budzetami\n- Kalendarz przeplywow w widoku miesiaca (dni wplywow i wydatkow)\n- Jednorazowy wplyw (premia/bonus)\n- Subskrypcje: pod-zakladki Lista/Statystyki + zakres osobisty/domowy\n- Excel i backup obejmuja budzet domowy\n- Uproszczenie: usunieto wykrywanie nieuzywanych i koszt-za-uzycie"
+    },
     {
       "version": "0.3.26061600",
       "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
@@ -32,6 +37,9 @@
       "notes": "- bug fixes"
     }
   ],
-  "versionCode": 326061600,
-  "releaseNotes": "- Import i eksport subskrypcji do Excela (.xlsx)"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.5.26061701.apk",
+  "releaseDate": "2026-06-17T14:12:35Z",
+  "version": "0.5.26061701",
+  "versionCode": 526061701,
+  "releaseNotes": "- Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost\n- Plywajacy szklany pasek nawigacji\n- Menu Dodaj wysuwane nad przyciskiem\n- Personalizacja Dashboardu: zwijanie sekcji (full/compact)\n- Spojny system kolorow i zaokraglen (tokeny)"
 }
