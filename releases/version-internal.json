@@ -1,8 +1,11 @@
 {
-  "version": "0.5.26061710",
-  "releaseNotes": "Subskrypcje: przelacznik zakresu tylko Osobiste/Domowe (bez Wszystkie) — spojnie z Dashboard/Budzet",
-  "releaseDate": "2026-06-17T14:31:51Z",
+  "releaseDate": "2026-06-17T16:59:52Z",
+  "releaseNotes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu",
   "changelog": [
+    {
+      "version": "0.5.26061711",
+      "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu"
+    },
     {
       "version": "0.5.26061710",
       "notes": "Subskrypcje: przelacznik zakresu tylko Osobiste/Domowe (bez Wszystkie) — spojnie z Dashboard/Budzet"
@@ -38,12 +41,9 @@
     {
       "version": "0.4.26061702",
       "notes": "Redesign Aurora: jeden ciemny motyw, gradient + frost, pasek nawigacji szklany, kwoty-bohater gradientowe"
-    },
-    {
-      "version": "0.3.26061701",
-      "notes": "- Budzet domowy (osobisty i wspolny) z przelewem\n- Kalendarz przeplywow w widoku miesiaca\n- Jednorazowy wplyw (premia/bonus)\n- Subskrypcje: zakres osobisty/domowy\n- Excel i backup obejmuja budzet domowy"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.5.26061710.apk",
-  "versionCode": 526061710
+  "versionCode": 526061711,
+  "version": "0.5.26061711",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.5.26061711.apk"
 }

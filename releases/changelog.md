@@ -1,11 +1,16 @@
 # Karton na subskrypcje - Historia zmian
 
+## v0.6.26061702
+- Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy
+- Kategoria w eksporcie i imporcie Excel budzetu
+
 ## v0.5.26061701
 - Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost
 - Plywajacy szklany pasek nawigacji
 - Menu Dodaj wysuwane nad przyciskiem
 - Personalizacja Dashboardu: zwijanie sekcji (full/compact)
 - Spojny system kolorow i zaokraglen (tokeny)
+
 
 ## v0.4.26061700
 - Nowy Dashboard: pelny przeglad budzetu razem z subskrypcjami
@@ -17,8 +22,10 @@
 - Uproszczenie: usunieto wykrywanie nieuzywanych i koszt-za-uzycie
 
 
+
 ## v0.3.26061600
 - Import i eksport subskrypcji do Excela (.xlsx)
+
 
 
 
@@ -28,8 +35,10 @@
 
 
 
+
 ## v0.2.26032905
 - bug fixes
+
 
 
 
@@ -43,8 +52,10 @@
 
 
 
+
 ## v0.2.26032903
 - bug fixes
+
 
 
 
@@ -62,8 +73,10 @@ fix ikony
 
 
 
+
 ## v0.2.26032901
 zmiana ikony aplikacji
+
 
 
 
@@ -85,8 +98,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032808
 - bug fixes
+
 
 
 
@@ -112,8 +127,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032805
 - bug fixes
+
 
 
 
@@ -143,8 +160,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032803
 OTA
+
 
 
 
@@ -178,8 +197,10 @@ OTA
 
 
 
+
 ## v0.1.26032801
 - bug fixes
+
 
 
 

@@ -1,5 +1,11 @@
 {
+  "releaseDate": "2026-06-17T18:12:24Z",
+  "versionCode": 626061702,
   "changelog": [
+    {
+      "version": "0.6.26061702",
+      "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy\n- Kategoria w eksporcie i imporcie Excel budzetu"
+    },
     {
       "version": "0.5.26061701",
       "notes": "- Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost\n- Plywajacy szklany pasek nawigacji\n- Menu Dodaj wysuwane nad przyciskiem\n- Personalizacja Dashboardu: zwijanie sekcji (full/compact)\n- Spojny system kolorow i zaokraglen (tokeny)"
@@ -37,9 +43,7 @@
       "notes": "- bug fixes"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.5.26061701.apk",
-  "releaseDate": "2026-06-17T14:12:35Z",
-  "version": "0.5.26061701",
-  "versionCode": 526061701,
-  "releaseNotes": "- Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost\n- Plywajacy szklany pasek nawigacji\n- Menu Dodaj wysuwane nad przyciskiem\n- Personalizacja Dashboardu: zwijanie sekcji (full/compact)\n- Spojny system kolorow i zaokraglen (tokeny)"
+  "version": "0.6.26061702",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.6.26061702.apk",
+  "releaseNotes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy\n- Kategoria w eksporcie i imporcie Excel budzetu"
 }
