@@ -13,7 +13,7 @@
 | 3 | Powiadomienia + Usage Tracking | Planowana |
 | 4 | Polish + Release | Planowana |
 | 5 | Budzet domowy | W trakcie (B1+B2 gotowe 2026-06-16) |
-| 6 | Redesign Aurora (jeden ciemny motyw) | Planowana (design.md gotowy 2026-06-17) |
+| 6 | Redesign Aurora (jeden ciemny motyw) | ✅ Ukonczona (2026-06-17, prod 0.5) |
 
 ---
 
@@ -171,14 +171,23 @@ jeden uniwersalny ciemny motyw, premium fintech, gradient aurora + powierzchnie 
 |---------|------|--------|
 | design.md Aurora | Pelna specyfikacja tokenow + reguly wydajnosci | ✅ |
 | ADR-005 | Decyzja: jeden ciemny motyw, „frost" zamiast blur | ✅ |
-| app_theme.dart | Jeden ciemny ThemeData; tokeny gradient/frost/akcenty | ⏳ |
-| theme_provider | Usuniecie przelacznika Dark/Light/System | ⏳ |
-| Ustawienia | Usuniecie sekcji „Motyw" | ⏳ |
-| AuroraBackground | Wrapper Scaffoldu: gradient + poswiaty | ⏳ |
-| FrostCard | Karty bez BackdropFilter (przezroczystosc + border) | ⏳ |
-| GlassNavBar | Plywajaca pigulka — jedyny prawdziwy blur | ⏳ |
-| MetricTile + GradientAmount | Siatka metryk + kwota-bohater (ShaderMask) | ⏳ |
-| Wykres z podswietleniem | fl_chart: biezacy okres w gradiencie + dymek | ⏳ |
+| app_theme.dart | Jeden ciemny ThemeData; tokeny gradient/frost/akcenty | ✅ |
+| theme_provider | Usuniecie przelacznika Dark/Light/System | ✅ |
+| Ustawienia | Usuniecie sekcji „Motyw" + wiersze jako karty frost | ✅ |
+| AuroraBackground | Wrapper Scaffoldu: gradient + poswiaty | ✅ |
+| FrostCard | Karty bez BackdropFilter (przezroczystosc + border) | ✅ |
+| GlassNavBar | Plywajaca pigulka — jedyny prawdziwy blur | ✅ |
+| MetricTile + GradientAmount | Siatka metryk + kwota-bohater (ShaderMask) | ✅ |
+| Menu „Dodaj" | Wysuwane w gore nad przyciskiem (AuroraAddMenu) zamiast bottom sheet | ✅ |
+| Wykresy | Paleta Aurora + dymki (trend liniowy, breakdown, limit) | ✅ |
+| Tokeny + straznik | AppColors.onAccent/AppRadii, pelne pokrycie motywem, check_design_tokens.ps1 | ✅ ADR-007 |
+
+### Faza 6b: Personalizacja Dashboardu (2026-06-17)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Sekcje full/compact | Klik w „Podsumowanie" / „Subskrypcje" zwija/rozwija (chevron, animacja) | ✅ |
+| Trwalosc | 2 flagi w StorageService — stan zostaje po restarcie | ✅ |
 
 ---
 

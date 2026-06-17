@@ -278,6 +278,36 @@ Do iteracji po datach kalendarzowych **nigdy nie uzywaj `add(Duration(days: n))`
 
 ---
 
+## 2026-06-17: Flutter UI — 3 niejawne pulapki (motyw, Overlay, slot nawigacji)
+
+### Problem
+Podczas redesignu Aurora trzy bledy, ktorych `flutter analyze`/`test` NIE wykrywaja (to czysta
+geometria/render runtime — wychwycila je dopiero weryfikacja na urzadzeniu):
+1. **`showDatePicker` polprzezroczysty** mimo ustawionego `dialogTheme`. Picker daty korzysta z
+   OSOBNEGO `DatePickerThemeData`, nie z `dialogTheme` — brak wpisu = domyslne (polprzezroczyste)
+   tlo. To samo dotyczy `timePicker`, `menu`, `snackBar`, `tooltip` (kazdy ma swoj `*ThemeData`).
+2. **Zolte podkreslenia pod tekstem** w pigulkach menu „Dodaj" — `Text` w `OverlayEntry` nie mial
+   przodka `Material`, wiec Flutter rysowal debugowa dekoracje (yellow underline).
+3. **Plywajacy pasek nawigacji wysrodkowany w pionie** zamiast na dole — `Center` w slocie
+   `bottomNavigationBar` rozszerza sie na cala (luzna) wysokosc slotu, centrujac dziecko w pionie.
+
+### Rozwiazanie
+1. Pelne pokrycie motywem: dodano `datePickerTheme`, `timePickerTheme`, `popupMenuTheme`,
+   `menuTheme`, `dropdownMenuTheme`, `snackBarTheme`, `tooltipTheme`, `textSelectionTheme` w
+   `app_theme.dart`. Nowy komponent stylujemy RAZ centralnie (ADR-007).
+2. Owiniecie zawartosci `OverlayEntry` w `Material(type: MaterialType.transparency)`.
+3. Zamiana `Center` na `Row(mainAxisAlignment: center)` — pelna szerokosc, wysokosc = sama pigulka.
+
+### Wniosek
+- **Stockowy komponent Material ma wlasny `*ThemeData`** — `dialogTheme` nie pokrywa pickerow/menu/
+  snackbarow. Stylowanie tla rob w motywie, nie per-wywolanie; po dodaniu nowego typu komponentu
+  sprawdz, czy ma wpis w `ThemeData`.
+- **Tekst w `Overlay` wymaga przodka `Material`** (inaczej zolte podkreslenia).
+- **W `bottomNavigationBar` nie uzywaj `Center`** dla pigulki — uzyj `Row`/intrinsic height.
+- Te bledy przechodza `analyze`/`test` — **weryfikacja wizualna na urzadzeniu jest obowiazkowa**.
+
+---
+
 ## 2026-06-17: Deploy buduje z drzewa roboczego — prod bez commita = rozjazd git↔produkcja
 
 ### Problem

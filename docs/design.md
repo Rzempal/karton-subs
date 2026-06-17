@@ -3,8 +3,8 @@
 > **Powiązane:** [Architektura](architecture.md) | [Baza Danych](database.md) |
 > [Design Review](standards/design-review.md) | [ADR-005 Aurora + jeden motyw](adr/ADR-005-aurora-jeden-ciemny-motyw.md)
 
-> **Status:** przyjęty kierunek (zaakceptowany 2026-06-17). **Wdrożenie w kodzie: Faza 6**
-> ([roadmap](roadmap.md)). Do czasu migracji kod nadal używa „Ledger Glass" (light + dark).
+> **Status:** ✅ wdrożone w kodzie (Faza 6, prod 0.5 — 2026-06-17). Tokeny i pełne pokrycie
+> motywem pilnowane przez strażnika ([ADR-007](adr/ADR-007-design-tokens-jedyne-zrodlo-prawdy.md)).
 
 ---
 

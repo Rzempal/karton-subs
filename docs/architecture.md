@@ -50,7 +50,7 @@ flowchart TB
 | Warstwa | Technologia |
 |---------|-------------|
 | **Framework** | Flutter (Dart) |
-| **UI** | Material Design 3 ("Aurora" — jeden ciemny motyw; wdrozenie Faza 6) |
+| **UI** | Material Design 3 — "Aurora", jeden ciemny motyw (ADR-005); design tokens + straznik (ADR-007) |
 | **Lokalna baza** | Hive (NoSQL, offline-first) |
 | **State management** | ChangeNotifier + Provider |
 | **Szyfrowanie** | AES-256-GCM (pointycastle) |
@@ -87,10 +87,9 @@ lib/
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── notification_service.dart # Lokalne powiadomienia
 │   ├── update_service.dart      # OTA updates
-│   ├── theme_provider.dart      # Dark/Light/System toggle
 │   └── pdf_export_service.dart  # Eksport raportu PDF
 ├── theme/
-│   └── app_theme.dart           # Tokeny motywu + ThemeData (Aurora od Fazy 6)
+│   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
 │   ├── dashboard_screen.dart    # Dashboard: pelny przeglad budzet + subskrypcje
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
@@ -99,15 +98,22 @@ lib/
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (4 typy)
 │   └── settings_screen.dart     # Ustawienia, backup, OTA
 ├── widgets/
+│   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
+│   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)
+│   ├── glass_nav_bar.dart        # Plywajaca pigulka nawigacji — jedyny BackdropFilter
+│   ├── metric_tile.dart          # Kafel metryki (ikona + kwota + delta)
+│   ├── gradient_amount.dart      # Kwota-bohater (ShaderMask gradient)
+│   ├── aurora_chip.dart          # Chip filtra (frost / gradient aktywny)
+│   ├── aurora_add_menu.dart      # Przycisk „Dodaj" + menu wysuwane w gore (zamiast bottom sheet)
 │   ├── subscription_card.dart   # Karta subskrypcji
-│   ├── budget_widgets.dart      # Wspolne widgety budzetu (surplus/flow/miesiac/karta)
+│   ├── budget_widgets.dart      # Wspolne widgety budzetu (BudgetSummarySection full/compact, flow/miesiac/karta)
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
 │   ├── labeled_icon_button.dart # Akcja naglowka: ikona + etykieta (XLSX/PDF)
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
-└── main.dart                    # Entry point, provider setup (4 zakladki)
+└── main.dart                    # Entry point, provider setup (4 zakladki, AuroraBackground + GlassNavBar)
 ```
 
 ---
@@ -152,7 +158,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 | **Dashboard** | Pelny przeglad: surplus „zostaje/mies", wplywy/koszty (z subskrypcjami), bilans miesiaca |
 | **Subskrypcje** | Pod-zakladki Lista / Statystyki (hero koszt mies./rok, trend, kategorie, limit, triale); CTA Excel + PDF; import pod „Dodaj" |
 | **Budzet** | Zarzadzanie pozycjami (wplywy/koszty/jednorazowe); CTA Excel; import pod „Dodaj" |
-| **Ustawienia** | Motyw, kategorie, metody platnosci, limit, powiadomienia, backup `.subkarton`, OTA |
+| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.subkarton`, OTA (karty frost; bez przelacznika motywu) |
 
 ---
 

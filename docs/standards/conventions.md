@@ -143,6 +143,7 @@ void _onCalendarSync() {}
 ## Design tokens — zero zaszytych kolorów UI (Aurora)
 
 > **Powiązane:** [Design](../design.md) | [ADR-005](../adr/ADR-005-aurora-jeden-ciemny-motyw.md)
+> | [ADR-007 Design tokens — jedyne źródło prawdy](../adr/ADR-007-design-tokens-jedyne-zrodlo-prawdy.md)
 
 Jedno źródło prawdy dla wyglądu: `apps/karton_subs/lib/theme/app_theme.dart`
 (`AppColors`, `AppRadii`, `AppSemanticColors` + `ThemeData`). Komponenty czytają
