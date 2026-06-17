@@ -154,22 +154,22 @@ class BudgetService {
       _sumAmount(
           oneTimeIncomesForMonth(entries, monthKey), target ?? Currency.PLN);
 
-  /// Korekta bilansu z tytułu zmiennych rachunków w danym miesiącu (ADR-008).
-  /// Zwraca sumę `(kwota korekty − kwota bazowa)` po aktywnych rachunkach, które
-  /// mają w tym miesiącu nadpisaną kwotę. Dodatnia = rachunki droższe niż baza.
-  /// Korekta tylko daty (bez kwoty) nie wpływa na bilans.
-  double billOverrideDeltaForMonth(
+  /// Wpływ korekt kwoty na bilans miesiąca, ze znakiem (ADR-008). Dla każdej
+  /// aktywnej pozycji z nadpisaną kwotą w tym miesiącu: wpływ `+ (korekta−baza)`,
+  /// wydatek `− (korekta−baza)`. Dotyczy rachunku, przelewu do domowego oraz
+  /// lustrzanego wpływu w domowym. Korekta samej daty nie wpływa na bilans.
+  double overrideDeltaForMonth(
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
     double delta = 0;
-    for (final e in entries.where(
-        (e) => e.isActive && e.type == BudgetEntryType.bill)) {
+    for (final e in entries.where((e) => e.isActive && e.monthOverrides != null)) {
       final ov = e.overrideForMonth(monthKey);
       if (ov?.amount != null) {
-        delta += _currency.convert(ov!.amount! - e.amount, e.currency, t);
+        final d = _currency.convert(ov!.amount! - e.amount, e.currency, t);
+        delta += e.isIncome ? d : -d;
       }
     }
     return delta;
@@ -197,7 +197,7 @@ class BudgetService {
   }
 
   /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki
-  /// − korekty zmiennych rachunków tego miesiąca + korekta rat tego miesiąca.
+  /// + korekty kwot (rachunek/przelew/wpływ, ze znakiem) − korekta rat tego miesiąca.
   /// Surplus pozostaje „planem"; różnicę realnego miesiąca pokazuje bilans (ADR-008).
   double balanceForMonth(
     List<BudgetEntry> entries,
@@ -207,8 +207,8 @@ class BudgetService {
   }) =>
       monthlySurplus(entries, subs, target: target) +
       oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
-      oneTimeTotalForMonth(entries, monthKey, target: target) -
-      billOverrideDeltaForMonth(entries, monthKey, target: target) -
+      oneTimeTotalForMonth(entries, monthKey, target: target) +
+      overrideDeltaForMonth(entries, monthKey, target: target) -
       installmentDeltaForMonth(entries, monthKey, target: target);
 
   /// Nadchodzące wydatki jednorazowe (miesiąc ≥ bieżący), posortowane rosnąco.
@@ -289,15 +289,15 @@ class BudgetService {
             !e.isInstallmentActiveInMonth(BudgetEntry.monthKeyOf(mStart))) {
           continue;
         }
-        // Rachunek zmienny z korektą dla wyświetlanego miesiąca (ADR-008):
+        // Korekta miesiąca (rachunek / przelew / lustro wpływu) — ADR-008:
         // data korekty zastępuje projekcję, kwota korekty zastępuje bazę.
-        if (e.type == BudgetEntryType.bill) {
+        if (e.monthOverrides != null) {
           final ov = e.overrideForMonth(BudgetEntry.monthKeyOf(mStart));
           if (ov != null && !ov.isEmpty) {
             final amt =
                 _currency.convert(ov.amount ?? e.amount, e.currency, t);
             final od = ov.date;
-            final auto = autoOf(e.paymentMethod);
+            final auto = !e.isIncome && autoOf(e.paymentMethod);
             if (od != null && !od.isBefore(mStart) && !od.isAfter(mEnd)) {
               // Korekta z datą: pojedyncze wystąpienie tego dnia.
               add(
@@ -305,7 +305,7 @@ class BudgetService {
                   CalendarItem(
                       name: e.name,
                       amount: amt,
-                      isIncome: false,
+                      isIncome: e.isIncome,
                       isAutomatic: auto,
                       sourceId: e.id));
               continue;
@@ -319,7 +319,7 @@ class BudgetService {
                     CalendarItem(
                         name: e.name,
                         amount: amt,
-                        isIncome: false,
+                        isIncome: e.isIncome,
                         isAutomatic: auto,
                         sourceId: e.id));
               }

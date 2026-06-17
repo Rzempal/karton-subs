@@ -909,7 +909,8 @@ BudgetExcelImportResult _parseBudgetWorkbook(
     final installmentCount = type == BudgetEntryType.installment
         ? int.tryParse(cell(_BudgetHeaderField.installmentCount)?.trim() ?? '')
         : null;
-    final overrides = type == BudgetEntryType.bill
+    final overrides = (type == BudgetEntryType.bill ||
+            type == BudgetEntryType.householdTransfer)
         ? _decodeOverrides(cell(_BudgetHeaderField.overrides))
         : null;
 
@@ -1028,6 +1029,9 @@ BudgetEntryType _parseBudgetType(String? raw) {
       t.contains('raty') ||
       t.contains('installment')) {
     return BudgetEntryType.installment;
+  }
+  if (t.contains('przelew') || t.contains('transfer')) {
+    return BudgetEntryType.householdTransfer;
   }
   if (t.contains('rachunek') ||
       t.contains('stał') ||

@@ -129,7 +129,7 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
 | `customCycleDays` | int | nie | Liczba dni (gdy cycle == custom) |
 | `month` | string "YYYY-MM" | tak* | Miesiac przypisania (typy jednorazowe) |
-| `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — tylko `bill`** (rachunek zmienny): inna data/kwota w danym miesiacu. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) |
+| `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — `bill` i `householdTransfer`**: inna data/kwota w danym miesiacu. Dla przelewu kaskaduje do lustra w domowym. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) |
 | `categoryId` | UUID | nie | Kategoria pozycji (subskrypcje + wydatki budzetu) |
 | `paymentMethod` | string | nie | Nazwa metody platnosci (jak w `Subscription`). Tryb auto/manual z [`PaymentMethod.isAutomatic`] — kolor na kalendarzu i lista „Platnosci". Brak = manualna |
 | `installmentCount` | int | tak* | Liczba rat — tylko `installment`. Start = `startDate` |
@@ -192,7 +192,7 @@ w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zb
 | Wplywy/mies | suma `monthlyAmount` aktywnych wplywow cyklicznych |
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
 | Zostaje/mies (surplus) | wplywy - koszty/mies (rachunki z **kwoty bazowej**; raty tylko **aktywne teraz**) |
-| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki - **korekty rachunkow** - **korekta rat** danego miesiaca |
+| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki **+** korekty kwot (wplyw `+`, wydatek `−`) - **korekta rat** danego miesiaca |
 | Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`); rachunek z korekta bierze jej date/kwote |
 
 Normalizacja cyklu i rzutowanie wystapien: `lib/utils/cycle_math.dart`

@@ -88,3 +88,16 @@ kwoty bazowej + cyklu rachunku; korekty miesieczne zyja na razie wylacznie w apl
   lokalny stan „wykonane" platnosci (`payment_done`) — odwrocenie wczesniejszej decyzji
   „tylko lokalnie" na rzecz kompletnego odtworzenia po przywroceniu. Stare backupy (≤4)
   wczytuja sie dalej (pole pomijane).
+
+## Aktualizacja 2026-06-17 (2): korekta przelewu do domowego + delta ze znakiem
+
+- **`householdTransfer` obsluguje korekty miesieczne** (jak rachunek). W budzecie
+  osobistym to wydatek; korekta kaskaduje do **lustrzanego wplywu** w domowym
+  (`update` kopiuje `monthOverrides`), wiec bilans domowego jest zgodny z realnie
+  przelana kwota.
+- **Uogolniona delta korekt** (`overrideDeltaForMonth`) liczy po wszystkich pozycjach
+  z korekta kwoty w danym miesiacu, **ze znakiem**: wplyw `+(korekta−baza)`, wydatek
+  `−(korekta−baza)`. Zastapila dawna `billOverrideDeltaForMonth` (tylko rachunki).
+  Invariant bez zmian: korekty nie ruszaja surplus, tylko bilans miesiaca i kalendarz.
+- Excel: korekty przelewu round-trip (kolumna „Korekty"). Import przelewu nie odtwarza
+  lustra w domowym (Excel niesie tylko zakres osobisty) — pelny transfer przez backup.

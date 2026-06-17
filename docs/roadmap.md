@@ -179,6 +179,22 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 
 ---
 
+### Faza 5g: Sortowanie/filtr/grupowanie + sekcja przelewu + zwijanie Dashboardu (2026-06-17)
+
+> **ADR:** [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) (aktualizacja)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Sortowanie | Ikona A→Z / kwota malejaco (przelacznik w AppBar) | ✅ |
+| Filtr typu | Pasek chipow (jak kategorie), linijke nizej | ✅ |
+| Grupowanie | Ikona wł/wył; pod-naglowki wg typu w kubelkach z >1 typem | ✅ |
+| Sekcja „Przelew wewnetrzny" | Przelew do domowego wydzielony z Kosztow | ✅ |
+| Korekta przelewu | `monthOverrides` dla przelewu; kaskada do lustra; delta ze znakiem (wplyw +, wydatek −) | ✅ |
+| Sumy sekcji | Naglowek z suma (po filtrach), znormalizowana przez cykl, wyrownana do prawej | ✅ |
+| Zwijanie Dashboardu | Kalendarz i lista Platnosci full/kompakt (trwale) | ✅ |
+
+---
+
 ### Faza 5f: Platnosci, rata, lossless Excel/backup (2026-06-17)
 
 > **ADR:** [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) (aktualizacja)

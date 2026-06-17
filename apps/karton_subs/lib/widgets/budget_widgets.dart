@@ -300,6 +300,8 @@ class BudgetMonthSection extends StatelessWidget {
   final Map<int, DayCashflow> calendar;
   final int? selectedDay;
   final DateTime? today;
+  final bool compact;
+  final VoidCallback onToggleCompact;
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final ValueChanged<int> onSelectDay;
@@ -314,6 +316,8 @@ class BudgetMonthSection extends StatelessWidget {
     required this.onSelectDay,
     required this.onPrev,
     required this.onNext,
+    required this.compact,
+    required this.onToggleCompact,
     this.today,
   });
 
@@ -334,17 +338,30 @@ class BudgetMonthSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  onPressed: onPrev,
-                  icon: const Icon(LucideIcons.chevronLeft),
-                  tooltip: 'Poprzedni miesiąc',
+                Icon(LucideIcons.calendarDays, size: 20, color: c.textSecondary),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: onPrev,
+                      icon: const Icon(LucideIcons.chevronLeft),
+                      tooltip: 'Poprzedni miesiąc',
+                    ),
+                    Text(DateFormat('LLLL yyyy', 'pl').format(month),
+                        style: theme.textTheme.titleMedium),
+                    IconButton(
+                      onPressed: onNext,
+                      icon: const Icon(LucideIcons.chevronRight),
+                      tooltip: 'Następny miesiąc',
+                    ),
+                  ],
                 ),
-                Text(DateFormat('LLLL yyyy', 'pl').format(month),
-                    style: theme.textTheme.titleMedium),
                 IconButton(
-                  onPressed: onNext,
-                  icon: const Icon(LucideIcons.chevronRight),
-                  tooltip: 'Następny miesiąc',
+                  onPressed: onToggleCompact,
+                  icon: Icon(compact
+                      ? LucideIcons.chevronDown
+                      : LucideIcons.chevronUp),
+                  tooltip: compact ? 'Rozwiń kalendarz' : 'Zwiń kalendarz',
                 ),
               ],
             ),
@@ -369,21 +386,23 @@ class BudgetMonthSection extends StatelessWidget {
               'Saldo „zostaje" po odjęciu wydatków jednorazowych tego miesiąca.',
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
-            const SizedBox(height: 12),
-            CashflowCalendar(
-              monthStart: month,
-              data: calendar,
-              selectedDay: selectedDay,
-              today: today,
-              onSelectDay: onSelectDay,
-            ),
-            const SizedBox(height: 8),
-            _DayDetail(
-              month: month,
-              day: selectedDay,
-              flow: selectedDay != null ? calendar[selectedDay] : null,
-              currency: currency,
-            ),
+            if (!compact) ...[
+              const SizedBox(height: 12),
+              CashflowCalendar(
+                monthStart: month,
+                data: calendar,
+                selectedDay: selectedDay,
+                today: today,
+                onSelectDay: onSelectDay,
+              ),
+              const SizedBox(height: 8),
+              _DayDetail(
+                month: month,
+                day: selectedDay,
+                flow: selectedDay != null ? calendar[selectedDay] : null,
+                currency: currency,
+              ),
+            ],
           ],
         ),
       ),
@@ -397,6 +416,8 @@ class PaymentsSection extends StatelessWidget {
   final DateTime month;
   final Map<int, DayCashflow> calendar;
   final String currency;
+  final bool compact;
+  final VoidCallback onToggleCompact;
   final bool Function(String sourceId, DateTime date) isDone;
   final void Function(String sourceId, DateTime date) onToggle;
 
@@ -405,6 +426,8 @@ class PaymentsSection extends StatelessWidget {
     required this.month,
     required this.calendar,
     required this.currency,
+    required this.compact,
+    required this.onToggleCompact,
     required this.isDone,
     required this.onToggle,
   });
@@ -442,17 +465,31 @@ class PaymentsSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Płatności', style: theme.textTheme.titleMedium),
-                Text('$doneCount/${rows.length}',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: c.textMuted)),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('$doneCount/${rows.length}',
+                        style: theme.textTheme.labelMedium
+                            ?.copyWith(color: c.textMuted)),
+                    IconButton(
+                      onPressed: onToggleCompact,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(compact
+                          ? LucideIcons.chevronDown
+                          : LucideIcons.chevronUp),
+                      tooltip: compact ? 'Rozwiń płatności' : 'Zwiń płatności',
+                    ),
+                  ],
+                ),
               ],
             ),
             Text(
               'Manualne przelewy do zrealizowania w tym miesiącu.',
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
-            const SizedBox(height: 8),
-            ...rows.map((r) {
+            if (!compact) ...[
+              const SizedBox(height: 8),
+              ...rows.map((r) {
               final done = isDone(r.sourceId, r.date);
               return InkWell(
                 onTap: () => onToggle(r.sourceId, r.date),
@@ -495,6 +532,7 @@ class PaymentsSection extends StatelessWidget {
                 ),
               );
             }),
+            ],
           ],
         ),
       ),

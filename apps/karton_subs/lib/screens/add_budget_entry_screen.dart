@@ -69,8 +69,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.installment;
 
-  /// Rachunek zmienny — jedyny typ z korektami miesięcznymi (ADR-008).
+  /// Rachunek zmienny — typ z korektami miesięcznymi (ADR-008).
   bool get _isBill => _type == BudgetEntryType.bill;
+
+  /// Przelew do domowego — też obsługuje korekty kwoty (analogicznie do rachunku).
+  bool get _isTransfer => _type == BudgetEntryType.householdTransfer;
+
+  /// Czy pokazać sekcję korekt miesięcznych.
+  bool get _hasOverrides => _isBill || _isTransfer;
 
   /// Rata — typ z datą startu i liczbą rat (koszt miesięczny z końcem).
   bool get _isInstallment => _type == BudgetEntryType.installment;
@@ -359,13 +365,17 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             ],
             const SizedBox(height: 24),
 
-            if (_isBill) ...[
+            if (_hasOverrides) ...[
               _SectionLabel('Korekty miesięczne'),
               const SizedBox(height: 4),
               Text(
-                'Rachunek zmienny: w wybranym miesiącu możesz ustawić inną datę '
-                'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
-                'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
+                _isTransfer
+                    ? 'Przelew zmienny: w wybranym miesiącu możesz ustawić inną datę '
+                        'i kwotę. Korekta wpływa też na budżet domowy. '
+                        'Nie zmienia „zostaje/mies", tylko bilans miesiąca i kalendarz.'
+                    : 'Rachunek zmienny: w wybranym miesiącu możesz ustawić inną datę '
+                        'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
+                        'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -648,8 +658,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     // Kategoria/metoda tylko dla wydatków — przy wpływie/przelewie czyścimy.
     final categoryId = _typeHasCategory ? _categoryId : null;
     final paymentMethod = _typeHasCategory ? _paymentMethod : null;
-    // Korekty miesięczne tylko dla rachunku.
-    final overrides = _isBill && _overrides.isNotEmpty
+    // Korekty miesięczne dla rachunku i przelewu do domowego.
+    final overrides = _hasOverrides && _overrides.isNotEmpty
         ? Map<String, BillMonthOverride>.from(_overrides)
         : null;
 

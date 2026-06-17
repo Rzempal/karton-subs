@@ -24,6 +24,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Personalizacja: zwinięcie sekcji (trwałe — StorageService).
   late bool _summaryCompact;
   late bool _subsCompact;
+  late bool _monthCompact;
+  late bool _paymentsCompact;
 
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
@@ -36,6 +38,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final storage = context.read<StorageService>();
     _summaryCompact = storage.getDashboardSummaryCompact();
     _subsCompact = storage.getDashboardSubscriptionsCompact();
+    _monthCompact = storage.getDashboardMonthCompact();
+    _paymentsCompact = storage.getDashboardPaymentsCompact();
   }
 
   void _toggleSummary() {
@@ -48,6 +52,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     context
         .read<StorageService>()
         .setDashboardSubscriptionsCompact(_subsCompact);
+  }
+
+  void _toggleMonth() {
+    setState(() => _monthCompact = !_monthCompact);
+    context.read<StorageService>().setDashboardMonthCompact(_monthCompact);
+  }
+
+  void _togglePayments() {
+    setState(() => _paymentsCompact = !_paymentsCompact);
+    context
+        .read<StorageService>()
+        .setDashboardPaymentsCompact(_paymentsCompact);
   }
 
   void _shiftMonth(int delta) {
@@ -111,6 +127,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             calendar: calendar,
             selectedDay: _selectedDay,
             today: _today,
+            compact: _monthCompact,
+            onToggleCompact: _toggleMonth,
             onPrev: () => _shiftMonth(-1),
             onNext: () => _shiftMonth(1),
             onSelectDay: (d) => setState(() => _selectedDay = d),
@@ -120,6 +138,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             month: _selectedMonth,
             calendar: calendar,
             currency: currency,
+            compact: _paymentsCompact,
+            onToggleCompact: _togglePayments,
             isDone: budget.isPaymentDone,
             onToggle: budget.togglePaymentDone,
           ),

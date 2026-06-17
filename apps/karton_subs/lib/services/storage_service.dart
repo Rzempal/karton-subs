@@ -315,4 +315,16 @@ class StorageService {
 
   Future<void> setDashboardSubscriptionsCompact(bool value) async =>
       _settingsBox.put('dashboardSubscriptionsCompact', value);
+
+  bool getDashboardMonthCompact() =>
+      _settingsBox.get('dashboardMonthCompact', defaultValue: false) as bool;
+
+  Future<void> setDashboardMonthCompact(bool value) async =>
+      _settingsBox.put('dashboardMonthCompact', value);
+
+  bool getDashboardPaymentsCompact() =>
+      _settingsBox.get('dashboardPaymentsCompact', defaultValue: false) as bool;
+
+  Future<void> setDashboardPaymentsCompact(bool value) async =>
+      _settingsBox.put('dashboardPaymentsCompact', value);
 }

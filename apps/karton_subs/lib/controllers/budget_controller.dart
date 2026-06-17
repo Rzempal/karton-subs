@@ -4,6 +4,7 @@ import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../services/budget_service.dart';
+import '../services/currency_service.dart';
 import '../services/app_logger.dart';
 import 'subscription_controller.dart';
 
@@ -19,6 +20,7 @@ class BudgetController extends ChangeNotifier {
   final SubscriptionController _subscriptions;
   static const _uuid = Uuid();
   static const _budget = BudgetService();
+  static const _currency = CurrencyService();
 
   BudgetController(this._storage, this._subscriptions) {
     _subscriptions.addListener(_onSubscriptionsChanged);
@@ -69,9 +71,34 @@ class BudgetController extends ChangeNotifier {
       all.where((e) => e.isIncome).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
+  /// Koszty cykliczne (rachunki, koszty cykliczne, raty) — BEZ przelewu do domowego,
+  /// który ma własną sekcję „Przelew wewnętrzny".
   List<BudgetEntry> get recurringExpenses =>
-      all.where((e) => e.isExpense && !e.isOneTime).toList()
+      all
+          .where((e) =>
+              e.isExpense &&
+              !e.isOneTime &&
+              e.type != BudgetEntryType.householdTransfer)
+          .toList()
         ..sort((a, b) => a.name.compareTo(b.name));
+
+  /// Przelewy do budżetu domowego (tylko zakres osobisty) — sekcja „Przelew wewnętrzny".
+  List<BudgetEntry> get internalTransfers =>
+      all.where((e) => e.type == BudgetEntryType.householdTransfer).toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+
+  /// Suma pozycji w walucie docelowej — do nagłówka sekcji. Cykliczne
+  /// znormalizowane do kwoty/mies; jednorazowe liczone pełną kwotą (mają sens
+  /// tylko jako jednorazowy wydatek, `monthlyAmount` = 0).
+  double sumAmounts(List<BudgetEntry> entries) => entries.fold(
+        0.0,
+        (sum, e) => sum +
+            _currency.convert(
+                e.isOneTime ? e.amount : e.monthlyAmount, e.currency, _target),
+      );
+
+  /// Waluta docelowa (kod) — do formatowania w UI.
+  String get targetCurrencyLabel => _target.label;
 
   List<BudgetEntry> get oneTimeExpenses {
     final list = all.where((e) => e.isOneTime && e.isExpense).toList();
@@ -163,6 +190,7 @@ class BudgetController extends ChangeNotifier {
         cycle: cycle,
         customCycleDays: customCycleDays,
         startDate: startDate,
+        monthOverrides: monthOverrides,
         note: note,
         dataDodania: now,
         linkId: linkId,
@@ -177,6 +205,7 @@ class BudgetController extends ChangeNotifier {
         cycle: cycle,
         customCycleDays: customCycleDays,
         startDate: startDate,
+        monthOverrides: monthOverrides,
         note: note ?? 'Z budżetu osobistego',
         dataDodania: now,
         linkId: linkId,
@@ -224,6 +253,9 @@ class BudgetController extends ChangeNotifier {
             startDate: entry.startDate,
             clearStartDate: entry.startDate == null,
             isActive: entry.isActive,
+            // Korekty kaskadują do lustra → bilans domowego zgodny z realnie przelaną kwotą.
+            monthOverrides: entry.monthOverrides,
+            clearMonthOverrides: entry.monthOverrides == null,
           ),
           BudgetScope.household,
         );

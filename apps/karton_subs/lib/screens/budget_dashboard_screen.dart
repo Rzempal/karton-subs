@@ -14,6 +14,12 @@ import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
 import 'add_budget_entry_screen.dart';
 
+/// Sortowanie listy budżetu.
+enum _BudgetSort { alpha, amountDesc }
+
+/// Grupowanie wewnątrz kubełków (Wpływy/Przelew/Koszty/Jednorazowe).
+enum _BudgetGroup { none, byType }
+
 /// Ekran Budżet — zarządzanie pozycjami (wpływy, koszty cykliczne, jednorazowe).
 /// Przegląd liczbowy (surplus, bilans miesiąca) jest na Dashboardzie.
 class BudgetDashboardScreen extends StatefulWidget {
@@ -29,20 +35,31 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// Aktywny filtr kategorii (null = wszystkie). Filtruje sekcje wydatków.
   String? _filterCategoryId;
 
+  /// Filtr typu pozycji (null = wszystkie).
+  BudgetEntryType? _filterType;
+
+  /// Sortowanie i grupowanie listy.
+  _BudgetSort _sort = _BudgetSort.alpha;
+  _BudgetGroup _group = _BudgetGroup.none;
+
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
-    final allIncomes = ctrl.incomes;
-    final allRecurring = ctrl.recurringExpenses;
-    final allOneTime = ctrl.oneTimeExpenses;
-    final isEmpty =
-        allIncomes.isEmpty && allRecurring.isEmpty && allOneTime.isEmpty;
 
-    // Kategorie faktycznie użyte w wydatkach (tylko one trafiają na pasek filtra).
+    // Surowe kubełki: przelew wewnętrzny ma własną sekcję (recurringExpenses go nie zawiera).
+    final rawBuckets = <(String, List<BudgetEntry>)>[
+      ('Wpływy', ctrl.incomes),
+      ('Przelew wewnętrzny', ctrl.internalTransfers),
+      ('Koszty cykliczne', ctrl.recurringExpenses),
+      ('Wydatki jednorazowe', ctrl.oneTimeExpenses),
+    ];
+    final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
+
+    // Kategorie użyte w wydatkach (pasek filtra kategorii).
     final usedCatIds = <String>{
-      for (final e in allRecurring)
+      for (final e in ctrl.recurringExpenses)
         if (e.categoryId != null) e.categoryId!,
-      for (final e in allOneTime)
+      for (final e in ctrl.oneTimeExpenses)
         if (e.categoryId != null) e.categoryId!,
     };
     final filterCategories = context
@@ -50,21 +67,37 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         .getCategories()
         .where((c) => usedCatIds.contains(c.id))
         .toList();
-
-    // Gdy aktywny filtr wskazuje kategorię, która zniknęła — traktuj jak brak filtra.
-    final activeFilter =
+    final activeCat =
         (_filterCategoryId != null && usedCatIds.contains(_filterCategoryId))
             ? _filterCategoryId
             : null;
-    bool matches(BudgetEntry e) =>
-        activeFilter == null || e.categoryId == activeFilter;
 
-    // Wpływy nie mają kategorii — przy aktywnym filtrze chowamy całą sekcję.
-    final incomes = activeFilter == null ? allIncomes : const <BudgetEntry>[];
-    final recurring = allRecurring.where(matches).toList();
-    final oneTime = allOneTime.where(matches).toList();
-    final filteredEmpty =
-        incomes.isEmpty && recurring.isEmpty && oneTime.isEmpty;
+    // Typy obecne (filtr typu).
+    final presentTypes = <BudgetEntryType>{
+      for (final b in rawBuckets)
+        for (final e in b.$2) e.type
+    };
+    final activeType =
+        (_filterType != null && presentTypes.contains(_filterType))
+            ? _filterType
+            : null;
+    final filterTypes = presentTypes.toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+
+    int cmp(BudgetEntry a, BudgetEntry b) => switch (_sort) {
+          _BudgetSort.alpha =>
+            a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
+        };
+    bool keep(BudgetEntry e) =>
+        (activeType == null || e.type == activeType) &&
+        (activeCat == null || e.categoryId == activeCat);
+
+    final buckets = rawBuckets
+        .map((b) => (b.$1, b.$2.where(keep).toList()..sort(cmp)))
+        .where((b) => b.$2.isNotEmpty)
+        .toList();
+    final filteredEmpty = buckets.isEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -72,6 +105,34 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         title: const Text('Budżet'),
         centerTitle: false,
         actions: [
+          if (!isEmpty) ...[
+            IconButton(
+              tooltip: _sort == _BudgetSort.alpha
+                  ? 'Sortuj: A→Z'
+                  : 'Sortuj: kwota malejąco',
+              icon: Icon(_sort == _BudgetSort.alpha
+                  ? LucideIcons.arrowDownAZ
+                  : LucideIcons.arrowDown10),
+              onPressed: () => setState(() => _sort = _sort == _BudgetSort.alpha
+                  ? _BudgetSort.amountDesc
+                  : _BudgetSort.alpha),
+            ),
+            IconButton(
+              tooltip: _group == _BudgetGroup.byType
+                  ? 'Grupowanie wg typu (włączone)'
+                  : 'Grupowanie wg typu (wyłączone)',
+              icon: Icon(
+                LucideIcons.layers,
+                color: _group == _BudgetGroup.byType
+                    ? context.semanticColors.primary
+                    : null,
+              ),
+              onPressed: () => setState(() =>
+                  _group = _group == _BudgetGroup.byType
+                      ? _BudgetGroup.none
+                      : _BudgetGroup.byType),
+            ),
+          ],
           LabeledIconButton(
             icon: LucideIcons.fileSpreadsheet,
             label: 'XLSX',
@@ -117,8 +178,14 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           if (!isEmpty && filterCategories.isNotEmpty)
             _CategoryFilter(
               categories: filterCategories,
-              selected: activeFilter,
+              selected: activeCat,
               onSelect: (id) => setState(() => _filterCategoryId = id),
+            ),
+          if (!isEmpty && filterTypes.isNotEmpty)
+            _TypeFilter(
+              types: filterTypes,
+              selected: activeType,
+              onSelect: (tp) => setState(() => _filterType = tp),
             ),
           Expanded(
             child: isEmpty
@@ -128,18 +195,15 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                     : ListView(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                         children: [
-                          _Section(
-                              title: 'Wpływy',
-                              entries: incomes,
-                              onTap: _openEdit),
-                          _Section(
-                              title: 'Koszty cykliczne',
-                              entries: recurring,
-                              onTap: _openEdit),
-                          _Section(
-                              title: 'Wydatki jednorazowe',
-                              entries: oneTime,
-                              onTap: _openEdit),
+                          for (final b in buckets)
+                            _Section(
+                              title: b.$1,
+                              entries: b.$2,
+                              total: ctrl.sumAmounts(b.$2),
+                              currency: ctrl.targetCurrencyLabel,
+                              grouped: _group == _BudgetGroup.byType,
+                              onTap: _openEdit,
+                            ),
                         ],
                       ),
           ),
@@ -243,28 +307,72 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
 class _Section extends StatelessWidget {
   final String title;
   final List<BudgetEntry> entries;
+  final double total;
+  final String currency;
+  final bool grouped;
   final void Function(BudgetEntry) onTap;
 
-  const _Section(
-      {required this.title, required this.entries, required this.onTap});
+  const _Section({
+    required this.title,
+    required this.entries,
+    required this.total,
+    required this.currency,
+    required this.onTap,
+    this.grouped = false,
+  });
+
+  Widget _card(BudgetEntry e) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: BudgetEntryCard(entry: e, onTap: () => onTap(e)),
+      );
 
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    final List<Widget> children = [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8, top: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium),
+            Text(
+              '${budgetNf.format(total)} $currency',
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: c.textSecondary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
+
+    // Pod-grupy wg typu — tylko gdy kubełek ma >1 typ (inaczej nagłówek to zbędny szum).
+    final byType = <BudgetEntryType, List<BudgetEntry>>{};
+    for (final e in entries) {
+      (byType[e.type] ??= []).add(e);
+    }
+    if (!grouped || byType.length <= 1) {
+      children.addAll(entries.map(_card));
+    } else {
+      for (final entry in byType.entries) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(bottom: 4, top: 2),
+          child: Text(budgetTypeLabel(entry.key),
+              style: theme.textTheme.labelMedium?.copyWith(color: c.textMuted)),
+        ));
+        children.addAll(entry.value.map(_card));
+      }
+    }
+    children.add(const SizedBox(height: 16));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8, top: 4),
-          child: Text(title, style: theme.textTheme.titleMedium),
-        ),
-        ...entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: BudgetEntryCard(entry: e, onTap: () => onTap(e)),
-            )),
-        const SizedBox(height: 16),
-      ],
+      children: children,
     );
   }
 }
@@ -292,7 +400,7 @@ class _CategoryFilter extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: AuroraChip(
-                label: 'Wszystkie',
+                label: 'Wszystkie kategorie',
                 selected: selected == null,
                 onTap: () => onSelect(null),
               ),
@@ -306,6 +414,51 @@ class _CategoryFilter extends StatelessWidget {
                     selected: selected == cat.id,
                     accent: cat.color,
                     onTap: () => onSelect(selected == cat.id ? null : cat.id),
+                  ),
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _TypeFilter extends StatelessWidget {
+  final List<BudgetEntryType> types;
+  final BudgetEntryType? selected;
+  final void Function(BudgetEntryType?) onSelect;
+
+  const _TypeFilter({
+    required this.types,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: AuroraChip(
+                label: 'Wszystkie typy',
+                selected: selected == null,
+                onTap: () => onSelect(null),
+              ),
+            ),
+          ),
+          ...types.map((tp) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: AuroraChip(
+                    label: budgetTypeLabel(tp),
+                    selected: selected == tp,
+                    onTap: () => onSelect(selected == tp ? null : tp),
                   ),
                 ),
               )),

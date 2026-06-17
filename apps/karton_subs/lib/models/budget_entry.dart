@@ -145,8 +145,10 @@ class BudgetEntry {
   /// Czy to pozycja powiazana (lustro przelewu) — w domowym tylko do odczytu.
   bool get isLinked => linkId != null;
 
-  /// Czy typ obsługuje korekty miesięczne (tylko rachunek).
-  bool get supportsMonthOverrides => type == BudgetEntryType.bill;
+  /// Czy typ obsługuje korekty miesięczne (rachunek + przelew do domowego).
+  bool get supportsMonthOverrides =>
+      type == BudgetEntryType.bill ||
+      type == BudgetEntryType.householdTransfer;
 
   /// Korekta wskazanego miesiąca ("YYYY-MM") lub `null`.
   BillMonthOverride? overrideForMonth(String monthKey) =>
