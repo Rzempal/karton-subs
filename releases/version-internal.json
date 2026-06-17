@@ -1,7 +1,12 @@
 {
-  "version": "0.4.26061707",
-  "versionCode": 426061707,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.4.26061708.apk",
+  "releaseDate": "2026-06-17T14:06:30Z",
+  "releaseNotes": "Personalizacja Dashboardu: klik w sekcje Podsumowanie i Subskrypcje przelacza full/compact (zapamietywane, animowane)",
   "changelog": [
+    {
+      "version": "0.4.26061708",
+      "notes": "Personalizacja Dashboardu: klik w sekcje Podsumowanie i Subskrypcje przelacza full/compact (zapamietywane, animowane)"
+    },
     {
       "version": "0.4.26061707",
       "notes": "Spojnosc: pelne pokrycie motywem (date picker, menu, snackbar, tooltip), tokeny AppColors.onAccent/AppRadii, akcje destrukcyjne na token negative, straznik design tokens"
@@ -37,13 +42,8 @@
     {
       "version": "0.3.26061601",
       "notes": "budget tracker"
-    },
-    {
-      "version": "0.3.26061600",
-      "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
     }
   ],
-  "releaseDate": "2026-06-17T13:49:59Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.4.26061707.apk",
-  "releaseNotes": "Spojnosc: pelne pokrycie motywem (date picker, menu, snackbar, tooltip), tokeny AppColors.onAccent/AppRadii, akcje destrukcyjne na token negative, straznik design tokens"
+  "version": "0.4.26061708",
+  "versionCode": 426061708
 }

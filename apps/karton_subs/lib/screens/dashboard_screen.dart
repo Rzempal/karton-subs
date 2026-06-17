@@ -21,6 +21,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late DateTime _selectedMonth;
   int? _selectedDay;
 
+  // Personalizacja: zwinięcie sekcji (trwałe — StorageService).
+  late bool _summaryCompact;
+  late bool _subsCompact;
+
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
@@ -29,6 +33,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final now = _today;
     _selectedMonth = DateTime(now.year, now.month, 1);
     _selectedDay = now.day; // bieżący miesiąc → domyślnie dziś
+    final storage = context.read<StorageService>();
+    _summaryCompact = storage.getDashboardSummaryCompact();
+    _subsCompact = storage.getDashboardSubscriptionsCompact();
+  }
+
+  void _toggleSummary() {
+    setState(() => _summaryCompact = !_summaryCompact);
+    context.read<StorageService>().setDashboardSummaryCompact(_summaryCompact);
+  }
+
+  void _toggleSubs() {
+    setState(() => _subsCompact = !_subsCompact);
+    context
+        .read<StorageService>()
+        .setDashboardSubscriptionsCompact(_subsCompact);
   }
 
   void _shiftMonth(int delta) {
@@ -59,34 +78,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           BudgetScopeToggle(scope: budget.scope, onChanged: budget.setScope),
           const SizedBox(height: 16),
-          BudgetSurplusCard(surplus: budget.monthlySurplus, currency: currency),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: BudgetFlowCard(
-                  label: 'Wpływy / mies.',
-                  amount: budget.monthlyIncome,
-                  currency: currency,
-                  icon: LucideIcons.trendingUp,
-                  positive: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: BudgetFlowCard(
-                  label: 'Koszty / mies.',
-                  amount: budget.monthlyExpenses,
-                  currency: currency,
-                  icon: LucideIcons.trendingDown,
-                  positive: false,
-                  footnote: budget.monthlySubscriptionsExpense > 0
-                      ? 'w tym subskrypcje: '
-                          '${budgetNf.format(budget.monthlySubscriptionsExpense)} $currency'
-                      : null,
-                ),
-              ),
-            ],
+          BudgetSummarySection(
+            surplus: budget.monthlySurplus,
+            income: budget.monthlyIncome,
+            expenses: budget.monthlyExpenses,
+            subscriptionsExpense: budget.monthlySubscriptionsExpense,
+            currency: currency,
+            compact: _summaryCompact,
+            onToggle: _toggleSummary,
           ),
           const SizedBox(height: 24),
           _SubscriptionsSummaryCard(
@@ -100,6 +99,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         : SubscriptionScope.personal))
                 .length,
             currency: currency,
+            compact: _subsCompact,
+            onToggle: _toggleSubs,
           ),
           const SizedBox(height: 24),
           BudgetMonthSection(
@@ -124,11 +125,15 @@ class _SubscriptionsSummaryCard extends StatelessWidget {
   final double yearly;
   final int count;
   final String currency;
+  final bool compact;
+  final VoidCallback onToggle;
   const _SubscriptionsSummaryCard({
     required this.monthly,
     required this.yearly,
     required this.count,
     required this.currency,
+    required this.compact,
+    required this.onToggle,
   });
 
   @override
@@ -137,37 +142,59 @@ class _SubscriptionsSummaryCard extends StatelessWidget {
     final c = context.semanticColors;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(LucideIcons.repeat, size: 18, color: c.primary),
-                const SizedBox(width: 8),
-                Text('Subskrypcje', style: theme.textTheme.titleMedium),
-                const Spacer(),
-                Text('$count aktywne',
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: c.textMuted)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _Metric(
-                  label: 'Miesięcznie',
-                  value: '${budgetNf.format(monthly)} $currency',
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(LucideIcons.repeat, size: 18, color: c.primary),
+                  const SizedBox(width: 8),
+                  Text('Subskrypcje', style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  Text('$count aktywne',
+                      style: theme.textTheme.labelMedium
+                          ?.copyWith(color: c.textMuted)),
+                  const SizedBox(width: 8),
+                  Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                    size: 20,
+                    color: c.textMuted,
+                  ),
+                ],
+              ),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 180),
+                sizeCurve: Curves.easeInOut,
+                crossFadeState: compact
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _Metric(
+                          label: 'Miesięcznie',
+                          value: '${budgetNf.format(monthly)} $currency',
+                        ),
+                        _Metric(
+                          label: 'Rocznie',
+                          value: '${budgetNf.format(yearly)} $currency',
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                _Metric(
-                  label: 'Rocznie',
-                  value: '${budgetNf.format(yearly)} $currency',
-                ),
-              ],
-            ),
-          ],
+                secondChild: const SizedBox(width: double.infinity),
+              ),
+            ],
+          ),
         ),
       ),
     );

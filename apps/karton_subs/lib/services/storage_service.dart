@@ -268,4 +268,19 @@ class StorageService {
 
   Future<void> setNotifyRenewalReminders(bool value) async =>
       _settingsBox.put('notifyRenewalReminders', value);
+
+  // ── Personalizacja Dashboardu (full/compact per sekcja) ─────────────────────
+
+  bool getDashboardSummaryCompact() =>
+      _settingsBox.get('dashboardSummaryCompact', defaultValue: false) as bool;
+
+  Future<void> setDashboardSummaryCompact(bool value) async =>
+      _settingsBox.put('dashboardSummaryCompact', value);
+
+  bool getDashboardSubscriptionsCompact() =>
+      _settingsBox.get('dashboardSubscriptionsCompact', defaultValue: false)
+          as bool;
+
+  Future<void> setDashboardSubscriptionsCompact(bool value) async =>
+      _settingsBox.put('dashboardSubscriptionsCompact', value);
 }

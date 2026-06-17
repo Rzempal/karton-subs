@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-06-17T11:50:00.993Z">
+<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-06-17T12:06:31.037Z">
   <upload>
-    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\karton-subs-dev_0.4.26061707.apk" />
-    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/karton-subs-dev_0.4.26061707.apk" />
-    <size value="64898929" />
+    <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\karton-subs-dev_0.4.26061708.apk" />
+    <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/karton-subs-dev_0.4.26061708.apk" />
+    <size value="64899037" />
     <result success="true" />
   </upload>
   <touch>
-    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/karton-subs-dev_0.4.26061707.apk" />
-    <modification value="2026-06-17T11:49:58.000Z" />
+    <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/karton-subs-dev_0.4.26061708.apk" />
+    <modification value="2026-06-17T12:06:29.000Z" />
     <result success="true" />
   </touch>
   <upload>
     <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\version-internal.json" />
     <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <size value="2014" />
+    <size value="2031" />
     <result success="true" />
   </upload>
   <touch>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <modification value="2026-06-17T11:49:59.000Z" />
+    <modification value="2026-06-17T12:06:30.000Z" />
     <result success="true" />
   </touch>
 </session>

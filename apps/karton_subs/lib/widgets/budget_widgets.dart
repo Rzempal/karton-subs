@@ -115,18 +115,74 @@ String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
       BillingCycle.custom => 'cykl',
     };
 
-/// Hero „Zostaje miesięcznie" (surplus, kolor wg znaku).
-class BudgetSurplusCard extends StatelessWidget {
+/// Sekcja „Podsumowanie" Dashboardu: hero „Zostaje miesięcznie" + wpływy/koszty.
+/// Tap przełącza full ↔ compact (z animacją). W compact wpływy/koszty są jedną
+/// linią pod kwotą-bohaterem; w full to dwie osobne karty [BudgetFlowCard].
+class BudgetSummarySection extends StatelessWidget {
   final double surplus;
+  final double income;
+  final double expenses;
+  final double subscriptionsExpense;
   final String currency;
-  const BudgetSurplusCard({
+  final bool compact;
+  final VoidCallback onToggle;
+
+  const BudgetSummarySection({
     super.key,
     required this.surplus,
+    required this.income,
+    required this.expenses,
+    required this.subscriptionsExpense,
     required this.currency,
+    required this.compact,
+    required this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
+    return AnimatedCrossFade(
+      duration: const Duration(milliseconds: 180),
+      sizeCurve: Curves.easeInOut,
+      crossFadeState:
+          compact ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+      firstChild: Column(
+        children: [
+          _heroCard(context, compact: false),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: BudgetFlowCard(
+                  label: 'Wpływy / mies.',
+                  amount: income,
+                  currency: currency,
+                  icon: LucideIcons.trendingUp,
+                  positive: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: BudgetFlowCard(
+                  label: 'Koszty / mies.',
+                  amount: expenses,
+                  currency: currency,
+                  icon: LucideIcons.trendingDown,
+                  positive: false,
+                  footnote: subscriptionsExpense > 0
+                      ? 'w tym subskrypcje: '
+                          '${budgetNf.format(subscriptionsExpense)} $currency'
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      secondChild: _heroCard(context, compact: true),
+    );
+  }
+
+  Widget _heroCard(BuildContext context, {required bool compact}) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final positive = surplus >= 0;
@@ -134,38 +190,98 @@ class BudgetSurplusCard extends StatelessWidget {
     final amountText = '$sign${budgetNf.format(surplus.abs())} $currency';
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Zostaje miesięcznie',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: c.textSecondary)),
-            const SizedBox(height: 8),
-            // Kwota-bohater: gradient dla nadwyżki (sygnaturowy „wow");
-            // deficyt na czerwono — znaczenie ważniejsze niż efekt.
-            if (positive)
-              GradientAmount(amountText, semanticsLabel: 'Zostaje $amountText')
-            else
-              Text(
-                amountText,
-                style: theme.textTheme.displayLarge?.copyWith(
-                  color: c.negative,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Zostaje miesięcznie',
+                        style: theme.textTheme.labelMedium
+                            ?.copyWith(color: c.textSecondary)),
+                  ),
+                  Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                    size: 20,
+                    color: c.textMuted,
+                  ),
+                ],
               ),
-            const SizedBox(height: 4),
-            Text(
-              positive
-                  ? 'Wpływy pokrywają koszty cykliczne i subskrypcje.'
-                  : 'Koszty cykliczne przewyższają wpływy.',
-              style:
-                  theme.textTheme.bodySmall?.copyWith(color: c.textSecondary),
-            ),
-          ],
+              const SizedBox(height: 8),
+              // Kwota-bohater: gradient dla nadwyżki (sygnaturowy „wow");
+              // deficyt na czerwono — znaczenie ważniejsze niż efekt.
+              if (positive)
+                GradientAmount(amountText,
+                    semanticsLabel: 'Zostaje $amountText')
+              else
+                Text(
+                  amountText,
+                  style: theme.textTheme.displayLarge?.copyWith(
+                    color: c.negative,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              if (!compact) ...[
+                const SizedBox(height: 4),
+                Text(
+                  positive
+                      ? 'Wpływy pokrywają koszty cykliczne i subskrypcje.'
+                      : 'Koszty cykliczne przewyższają wpływy.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: c.textSecondary),
+                ),
+              ] else ...[
+                const SizedBox(height: 12),
+                _InlineTrends(
+                    income: income, expenses: expenses, currency: currency),
+              ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Jednolinijkowe wpływy/koszty (wariant compact sekcji Podsumowanie).
+class _InlineTrends extends StatelessWidget {
+  final double income;
+  final double expenses;
+  final String currency;
+  const _InlineTrends(
+      {required this.income, required this.expenses, required this.currency});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    Widget item(IconData icon, Color color, double amount) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              '${budgetNf.format(amount)} $currency',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: color,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        );
+    return Wrap(
+      spacing: 18,
+      runSpacing: 8,
+      children: [
+        item(LucideIcons.trendingUp, c.positive, income),
+        item(LucideIcons.trendingDown, c.negative, expenses),
+      ],
     );
   }
 }
