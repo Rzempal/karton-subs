@@ -165,6 +165,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 ## Domena Budzet domowy (rownolegla warstwa)
 
 > **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
+> | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 
 Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
 dodatkowo czyta subskrypcje jako strumien kosztow.
