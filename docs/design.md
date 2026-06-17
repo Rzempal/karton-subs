@@ -1,163 +1,147 @@
-# Ledger Glass -- Design System
+# Aurora — Design System
 
-> **Powiazane:** [Architektura](architecture.md) | [Baza Danych](database.md) |
-> [Design Review](standards/design-review.md)
+> **Powiązane:** [Architektura](architecture.md) | [Baza Danych](database.md) |
+> [Design Review](standards/design-review.md) | [ADR-005 Aurora + jeden motyw](adr/ADR-005-aurora-jeden-ciemny-motyw.md)
+
+> **Status:** przyjęty kierunek (zaakceptowany 2026-06-17). **Wdrożenie w kodzie: Faza 6**
+> ([roadmap](roadmap.md)). Do czasu migracji kod nadal używa „Ledger Glass" (light + dark).
 
 ---
 
 ## Filozofia
 
-**"Gestosc danych bez wizualnego chaosu."**
+**„Spokojna precyzja w ciemności."**
 
-Ledger Glass laczy precyzje ksiegowych ledgerow z przejrzystoscia szkla. Kazdy piksel sluzy informacji.
-Bloomberg Terminal meets Material Design 3.
+Aurora to premium, ciemny interfejs finansowy: dane czytelne natychmiast, jeden moment „wow"
+(gradient aurora w tle + gradientowa kwota-bohater), a reszta spokojna, oszczędna i — co kluczowe —
+**wydajna**. Inspiracja: nowoczesne dashboardy fintech (typu MONEF), ale bez bankowego plastiku
+i bez asystenta AI (zgodnie z DNA projektu).
 
-### Dlaczego nie neumorfizm
+### Co się zmienia względem Ledger Glass
 
-Neumorfizm jest dekoracyjny -- buduje hierarchie przez glebokosc cieni. Aplikacja finansowa wymaga:
+| Aspekt | Ledger Glass (poprzedni) | Aurora (nowy) |
+|--------|--------------------------|---------------|
+| Motyw | Light + Dark + przełącznik | **Jeden uniwersalny ciemny** (bez przełącznika) |
+| Tło | Płaskie białe / granat | Gradient aurora (indygo→fiolet→czerń) |
+| Powierzchnie | Białe karty, 1px border | „Frost" — półprzezroczysta biel na ciemnym |
+| Akcent | Deep Navy / Light Blue | Fiolet → cyan (gradient) |
+| Gęstość | Wysoka (padding 12px) | Przestronna (padding 16–18px) |
+| Charakter | Bloomberg Terminal | Premium fintech, spokojny |
 
-- **Hierarchii przez kolor i whitespace** -- liczby musza byc czytelne natychmiast
-- **Gestosc danych** -- kompaktowe tabele, wykresy, breakdowny wydatkow
-- **Kolor jako znaczenie** -- zielony/czerwony/amber to uniwersalny jezyk finansow
-- **Zero custom widgetow** -- M3 native redukuje maintenance do zera
+### Dlaczego jeden ciemny motyw
+
+- **Spójność i tożsamość** — jeden, rozpoznawalny wygląd zamiast dwóch kompromisów.
+- **Mniej kodu** — jeden zestaw tokenów, brak gałęzi `isDark`, brak `ThemeProvider` toggle
+  (mniej miejsc na błędy i regresje). Szczegóły i ryzyka:
+  [ADR-005](adr/ADR-005-aurora-jeden-ciemny-motyw.md).
+- **Znany minus:** gorsza czytelność w pełnym słońcu — zaakceptowany świadomie (apka używana
+  głównie w domu/wieczorem).
 
 ### Zasady projektowe
 
 | Zasada | Realizacja |
 |--------|------------|
-| Flat surfaces | 1px border zamiast cieni (separacja bez dekoracji) |
-| Tabular figures | Monospaced cyfry dla wyrownania kwot w kolumnach |
-| Kolor = znaczenie | Zielony (oszczednosc), czerwony (przekroczenie), amber (ostrzezenie) |
-| Wysoka gestosc | 12px padding w kartach danych, tight spacing wewnatrz blokow |
+| Jeden motyw | Brak light/dark; brak przełącznika w Ustawieniach |
+| Jeden „wow", reszta spokój | Gradient tła + kwota-bohater; pozostałe karty matowe i ciche |
+| Wydajność ponad efekt | „Frost" zamiast prawdziwego rozmycia (patrz [Wydajność](#wydajność-twarde-reguły)) |
+| Kolor = znaczenie | Zielony (zostaje/oszczędność), czerwony (przekroczenie), amber (ostrzeżenie) |
+| Tabular figures | Monospaced cyfry dla wyrównania kwot w kolumnach |
 | Precyzja geometryczna | Symetryczne radii, zero organic shapes |
-| M3 native | Wbudowane komponenty Flutter, zero custom decoration |
 
 ---
 
-## Paleta kolorystyczna
+## Paleta (jeden ciemny motyw)
 
-### Light Mode: "Clean Ledger"
+### Tło
 
-Chlodna, neutralna paleta ewokujaca czysta ksiegowosc. Bez cieplych tonow (to nie apteczka).
+| Token | Wartość | Opis |
+|-------|---------|------|
+| `--bg-gradient` | `linear-gradient(165°, #241B4B 0%, #16113A 52%, #0B0822 100%)` | Główne tło aplikacji (aurora) |
+| `--bg-solid` | `#0E0A1F` | Fallback / ekrany pełnoekranowe bez gradientu |
+| `--glow-violet` | `radial rgba(124,92,255,0.45)` | Statyczna poświata (dekoracja tła) |
+| `--glow-cyan` | `radial rgba(34,211,238,0.25)` | Statyczna poświata (dekoracja tła) |
 
-| Token | HEX | RGB | Opis |
-|-------|-----|-----|------|
-| `--bg-app` | `#FAFAFA` | 250, 250, 250 | Tlo aplikacji -- chlodny neutral |
-| `--surface` | `#FFFFFF` | 255, 255, 255 | Powierzchnia kart -- pure white |
-| `--primary` | `#1B2A4A` | 27, 42, 74 | Deep Navy -- autorytet, zaufanie, stabilnosc |
-| `--secondary` | `#3D6B9E` | 61, 107, 158 | Steel Blue -- akcje drugorzedne, linki |
-| `--accent` | `#2563EB` | 37, 99, 235 | Bright Blue 600 -- CTA, aktywne stany |
-| `--text-primary` | `#0F172A` | 15, 23, 42 | Slate near-black -- glowny tekst |
-| `--text-secondary` | `#64748B` | 100, 116, 139 | Slate-500 -- opisy, etykiety |
-| `--border` | `#E2E8F0` | 226, 232, 240 | Slate-200 -- obramowania kart, separatory |
-| `--input-bg` | `#F8FAFC` | 248, 250, 252 | Slate-50 -- tlo pol formularzy |
-| `--divider` | `#CBD5E1` | 203, 213, 225 | Slate-300 -- linie oddzielajace |
+> Poświaty są **statyczne** (nie animowane) — zob. [Wydajność](#wydajność-twarde-reguły).
 
-#### Kolory semantyczne (Light)
+### Powierzchnie „frost" (półprzezroczyste, BEZ rozmycia)
 
-| Token | HEX | Cel |
-|-------|-----|-----|
-| `--positive` | `#16A34A` | Green-600 -- oszczednosci, pod budzetem |
-| `--positive-bg` | `#F0FDF4` | Green-50 -- tlo kart pozytywnych |
-| `--negative` | `#DC2626` | Red-600 -- przekroczenia, ghost subscriptions |
-| `--negative-bg` | `#FEF2F2` | Red-50 -- tlo kart negatywnych |
-| `--warning` | `#D97706` | Amber-600 -- zblizajace sie odnowienie |
-| `--warning-bg` | `#FFFBEB` | Amber-50 -- tlo kart ostrzezeniowych |
+| Token | Wartość | Użycie |
+|-------|---------|--------|
+| `--frost-1` | `rgba(255,255,255,0.07)` | Karty standardowe |
+| `--frost-2` | `rgba(255,255,255,0.10)` | Kafle zagnieżdżone, chipy wewnątrz kart |
+| `--frost-border` | `rgba(255,255,255,0.14)` | Obramowanie kart |
+| `--frost-border-strong` | `rgba(255,255,255,0.20)` | Obramowanie elementu aktywnego/focus |
+| `--nav-glass` | `rgba(255,255,255,0.10)` + blur(18) | **Jedyne prawdziwe szkło** — pasek nawigacji |
 
-#### Kolory wykresow (Light)
+### Akcenty
 
-| Token | HEX | Nazwa | Uzycie |
-|-------|-----|-------|--------|
-| `--chart-1` | `#2563EB` | Blue-600 | Glowna seria |
-| `--chart-2` | `#7C3AED` | Violet-600 | Drugorzedna seria |
-| `--chart-3` | `#0891B2` | Cyan-600 | Trzeciorzedna seria |
-| `--chart-4` | `#EA580C` | Orange-600 | Czwarta seria |
-| `--chart-5` | `#16A34A` | Green-600 | Piata seria |
-| `--chart-6` | `#DB2777` | Pink-600 | Szosta seria |
+| Token | HEX | Użycie |
+|-------|-----|--------|
+| `--accent-violet` | `#A78BFA` | Główny akcent (ikony, aktywne) |
+| `--accent-cyan` | `#5EEAD4` | Akcent drugorzędny, druga końcówka gradientu |
+| `--accent-gradient` | `linear-gradient(90°, #C4B5FD, #5EEAD4)` | Kwota-bohater, aktywny element nawigacji |
+| `--accent-solid` | `#8B7BF7` | Gdy gradient niewskazany (np. pojedyncza ikona) |
 
-### Dark Mode: "Midnight Terminal"
+### Tekst
 
-Ciemna paleta z blue undertone -- precyzyjna, techniczna, bez zmeczenia oczu.
+| Token | HEX | Użycie |
+|-------|-----|--------|
+| `--text-primary` | `#F3F0FF` | Główny tekst, kwoty |
+| `--text-secondary` | `#C2B9EC` | Etykiety, opisy |
+| `--text-muted` | `#A99FD0` | Podpisy, daty, meta |
 
-| Token | HEX | RGB | Opis |
-|-------|-----|-----|------|
-| `--bg-app` | `#0F1419` | 15, 20, 25 | Near-black z blue undertone |
-| `--surface` | `#1A2332` | 26, 35, 50 | Karty -- dark blue-gray |
-| `--primary` | `#93C5FD` | 147, 197, 253 | Light Blue-300 -- czytelny na ciemnym |
-| `--secondary` | `#60A5FA` | 96, 165, 250 | Blue-400 |
-| `--accent` | `#3B82F6` | 59, 130, 246 | Blue-500 -- CTA |
-| `--text-primary` | `#F1F5F9` | 241, 245, 249 | Slate-100 |
-| `--text-secondary` | `#94A3B8` | 148, 163, 184 | Slate-400 |
-| `--border` | `#1E3A5F` | 30, 58, 95 | Ciemny blue border |
-| `--input-bg` | `#0D1520` | 13, 21, 32 | Glebszy niz surface |
-| `--divider` | `#1E3A5F` | 30, 58, 95 | Jak border |
+### Kolory semantyczne
 
-#### Kolory semantyczne (Dark)
+Na ciemnym tle używamy jaśniejszych odcieni (shade 400) + tła jako kolor @ 14% alpha.
 
-| Token | HEX | Cel |
-|-------|-----|-----|
-| `--positive` | `#4ADE80` | Green-400 |
-| `--positive-bg` | `#052E16` | Green-950 |
-| `--negative` | `#F87171` | Red-400 |
-| `--negative-bg` | `#450A0A` | Red-950 |
-| `--warning` | `#FBBF24` | Amber-400 |
-| `--warning-bg` | `#451A03` | Amber-950 |
+| Token | Foreground | Background | Cel |
+|-------|-----------|-----------|-----|
+| `--positive` | `#34D399` | `rgba(52,211,153,0.14)` | Zostaje, oszczędność, pod budżetem |
+| `--negative` | `#F87171` | `rgba(248,113,113,0.14)` | Przekroczenie, deficyt |
+| `--warning` | `#FBBF24` | `rgba(251,191,36,0.14)` | Zbliżające się odnowienie |
+| `--trial` | `#60A5FA` | `rgba(96,165,250,0.14)` | Okres próbny (trial) |
 
-#### Kolory wykresow (Dark)
+### Kolory wykresów
 
-Jasniejsze warianty dla czytelnosci na ciemnym tle:
-
-| Token | HEX |
-|-------|-----|
-| `--chart-1` | `#60A5FA` (Blue-400) |
-| `--chart-2` | `#A78BFA` (Violet-400) |
-| `--chart-3` | `#22D3EE` (Cyan-400) |
-| `--chart-4` | `#FB923C` (Orange-400) |
-| `--chart-5` | `#4ADE80` (Green-400) |
-| `--chart-6` | `#F472B6` (Pink-400) |
+| Token | HEX | Nazwa |
+|-------|-----|-------|
+| `--chart-1` | `#A78BFA` | Violet-400 (główna seria) |
+| `--chart-2` | `#5EEAD4` | Teal-300 |
+| `--chart-3` | `#60A5FA` | Blue-400 |
+| `--chart-4` | `#FB923C` | Orange-400 |
+| `--chart-5` | `#34D399` | Green-400 |
+| `--chart-6` | `#F472B6` | Pink-400 |
+| `--bar-idle` | `rgba(255,255,255,0.12)` | Słupek nieaktywny |
+| `--bar-highlight` | `linear-gradient(180°, #A78BFA, #5EEAD4)` | Słupek podświetlony (bieżący okres) |
 
 ---
 
 ## Typografia
 
-### Fontfeatures
+Skala bez zmian względem Ledger Glass. Kwoty finansowe nadal używają **tabular figures**.
 
-**Kluczowe:** Kwoty finansowe uzywaja tabular figures -- monospaced cyfry dla wyrownania w kolumnach.
-
-```dart
-// Styl dla kwot finansowych
-TextStyle amountStyle = TextStyle(
-  fontFeatures: [FontFeature.tabularFigures()],
-  fontWeight: FontWeight.w700,
-  fontSize: 24,
-);
-
-// Styl dla kwot w tabelach
-TextStyle tableAmountStyle = TextStyle(
-  fontFeatures: [FontFeature.tabularFigures()],
-  fontWeight: FontWeight.w600,
-  fontSize: 14,
-);
-```
-
-### Hierarchia typograficzna
-
-| Rola | Rozmiar | Waga | Uzycie |
+| Rola | Rozmiar | Waga | Użycie |
 |------|---------|------|--------|
-| Display Large | 32px | 700 | Laczny koszt miesieczny (glowna cyfra) |
-| Headline | 20px | 600 | Naglowki sekcji |
-| Title | 16px | 600 | Nazwy subskrypcji na kartach |
+| Display | 40px | 700 | Kwota-bohater („Zostaje w tym miesiącu") |
+| Headline | 20px | 600 | Nagłówki sekcji |
+| Title | 16px | 600 | Nazwy pozycji na kartach |
 | Body | 14px | 400 | Opisy, etykiety |
-| Label | 12px | 500 | Chipy, meta-dane, daty |
-| Caption | 11px | 400 | Podpisy wykresow, footnotes |
+| Label | 12px | 500 | Chipy, delta-pille, meta |
+| Caption | 11px | 400 | Podpisy wykresów, daty osi |
 
-### Formatowanie kwot
+### Kwota-bohater (gradientowa)
+
+Główna liczba na Pulpicie jest wypełniona gradientem `--accent-gradient`.
+W Flutterze: `ShaderMask` z `LinearGradient` na `Text` (koszt znikomy).
 
 ```dart
-// Format: "487,50 PLN/mies."
-// Duza kwota: "487,50" (Display Large, --text-primary)
-// Waluta + okres: "PLN/mies." (Body, --text-secondary)
+ShaderMask(
+  shaderCallback: (b) => AppColors.accentGradient.createShader(b),
+  child: Text('2 340 zł', style: heroAmountStyle), // tabular, w700, 40px
+)
 ```
+
+Pozostałe kwoty: pełny kolor `--text-primary` (bez gradientu) — gradient to akcent, nie reguła.
 
 ---
 
@@ -165,234 +149,187 @@ TextStyle tableAmountStyle = TextStyle(
 
 ### Border Radius
 
-| Element | Radius | Uzasadnienie |
-|---------|--------|-------------|
-| Karty (standard) | 12px | Czyste, nowoczesne, nie za okragle |
-| Chipy, tagi | 8px | Kompaktowe elementy |
-| Bottom sheets, dialogi | 16px (gora) | M3 standard |
-| Przyciski | 12px | Spojnosc z kartami |
-| Pola tekstowe | 8px | Nieco ostrzejsze niz karty |
-
-**Zero asymetrycznych radii.** Finanse = precyzja geometryczna.
+| Element | Radius |
+|---------|--------|
+| Karty | 22px |
+| Kafle metryk, chipy | 16px |
+| Delta-pille, tagi | 20px (pełna pigułka) |
+| Pasek nawigacji (pływający) | 30px (pełna pigułka) |
+| Przyciski | 16px |
+| Pola tekstowe | 12px |
 
 ### Spacing (8px Grid)
 
-| Token | Wartosc | Uzycie |
+| Token | Wartość | Użycie |
 |-------|---------|--------|
-| `xs` | 4px | Wewnatrz chipow, gap ikon |
-| `sm` | 8px | Padding wewnatrz kompaktowych kart |
-| `md` | 12px | Padding kart danych |
-| `base` | 16px | Standardowy padding sekcji |
-| `lg` | 24px | Odstep miedzy sekcjami |
-| `xl` | 32px | Odstep miedzy blokami ekranu |
+| `xs` | 4px | Gap ikon, wewnątrz chipów |
+| `sm` | 8px | Gap między kaflami |
+| `md` | 12px | Padding kompaktowych elementów |
+| `base` | 16px | Standardowy padding kart i sekcji |
+| `lg` | 20px | Padding kart-bohaterów, odstęp sekcji |
+| `xl` | 28px | Odstęp między blokami ekranu |
 
-### Karty
-
-```dart
-// Karta subskrypcji -- flat + border
-Card(
-  elevation: 0,
-  shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(12),
-    side: BorderSide(
-      color: theme.colorScheme.outline.withOpacity(0.2),
-      width: 1,
-    ),
-  ),
-  child: Padding(
-    padding: EdgeInsets.all(12), // 12px -- gestosc danych
-    child: ...
-  ),
-)
-```
+> Aurora jest **przestronna**: padding kart 16–18px (Ledger Glass miał 12px).
 
 ---
 
-## Mapowanie komponentow na M3
+## Wydajność (twarde reguły)
 
-### Strategia: zero custom widgetow na poziomie design systemu
+> **To jest sekcja kontraktowa.** Cel wybrany świadomie: **wygląd C2 za koszt ~zero**.
 
-| Komponent | Implementacja M3 | Uwagi |
-|-----------|-------------------|-------|
-| Karty | `Card` (outlined variant) | `elevation: 0`, `side: BorderSide(1px)` |
-| Przyciski glowne | `FilledButton` | Deep Navy bg, white text |
-| Przyciski drugorzedne | `OutlinedButton` | Border color = `--secondary` |
-| Nawigacja dolna | `NavigationBar` | 3-4 destinacji: Dashboard, Dodaj, Subskrypcje, Ustawienia |
-| Filtry kategorii | `FilterChip` | M3 native |
-| Wybor okresu | `SegmentedButton` | Mies/Rok/Tydzien toggle |
-| Pola tekstowe | `TextField` + `OutlineInputBorder` | 8px radius |
-| Bottom sheets | `showModalBottomSheet` | M3 z `DragHandle` |
-| Dialogi | `AlertDialog` | M3 native |
-| Chipy statusu | `Badge` lub custom `Container` | Kolorowanie semantyczne |
-| Date picker | `showDatePicker` | M3 native |
-| Snackbary | `SnackBar` | Feedback uzytkownika |
+| Reguła | Realizacja |
+|--------|------------|
+| „Frost" = przezroczystość, **nie** rozmycie | Karty: `Container` z `color: white@0.07`. **Bez** `BackdropFilter`. Tło to gładki gradient, więc mleczna biel czyta się jak szkło. |
+| Gradient tła = statyczny | `BoxDecoration(gradient: LinearGradient(...))`. Zero animacji. |
+| Poświaty = statyczne | `RadialGradient` w `Stack`, nieanimowane. |
+| Prawdziwy blur = **maks. 1 na ekran** | `BackdropFilter(blur 18)` dozwolony **tylko** na pływającym pasku nawigacji (tam blur ma sens — leży nad przewijaną treścią). |
+| Zakazane | Animowane gradienty; `BackdropFilter` na kartach/listach; `Opacity` na dużych poddrzewach (użyj koloru z alpha); zbędne `saveLayer`. |
 
-### Custom widgety (tylko logika domenowa)
-
-| Widget | Cel | Nie jest czescia design systemu |
-|--------|-----|-------------------------------|
-| `SubscriptionCard` | Karta subskrypcji z kwota, ikona, status | Logika domenowa |
-| `SpendingChart` | Wykres wydatkow (fl_chart) | Wizualizacja danych |
-| `CategoryBreakdown` | Podzial na kategorie (bar/pie) | Wizualizacja danych |
-| `BudgetProgressBar` | Pasek postępu budżetu | Logika domenowa |
-| `GhostAlert` | Alert "placisz ale nie korzystasz" | Logika domenowa |
+**Argument (dla celu pobocznego):** prawdziwe `BackdropFilter` rozmywa wszystko pod sobą i wymusza
+`saveLayer` — wiele takich warstw na przewijanej liście gubi klatki na tańszym Androidzie.
+Mleczne wypełnienie nad gładkim gradientem daje ~90% tego samego efektu wizualnego przy zerowym
+koszcie GPU. Jedyny realny blur (pasek nawigacji) to jedna warstwa, statyczna pozycja — bezpieczny.
 
 ---
 
-## Stany kart subskrypcji
+## Mapowanie komponentów na Flutter M3
 
-Karty uzywaja kolorow semantycznych do komunikowania statusu:
+| Komponent | Implementacja | Uwagi |
+|-----------|---------------|-------|
+| Tło ekranu | `Stack`: `Container(gradient)` + 2× `Positioned` glow (`RadialGradient`) + treść | `Scaffold(backgroundColor: Colors.transparent)` |
+| Frost card | `Container(color: white@0.07, radius 22, border white@0.14)` | **Bez** BackdropFilter |
+| Kafel metryki | Frost card: ikona (akcent) + liczba (`tnum`) + delta-pill | Siatka 2 kolumny (`GridView`/`Wrap`) |
+| Delta-pill | `Container(color: semantic@0.14, radius 20)` + tekst semantic | `+4%`, `-2%` |
+| Kwota-bohater | `ShaderMask` + `Text` (gradient) | Tylko główna liczba |
+| Wykres słupkowy | `fl_chart BarChart`: 1 słupek w `--bar-highlight`, reszta `--bar-idle` + tooltip | Bieżący okres podświetlony |
+| Pasek nawigacji | **Custom** pływająca pigułka: `ClipRRect` + `BackdropFilter(18)` + `Container(--nav-glass)` | Jedyne prawdziwe szkło |
+| Przyciski główne | `FilledButton` | Tło `--accent-solid` lub gradient |
+| Pola tekstowe | `TextField` + `OutlineInputBorder` (12px, `--frost-border`) | Tło `--frost-1` |
+| Bottom sheets / dialogi | `showModalBottomSheet` / `AlertDialog` | Tło `--bg-solid`, border frost |
+| Chipy filtrów | `FilterChip` | Tło `--frost-2`, aktywny `--accent-solid` |
 
-| Stan | Tlo Light | Tlo Dark | Border | Ikona |
-|------|-----------|----------|--------|-------|
-| Aktywna (OK) | `--surface` | `--surface` | `--border` | -- |
-| Odnowienie wkrotce | `--warning-bg` | `--warning-bg` | `--warning` 20% | Timer |
-| Ghost (nieuzywana) | `--negative-bg` | `--negative-bg` | `--negative` 20% | Alert |
-| Anulowana | `--surface` 60% opacity | `--surface` 60% opacity | `--border` dashed | Strikethrough |
+### Nowe / zmienione custom widgety
+
+| Widget | Cel |
+|--------|-----|
+| `AuroraBackground` | Wrapper Scaffoldu: gradient + poświaty + transparent scaffold |
+| `FrostCard` | Standardowa karta (przezroczystość, border) — bez blur |
+| `GlassNavBar` | Pływająca pigułka nawigacji — **jedyny** `BackdropFilter` |
+| `MetricTile` | Ikona + kwota + delta-pill |
+| `GradientAmount` | Kwota-bohater przez `ShaderMask` |
+
+---
+
+## Stany kart
+
+| Stan | Tło | Border | Ikona |
+|------|-----|--------|-------|
+| Standardowa | `--frost-1` | `--frost-border` | — |
+| Odnowienie wkrótce | `--warning` @ 0.10 | `--warning` @ 0.30 | Zegar |
+| Trial | `--trial` @ 0.10 | `--trial` @ 0.30 | Timer |
+| Przekroczenie | `--negative` @ 0.10 | `--negative` @ 0.30 | Alert |
+| Anulowana | `--frost-1` @ 0.5 opacity | `--frost-border` | Strikethrough |
 
 ---
 
 ## Ikony
 
-Lucide Icons (`lucide_icons_flutter`) -- ten sam zestaw co w APPteczka.
-
-| Kontekst | Ikona | Nazwa Lucide |
-|----------|-------|-------------|
-| Subskrypcja | Powtarzajacy sie symbol | `repeat` |
-| Dodaj | Plus | `plus` |
-| Dashboard | Wykres | `bar-chart-3` |
-| Ustawienia | Zebatka | `settings` |
-| Odnowienie | Zegar | `clock` |
-| Ostrzezenie | Trojkat | `alert-triangle` |
-| Ghost alert | Duch / Banknot | `banknote` lub `ghost` |
-| Kategoria: Streaming | Play | `play-circle` |
-| Kategoria: Cloud | Chmura | `cloud` |
-| Kategoria: Muzyka | Sluchawki | `headphones` |
-| Kategoria: Fitness | Silownia | `dumbbell` |
-| Kategoria: Software | Kod | `code` |
-| Kategoria: Inne | Folder | `folder` |
+Lucide Icons (`lucide_icons_flutter`) — **bez zmian** względem Ledger Glass. Kolor ikon akcentowych:
+`--accent-violet`; ikon neutralnych: `--text-muted`.
 
 ---
 
-## Dostepnosc (WCAG 2.1)
+## Dostępność (WCAG 2.1)
 
 | Aspekt | Realizacja |
 |--------|-----------|
-| Kontrast tekstu | Min 4.5:1 (AA). Deep Navy na bialym = 12:1 |
-| Kontrast w Dark Mode | Slate-100 na surface = 11:1 |
-| Kolory semantyczne | Nigdy sam kolor -- zawsze ikona + label |
-| Focus states | Border accent (2px) na :focus |
-| Touch targets | Min 48x48dp (M3 standard) |
-| Screen reader | Wszystkie kwoty z semantycznym opisem ("Netflix, 49 zlotych miesiecznie") |
+| Jeden motyw | Zawsze ciemny — brak przełącznika |
+| Kontrast tekstu | `#F3F0FF` na `#0E0A1F` ≈ 16:1 (AAA). `--text-muted` na frost ≥ 4.5:1 |
+| Kwota-bohater (gradient) | Najjaśniejszy stop (`#5EEAD4`) na ciemnym ≥ 4.5:1 — bezpieczny |
+| Kolory semantyczne | Nigdy sam kolor — zawsze ikona + label |
+| Focus | Border `--frost-border-strong` (2px) |
+| Touch targets | Min 48×48dp |
+| Screen reader | Kwoty z semantycznym opisem („Zostaje 2340 złotych") |
+| Znany kompromis | Czytelność w pełnym słońcu — zob. [ADR-005](adr/ADR-005-aurora-jeden-ciemny-motyw.md) |
 
 ---
 
-## Animacje i UX
+## Migracja z Ledger Glass (kod — Faza 6)
 
-| Interakcja | Animacja | Czas |
-|------------|----------|------|
-| Przejscie miedzy tabami | `PageTransitionSwitcher` | 300ms |
-| Zmiana filtrow | `AnimatedContainer` | 200ms |
-| Ladowanie danych | Skeleton shimmer | -- |
-| Dodanie subskrypcji | Slide in from bottom | 250ms |
-| Usuniecie | Slide out + fade | 200ms |
-| Feedback taktylny | `HapticFeedback.lightImpact()` | Natychmiastowy |
+> Zakres prac w przyszłej sesji implementacyjnej. **Ten dokument to specyfikacja, nie kod.**
 
----
-
-## Porownanie z APPteczka (co sie zmienilo)
-
-| Aspekt | APPteczka (Neumorphism) | Karton na subskrypcje (Ledger Glass) |
-|--------|------------------------|--------------------------------------|
-| Filozofia | Glebokosc i dotykalnosc | Gestosc danych i precyzja |
-| Cienie | Dual shadows (light + dark) | Zero cieni, 1px border |
-| Radii | Asymetryczne (50/50/20/80) | Symetryczne (12/8/16) |
-| Kolory primary | Smoky Green / Neon Mint | Deep Navy / Light Blue |
-| Kolory bg | Bone White / Deep Indigo | Cool Neutral / Near-black |
-| Custom widgets | 9 neumorficznych komponentow | Zero (M3 native) |
-| Ikony | Lucide | Lucide (bez zmian) |
-| Grid | 8px | 8px (bez zmian) |
-| Padding kart | 16px | 12px (gestosc danych) |
-| Accessibility | Outline kompensacja | Natywny kontrast M3 |
+| Plik / obszar | Zmiana |
+|---------------|--------|
+| `lib/theme/app_theme.dart` | Jeden ciemny `ThemeData`; nowe tokeny (gradient, frost, akcenty); usunięcie wariantu light |
+| `lib/services/theme_provider.dart` | Usunięcie przełącznika Dark/Light/System (stała ciemna lub usunięcie providera) |
+| `lib/screens/settings_screen.dart` | Usunięcie sekcji „Motyw" |
+| Scaffoldy ekranów | Owinięcie w `AuroraBackground` |
+| Karty (`Card`, kontenery) | Zamiana na `FrostCard` |
+| Pasek nawigacji (`NavigationBar`) | Zamiana na `GlassNavBar` (pływająca pigułka) |
+| Dashboard | Siatka `MetricTile` + `GradientAmount` + wykres z podświetleniem |
+| Logika / dane / backup | **Bez zmian** |
 
 ---
 
-## Implementacja w Flutter (AppColors)
+## Implementacja w Flutter (`AppColors` — jeden motyw)
 
 ```dart
 class AppColors {
-  // ===== LIGHT MODE: Clean Ledger =====
-  static const Color lightBackground = Color(0xFFFAFAFA);
-  static const Color lightSurface = Color(0xFFFFFFFF);
-  static const Color lightPrimary = Color(0xFF1B2A4A);    // Deep Navy
-  static const Color lightSecondary = Color(0xFF3D6B9E);   // Steel Blue
-  static const Color lightAccent = Color(0xFF2563EB);      // Bright Blue
-  static const Color lightTextPrimary = Color(0xFF0F172A);
-  static const Color lightTextSecondary = Color(0xFF64748B);
-  static const Color lightBorder = Color(0xFFE2E8F0);
-  static const Color lightInputBg = Color(0xFFF8FAFC);
+  AppColors._();
 
-  // Semantyczne (Light)
-  static const Color lightPositive = Color(0xFF16A34A);
-  static const Color lightPositiveBg = Color(0xFFF0FDF4);
-  static const Color lightNegative = Color(0xFFDC2626);
-  static const Color lightNegativeBg = Color(0xFFFEF2F2);
-  static const Color lightWarning = Color(0xFFD97706);
-  static const Color lightWarningBg = Color(0xFFFFFBEB);
+  // ── Tło ─────────────────────────────────────────────────────────────────
+  static const Color bgSolid = Color(0xFF0E0A1F);
+  static const LinearGradient bgGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF241B4B), Color(0xFF16113A), Color(0xFF0B0822)],
+    stops: [0.0, 0.52, 1.0],
+  );
+  static final Color glowViolet = const Color(0xFF7C5CFF).withValues(alpha: 0.45);
+  static final Color glowCyan = const Color(0xFF22D3EE).withValues(alpha: 0.25);
 
-  // Wykresy (Light)
-  static const List<Color> lightChartColors = [
-    Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFF0891B2),
-    Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFFDB2777),
+  // ── Frost (powierzchnie) ─────────────────────────────────────────────────
+  static final Color frost1 = Colors.white.withValues(alpha: 0.07);
+  static final Color frost2 = Colors.white.withValues(alpha: 0.10);
+  static final Color frostBorder = Colors.white.withValues(alpha: 0.14);
+  static final Color frostBorderStrong = Colors.white.withValues(alpha: 0.20);
+  static final Color navGlass = Colors.white.withValues(alpha: 0.10);
+
+  // ── Akcenty ──────────────────────────────────────────────────────────────
+  static const Color accentViolet = Color(0xFFA78BFA);
+  static const Color accentCyan = Color(0xFF5EEAD4);
+  static const Color accentSolid = Color(0xFF8B7BF7);
+  static const LinearGradient accentGradient = LinearGradient(
+    colors: [Color(0xFFC4B5FD), Color(0xFF5EEAD4)],
+  );
+
+  // ── Tekst ────────────────────────────────────────────────────────────────
+  static const Color textPrimary = Color(0xFFF3F0FF);
+  static const Color textSecondary = Color(0xFFC2B9EC);
+  static const Color textMuted = Color(0xFFA99FD0);
+
+  // ── Semantyczne (foreground) ──────────────────────────────────────────────
+  static const Color positive = Color(0xFF34D399);
+  static const Color negative = Color(0xFFF87171);
+  static const Color warning = Color(0xFFFBBF24);
+  static const Color trial = Color(0xFF60A5FA);
+
+  // ── Wykresy ──────────────────────────────────────────────────────────────
+  static const List<Color> chartColors = [
+    Color(0xFFA78BFA), Color(0xFF5EEAD4), Color(0xFF60A5FA),
+    Color(0xFFFB923C), Color(0xFF34D399), Color(0xFFF472B6),
   ];
-
-  // ===== DARK MODE: Midnight Terminal =====
-  static const Color darkBackground = Color(0xFF0F1419);
-  static const Color darkSurface = Color(0xFF1A2332);
-  static const Color darkPrimary = Color(0xFF93C5FD);      // Light Blue
-  static const Color darkSecondary = Color(0xFF60A5FA);
-  static const Color darkAccent = Color(0xFF3B82F6);
-  static const Color darkTextPrimary = Color(0xFFF1F5F9);
-  static const Color darkTextSecondary = Color(0xFF94A3B8);
-  static const Color darkBorder = Color(0xFF1E3A5F);
-  static const Color darkInputBg = Color(0xFF0D1520);
-
-  // Semantyczne (Dark)
-  static const Color darkPositive = Color(0xFF4ADE80);
-  static const Color darkPositiveBg = Color(0xFF052E16);
-  static const Color darkNegative = Color(0xFFF87171);
-  static const Color darkNegativeBg = Color(0xFF450A0A);
-  static const Color darkWarning = Color(0xFFFBBF24);
-  static const Color darkWarningBg = Color(0xFF451A03);
-
-  // Wykresy (Dark)
-  static const List<Color> darkChartColors = [
-    Color(0xFF60A5FA), Color(0xFFA78BFA), Color(0xFF22D3EE),
-    Color(0xFFFB923C), Color(0xFF4ADE80), Color(0xFFF472B6),
-  ];
+  static final Color barIdle = Colors.white.withValues(alpha: 0.12);
+  static const LinearGradient barHighlight = LinearGradient(
+    begin: Alignment.topCenter, end: Alignment.bottomCenter,
+    colors: [Color(0xFFA78BFA), Color(0xFF5EEAD4)],
+  );
 }
 ```
 
----
-
-## Semantic Color Tokens (`AppSemanticColors`)
-
-> **ADR:** [ADR-002 Semantic Color Tokens](adr/ADR-002-semantic-color-tokens.md)
-
-Od wersji 0.2 kolory statusowe i kontekstowe sa dostarczane przez `ThemeExtension<AppSemanticColors>`,
-co eliminuje reczne sprawdzanie `isDark` w widgetach. Dostep: `context.semanticColors`.
-
-| Token | Light | Dark | Uzycie |
-|-------|-------|------|--------|
-| `positive` / `positiveBg` | Green-600 / `#F0FDF4` | Green-400 / Green@10% | Sukces, aktualna apka |
-| `negative` / `negativeBg` | Red-600 / `#FEF2F2` | Red-400 / Red@10% | Bledy, ghost alert |
-| `warning` / `warningBg` | Amber-600 / `#FFFBEB` | Amber-400 / Amber@10% | Odnowienie, trial expiring |
-| `trial` / `trialBg` | Blue-600 / `#EFF6FF` | Blue-400 / Blue@10% | Free trial |
-| `heroCardBg/Text` | Deep Navy / white | Primary@15% / Slate-100 | Glowna karta summary |
-| `textPrimary/Secondary/Muted` | Slate-900/500/400 | Slate-100/400/500 | Hierarchia tekstu |
-
-Dark mode: statusowe foregroundy jasniejsze (shade 400 vs 600), tla = kolor@10% opacity.
+> `AppSemanticColors` (`ThemeExtension`) pozostaje jako mechanizm dostępu (`context.semanticColors`),
+> ale z **jednym** zestawem wartości (brak wariantu light) — zob. [ADR-002](adr/ADR-002-semantic-color-tokens.md).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-04-05
+> **Ostatnia aktualizacja:** 2026-06-17

@@ -13,6 +13,7 @@
 | 3 | Powiadomienia + Usage Tracking | Planowana |
 | 4 | Polish + Release | Planowana |
 | 5 | Budzet domowy | W trakcie (B1+B2 gotowe 2026-06-16) |
+| 6 | Redesign Aurora (jeden ciemny motyw) | Planowana (design.md gotowy 2026-06-17) |
 
 ---
 
@@ -140,6 +141,29 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 
 ---
 
+## Faza 6: Redesign Aurora
+
+**Cel:** Przejscie z systemu „Ledger Glass" (light + dark + przelacznik) na **„Aurora"** —
+jeden uniwersalny ciemny motyw, premium fintech, gradient aurora + powierzchnie „frost".
+
+> **ADR:** [ADR-005 Aurora — jeden ciemny motyw](adr/ADR-005-aurora-jeden-ciemny-motyw.md)
+> &middot; **Spec:** [design.md](design.md) (gotowy 2026-06-17). Zakres: tylko prezentacja, logika bez zmian.
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| design.md Aurora | Pelna specyfikacja tokenow + reguly wydajnosci | ✅ |
+| ADR-005 | Decyzja: jeden ciemny motyw, „frost" zamiast blur | ✅ |
+| app_theme.dart | Jeden ciemny ThemeData; tokeny gradient/frost/akcenty | ⏳ |
+| theme_provider | Usuniecie przelacznika Dark/Light/System | ⏳ |
+| Ustawienia | Usuniecie sekcji „Motyw" | ⏳ |
+| AuroraBackground | Wrapper Scaffoldu: gradient + poswiaty | ⏳ |
+| FrostCard | Karty bez BackdropFilter (przezroczystosc + border) | ⏳ |
+| GlassNavBar | Plywajaca pigulka — jedyny prawdziwy blur | ⏳ |
+| MetricTile + GradientAmount | Siatka metryk + kwota-bohater (ShaderMask) | ⏳ |
+| Wykres z podswietleniem | fl_chart: biezacy okres w gradiencie + dymek | ⏳ |
+
+---
+
 ## Backlog (przyszlosc)
 
 | Pomysl | Priorytet |
@@ -154,4 +178,4 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-16
+> **Ostatnia aktualizacja:** 2026-06-17

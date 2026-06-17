@@ -22,7 +22,7 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
-- Porzucenie neumorfizmu na rzecz "Ledger Glass" (flat M3)
+- Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium, jeden ciemny motyw; wdrozenie Faza 6)
 - Brak integracji z AI
 - Offline-first, dane lokalne
 
@@ -33,7 +33,7 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 | Warstwa | Technologia |
 |---------|-------------|
 | Framework | Flutter (Dart) |
-| UI | Material Design 3 -- "Ledger Glass" |
+| UI | Material Design 3 -- "Aurora" (jeden ciemny motyw; wdrozenie Faza 6) |
 | Baza danych | Hive (NoSQL, offline) |
 | Szyfrowanie | AES-256-GCM (pointycastle) |
 | Aktualizacje | OTA (ota_update) |
@@ -57,14 +57,14 @@ karton-subs/
 │       │   ├── services/       # StorageService (Hive), AnalyticsService, BudgetService
 │       │   ├── controllers/    # SubscriptionController, BudgetController
 │       │   ├── utils/          # cycle_math (normalizacja cyklu)
-│       │   ├── theme/          # Ledger Glass (AppTheme, AppColors)
+│       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
 │       │   ├── screens/        # Dashboard, Subskrypcje, Budzet, Ustawienia
 │       │   └── widgets/        # SubscriptionCard
 │       └── pubspec.yaml
 ├── docs/
 │   ├── architecture.md         # Architektura systemu
 │   ├── database.md             # Model danych
-│   ├── design.md               # "Ledger Glass" design system
+│   ├── design.md               # "Aurora" design system
 │   ├── roadmap.md              # Plan rozwoju (Fazy 1-4)
 │   ├── adr/                    # Architecture Decision Records
 │   └── standards/              # Standardy kodu i procesu
@@ -91,7 +91,7 @@ flutter build apk --debug
 
 | Dokument | Opis |
 |----------|------|
-| [Design System](docs/design.md) | Paleta "Ledger Glass", typografia, komponenty |
+| [Design System](docs/design.md) | Paleta "Aurora", typografia, komponenty, reguly wydajnosci |
 | [Architektura](docs/architecture.md) | Stack, warstwy, przeplywy danych |
 | [Baza Danych](docs/database.md) | Model subskrypcji, kategorie, usage tracking |
 | [Bezpieczenstwo](docs/security.md) | Prywatnosc danych, szyfrowanie backupow |
@@ -107,4 +107,4 @@ Reusable infrastructure: ~40% kodu (serwisy, kontrolery, konfiguracja).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-16
+> **Ostatnia aktualizacja:** 2026-06-17

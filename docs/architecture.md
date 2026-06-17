@@ -50,7 +50,7 @@ flowchart TB
 | Warstwa | Technologia |
 |---------|-------------|
 | **Framework** | Flutter (Dart) |
-| **UI** | Material Design 3 ("Ledger Glass") |
+| **UI** | Material Design 3 ("Aurora" — jeden ciemny motyw; wdrozenie Faza 6) |
 | **Lokalna baza** | Hive (NoSQL, offline-first) |
 | **State management** | ChangeNotifier + Provider |
 | **Szyfrowanie** | AES-256-GCM (pointycastle) |
@@ -90,7 +90,7 @@ lib/
 │   ├── theme_provider.dart      # Dark/Light/System toggle
 │   └── pdf_export_service.dart  # Eksport raportu PDF
 ├── theme/
-│   └── app_theme.dart           # Ledger Glass tokens + ThemeData
+│   └── app_theme.dart           # Tokeny motywu + ThemeData (Aurora od Fazy 6)
 ├── screens/
 │   ├── dashboard_screen.dart    # Dashboard: pelny przeglad budzet + subskrypcje
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
@@ -116,7 +116,7 @@ lib/
 
 ```
 ┌─────────────────────────────────────┐
-│           UI (Screens + Widgets)     │  Flutter M3, Ledger Glass
+│           UI (Screens + Widgets)     │  Flutter M3, Aurora
 ├─────────────────────────────────────┤
 │          Controllers                 │  SelectionController
 ├─────────────────────────────────────┤
@@ -191,4 +191,4 @@ BudgetService  ──►  BudgetEntry[]  (box: budget_entries)
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-16
+> **Ostatnia aktualizacja:** 2026-06-17
