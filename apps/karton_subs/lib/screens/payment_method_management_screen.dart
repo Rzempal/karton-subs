@@ -68,7 +68,8 @@ class _PaymentMethodManagementScreenState
                     leading: const Icon(LucideIcons.creditCard),
                     title: Text(pm.name),
                     subtitle: Text(
-                      '$subsCount subskrypcji',
+                      '$subsCount subskrypcji · '
+                      '${pm.isAutomatic ? 'Automatyczna' : 'Manualna'}',
                       style: theme.textTheme.labelMedium,
                     ),
                     trailing: Row(
@@ -194,12 +195,14 @@ class _PaymentMethodEditor extends StatefulWidget {
 
 class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
   late TextEditingController _nameCtrl;
+  late bool _isAutomatic;
   String? _errorText;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
+    _isAutomatic = widget.existing?.isAutomatic ?? false;
   }
 
   @override
@@ -241,6 +244,18 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _save(),
           ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _isAutomatic,
+            onChanged: (v) => setState(() => _isAutomatic = v),
+            secondary: Icon(
+                _isAutomatic ? LucideIcons.zap : LucideIcons.hand),
+            title: Text(_isAutomatic ? 'Automatyczna' : 'Manualna'),
+            subtitle: Text(_isAutomatic
+                ? 'Pobierana automatycznie (żółty na kalendarzu)'
+                : 'Przelew do zrobienia ręcznie (lista „Płatności")'),
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -275,11 +290,12 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
 
     final oldName = widget.existing?.name;
     final pm = widget.existing != null
-        ? widget.existing!.copyWith(name: name)
+        ? widget.existing!.copyWith(name: name, isAutomatic: _isAutomatic)
         : PaymentMethod(
             id: const Uuid().v4(),
             name: name,
             order: storage.getPaymentMethods().length,
+            isAutomatic: _isAutomatic,
           );
 
     await widget.onSave(pm, oldName);

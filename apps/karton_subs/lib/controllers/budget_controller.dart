@@ -98,8 +98,32 @@ class BudgetController extends ChangeNotifier {
   double balanceForMonth(String monthKey) =>
       _budget.balanceForMonth(all, _subsForScope, monthKey, target: _target);
 
+  /// Mapa „nazwa metody platnosci → automatyczna?" (do koloru/listy Platnosci).
+  Map<String, bool> get _autoByPayment => {
+        for (final pm in _storage.getPaymentMethods()) pm.name: pm.isAutomatic,
+      };
+
   Map<int, DayCashflow> calendarForMonth(DateTime monthStart) =>
-      _budget.calendarForMonth(all, _subsForScope, monthStart, target: _target);
+      _budget.calendarForMonth(all, _subsForScope, monthStart,
+          target: _target, autoByPayment: _autoByPayment);
+
+  // ── Platnosci „wykonane" (lokalne, per zakres + zrodlo + data) ──────────────
+
+  String _paymentKey(String sourceId, DateTime date) {
+    final d = '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+    return '${_scope.name}|$sourceId|$d';
+  }
+
+  bool isPaymentDone(String sourceId, DateTime date) =>
+      _storage.isPaymentDone(_paymentKey(sourceId, date));
+
+  Future<void> togglePaymentDone(String sourceId, DateTime date) async {
+    final key = _paymentKey(sourceId, date);
+    await _storage.setPaymentDone(key, !_storage.isPaymentDone(key));
+    notifyListeners();
+  }
 
   // ── CRUD (aktywny zakres) ──────────────────────────────────────────────────
 
@@ -119,7 +143,9 @@ class BudgetController extends ChangeNotifier {
     int? customCycleDays,
     String? month,
     String? categoryId,
+    String? paymentMethod,
     Map<String, BillMonthOverride>? monthOverrides,
+    int? installmentCount,
     DateTime? startDate,
     String? note,
   }) async {
@@ -171,7 +197,9 @@ class BudgetController extends ChangeNotifier {
       customCycleDays: customCycleDays,
       month: month,
       categoryId: categoryId,
+      paymentMethod: paymentMethod,
       monthOverrides: monthOverrides,
+      installmentCount: installmentCount,
       startDate: startDate,
       note: note,
       dataDodania: now,

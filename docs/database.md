@@ -50,6 +50,9 @@ erDiagram
         string month
         map monthOverrides
         string categoryId
+        string paymentMethod
+        int installmentCount
+        string startDate
         bool isActive
         timestamp dataDodania
     }
@@ -120,7 +123,7 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 |------|-----|----------|------|
 | `id` | UUID | tak | Unikalny identyfikator |
 | `name` | string | tak | Nazwa pozycji |
-| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense / oneTimeIncome / householdTransfer |
+| `type` | BudgetEntryType | tak | income / bill / recurringCost / installment / oneTimeExpense / oneTimeIncome / householdTransfer |
 | `amount` | double | tak | Kwota (>0) w walucie `currency` |
 | `currency` | Currency | tak | PLN, EUR, USD, GBP |
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
@@ -128,7 +131,9 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 | `month` | string "YYYY-MM" | tak* | Miesiac przypisania (typy jednorazowe) |
 | `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — tylko `bill`** (rachunek zmienny): inna data/kwota w danym miesiacu. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) |
 | `categoryId` | UUID | nie | Kategoria pozycji (subskrypcje + wydatki budzetu) |
-| `startDate` | ISO8601 | nie | **Kotwica daty kalendarza:** dokladna data jednorazowego; data pierwszego wystapienia cyklicznego |
+| `paymentMethod` | string | nie | Nazwa metody platnosci (jak w `Subscription`). Tryb auto/manual z [`PaymentMethod.isAutomatic`] — kolor na kalendarzu i lista „Platnosci". Brak = manualna |
+| `installmentCount` | int | tak* | Liczba rat — tylko `installment`. Start = `startDate` |
+| `startDate` | ISO8601 | nie | **Kotwica daty kalendarza:** dokladna data jednorazowego; data pierwszego wystapienia cyklicznego; **data pierwszej raty** (`installment`) |
 | `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
 | `note` | string | nie | Opcjonalna notatka |
 | `linkId` | string | nie | Spina pare przelew↔wklad (osobisty↔domowy) |
@@ -138,7 +143,8 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 
 ```dart
 enum BudgetEntryType {
-  income, bill, recurringCost, oneTimeExpense, oneTimeIncome, householdTransfer
+  income, bill, recurringCost, installment,
+  oneTimeExpense, oneTimeIncome, householdTransfer
 }
 enum BudgetScope { personal, household } // wybiera box (osobny zbior dla domowego)
 
@@ -158,6 +164,17 @@ class BillMonthOverride {       // korekta rachunku dla jednego miesiaca
 wplywaja tylko na **bilans danego miesiaca** i **kalendarz**. Patrz
 [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md).
 
+**`installment` (rata):** koszt miesieczny z okreslonym koncem — `startDate` (pierwsza
+rata) + `installmentCount`; data ostatniej raty = start + (count−1) miesiecy. Liczy sie
+do „zostaje/mies" **tylko gdy aktywna teraz**; po ostatniej racie znika z surplus,
+a w bilansie/kalendarzu pojawia sie tylko w oknie splaty (ten sam invariant co
+korekty rachunku — [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)).
+
+**Tryb platnosci (auto/manual):** `BudgetEntry.paymentMethod` i `Subscription.paymentMethod`
+wskazuja metode po nazwie; [`PaymentMethod.isAutomatic`] decyduje o trybie. Wydatek
+**automatyczny = zolty** na kalendarzu, **manualny (lub brak metody) = czerwony** i trafia
+na liste „Platnosci" (Dashboard) z odhaczaniem „wykonane".
+
 **Zakres (osobisty vs domowy):** to nie pole pozycji, lecz **osobny box**:
 `budget_entries` (osobisty, lokalny) i `household_budget_entries` (domowy, przyszla
 synchronizacja). `householdTransfer` to koszt w osobistym tworzacy lustrzany `income`
@@ -174,8 +191,8 @@ w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zb
 |------------|------|
 | Wplywy/mies | suma `monthlyAmount` aktywnych wplywow cyklicznych |
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
-| Zostaje/mies (surplus) | wplywy - koszty/mies (rachunki liczone z **kwoty bazowej**) |
-| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki - **korekty rachunkow** danego miesiaca |
+| Zostaje/mies (surplus) | wplywy - koszty/mies (rachunki z **kwoty bazowej**; raty tylko **aktywne teraz**) |
+| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki - **korekty rachunkow** - **korekta rat** danego miesiaca |
 | Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`); rachunek z korekta bierze jej date/kwote |
 
 Normalizacja cyklu i rzutowanie wystapien: `lib/utils/cycle_math.dart`
@@ -299,6 +316,13 @@ class Category {
   final String iconName; // Lucide icon name
   final int order;
 }
+
+class PaymentMethod {
+  final String id;
+  final String name;
+  final int order;
+  final bool isAutomatic; // true = automatyczna (zolty na kalendarzu), false = manualna
+}
 ```
 
 ---
@@ -312,6 +336,7 @@ class Category {
 | Hive Box: `payment_methods` | JSON metod platnosci |
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
 | Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (przyszla synchronizacja) |
+| Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
 | Hive Box: `settings` | Key-value: waluta domyslna, budzet, preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).
@@ -352,9 +377,10 @@ Naglowek jest wykrywany automatycznie. Brak rozpoznawalnego naglowka → uklad
 pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
 **Arkusz budzetu** (osobny): kolumny Typ / Nazwa / Kwota / Waluta / Cykl / **Kategoria** /
-Miesiac / Notatka / Aktywna. Kategoria dopasowywana po nazwie (tylko dla wydatkow).
-Korekty miesieczne rachunku (`monthOverrides`) NIE sa eksportowane — Excel niesie
-tylko kwote bazowa (decyzja: pierwsza iteracja).
+Miesiac / Notatka / Aktywna / **Metoda platnosci** / **Data startu** / **Liczba rat** /
+**Korekty**. Pelny round-trip (nic nie ginie): metoda i kategoria dopasowywane po nazwie,
+korekty rachunku zakodowane jako JSON w jednej komorce, rata = Typ „Rata" + Data startu +
+Liczba rat. Uszkodzony JSON korekt jest pomijany (nie przerywa importu).
 
 ### Reguly bezpieczenstwa importu
 

@@ -374,6 +374,12 @@ IconData categoryIcon(String? name) {
     'zap' => LucideIcons.zap,
     'coffee' => LucideIcons.coffee,
     'star' => LucideIcons.star,
+    'baby' || 'child' => LucideIcons.baby,
+    'dog' || 'pet' || 'paw' => LucideIcons.dog,
+    'shoppingCart' || 'cart' => LucideIcons.shoppingCart,
+    'utensils' || 'food' => LucideIcons.utensils,
+    'receipt' => LucideIcons.receipt,
+    'gift' => LucideIcons.gift,
     _ => LucideIcons.folder,
   };
 }
@@ -385,4 +391,5 @@ const List<String> availableIconNames = [
   'shield', 'heart', 'book', 'mail', 'phone',
   'car', 'home', 'shopping', 'music', 'camera',
   'globe', 'zap', 'coffee', 'star', 'folder',
+  'baby', 'dog', 'shoppingCart', 'utensils', 'receipt', 'gift',
 ];

@@ -21,6 +21,10 @@ enum BudgetEntryType {
   /// Przelew do budżetu domowego — koszt w osobistym; tworzy lustrzany wpływ
   /// (`income`) w domowym (spięty przez `linkId`). Występuje tylko w osobistym.
   householdTransfer,
+
+  /// Rata — koszt miesięczny z określonym końcem (start + liczba rat). Liczy się
+  /// do „zostaje/mies" tylko w trakcie spłaty; po ostatniej racie znika.
+  installment,
 }
 
 /// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
@@ -96,7 +100,16 @@ class BudgetEntry {
 
   final String? categoryId;
 
+  /// Metoda płatności (po nazwie, jak w [Subscription]). Decyduje o trybie
+  /// auto/manual (przez [PaymentMethod.isAutomatic]) — kolor na kalendarzu i
+  /// lista „Płatności". `null` = brak metody = traktowane jako manualne.
+  final String? paymentMethod;
+
+  /// Liczba rat — tylko dla [BudgetEntryType.installment]. Start = [startDate].
+  final int? installmentCount;
+
   /// Data rozpoczęcia (typy cykliczne) — na przyszłe rekonstrukcje trendu.
+  /// Dla [installment]: data pierwszej raty.
   final DateTime? startDate;
 
   /// Czy pozycja jest aktywna (wstrzymane wpływy/koszty nie liczą się do sumy).
@@ -120,6 +133,8 @@ class BudgetEntry {
     this.month,
     this.monthOverrides,
     this.categoryId,
+    this.paymentMethod,
+    this.installmentCount,
     this.startDate,
     this.isActive = true,
     this.note,
@@ -141,6 +156,33 @@ class BudgetEntry {
   /// Dotyczy rachunku; dla pozostałych typów zwraca [amount].
   double amountForMonth(String monthKey) =>
       overrideForMonth(monthKey)?.amount ?? amount;
+
+  bool get isInstallment => type == BudgetEntryType.installment;
+
+  /// Data ostatniej raty = start + (liczba rat − 1) miesięcy. `null` gdy brak danych.
+  DateTime? get lastInstallmentDate {
+    final s = startDate;
+    final n = installmentCount;
+    if (!isInstallment || s == null || n == null || n <= 0) return null;
+    return DateTime(s.year, s.month + n - 1, s.day);
+  }
+
+  /// Czy rata jest aktywna w miesiącu danej daty (miesiąc w oknie [start … ostatnia]).
+  bool isInstallmentActiveOn(DateTime date) {
+    final s = startDate;
+    final last = lastInstallmentDate;
+    if (s == null || last == null) return false;
+    final m = DateTime(date.year, date.month);
+    final from = DateTime(s.year, s.month);
+    final to = DateTime(last.year, last.month);
+    return !m.isBefore(from) && !m.isAfter(to);
+  }
+
+  /// Jak [isInstallmentActiveOn], ale po kluczu miesiąca "YYYY-MM".
+  bool isInstallmentActiveInMonth(String monthKey) {
+    final d = DateTime.tryParse('$monthKey-01');
+    return d != null && isInstallmentActiveOn(d);
+  }
 
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
@@ -192,6 +234,8 @@ class BudgetEntry {
             MapEntry(k, BillMonthOverride.fromJson(v as Map<String, dynamic>)),
       ),
       categoryId: json['categoryId'] as String?,
+      paymentMethod: json['paymentMethod'] as String?,
+      installmentCount: (json['installmentCount'] as num?)?.toInt(),
       startDate: json['startDate'] != null
           ? DateTime.parse(json['startDate'] as String)
           : null,
@@ -216,6 +260,8 @@ class BudgetEntry {
             for (final e in monthOverrides!.entries) e.key: e.value.toJson()
           },
         if (categoryId != null) 'categoryId': categoryId,
+        if (paymentMethod != null) 'paymentMethod': paymentMethod,
+        if (installmentCount != null) 'installmentCount': installmentCount,
         if (startDate != null) 'startDate': startDate!.toIso8601String(),
         'isActive': isActive,
         if (note != null) 'note': note,
@@ -238,6 +284,10 @@ class BudgetEntry {
     bool clearMonthOverrides = false,
     String? categoryId,
     bool clearCategoryId = false,
+    String? paymentMethod,
+    bool clearPaymentMethod = false,
+    int? installmentCount,
+    bool clearInstallmentCount = false,
     DateTime? startDate,
     bool clearStartDate = false,
     bool? isActive,
@@ -262,6 +312,11 @@ class BudgetEntry {
           ? null
           : (monthOverrides ?? this.monthOverrides),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
+      paymentMethod:
+          clearPaymentMethod ? null : (paymentMethod ?? this.paymentMethod),
+      installmentCount: clearInstallmentCount
+          ? null
+          : (installmentCount ?? this.installmentCount),
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       isActive: isActive ?? this.isActive,
       note: clearNote ? null : (note ?? this.note),

@@ -19,11 +19,21 @@ class CalendarItem {
   final double amount;
   final bool isIncome;
   final bool isSubscription;
+
+  /// Czy platnosc jest automatyczna (wg metody platnosci). Wydatek auto = zolty,
+  /// manual = czerwony na kalendarzu; manualne trafiaja na liste „Platnosci".
+  final bool isAutomatic;
+
+  /// Id zrodla (BudgetEntry lub Subscription) — do trwalego stanu „wykonane".
+  final String? sourceId;
+
   const CalendarItem({
     required this.name,
     required this.amount,
     required this.isIncome,
     this.isSubscription = false,
+    this.isAutomatic = false,
+    this.sourceId,
   });
 }
 
@@ -34,6 +44,9 @@ class DayCashflow {
 
   bool get hasIncome => items.any((i) => i.isIncome);
   bool get hasExpense => items.any((i) => !i.isIncome);
+  bool get hasAutomaticExpense =>
+      items.any((i) => !i.isIncome && i.isAutomatic);
+  bool get hasManualExpense => items.any((i) => !i.isIncome && !i.isAutomatic);
   double get incomeTotal =>
       items.where((i) => i.isIncome).fold(0.0, (s, i) => s + i.amount);
   double get expenseTotal =>
@@ -47,6 +60,11 @@ class BudgetService {
 
   double _monthly(BudgetEntry e, Currency target) =>
       _currency.convert(e.monthlyAmount, e.currency, target);
+
+  /// Czy pozycja wchodzi do biezacych kosztow/mies. Rata liczy sie tylko gdy
+  /// aktywna w biezacym miesiacu (po ostatniej racie znika z surplus) — ADR-008.
+  bool _countsNow(BudgetEntry e) =>
+      !e.isInstallment || e.isInstallmentActiveOn(_now);
 
   // ── Strumienie miesięczne (uśrednione) ──────────────────────────────────────
 
@@ -62,7 +80,7 @@ class BudgetService {
   double monthlyBudgetExpenses(List<BudgetEntry> entries, {Currency? target}) {
     final t = target ?? Currency.PLN;
     return entries
-        .where((e) => e.isActive && e.isExpense && !e.isOneTime)
+        .where((e) => e.isActive && e.isExpense && !e.isOneTime && _countsNow(e))
         .fold(0.0, (sum, e) => sum + _monthly(e, t));
   }
 
@@ -157,9 +175,30 @@ class BudgetService {
     return delta;
   }
 
+  /// Korekta bilansu z tytułu rat: surplus liczy raty aktywne *teraz*, a dla
+  /// wskazanego miesiąca liczą się raty aktywne *w tym miesiącu*. Zwraca
+  /// `(rata w miesiącu) − (rata teraz)` — dodatnia = w tym miesiącu drożej niż
+  /// w bieżącym, więc bilans niższy (odejmowana, jak delta rachunku).
+  double installmentDeltaForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final now = _now;
+    double delta = 0;
+    for (final e in entries.where((e) => e.isActive && e.isInstallment)) {
+      final amt = _monthly(e, t);
+      final inMonth = e.isInstallmentActiveInMonth(monthKey) ? amt : 0.0;
+      final inNow = e.isInstallmentActiveOn(now) ? amt : 0.0;
+      delta += inMonth - inNow;
+    }
+    return delta;
+  }
+
   /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki
-  /// − korekty zmiennych rachunków tego miesiąca. Surplus pozostaje „planem"
-  /// (kwoty bazowe); różnicę realnego miesiąca pokazuje właśnie bilans (ADR-008).
+  /// − korekty zmiennych rachunków tego miesiąca + korekta rat tego miesiąca.
+  /// Surplus pozostaje „planem"; różnicę realnego miesiąca pokazuje bilans (ADR-008).
   double balanceForMonth(
     List<BudgetEntry> entries,
     List<Subscription> subs,
@@ -169,7 +208,8 @@ class BudgetService {
       monthlySurplus(entries, subs, target: target) +
       oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
       oneTimeTotalForMonth(entries, monthKey, target: target) -
-      billOverrideDeltaForMonth(entries, monthKey, target: target);
+      billOverrideDeltaForMonth(entries, monthKey, target: target) -
+      installmentDeltaForMonth(entries, monthKey, target: target);
 
   /// Nadchodzące wydatki jednorazowe (miesiąc ≥ bieżący), posortowane rosnąco.
   List<BudgetEntry> upcomingOneTime(
@@ -194,8 +234,8 @@ class BudgetService {
   }) {
     final t = target ?? Currency.PLN;
     final breakdown = <String, double>{};
-    for (final e
-        in entries.where((e) => e.isActive && e.isExpense && !e.isOneTime)) {
+    for (final e in entries.where(
+        (e) => e.isActive && e.isExpense && !e.isOneTime && _countsNow(e))) {
       final key = e.categoryId ?? 'budget_other';
       breakdown[key] = (breakdown[key] ?? 0) + _monthly(e, t);
     }
@@ -216,12 +256,15 @@ class BudgetService {
     List<Subscription> subs,
     DateTime monthStart, {
     Currency? target,
+    Map<String, bool>? autoByPayment,
   }) {
     final t = target ?? Currency.PLN;
     final mStart = DateTime(monthStart.year, monthStart.month, 1);
     final mEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
     final byDay = <int, List<CalendarItem>>{};
     void add(int day, CalendarItem it) => (byDay[day] ??= []).add(it);
+    // Tryb auto wg metody platnosci (po nazwie); brak metody = manualny.
+    bool autoOf(String? pm) => pm != null && (autoByPayment?[pm] ?? false);
 
     for (final e in entries.where((e) => e.isActive)) {
       if (e.isOneTime) {
@@ -234,11 +277,18 @@ class BudgetService {
               name: e.name,
               amount: _currency.convert(e.amount, e.currency, t),
               isIncome: e.isIncome,
+              isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
+              sourceId: e.id,
             ),
           );
         }
       } else {
         final anchor = e.startDate;
+        // Rata: tylko w oknie spłaty [start … ostatnia rata].
+        if (e.isInstallment &&
+            !e.isInstallmentActiveInMonth(BudgetEntry.monthKeyOf(mStart))) {
+          continue;
+        }
         // Rachunek zmienny z korektą dla wyświetlanego miesiąca (ADR-008):
         // data korekty zastępuje projekcję, kwota korekty zastępuje bazę.
         if (e.type == BudgetEntryType.bill) {
@@ -247,18 +297,31 @@ class BudgetService {
             final amt =
                 _currency.convert(ov.amount ?? e.amount, e.currency, t);
             final od = ov.date;
+            final auto = autoOf(e.paymentMethod);
             if (od != null && !od.isBefore(mStart) && !od.isAfter(mEnd)) {
               // Korekta z datą: pojedyncze wystąpienie tego dnia.
-              add(od.day,
-                  CalendarItem(name: e.name, amount: amt, isIncome: false));
+              add(
+                  od.day,
+                  CalendarItem(
+                      name: e.name,
+                      amount: amt,
+                      isIncome: false,
+                      isAutomatic: auto,
+                      sourceId: e.id));
               continue;
             }
             if (anchor != null) {
               // Korekta tylko kwoty: projekcja wg cyklu, ale z kwotą korekty.
               for (final d in occurrencesInRange(
                   anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {
-                add(d.day,
-                    CalendarItem(name: e.name, amount: amt, isIncome: false));
+                add(
+                    d.day,
+                    CalendarItem(
+                        name: e.name,
+                        amount: amt,
+                        isIncome: false,
+                        isAutomatic: auto,
+                        sourceId: e.id));
               }
               continue;
             }
@@ -273,6 +336,8 @@ class BudgetService {
               name: e.name,
               amount: _currency.convert(e.amount, e.currency, t),
               isIncome: e.isIncome,
+              isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
+              sourceId: e.id,
             ),
           );
         }
@@ -289,6 +354,8 @@ class BudgetService {
             amount: _currency.convert(s.amount, s.currency, t),
             isIncome: false,
             isSubscription: true,
+            isAutomatic: autoOf(s.paymentMethod),
+            sourceId: s.id,
           ),
         );
       }

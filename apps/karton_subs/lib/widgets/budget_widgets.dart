@@ -48,6 +48,7 @@ String budgetTypeLabel(BudgetEntryType t) => switch (t) {
       BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
       BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
       BudgetEntryType.householdTransfer => 'Przelew do domowego',
+      BudgetEntryType.installment => 'Rata',
     };
 
 String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
@@ -383,6 +384,117 @@ class BudgetMonthSection extends StatelessWidget {
               flow: selectedDay != null ? calendar[selectedDay] : null,
               currency: currency,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sekcja „Płatności" — manualne wydatki danego miesiąca do zrealizowania.
+/// Checkbox oznacza „wykonane" (przekreślenie). Stan trzymany lokalnie per miesiąc.
+class PaymentsSection extends StatelessWidget {
+  final DateTime month;
+  final Map<int, DayCashflow> calendar;
+  final String currency;
+  final bool Function(String sourceId, DateTime date) isDone;
+  final void Function(String sourceId, DateTime date) onToggle;
+
+  const PaymentsSection({
+    super.key,
+    required this.month,
+    required this.calendar,
+    required this.currency,
+    required this.isDone,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    // Zbierz manualne wydatki miesiąca (pomijamy auto i wpływy), posortowane wg dnia.
+    final rows = <({String name, double amount, DateTime date, String sourceId})>[];
+    final days = calendar.keys.toList()..sort();
+    for (final day in days) {
+      for (final it in calendar[day]!.items) {
+        if (it.isIncome || it.isAutomatic || it.sourceId == null) continue;
+        rows.add((
+          name: it.name,
+          amount: it.amount,
+          date: DateTime(month.year, month.month, day),
+          sourceId: it.sourceId!,
+        ));
+      }
+    }
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    final doneCount = rows.where((r) => isDone(r.sourceId, r.date)).length;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Płatności', style: theme.textTheme.titleMedium),
+                Text('$doneCount/${rows.length}',
+                    style: theme.textTheme.labelMedium
+                        ?.copyWith(color: c.textMuted)),
+              ],
+            ),
+            Text(
+              'Manualne przelewy do zrealizowania w tym miesiącu.',
+              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+            ),
+            const SizedBox(height: 8),
+            ...rows.map((r) {
+              final done = isDone(r.sourceId, r.date);
+              return InkWell(
+                onTap: () => onToggle(r.sourceId, r.date),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        done
+                            ? LucideIcons.checkSquare
+                            : LucideIcons.square,
+                        size: 20,
+                        color: done ? c.positive : c.textMuted,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${r.name} · ${DateFormat('d MMM', 'pl').format(r.date)}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            decoration:
+                                done ? TextDecoration.lineThrough : null,
+                            color: done ? c.textMuted : null,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '−${budgetNf.format(r.amount)} $currency',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: done ? c.textMuted : c.negative,
+                          decoration:
+                              done ? TextDecoration.lineThrough : null,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
         ),
       ),

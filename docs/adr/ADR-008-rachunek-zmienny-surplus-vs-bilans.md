@@ -72,3 +72,19 @@ kwoty bazowej + cyklu rachunku; korekty miesieczne zyja na razie wylacznie w apl
 - **Korekty jako osobne rekordy-dzieci spiete `linkId`** — odrzucona: ciezsze,
   rozgadana baza, wiecej operacji CRUD; mapa korekt na `BudgetEntry` jest spojna z
   istniejacym modelem hybrydowym (ADR-004).
+
+## Aktualizacja 2026-06-17: typ „Rata", tryb platnosci, lossless Excel/backup
+
+- **Typ `installment` (rata)** stosuje ten sam invariant: rata to koszt miesieczny z
+  okreslonym koncem (`startDate` + `installmentCount`). Liczy sie do surplus **tylko gdy
+  aktywna teraz**; po ostatniej racie znika z „zostaje/mies". Bilans/kalendarz danego
+  miesiaca uwzgledniaja rate tylko w oknie splaty (`installmentDeltaForMonth`, analogicznie
+  do `billOverrideDeltaForMonth`). Test-straznik pilnuje, ze po terminie rata nie wplywa na surplus.
+- **Tryb platnosci auto/manual** (`PaymentMethod.isAutomatic`, `BudgetEntry.paymentMethod`):
+  decyzja prezentacyjna (kolor kalendarza, lista „Platnosci"), nie rusza modelu czasu —
+  nie wplywa na surplus ani bilans.
+- **Lossless Excel/backup:** arkusz budzetu zyskal kolumny Metoda platnosci / Data startu /
+  Liczba rat / Korekty (JSON) — pelny round-trip. Backup podbity do **wersji 5**: obejmuje
+  lokalny stan „wykonane" platnosci (`payment_done`) — odwrocenie wczesniejszej decyzji
+  „tylko lokalnie" na rzecz kompletnego odtworzenia po przywroceniu. Stare backupy (≤4)
+  wczytuja sie dalej (pole pomijane).

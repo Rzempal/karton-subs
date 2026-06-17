@@ -105,18 +105,29 @@ class CashflowCalendar extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (flow?.hasIncome ?? false) _dot(c.positive),
-                if ((flow?.hasIncome ?? false) && (flow?.hasExpense ?? false))
-                  const SizedBox(width: 3),
-                if (flow?.hasExpense ?? false) _dot(c.negative),
-              ],
-            ),
+            _dots(c, flow),
           ],
         ),
       ),
+    );
+  }
+
+  /// Kropki dnia: zielona = wplyw, czerwona = wydatek manualny, zolta = auto.
+  Widget _dots(AppSemanticColors c, DayCashflow? flow) {
+    final colors = <Color>[
+      if (flow?.hasIncome ?? false) c.positive,
+      if (flow?.hasManualExpense ?? false) c.negative,
+      if (flow?.hasAutomaticExpense ?? false) c.warning,
+    ];
+    if (colors.isEmpty) return const SizedBox(height: 5);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < colors.length; i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          _dot(colors[i]),
+        ],
+      ],
     );
   }
 

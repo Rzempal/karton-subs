@@ -179,6 +179,22 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 
 ---
 
+### Faza 5f: Platnosci, rata, lossless Excel/backup (2026-06-17)
+
+> **ADR:** [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) (aktualizacja)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Metoda platnosci auto/manual | `PaymentMethod.isAutomatic` + przelacznik; `BudgetEntry.paymentMethod` | ✅ |
+| Kolor kalendarza | Wydatek auto = zolty, manual = czerwony, wplyw = zielony | ✅ |
+| Sekcja „Platnosci" | Manualne wydatki miesiaca, checkbox + przekreslenie (stan lokalny per miesiac) | ✅ |
+| Typ „Rata" (`installment`) | Start + liczba rat / data ostatniej; koszt mies. z koncem; znika z surplus po splacie | ✅ |
+| Lossless Excel budzetu | Kolumny Metoda / Data startu / Liczba rat / Korekty (JSON) | ✅ |
+| Backup v5 | Obejmuje stan „wykonane" platnosci (`payment_done`) | ✅ |
+| Wiecej ikon kategorii | dziecko, pies, zakupy, jedzenie, rachunki, prezent | ✅ |
+
+---
+
 ## Faza 6: Redesign Aurora
 
 **Cel:** Przejscie z systemu „Ledger Glass" (light + dark + przelacznik) na **„Aurora"** —

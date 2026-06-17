@@ -153,7 +153,7 @@ class BackupService {
     final budget = _storage.getBudgetEntries(BudgetScope.personal);
     final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      'version': 4,
+      'version': 5,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -167,13 +167,15 @@ class BackupService {
       // Budżet osobisty (lokalny) i domowy (osobny zbiór, przyszła synchronizacja).
       'budgetEntries': budget.map((e) => e.toJson()).toList(),
       'householdBudgetEntries': household.map((e) => e.toJson()).toList(),
+      // Lokalny stan „wykonane" płatności (klucz: scope|sourceId|YYYY-MM-DD).
+      'paymentDone': _storage.getAllPaymentDone(),
     });
   }
 
   Future<BackupImportResult> _applyJsonPayload(String jsonString) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 4) {
+    if (version > 5) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
 
@@ -219,6 +221,14 @@ class BackupService {
       final entry = BudgetEntry.fromJson(b as Map<String, dynamic>);
       await _storage.saveBudgetEntry(entry, BudgetScope.household);
       budgetImported++;
+    }
+
+    // Backupy < 5 nie zawierały stanu „wykonane" płatności — pole pominięte.
+    final paymentDoneRaw = data['paymentDone'] as Map<String, dynamic>? ?? {};
+    if (paymentDoneRaw.isNotEmpty) {
+      await _storage.importPaymentDone(
+        paymentDoneRaw.map((k, v) => MapEntry(k, v == true)),
+      );
     }
 
     _log.info(

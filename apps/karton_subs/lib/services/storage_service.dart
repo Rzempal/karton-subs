@@ -20,6 +20,7 @@ class StorageService {
   late Box<String> _paymentMethodsBox;
   late Box<String> _budgetEntriesBox;
   late Box<String> _householdBudgetEntriesBox;
+  late Box<bool> _paymentDoneBox;
   late Box<dynamic> _settingsBox;
 
   // In-memory cache
@@ -39,6 +40,7 @@ class StorageService {
     _budgetEntriesBox = await Hive.openBox<String>('budget_entries');
     _householdBudgetEntriesBox =
         await Hive.openBox<String>('household_budget_entries');
+    _paymentDoneBox = await Hive.openBox<bool>('payment_done');
     _settingsBox = await Hive.openBox('settings');
     _loadSubscriptionsCache();
     _loadCategoriesCache();
@@ -217,6 +219,36 @@ class StorageService {
     await _budgetBox(scope).delete(id);
     _budgetCache(scope).remove(id);
     _log.info('Deleted budget entry ($scope): $id');
+  }
+
+  // ── Platnosci „wykonane" (lokalne, poza backupem) ───────────────────────────
+  // Klucz: "<scope>|<sourceId>|<YYYY-MM-DD>". Brak wpisu = niewykonane.
+
+  bool isPaymentDone(String key) =>
+      _paymentDoneBox.get(key, defaultValue: false) as bool;
+
+  Future<void> setPaymentDone(String key, bool done) async {
+    if (done) {
+      await _paymentDoneBox.put(key, true);
+    } else {
+      await _paymentDoneBox.delete(key);
+    }
+  }
+
+  /// Wszystkie odhaczone płatności (do backupu). Klucz → true.
+  Map<String, bool> getAllPaymentDone() {
+    final m = <String, bool>{};
+    for (final key in _paymentDoneBox.keys) {
+      if (_paymentDoneBox.get(key) == true) m['$key'] = true;
+    }
+    return m;
+  }
+
+  /// Przywraca odhaczone płatności z backupu (tylko wpisy `true`).
+  Future<void> importPaymentDone(Map<String, bool> entries) async {
+    for (final e in entries.entries) {
+      if (e.value) await _paymentDoneBox.put(e.key, true);
+    }
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────

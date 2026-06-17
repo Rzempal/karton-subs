@@ -69,6 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final subs = context.watch<SubscriptionController>();
     final currency = context.read<StorageService>().getCurrency();
     final monthKey = BudgetEntry.monthKeyOf(_selectedMonth);
+    final calendar = budget.calendarForMonth(_selectedMonth);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -107,12 +108,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             month: _selectedMonth,
             balance: budget.balanceForMonth(monthKey),
             currency: currency,
-            calendar: budget.calendarForMonth(_selectedMonth),
+            calendar: calendar,
             selectedDay: _selectedDay,
             today: _today,
             onPrev: () => _shiftMonth(-1),
             onNext: () => _shiftMonth(1),
             onSelectDay: (d) => setState(() => _selectedDay = d),
+          ),
+          const SizedBox(height: 24),
+          PaymentsSection(
+            month: _selectedMonth,
+            calendar: calendar,
+            currency: currency,
+            isDone: budget.isPaymentDone,
+            onToggle: budget.togglePaymentDone,
           ),
         ],
       ),

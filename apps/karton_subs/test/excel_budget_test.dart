@@ -178,4 +178,54 @@ void main() {
       expect(r.entries.single.categoryId, 'cat_cloud');
     });
   });
+
+  group('ExcelService — pełny round-trip budżetu (nic nie ginie)', () {
+    test('metoda, data startu, korekty rachunku i rata przeżywają eksport→import', () {
+      final entries = [
+        BudgetEntry(
+          id: 'bill',
+          name: 'Fryzjer',
+          type: BudgetEntryType.bill,
+          amount: 80,
+          currency: Currency.PLN,
+          startDate: DateTime(2026, 1, 10),
+          paymentMethod: 'Karta',
+          monthOverrides: {
+            '2026-07':
+                BillMonthOverride(amount: 120, date: DateTime(2026, 7, 15)),
+          },
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+        BudgetEntry(
+          id: 'rata',
+          name: 'Pralka rata',
+          type: BudgetEntryType.installment,
+          amount: 250,
+          currency: Currency.PLN,
+          startDate: DateTime(2026, 2, 5),
+          installmentCount: 12,
+          paymentMethod: 'Przelew',
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+      ];
+      final bytes = ExcelService.buildBudgetWorkbookForTest(entries);
+      final r = ExcelService.parseBudgetBytesForTest(bytes);
+
+      final byName = {for (final e in r.entries) e.name: e};
+
+      final bill = byName['Fryzjer']!;
+      expect(bill.type, BudgetEntryType.bill);
+      expect(bill.paymentMethod, 'Karta');
+      expect(bill.startDate, DateTime(2026, 1, 10));
+      expect(bill.overrideForMonth('2026-07')!.amount, 120);
+      expect(bill.overrideForMonth('2026-07')!.date, DateTime(2026, 7, 15));
+
+      final rata = byName['Pralka rata']!;
+      expect(rata.type, BudgetEntryType.installment);
+      expect(rata.installmentCount, 12);
+      expect(rata.startDate, DateTime(2026, 2, 5));
+      expect(rata.lastInstallmentDate, DateTime(2027, 1, 5));
+      expect(rata.paymentMethod, 'Przelew');
+    });
+  });
 }

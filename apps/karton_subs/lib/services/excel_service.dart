@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:excel/excel.dart';
@@ -66,6 +67,10 @@ class ExcelService {
     'Miesiąc',
     'Notatka',
     'Aktywna',
+    'Metoda płatności',
+    'Data startu',
+    'Liczba rat',
+    'Korekty',
   ];
 
   // ── Eksport ────────────────────────────────────────────────────────────────
@@ -345,6 +350,12 @@ class ExcelService {
         TextCellValue(e.isOneTime ? (e.month ?? '') : ''),
         TextCellValue(_sanitizeCell(e.note ?? '')),
         TextCellValue(e.isActive ? 'tak' : 'nie'),
+        TextCellValue(_sanitizeCell(e.paymentMethod ?? '')),
+        TextCellValue(e.startDate != null
+            ? DateFormat('yyyy-MM-dd').format(e.startDate!)
+            : ''),
+        TextCellValue(e.installmentCount?.toString() ?? ''),
+        TextCellValue(_encodeOverrides(e.monthOverrides)),
       ]);
     }
 
@@ -362,6 +373,7 @@ class ExcelService {
         BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
         BudgetEntryType.householdTransfer => 'Przelew do domowego',
+        BudgetEntryType.installment => 'Rata',
       };
 
   // ── Budżet: import ───────────────────────────────────────────────────────────
@@ -786,7 +798,11 @@ enum _BudgetHeaderField {
   category,
   month,
   note,
-  active
+  active,
+  paymentMethod,
+  startDate,
+  installmentCount,
+  overrides
 }
 
 /// Funkcja izolatu (compute): bajty .xlsx → gotowe pozycje budżetu + pominięcia.
@@ -873,15 +889,28 @@ BudgetExcelImportResult _parseBudgetWorkbook(
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
             BudgetEntry.monthKeyOf(now))
         : null;
-    // Kategoria tylko dla wydatków — wpływy ignorują kolumnę.
+    // Kategoria/metoda tylko dla wydatków — wpływy ignorują kolumny.
     final isExpenseType = type == BudgetEntryType.bill ||
         type == BudgetEntryType.recurringCost ||
-        type == BudgetEntryType.oneTimeExpense;
+        type == BudgetEntryType.oneTimeExpense ||
+        type == BudgetEntryType.installment;
     final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
     final categoryId = isExpenseType &&
             rawCategory != null &&
             rawCategory.isNotEmpty
         ? catByName[rawCategory]
+        : null;
+    final paymentMethod = isExpenseType
+        ? _blankToNull(cell(_BudgetHeaderField.paymentMethod))
+        : null;
+    final rawStart = cell(_BudgetHeaderField.startDate)?.trim();
+    final startDate =
+        (rawStart == null || rawStart.isEmpty) ? null : _parseDate(rawStart);
+    final installmentCount = type == BudgetEntryType.installment
+        ? int.tryParse(cell(_BudgetHeaderField.installmentCount)?.trim() ?? '')
+        : null;
+    final overrides = type == BudgetEntryType.bill
+        ? _decodeOverrides(cell(_BudgetHeaderField.overrides))
         : null;
 
     entries.add(BudgetEntry(
@@ -894,6 +923,10 @@ BudgetExcelImportResult _parseBudgetWorkbook(
       customCycleDays: isOneTime ? null : customDays,
       month: month,
       categoryId: categoryId,
+      paymentMethod: paymentMethod,
+      monthOverrides: overrides,
+      installmentCount: installmentCount,
+      startDate: startDate,
       isActive: _parseActive(cell(_BudgetHeaderField.active)),
       note: _blankToNull(cell(_BudgetHeaderField.note)),
       dataDodania: now,
@@ -930,12 +963,49 @@ Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
       field = _BudgetHeaderField.note;
     } else if (h.contains('aktyw') || h.contains('active') || h.contains('status')) {
       field = _BudgetHeaderField.active;
+    } else if (h.contains('metoda') ||
+        h.contains('płatn') ||
+        h.contains('platn') ||
+        h.contains('payment')) {
+      field = _BudgetHeaderField.paymentMethod;
+    } else if (h.contains('liczba') ||
+        h.contains('rat') ||
+        h.contains('installment')) {
+      field = _BudgetHeaderField.installmentCount;
+    } else if (h.contains('start') || h.contains('data')) {
+      field = _BudgetHeaderField.startDate;
+    } else if (h.contains('korekt') || h.contains('override')) {
+      field = _BudgetHeaderField.overrides;
     }
     if (field != null && !map.containsKey(field)) {
       map[field] = i;
     }
   }
   return map;
+}
+
+/// Koduje korekty rachunku do jednej komórki (JSON). Pusta mapa → pusty string.
+String _encodeOverrides(Map<String, BillMonthOverride>? ov) {
+  if (ov == null || ov.isEmpty) return '';
+  return jsonEncode({for (final e in ov.entries) e.key: e.value.toJson()});
+}
+
+/// Dekoduje korekty z komórki JSON. Uszkodzony/pusty → null (nie przerywa importu).
+Map<String, BillMonthOverride>? _decodeOverrides(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return null;
+  try {
+    final decoded = jsonDecode(raw.trim());
+    if (decoded is! Map) return null;
+    final map = <String, BillMonthOverride>{};
+    decoded.forEach((k, v) {
+      if (v is Map) {
+        map['$k'] = BillMonthOverride.fromJson(Map<String, dynamic>.from(v));
+      }
+    });
+    return map.isEmpty ? null : map;
+  } catch (_) {
+    return null;
+  }
 }
 
 BudgetEntryType _parseBudgetType(String? raw) {
@@ -954,6 +1024,11 @@ BudgetEntryType _parseBudgetType(String? raw) {
   if (isOneTime && isIncomeKw) return BudgetEntryType.oneTimeIncome;
   if (isOneTime) return BudgetEntryType.oneTimeExpense;
   if (isIncomeKw) return BudgetEntryType.income;
+  if (t.contains('rata') ||
+      t.contains('raty') ||
+      t.contains('installment')) {
+    return BudgetEntryType.installment;
+  }
   if (t.contains('rachunek') ||
       t.contains('stał') ||
       t.contains('stal') ||

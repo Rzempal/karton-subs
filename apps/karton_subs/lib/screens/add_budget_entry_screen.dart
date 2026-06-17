@@ -44,7 +44,12 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   late BudgetEntryType _type;
   String? _categoryId;
+  String? _paymentMethod;
   late Map<String, BillMonthOverride> _overrides;
+  late final TextEditingController _installmentCountCtrl;
+  bool _installmentByCount = true;
+  DateTime? _installmentStart;
+  DateTime? _installmentLastDate;
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
   late DateTime _oneTimeDate; // dokładna data wydatku jednorazowego
@@ -61,16 +66,21 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   bool get _typeHasCategory =>
       _type == BudgetEntryType.bill ||
       _type == BudgetEntryType.recurringCost ||
-      _type == BudgetEntryType.oneTimeExpense;
+      _type == BudgetEntryType.oneTimeExpense ||
+      _type == BudgetEntryType.installment;
 
   /// Rachunek zmienny — jedyny typ z korektami miesięcznymi (ADR-008).
   bool get _isBill => _type == BudgetEntryType.bill;
+
+  /// Rata — typ z datą startu i liczbą rat (koszt miesięczny z końcem).
+  bool get _isInstallment => _type == BudgetEntryType.installment;
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   List<BudgetEntryType> get _availableTypes => [
         BudgetEntryType.income,
         BudgetEntryType.bill,
         BudgetEntryType.recurringCost,
+        BudgetEntryType.installment,
         BudgetEntryType.oneTimeExpense,
         BudgetEntryType.oneTimeIncome,
         if (widget.scope == BudgetScope.personal)
@@ -91,7 +101,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
     _type = e?.type ?? widget.initialType ?? BudgetEntryType.bill;
     _categoryId = e?.categoryId;
+    _paymentMethod = e?.paymentMethod;
     _overrides = {...?e?.monthOverrides};
+    _installmentCountCtrl = TextEditingController(
+        text: e?.installmentCount != null ? '${e!.installmentCount}' : '');
+    if (e != null && e.isInstallment) {
+      _installmentStart = e.startDate;
+      _installmentLastDate = e.lastInstallmentDate;
+    }
     if (e != null) {
       _currency = e.currency;
       _cycle = e.cycle;
@@ -110,6 +127,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     _amountCtrl.dispose();
     _noteCtrl.dispose();
     _customDaysCtrl.dispose();
+    _installmentCountCtrl.dispose();
     super.dispose();
   }
 
@@ -226,6 +244,68 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 trailing: const Icon(LucideIcons.chevronRight),
                 onTap: _pickOneTimeDate,
               ),
+            ] else if (_isInstallment) ...[
+              _SectionLabel('Pierwsza rata'),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(LucideIcons.calendar),
+                title: Text(_installmentStart != null
+                    ? _dateLabel(_installmentStart!)
+                    : 'Wybierz datę pierwszej raty'),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: _pickInstallmentStart,
+              ),
+              const SizedBox(height: 16),
+              _SectionLabel('Koniec rat'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Liczba rat'),
+                    selected: _installmentByCount,
+                    onSelected: (_) =>
+                        setState(() => _installmentByCount = true),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Data ostatniej raty'),
+                    selected: !_installmentByCount,
+                    onSelected: (_) =>
+                        setState(() => _installmentByCount = false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_installmentByCount)
+                TextFormField(
+                  controller: _installmentCountCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Liczba rat *',
+                    hintText: 'np. 12',
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                )
+              else
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(LucideIcons.calendarClock),
+                  title: Text(_installmentLastDate != null
+                      ? _dateLabel(_installmentLastDate!)
+                      : 'Wybierz datę ostatniej raty'),
+                  trailing: const Icon(LucideIcons.chevronRight),
+                  onTap: _pickInstallmentLastDate,
+                ),
+              if (_installmentSummary() != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _installmentSummary()!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
             ] else ...[
               _SectionLabel('Cykl rozliczeniowy'),
               const SizedBox(height: 8),
@@ -342,6 +422,45 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               const SizedBox(height: 24),
             ],
 
+            if (_typeHasCategory) ...[
+              _SectionLabel('Metoda płatności'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilterChip(
+                    label: const Text('Brak'),
+                    selected: _paymentMethod == null,
+                    onSelected: (_) => setState(() => _paymentMethod = null),
+                  ),
+                  ...context.read<StorageService>().getPaymentMethods().map(
+                        (pm) => FilterChip(
+                          avatar: Icon(
+                            pm.isAutomatic
+                                ? LucideIcons.zap
+                                : LucideIcons.hand,
+                            size: 16,
+                          ),
+                          label: Text(pm.name),
+                          selected: _paymentMethod == pm.name,
+                          onSelected: (_) =>
+                              setState(() => _paymentMethod = pm.name),
+                        ),
+                      ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Metoda automatyczna: wydatek na żółto na kalendarzu. '
+                'Manualna (lub brak): czerwony i trafia na listę „Płatności".',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
             _SectionLabel('Notatka'),
             const SizedBox(height: 8),
             TextFormField(
@@ -424,6 +543,61 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     }
   }
 
+  Future<void> _pickInstallmentStart() async {
+    final now = Subscription.devDateOverride ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _installmentStart ?? DateTime(now.year, now.month, now.day),
+      firstDate: DateTime(now.year - 5, 1, 1),
+      lastDate: DateTime(now.year + 10, 12, 31),
+      helpText: 'Data pierwszej raty',
+    );
+    if (picked != null) {
+      setState(() =>
+          _installmentStart = DateTime(picked.year, picked.month, picked.day));
+    }
+  }
+
+  Future<void> _pickInstallmentLastDate() async {
+    final now = Subscription.devDateOverride ?? DateTime.now();
+    final base = _installmentLastDate ??
+        _installmentStart ??
+        DateTime(now.year, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: base,
+      firstDate: DateTime(now.year - 5, 1, 1),
+      lastDate: DateTime(now.year + 15, 12, 31),
+      helpText: 'Data ostatniej raty',
+    );
+    if (picked != null) {
+      setState(() => _installmentLastDate =
+          DateTime(picked.year, picked.month, picked.day));
+    }
+  }
+
+  /// Liczba rat z bieżących pól (start + tryb). `null` gdy dane niekompletne.
+  int? _installmentCountValue() {
+    final start = _installmentStart;
+    if (start == null) return null;
+    if (_installmentByCount) {
+      final n = int.tryParse(_installmentCountCtrl.text.trim());
+      return (n != null && n > 0) ? n : null;
+    }
+    final last = _installmentLastDate;
+    if (last == null || last.isBefore(start)) return null;
+    return (last.year - start.year) * 12 + (last.month - start.month) + 1;
+  }
+
+  /// Podsumowanie raty do podpowiedzi (liczba rat + miesiąc ostatniej).
+  String? _installmentSummary() {
+    final start = _installmentStart;
+    final n = _installmentCountValue();
+    if (start == null || n == null) return null;
+    final last = DateTime(start.year, start.month + n - 1, start.day);
+    return '$n rat · ostatnia: ${DateFormat('LLLL yyyy', 'pl').format(last)}';
+  }
+
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -471,12 +645,39 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     final monthKey = _isOneTime ? BudgetEntry.monthKeyOf(_oneTimeDate) : null;
     // Kotwica daty: jednorazowy = dokładna data; cykliczny = opcjonalna kotwica.
     final startDate = _isOneTime ? _oneTimeDate : _anchorDate;
-    // Kategoria tylko dla wydatków — przy wpływie/przelewie czyścimy.
+    // Kategoria/metoda tylko dla wydatków — przy wpływie/przelewie czyścimy.
     final categoryId = _typeHasCategory ? _categoryId : null;
+    final paymentMethod = _typeHasCategory ? _paymentMethod : null;
     // Korekty miesięczne tylko dla rachunku.
     final overrides = _isBill && _overrides.isNotEmpty
         ? Map<String, BillMonthOverride>.from(_overrides)
         : null;
+
+    // Rata: cykl miesięczny, data pierwszej raty + liczba rat.
+    var effCycle = _cycle;
+    var effCustomDays = customDays;
+    var effStartDate = startDate;
+    int? installmentCount;
+    if (_isInstallment) {
+      final start = _installmentStart;
+      final count = _installmentCountValue();
+      if (start == null) {
+        _snack('Podaj datę pierwszej raty');
+        setState(() => _isSubmitting = false);
+        return;
+      }
+      if (count == null) {
+        _snack(_installmentByCount
+            ? 'Podaj liczbę rat'
+            : 'Data ostatniej raty musi być po pierwszej');
+        setState(() => _isSubmitting = false);
+        return;
+      }
+      effCycle = BillingCycle.monthly;
+      effCustomDays = null;
+      effStartDate = start;
+      installmentCount = count;
+    }
 
     try {
       if (_isEditing) {
@@ -485,17 +686,21 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           type: _type,
           amount: amount,
           currency: _currency,
-          cycle: _cycle,
-          customCycleDays: customDays,
-          clearCustomCycleDays: customDays == null,
+          cycle: effCycle,
+          customCycleDays: effCustomDays,
+          clearCustomCycleDays: effCustomDays == null,
           month: monthKey,
           clearMonth: monthKey == null,
-          startDate: startDate,
-          clearStartDate: startDate == null,
+          startDate: effStartDate,
+          clearStartDate: effStartDate == null,
           categoryId: categoryId,
           clearCategoryId: categoryId == null,
+          paymentMethod: paymentMethod,
+          clearPaymentMethod: paymentMethod == null,
           monthOverrides: overrides,
           clearMonthOverrides: overrides == null,
+          installmentCount: installmentCount,
+          clearInstallmentCount: installmentCount == null,
           note: note,
           clearNote: note == null,
         ));
@@ -505,12 +710,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           type: _type,
           amount: amount,
           currency: _currency,
-          cycle: _cycle,
-          customCycleDays: customDays,
+          cycle: effCycle,
+          customCycleDays: effCustomDays,
           month: monthKey,
           categoryId: categoryId,
+          paymentMethod: paymentMethod,
           monthOverrides: overrides,
-          startDate: startDate,
+          installmentCount: installmentCount,
+          startDate: effStartDate,
           note: note,
         );
       }
@@ -520,6 +727,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     }
   }
 
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   String _nameLabel() => switch (_type) {
         BudgetEntryType.income => 'Nazwa wpływu *',
         BudgetEntryType.bill => 'Nazwa rachunku *',
@@ -527,6 +739,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
         BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
         BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
+        BudgetEntryType.installment => 'Nazwa raty *',
       };
 
   /// Krótkie wyjaśnienie różnicy między rachunkiem (zmienny) a kosztem cyklicznym (stały).
@@ -536,6 +749,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               'inną datę i kwotę (zmienny — np. fryzjer).',
         BudgetEntryType.recurringCost =>
           'Koszt cykliczny: stała kwota w każdym interwale (np. ubezpieczenie).',
+        BudgetEntryType.installment =>
+          'Rata: kwota miesięczna z określonym końcem (start + liczba rat lub data '
+              'ostatniej raty). Liczy się do „zostaje/mies" tylko w trakcie spłaty.',
         _ => null,
       };
 
@@ -546,6 +762,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
         BudgetEntryType.householdTransfer => 'Przelew do domowego',
+        BudgetEntryType.installment => 'Rata',
       };
 
   String _cycleLabel(BillingCycle cycle) => switch (cycle) {

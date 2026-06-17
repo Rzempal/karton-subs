@@ -397,29 +397,43 @@ class PaymentMethod {
   final String name;
   final int order;
 
+  /// Tryb płatności: `true` = automatyczna (np. polecenie zapłaty / karta),
+  /// `false` = manualna (przelew do zrobienia ręcznie). Domyślnie manualna.
+  /// Wpływa na kolor na kalendarzu (auto = żółty) i listę „Płatności".
+  final bool isAutomatic;
+
   const PaymentMethod({
     required this.id,
     required this.name,
     this.order = 0,
+    this.isAutomatic = false,
   });
 
-  PaymentMethod copyWith({String? id, String? name, int? order}) =>
+  PaymentMethod copyWith({
+    String? id,
+    String? name,
+    int? order,
+    bool? isAutomatic,
+  }) =>
       PaymentMethod(
         id: id ?? this.id,
         name: name ?? this.name,
         order: order ?? this.order,
+        isAutomatic: isAutomatic ?? this.isAutomatic,
       );
 
   factory PaymentMethod.fromJson(Map<String, dynamic> json) => PaymentMethod(
         id: json['id'] as String,
         name: json['name'] as String,
         order: (json['order'] as num?)?.toInt() ?? 0,
+        isAutomatic: json['isAutomatic'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'order': order,
+        'isAutomatic': isAutomatic,
       };
 }
 
