@@ -17,7 +17,14 @@ enum BudgetEntryType {
 
   /// Wpływ jednorazowy (np. premia, bonus) — przypięty do konkretnej daty.
   oneTimeIncome,
+
+  /// Przelew do budżetu domowego — koszt w osobistym; tworzy lustrzany wpływ
+  /// (`income`) w domowym (spięty przez `linkId`). Występuje tylko w osobistym.
+  householdTransfer,
 }
+
+/// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
+enum BudgetScope { personal, household }
 
 /// Pozycja budżetu domowego.
 ///
@@ -53,6 +60,10 @@ class BudgetEntry {
   final String? note;
   final DateTime dataDodania;
 
+  /// Spina parę przelew↔wkład między budżetem osobistym a domowym.
+  /// Ustawione na obu pozycjach (ten sam identyfikator).
+  final String? linkId;
+
   const BudgetEntry({
     required this.id,
     required this.name,
@@ -67,7 +78,11 @@ class BudgetEntry {
     this.isActive = true,
     this.note,
     required this.dataDodania,
+    this.linkId,
   });
+
+  /// Czy to pozycja powiazana (lustro przelewu) — w domowym tylko do odczytu.
+  bool get isLinked => linkId != null;
 
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
@@ -121,6 +136,7 @@ class BudgetEntry {
       isActive: json['isActive'] as bool? ?? true,
       note: json['note'] as String?,
       dataDodania: DateTime.parse(json['dataDodania'] as String),
+      linkId: json['linkId'] as String?,
     );
   }
 
@@ -138,6 +154,7 @@ class BudgetEntry {
         'isActive': isActive,
         if (note != null) 'note': note,
         'dataDodania': dataDodania.toIso8601String(),
+        if (linkId != null) 'linkId': linkId,
       };
 
   BudgetEntry copyWith({
@@ -159,6 +176,8 @@ class BudgetEntry {
     String? note,
     bool clearNote = false,
     DateTime? dataDodania,
+    String? linkId,
+    bool clearLinkId = false,
   }) {
     return BudgetEntry(
       id: id ?? this.id,
@@ -176,6 +195,7 @@ class BudgetEntry {
       isActive: isActive ?? this.isActive,
       note: clearNote ? null : (note ?? this.note),
       dataDodania: dataDodania ?? this.dataDodania,
+      linkId: clearLinkId ? null : (linkId ?? this.linkId),
     );
   }
 }

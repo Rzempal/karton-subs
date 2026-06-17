@@ -50,26 +50,39 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         icon: const Icon(LucideIcons.plus),
         label: const Text('Dodaj'),
       ),
-      body: isEmpty
-          ? _EmptyBudget()
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              children: [
-                _Section(title: 'Wpływy', entries: incomes, onTap: _openEdit),
-                _Section(
-                    title: 'Koszty cykliczne',
-                    entries: recurring,
-                    onTap: _openEdit),
-                _Section(
-                    title: 'Wydatki jednorazowe',
-                    entries: oneTime,
-                    onTap: _openEdit),
-              ],
-            ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: BudgetScopeToggle(
+                scope: ctrl.scope, onChanged: ctrl.setScope),
+          ),
+          Expanded(
+            child: isEmpty
+                ? _EmptyBudget(isHousehold: ctrl.isHousehold)
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    children: [
+                      _Section(
+                          title: 'Wpływy', entries: incomes, onTap: _openEdit),
+                      _Section(
+                          title: 'Koszty cykliczne',
+                          entries: recurring,
+                          onTap: _openEdit),
+                      _Section(
+                          title: 'Wydatki jednorazowe',
+                          entries: oneTime,
+                          onTap: _openEdit),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
   void _openAddSheet() {
+    final isHousehold = context.read<BudgetController>().isHousehold;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -94,6 +107,19 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 _openAdd();
               },
             ),
+            if (isHousehold)
+              ListTile(
+                leading: const Icon(LucideIcons.userPlus),
+                title: const Text('Dodaj wkład członka'),
+                subtitle: const Text('Wpływ od osoby w gospodarstwie'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openAdd(
+                    initialType: BudgetEntryType.income,
+                    initialName: 'Wkład — ',
+                  );
+                },
+              ),
             ListTile(
               leading: const Icon(LucideIcons.fileInput),
               title: const Text('Importuj z Excela'),
@@ -110,13 +136,47 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     );
   }
 
-  Future<void> _openAdd() => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AddBudgetEntryScreen()),
-      );
+  Future<void> _openAdd({BudgetEntryType? initialType, String? initialName}) {
+    final ctrl = context.read<BudgetController>();
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddBudgetEntryScreen(
+          scope: ctrl.scope,
+          initialType: initialType,
+          initialName: initialName,
+        ),
+      ),
+    );
+  }
 
-  Future<void> _openEdit(BudgetEntry e) => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => AddBudgetEntryScreen(existing: e)),
+  Future<void> _openEdit(BudgetEntry e) async {
+    final ctrl = context.read<BudgetController>();
+    // Lustro przelewu w domowym — tylko do odczytu (edycja w osobistym).
+    if (ctrl.isHousehold && e.isLinked) {
+      await showDialog<void>(
+        context: context,
+        builder: (dctx) => AlertDialog(
+          title: const Text('Wkład z budżetu osobistego'),
+          content: const Text(
+            'Tę pozycję dodano jako „Przelew do domowego" w budżecie osobistym. '
+            'Edytuj lub usuń ją tam: Budżet → Osobisty.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddBudgetEntryScreen(existing: e, scope: ctrl.scope),
+      ),
+    );
+  }
 
   Future<void> _exportExcel() async {
     setState(() => _isBusy = true);
@@ -198,6 +258,9 @@ class _Section extends StatelessWidget {
 }
 
 class _EmptyBudget extends StatelessWidget {
+  final bool isHousehold;
+  const _EmptyBudget({required this.isHousehold});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -208,12 +271,20 @@ class _EmptyBudget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.wallet, size: 48, color: c.textMuted),
+            Icon(isHousehold ? LucideIcons.home : LucideIcons.wallet,
+                size: 48, color: c.textMuted),
             const SizedBox(height: 12),
-            Text('Zacznij od dodania wpływu i rachunków',
-                style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+            Text(
+                isHousehold
+                    ? 'Wspólna kasa domowa — dodaj wkłady i koszty'
+                    : 'Zacznij od dodania wpływu i rachunków',
+                style: theme.textTheme.bodyMedium,
+                textAlign: TextAlign.center),
             const SizedBox(height: 4),
-            Text('Podgląd „ile zostaje miesięcznie" znajdziesz na Dashboardzie.',
+            Text(
+                isHousehold
+                    ? 'Przelew z osobistego pojawi się tu jako wpływ.'
+                    : 'Podgląd „ile zostaje miesięcznie" znajdziesz na Dashboardzie.',
                 style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
                 textAlign: TextAlign.center),
           ],

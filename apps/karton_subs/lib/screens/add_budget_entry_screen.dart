@@ -13,7 +13,20 @@ class AddBudgetEntryScreen extends StatefulWidget {
   /// Typ wstępnie wybrany przy dodawaniu (np. z konkretnej sekcji dashboardu).
   final BudgetEntryType? initialType;
 
-  const AddBudgetEntryScreen({super.key, this.existing, this.initialType});
+  /// Nazwa wstępnie wpisana (np. „Wkład — " przy dodawaniu członka).
+  final String? initialName;
+
+  /// Zakres, w którym dodajemy — decyduje o dostępnych typach
+  /// (przelew do domowego tylko w osobistym).
+  final BudgetScope scope;
+
+  const AddBudgetEntryScreen({
+    super.key,
+    this.existing,
+    this.initialType,
+    this.initialName,
+    this.scope = BudgetScope.personal,
+  });
 
   @override
   State<AddBudgetEntryScreen> createState() => _AddBudgetEntryScreenState();
@@ -39,12 +52,23 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.oneTimeIncome;
 
+  /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
+  List<BudgetEntryType> get _availableTypes => [
+        BudgetEntryType.income,
+        BudgetEntryType.bill,
+        BudgetEntryType.recurringCost,
+        BudgetEntryType.oneTimeExpense,
+        BudgetEntryType.oneTimeIncome,
+        if (widget.scope == BudgetScope.personal)
+          BudgetEntryType.householdTransfer,
+      ];
+
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
     final now = Subscription.devDateOverride ?? DateTime.now();
-    _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _nameCtrl = TextEditingController(text: e?.name ?? widget.initialName ?? '');
     _amountCtrl = TextEditingController(
         text: e != null ? e.amount.toStringAsFixed(2) : '');
     _noteCtrl = TextEditingController(text: e?.note ?? '');
@@ -105,7 +129,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: BudgetEntryType.values.map((t) {
+              children: _availableTypes.map((t) {
                 return ChoiceChip(
                   label: Text(_typeLabel(t)),
                   selected: _type == t,
@@ -399,6 +423,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.recurringCost => 'Nazwa kosztu *',
         BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
         BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
+        BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
       };
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
@@ -407,6 +432,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
         BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
+        BudgetEntryType.householdTransfer => 'Przelew do domowego',
       };
 
   String _cycleLabel(BillingCycle cycle) => switch (cycle) {

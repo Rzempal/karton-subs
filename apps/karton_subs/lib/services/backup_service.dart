@@ -150,9 +150,10 @@ class BackupService {
     final subs = _storage.getSubscriptions();
     final cats = _storage.getCategories();
     final pms = _storage.getPaymentMethods();
-    final budget = _storage.getBudgetEntries();
+    final budget = _storage.getBudgetEntries(BudgetScope.personal);
+    final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      'version': 3,
+      'version': 4,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -163,15 +164,16 @@ class BackupService {
       // rename zachowują ten sam ID, ale zmienioną nazwę, więc filtr po ID
       // byłby błędny). Przy imporcie upsert po ID.
       'paymentMethods': pms.map((pm) => pm.toJson()).toList(),
-      // Pozycje budżetu domowego (wpływy, rachunki, koszty cykliczne, jednorazowe).
+      // Budżet osobisty (lokalny) i domowy (osobny zbiór, przyszła synchronizacja).
       'budgetEntries': budget.map((e) => e.toJson()).toList(),
+      'householdBudgetEntries': household.map((e) => e.toJson()).toList(),
     });
   }
 
   Future<BackupImportResult> _applyJsonPayload(String jsonString) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 3) {
+    if (version > 4) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
 
@@ -207,7 +209,15 @@ class BackupService {
     final budgetRaw = data['budgetEntries'] as List<dynamic>? ?? [];
     for (final b in budgetRaw) {
       final entry = BudgetEntry.fromJson(b as Map<String, dynamic>);
-      await _storage.saveBudgetEntry(entry);
+      await _storage.saveBudgetEntry(entry, BudgetScope.personal);
+      budgetImported++;
+    }
+
+    // Budżet domowy — backupy w wersji < 4 nie zawierały tego pola.
+    final householdRaw = data['householdBudgetEntries'] as List<dynamic>? ?? [];
+    for (final b in householdRaw) {
+      final entry = BudgetEntry.fromJson(b as Map<String, dynamic>);
+      await _storage.saveBudgetEntry(entry, BudgetScope.household);
       budgetImported++;
     }
 

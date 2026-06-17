@@ -31,6 +31,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
 
   late final TabController _tabController;
   String? _filterCategoryId;
+  SubscriptionScope? _scopeFilter; // null = wszystkie zakresy
   bool _showInactive = false;
   bool _isBusy = false;
 
@@ -85,13 +86,18 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
         children: [
           _ListTab(
             filterCategoryId: _filterCategoryId,
+            scopeFilter: _scopeFilter,
             showInactive: _showInactive,
             onSelectCategory: (id) => setState(() => _filterCategoryId = id),
+            onSelectScope: (s) => setState(() => _scopeFilter = s),
             onToggleInactive: () =>
                 setState(() => _showInactive = !_showInactive),
             onTapEdit: _openEdit,
           ),
-          const _StatsTab(),
+          _StatsTab(
+            scopeFilter: _scopeFilter,
+            onSelectScope: (s) => setState(() => _scopeFilter = s),
+          ),
         ],
       ),
     );
@@ -216,15 +222,19 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
 
 class _ListTab extends StatelessWidget {
   final String? filterCategoryId;
+  final SubscriptionScope? scopeFilter;
   final bool showInactive;
   final void Function(String?) onSelectCategory;
+  final void Function(SubscriptionScope?) onSelectScope;
   final VoidCallback onToggleInactive;
   final void Function(Subscription) onTapEdit;
 
   const _ListTab({
     required this.filterCategoryId,
+    required this.scopeFilter,
     required this.showInactive,
     required this.onSelectCategory,
+    required this.onSelectScope,
     required this.onToggleInactive,
     required this.onTapEdit,
   });
@@ -234,25 +244,20 @@ class _ListTab extends StatelessWidget {
     final ctrl = context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
     final categories = storage.getCategories();
-    final subs = ctrl.sorted(
-      categoryId: filterCategoryId,
-      activeOnly: !showInactive,
-    );
+    final subs = ctrl
+        .sorted(categoryId: filterCategoryId, activeOnly: !showInactive)
+        .where((s) => scopeFilter == null || s.scope == scopeFilter)
+        .toList();
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
           child: Row(
             children: [
               Expanded(
-                child: categories.isEmpty
-                    ? const SizedBox.shrink()
-                    : _CategoryFilter(
-                        categories: categories,
-                        selected: filterCategoryId,
-                        onSelect: onSelectCategory,
-                      ),
+                child: _ScopeFilterChips(
+                    selected: scopeFilter, onSelect: onSelectScope),
               ),
               IconButton(
                 icon: Icon(
@@ -264,6 +269,12 @@ class _ListTab extends StatelessWidget {
             ],
           ),
         ),
+        if (categories.isNotEmpty)
+          _CategoryFilter(
+            categories: categories,
+            selected: filterCategoryId,
+            onSelect: onSelectCategory,
+          ),
         Expanded(
           child: subs.isEmpty
               ? _EmptyState(hasFilter: filterCategoryId != null)
@@ -373,7 +384,9 @@ class _Card extends StatelessWidget {
 // ── Zakładka: Statystyki ──────────────────────────────────────────────────────
 
 class _StatsTab extends StatelessWidget {
-  const _StatsTab();
+  final SubscriptionScope? scopeFilter;
+  final void Function(SubscriptionScope?) onSelectScope;
+  const _StatsTab({required this.scopeFilter, required this.onSelectScope});
 
   static const _analytics = AnalyticsService();
 
@@ -381,7 +394,10 @@ class _StatsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
-    final subs = storage.getSubscriptions();
+    final subs = storage
+        .getSubscriptions()
+        .where((s) => scopeFilter == null || s.scope == scopeFilter)
+        .toList();
     final categories = storage.getCategories();
     final currencyLabel = storage.getCurrency();
     final currencyEnum = Currency.values.firstWhere(
@@ -404,8 +420,10 @@ class _StatsTab extends StatelessWidget {
           .compareTo(b.trialDaysRemaining ?? 99));
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
       children: [
+        _ScopeFilterChips(selected: scopeFilter, onSelect: onSelectScope),
+        const SizedBox(height: 12),
         _SummaryHero(
           monthly: monthlyTotal,
           yearly: yearly,
@@ -562,6 +580,33 @@ class _TrialCostsCard extends StatelessWidget {
 }
 
 // ── Wspólne ───────────────────────────────────────────────────────────────────
+
+class _ScopeFilterChips extends StatelessWidget {
+  final SubscriptionScope? selected;
+  final void Function(SubscriptionScope?) onSelect;
+  const _ScopeFilterChips({required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String label, SubscriptionScope? value) => Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ChoiceChip(
+            label: Text(label),
+            selected: selected == value,
+            onSelected: (_) => onSelect(value),
+          ),
+        );
+    return Wrap(
+      spacing: 0,
+      runSpacing: 4,
+      children: [
+        chip('Wszystkie', null),
+        chip('Osobiste', SubscriptionScope.personal),
+        chip('Domowe', SubscriptionScope.household),
+      ],
+    );
+  }
+}
 
 class _CategoryFilter extends StatelessWidget {
   final List<Category> categories;

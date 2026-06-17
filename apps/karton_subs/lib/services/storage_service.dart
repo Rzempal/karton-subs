@@ -19,6 +19,7 @@ class StorageService {
   late Box<String> _categoriesBox;
   late Box<String> _paymentMethodsBox;
   late Box<String> _budgetEntriesBox;
+  late Box<String> _householdBudgetEntriesBox;
   late Box<dynamic> _settingsBox;
 
   // In-memory cache
@@ -26,6 +27,7 @@ class StorageService {
   final Map<String, Category> _categoriesCache = {};
   final Map<String, PaymentMethod> _paymentMethodsCache = {};
   final Map<String, BudgetEntry> _budgetEntriesCache = {};
+  final Map<String, BudgetEntry> _householdBudgetEntriesCache = {};
   bool _initialized = false;
 
   Future<void> init() async {
@@ -35,6 +37,8 @@ class StorageService {
     _categoriesBox = await Hive.openBox<String>('categories');
     _paymentMethodsBox = await Hive.openBox<String>('payment_methods');
     _budgetEntriesBox = await Hive.openBox<String>('budget_entries');
+    _householdBudgetEntriesBox =
+        await Hive.openBox<String>('household_budget_entries');
     _settingsBox = await Hive.openBox('settings');
     _loadSubscriptionsCache();
     _loadCategoriesCache();
@@ -44,7 +48,7 @@ class StorageService {
     _seedDefaultPaymentMethods();
     _initialized = true;
     _log.info(
-        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length} budget entries)');
+        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length}+${_householdBudgetEntriesCache.length} budget entries)');
   }
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
@@ -166,36 +170,53 @@ class StorageService {
     _log.info('Deleted payment method: $id');
   }
 
-  // ── Budget entries ─────────────────────────────────────────────────────────
+  // ── Budget entries (per zakres) ──────────────────────────────────────────────
+  // Osobisty i domowy to OSOBNE boxy — domowy jest przyszla jednostka synchronizacji.
+
+  Box<String> _budgetBox(BudgetScope scope) => scope == BudgetScope.household
+      ? _householdBudgetEntriesBox
+      : _budgetEntriesBox;
+
+  Map<String, BudgetEntry> _budgetCache(BudgetScope scope) =>
+      scope == BudgetScope.household
+          ? _householdBudgetEntriesCache
+          : _budgetEntriesCache;
 
   void _loadBudgetEntriesCache() {
-    _budgetEntriesCache.clear();
-    for (final key in _budgetEntriesBox.keys) {
-      try {
-        final json = jsonDecode(_budgetEntriesBox.get(key as String)!);
-        _budgetEntriesCache[key] =
-            BudgetEntry.fromJson(json as Map<String, dynamic>);
-      } catch (e) {
-        _log.warning('Failed to parse budget entry $key: $e');
+    for (final scope in BudgetScope.values) {
+      final box = _budgetBox(scope);
+      final cache = _budgetCache(scope)..clear();
+      for (final key in box.keys) {
+        try {
+          final json = jsonDecode(box.get(key as String)!);
+          cache[key] = BudgetEntry.fromJson(json as Map<String, dynamic>);
+        } catch (e) {
+          _log.warning('Failed to parse budget entry $key ($scope): $e');
+        }
       }
     }
   }
 
-  List<BudgetEntry> getBudgetEntries() =>
-      List.unmodifiable(_budgetEntriesCache.values);
+  List<BudgetEntry> getBudgetEntries(
+          [BudgetScope scope = BudgetScope.personal]) =>
+      List.unmodifiable(_budgetCache(scope).values);
 
-  BudgetEntry? getBudgetEntry(String id) => _budgetEntriesCache[id];
+  BudgetEntry? getBudgetEntry(String id,
+          [BudgetScope scope = BudgetScope.personal]) =>
+      _budgetCache(scope)[id];
 
-  Future<void> saveBudgetEntry(BudgetEntry entry) async {
-    await _budgetEntriesBox.put(entry.id, jsonEncode(entry.toJson()));
-    _budgetEntriesCache[entry.id] = entry;
-    _log.info('Saved budget entry: ${entry.name}');
+  Future<void> saveBudgetEntry(BudgetEntry entry,
+      [BudgetScope scope = BudgetScope.personal]) async {
+    await _budgetBox(scope).put(entry.id, jsonEncode(entry.toJson()));
+    _budgetCache(scope)[entry.id] = entry;
+    _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
-  Future<void> deleteBudgetEntry(String id) async {
-    await _budgetEntriesBox.delete(id);
-    _budgetEntriesCache.remove(id);
-    _log.info('Deleted budget entry: $id');
+  Future<void> deleteBudgetEntry(String id,
+      [BudgetScope scope = BudgetScope.personal]) async {
+    await _budgetBox(scope).delete(id);
+    _budgetCache(scope).remove(id);
+    _log.info('Deleted budget entry ($scope): $id');
   }
 
   // ── Settings ───────────────────────────────────────────────────────────────

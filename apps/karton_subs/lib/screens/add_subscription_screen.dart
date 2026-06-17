@@ -33,6 +33,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String? _paymentMethod;
   bool _isTrial = false;
   DateTime? _trialEndDate;
+  SubscriptionScope _scope = SubscriptionScope.personal;
   late final TextEditingController _postTrialAmountCtrl;
   bool _isSubmitting = false;
 
@@ -60,6 +61,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _paymentMethod = s.paymentMethod;
       _isTrial = s.isTrial;
       _trialEndDate = s.trialEndDate;
+      _scope = s.scope;
     }
   }
 
@@ -117,6 +119,27 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             TextFormField(
               controller: _descCtrl,
               decoration: const InputDecoration(labelText: 'Opis (opcjonalnie)'),
+            ),
+            const SizedBox(height: 24),
+
+            _SectionLabel('Przynależność'),
+            const SizedBox(height: 8),
+            SegmentedButton<SubscriptionScope>(
+              segments: const [
+                ButtonSegment(
+                  value: SubscriptionScope.personal,
+                  label: Text('Osobista'),
+                  icon: Icon(LucideIcons.user, size: 16),
+                ),
+                ButtonSegment(
+                  value: SubscriptionScope.household,
+                  label: Text('Domowa'),
+                  icon: Icon(LucideIcons.home, size: 16),
+                ),
+              ],
+              selected: {_scope},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) => setState(() => _scope = s.first),
             ),
             const SizedBox(height: 24),
 
@@ -469,6 +492,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           clearTrialEndDate: !_isTrial,
           postTrialAmount: _isTrial ? postTrialAmt : null,
           clearPostTrialAmount: !_isTrial,
+          scope: _scope,
         ));
       } else {
         await ctrl.create(
@@ -489,6 +513,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           isTrial: _isTrial,
           trialEndDate: _isTrial ? _trialEndDate : null,
           postTrialAmount: _isTrial ? postTrialAmt : null,
+          scope: _scope,
         );
       }
       if (mounted) Navigator.of(context).pop(true);

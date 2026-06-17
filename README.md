@@ -16,6 +16,8 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 - **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (rachunki),
   koszty cykliczne i wieksze wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie"
 - **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
+- **Budzet osobisty i domowy:** osobny wspolny budzet (wklady czlonkow, przelew z osobistego);
+  subskrypcje z przynaleznoscia osobista/domowa
 - Przypomnienia o odnowieniach i trialach
 - Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
 - Szyfrowany backup `.subkarton` (obejmuje subskrypcje i budzet)

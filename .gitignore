@@ -38,6 +38,7 @@ apps/*/build/
 # Lokalne eksporty / generatory danych (moga zawierac dane osobiste — nie commitowac)
 *.xlsx
 apps/karton_subs/tool/gen_import_xlsx.dart
+docs/_sandbox/
 
 # Flutter — generated files
 pubspec.lock

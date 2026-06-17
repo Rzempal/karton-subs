@@ -11,12 +11,45 @@ import 'cashflow_calendar.dart';
 
 final budgetNf = NumberFormat('#,##0.00', 'pl_PL');
 
+/// Przełącznik zakresu Osobisty/Domowy (wspólny dla Budżetu i Dashboardu).
+class BudgetScopeToggle extends StatelessWidget {
+  final BudgetScope scope;
+  final ValueChanged<BudgetScope> onChanged;
+  const BudgetScopeToggle(
+      {super.key, required this.scope, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<BudgetScope>(
+        segments: const [
+          ButtonSegment(
+            value: BudgetScope.personal,
+            label: Text('Osobisty'),
+            icon: Icon(LucideIcons.user, size: 16),
+          ),
+          ButtonSegment(
+            value: BudgetScope.household,
+            label: Text('Domowy'),
+            icon: Icon(LucideIcons.home, size: 16),
+          ),
+        ],
+        selected: {scope},
+        showSelectedIcon: false,
+        onSelectionChanged: (s) => onChanged(s.first),
+      ),
+    );
+  }
+}
+
 String budgetTypeLabel(BudgetEntryType t) => switch (t) {
       BudgetEntryType.income => 'Wpływ',
       BudgetEntryType.bill => 'Rachunek',
       BudgetEntryType.recurringCost => 'Koszt cykliczny',
       BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
       BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
+      BudgetEntryType.householdTransfer => 'Przelew do domowego',
     };
 
 String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {

@@ -96,6 +96,7 @@ class SubscriptionController extends ChangeNotifier {
     bool isTrial = false,
     DateTime? trialEndDate,
     double? postTrialAmount,
+    SubscriptionScope scope = SubscriptionScope.personal,
   }) async {
     final sub = Subscription(
       id: _uuid.v4(),
@@ -115,6 +116,7 @@ class SubscriptionController extends ChangeNotifier {
       isTrial: isTrial,
       trialEndDate: trialEndDate,
       postTrialAmount: postTrialAmount,
+      scope: scope,
       dataDodania: DateTime.now(),
     );
     await add(sub);

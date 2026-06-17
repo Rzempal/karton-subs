@@ -56,6 +56,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
         children: [
+          BudgetScopeToggle(scope: budget.scope, onChanged: budget.setScope),
+          const SizedBox(height: 16),
           BudgetSurplusCard(surplus: budget.monthlySurplus, currency: currency),
           const SizedBox(height: 12),
           Row(
@@ -86,7 +88,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          _SubscriptionsSummaryCard(ctrl: subs, currency: currency),
+          _SubscriptionsSummaryCard(
+            monthly: budget.monthlySubscriptionsExpense,
+            yearly: budget.monthlySubscriptionsExpense * 12,
+            count: subs.active
+                .where((s) =>
+                    s.scope ==
+                    (budget.isHousehold
+                        ? SubscriptionScope.household
+                        : SubscriptionScope.personal))
+                .length,
+            currency: currency,
+          ),
           const SizedBox(height: 24),
           BudgetMonthSection(
             month: _selectedMonth,
@@ -106,9 +119,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _SubscriptionsSummaryCard extends StatelessWidget {
-  final SubscriptionController ctrl;
+  final double monthly;
+  final double yearly;
+  final int count;
   final String currency;
-  const _SubscriptionsSummaryCard({required this.ctrl, required this.currency});
+  const _SubscriptionsSummaryCard({
+    required this.monthly,
+    required this.yearly,
+    required this.count,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +147,7 @@ class _SubscriptionsSummaryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text('Subskrypcje', style: theme.textTheme.titleMedium),
                 const Spacer(),
-                Text('${ctrl.active.length} aktywne',
+                Text('$count aktywne',
                     style: theme.textTheme.labelMedium
                         ?.copyWith(color: c.textMuted)),
               ],
@@ -138,11 +158,11 @@ class _SubscriptionsSummaryCard extends StatelessWidget {
               children: [
                 _Metric(
                   label: 'Miesięcznie',
-                  value: '${budgetNf.format(ctrl.totalMonthly)} $currency',
+                  value: '${budgetNf.format(monthly)} $currency',
                 ),
                 _Metric(
                   label: 'Rocznie',
-                  value: '${budgetNf.format(ctrl.totalYearly)} $currency',
+                  value: '${budgetNf.format(yearly)} $currency',
                 ),
               ],
             ),

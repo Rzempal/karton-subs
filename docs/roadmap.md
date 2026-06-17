@@ -139,6 +139,24 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 > Migracja: stare pozycje budzetu bez `startDate` nie pojawia sie na kalendarzu do czasu edycji.
 > Excel pozycji jednorazowych pozostaje na poziomie miesiaca (import → dzien 1.).
 
+### Faza 5d: Budzet domowy (osobisty + wspolny) (2026-06-17)
+
+**Cel:** Wspolna kasa domowa obok osobistej; przyszla synchronizacja tylko domowego.
+
+> **ADR:** [ADR-006 Budzet domowy jako osobny zbior](adr/ADR-006-budzet-domowy-osobny-zbior.md)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Osobny box domowy | `household_budget_entries` + `BudgetScope`; storage/controller per zakres | ✅ |
+| Przelacznik Osobisty/Domowy | Budzet + Dashboard; jeden silnik liczy oba | ✅ |
+| Przelew do domowego | Typ `householdTransfer` + lustro `income` (para `linkId`, kaskada) | ✅ |
+| Czlonek rodziny | Recznie jako wplyw w domowym („Wklad — imie") | ✅ |
+| Subskrypcje per zakres | `SubscriptionScope` + filtr w Liscie i Statystykach + formularz | ✅ |
+| Backup v4 + Excel | `householdBudgetEntries` + kolumna „Zakres"; testy | ✅ |
+| Synchronizacja online domowego | Backend + konta (koszt) | ⏳ #TODO przyszlosc |
+
+> Niesymetria swiadoma: budzet = osobny box (wymog sync), subskrypcje = pole `scope`.
+
 ---
 
 ## Faza 6: Redesign Aurora

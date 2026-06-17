@@ -40,6 +40,9 @@ enum Currency {
   }
 }
 
+/// Przynależność subskrypcji: osobista vs domowa (filtr list i statystyk).
+enum SubscriptionScope { personal, household }
+
 class Subscription {
   /// Dev-only: override DateTime.now() do testowania ghost detection
   static DateTime? devDateOverride;
@@ -68,6 +71,7 @@ class Subscription {
   final bool isTrial;
   final DateTime? trialEndDate;
   final double? postTrialAmount;
+  final SubscriptionScope scope;
 
   const Subscription({
     required this.id,
@@ -93,6 +97,7 @@ class Subscription {
     this.isTrial = false,
     this.trialEndDate,
     this.postTrialAmount,
+    this.scope = SubscriptionScope.personal,
   });
 
   /// Pełna kwota znormalizowana do miesięcznej (bez podziału)
@@ -258,6 +263,10 @@ class Subscription {
           ? DateTime.parse(json['trialEndDate'] as String)
           : null,
       postTrialAmount: (json['postTrialAmount'] as num?)?.toDouble(),
+      scope: SubscriptionScope.values.firstWhere(
+        (s) => s.name == json['scope'],
+        orElse: () => SubscriptionScope.personal,
+      ),
     );
   }
 
@@ -288,6 +297,7 @@ class Subscription {
         if (trialEndDate != null)
           'trialEndDate': trialEndDate!.toIso8601String(),
         if (postTrialAmount != null) 'postTrialAmount': postTrialAmount,
+        'scope': scope.name,
       };
 
   Subscription copyWith({
@@ -326,6 +336,7 @@ class Subscription {
     bool clearTrialEndDate = false,
     double? postTrialAmount,
     bool clearPostTrialAmount = false,
+    SubscriptionScope? scope,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -367,6 +378,7 @@ class Subscription {
       postTrialAmount: clearPostTrialAmount
           ? null
           : (postTrialAmount ?? this.postTrialAmount),
+      scope: scope ?? this.scope,
     );
   }
 }

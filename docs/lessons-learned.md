@@ -277,3 +277,23 @@ Do iteracji po datach kalendarzowych **nigdy nie uzywaj `add(Duration(days: n))`
 "nastepnego dnia/tygodnia". Zawsze testuj rzutowanie dat na granicy marca/pazdziernika (DST).
 
 ---
+
+## 2026-06-17: Deploy buduje z drzewa roboczego — prod bez commita = rozjazd git↔produkcja
+
+### Problem
+`deploy_apk.ps1` buduje APK z **biezacego stanu plikow**, nie z commita. Wydanie produkcyjne
+(0.4) zrobiono z niezacommitowanej galezi — na produkcji jest kod, ktorego nie ma w git
+(`origin/main` stoi na starszym commicie). Brak punktu rollbacku; tag (`-CreateTag`) wskazalby
+ostatni commit, NIE faktycznie wydany kod → tag by „klamal".
+
+### Rozwiazanie
+Przed deployem **production**: commit + push feature, dopiero potem deploy (+ ewentualny tag).
+Dla kanalu **dev/internal** build z drzewa roboczego jest OK (to wlasnie do testow). Dodatkowo:
+`docs/_sandbox/` dodane do `.gitignore` — zawiera realne dane finansowe (CSV), nie wolno commitowac.
+
+### Wniosek
+Kanal dev = build z drzewa roboczego dozwolony. Kanal **prod = tylko z zacommitowanego (najlepiej
+otagowanego) kodu** — inaczej wydanie jest niereprodukowalne. Pliki z danymi osobistymi trzymaj
+w ignorowanym katalogu (`docs/_sandbox/`), zeby `git add .` ich nie wciagnal.
+
+---

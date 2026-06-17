@@ -80,7 +80,8 @@ erDiagram
 | `isPinned` | bool | nie | Przypieta na gorze listy |
 | `isActive` | bool | tak | Aktywna vs anulowana |
 | `reminderDaysBefore` | int | nie | Przypomnij X dni przed odnowieniem |
-| `usageLog` | UsageEvent[] | tak | Historia uzycia |
+| `usageLog` | UsageEvent[] | tak | Historia uzycia (uspione — UI usuniete) |
+| `scope` | SubscriptionScope | tak | Przynaleznosc: personal / household (default personal) |
 | `dataDodania` | ISO8601 | tak | Timestamp dodania |
 
 ---
@@ -118,7 +119,7 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 |------|-----|----------|------|
 | `id` | UUID | tak | Unikalny identyfikator |
 | `name` | string | tak | Nazwa pozycji |
-| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense / oneTimeIncome |
+| `type` | BudgetEntryType | tak | income / bill / recurringCost / oneTimeExpense / oneTimeIncome / householdTransfer |
 | `amount` | double | tak | Kwota (>0) w walucie `currency` |
 | `currency` | Currency | tak | PLN, EUR, USD, GBP |
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
@@ -128,13 +129,22 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 | `startDate` | ISO8601 | nie | **Kotwica daty kalendarza:** dokladna data jednorazowego; data pierwszego wystapienia cyklicznego |
 | `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
 | `note` | string | nie | Opcjonalna notatka |
+| `linkId` | string | nie | Spina pare przelew↔wklad (osobisty↔domowy) |
 | `dataDodania` | ISO8601 | tak | Timestamp dodania |
 
 `* zaleznie od typu` — `cycle` dla cyklicznych, `month` dla jednorazowych.
 
 ```dart
-enum BudgetEntryType { income, bill, recurringCost, oneTimeExpense, oneTimeIncome }
+enum BudgetEntryType {
+  income, bill, recurringCost, oneTimeExpense, oneTimeIncome, householdTransfer
+}
+enum BudgetScope { personal, household } // wybiera box (osobny zbior dla domowego)
 ```
+
+**Zakres (osobisty vs domowy):** to nie pole pozycji, lecz **osobny box**:
+`budget_entries` (osobisty, lokalny) i `household_budget_entries` (domowy, przyszla
+synchronizacja). `householdTransfer` to koszt w osobistym tworzacy lustrzany `income`
+w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
 
 **Computed:**
 - `isIncome` — `income` lub `oneTimeIncome`; `isOneTime` — `oneTimeExpense` lub `oneTimeIncome`
@@ -283,7 +293,8 @@ class Category {
 | Hive Box: `subscriptions` | JSON subskrypcji (String values) |
 | Hive Box: `categories` | JSON kategorii |
 | Hive Box: `payment_methods` | JSON metod platnosci |
-| Hive Box: `budget_entries` | JSON pozycji budzetu domowego |
+| Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
+| Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (przyszla synchronizacja) |
 | Hive Box: `settings` | Key-value: waluta domyslna, budzet, preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).

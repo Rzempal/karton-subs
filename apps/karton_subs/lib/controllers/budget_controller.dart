@@ -7,11 +7,12 @@ import '../services/budget_service.dart';
 import '../services/app_logger.dart';
 import 'subscription_controller.dart';
 
-/// Zarządza stanem budżetu domowego: CRUD pozycji + computed agregaty.
+/// Zarządza stanem budżetu (osobisty + domowy) — CRUD pozycji + computed agregaty.
 ///
-/// Czyta subskrypcje jako dodatkowy strumień kosztów (przez [BudgetService]).
-/// Nasłuchuje [SubscriptionController], by odświeżyć UI budżetu, gdy zmienią
-/// się subskrypcje (dodanie/edycja/usunięcie wpływa na sumę kosztów).
+/// Aktywny zakres ([scope]) ustawia UI (przełącznik); wszystkie gettery liczą dla
+/// niego. Osobisty i domowy to osobne boxy. Przelew do domowego to para spięta
+/// `linkId`: koszt w osobistym + lustrzany wpływ w domowym.
+/// Czyta subskrypcje danego zakresu jako dodatkowy strumień kosztów.
 class BudgetController extends ChangeNotifier {
   static final _log = AppLogger.get('BudgetController');
   final StorageService _storage;
@@ -31,8 +32,18 @@ class BudgetController extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Wymusza odświeżenie (np. po zmianie waluty w ustawieniach).
   void refresh() => notifyListeners();
+
+  // ── Zakres aktywny ─────────────────────────────────────────────────────────
+
+  BudgetScope _scope = BudgetScope.personal;
+  BudgetScope get scope => _scope;
+  bool get isHousehold => _scope == BudgetScope.household;
+  void setScope(BudgetScope s) {
+    if (_scope == s) return;
+    _scope = s;
+    notifyListeners();
+  }
 
   Currency get _target {
     final code = _storage.getCurrency();
@@ -42,13 +53,18 @@ class BudgetController extends ChangeNotifier {
     );
   }
 
-  List<Subscription> get _subs => _storage.getSubscriptions();
+  /// Subskrypcje pasujące do aktywnego zakresu (osobiste/domowe).
+  SubscriptionScope get _subScope => isHousehold
+      ? SubscriptionScope.household
+      : SubscriptionScope.personal;
+  List<Subscription> get _subsForScope =>
+      _storage.getSubscriptions().where((s) => s.scope == _subScope).toList();
 
-  // ── Listy ────────────────────────────────────────────────────────────────
+  // ── Listy (aktywny zakres) ───────────────────────────────────────────────
 
-  List<BudgetEntry> get all => _storage.getBudgetEntries();
+  List<BudgetEntry> get all => _storage.getBudgetEntries(_scope);
 
-  /// Wpływy: cykliczne (pensja) + jednorazowe (premia/bonus).
+  /// Wpływy: cykliczne (pensja) + jednorazowe (premia) + wkłady (lustro przelewu w domowym).
   List<BudgetEntry> get incomes =>
       all.where((e) => e.isIncome).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
@@ -57,14 +73,13 @@ class BudgetController extends ChangeNotifier {
       all.where((e) => e.isExpense && !e.isOneTime).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
-  /// Wydatki jednorazowe (bez jednorazowych wpływów).
   List<BudgetEntry> get oneTimeExpenses {
     final list = all.where((e) => e.isOneTime && e.isExpense).toList();
     list.sort((a, b) => (a.month ?? '').compareTo(b.month ?? ''));
     return list;
   }
 
-  // ── Computed agregaty (w walucie docelowej) ──────────────────────────────
+  // ── Computed agregaty (aktywny zakres, w walucie docelowej) ────────────────
 
   double get monthlyIncome => _budget.monthlyIncome(all, target: _target);
 
@@ -72,37 +87,26 @@ class BudgetController extends ChangeNotifier {
       _budget.monthlyBudgetExpenses(all, target: _target);
 
   double get monthlySubscriptionsExpense =>
-      _budget.monthlySubscriptionsExpense(_subs, target: _target);
+      _budget.monthlySubscriptionsExpense(_subsForScope, target: _target);
 
   double get monthlyExpenses =>
-      _budget.monthlyRecurringExpenses(all, _subs, target: _target);
+      _budget.monthlyRecurringExpenses(all, _subsForScope, target: _target);
 
   double get monthlySurplus =>
-      _budget.monthlySurplus(all, _subs, target: _target);
-
-  List<BudgetEntry> oneTimeForMonth(String monthKey) =>
-      _budget.oneTimeExpensesForMonth(all, monthKey);
-
-  double oneTimeTotalForMonth(String monthKey) =>
-      _budget.oneTimeTotalForMonth(all, monthKey, target: _target);
+      _budget.monthlySurplus(all, _subsForScope, target: _target);
 
   double balanceForMonth(String monthKey) =>
-      _budget.balanceForMonth(all, _subs, monthKey, target: _target);
+      _budget.balanceForMonth(all, _subsForScope, monthKey, target: _target);
 
-  List<BudgetEntry> get upcomingOneTime => _budget.upcomingOneTime(all);
-
-  Map<String, double> get expenseBreakdown =>
-      _budget.expenseBreakdownByCategory(all, target: _target);
-
-  /// Przeplywy per dzien dla wskazanego miesiaca (wplywy/wydatki/subskrypcje).
   Map<int, DayCashflow> calendarForMonth(DateTime monthStart) =>
-      _budget.calendarForMonth(all, _subs, monthStart, target: _target);
+      _budget.calendarForMonth(all, _subsForScope, monthStart, target: _target);
 
-  // ── CRUD ─────────────────────────────────────────────────────────────────
+  // ── CRUD (aktywny zakres) ──────────────────────────────────────────────────
 
+  /// Zapis pozycji w aktywnym zakresie (używane m.in. przez import Excel).
   Future<void> add(BudgetEntry entry) async {
-    await _storage.saveBudgetEntry(entry);
-    _log.info('Added budget entry: ${entry.name}');
+    await _storage.saveBudgetEntry(entry, _scope);
+    _log.info('Added budget entry ($_scope): ${entry.name}');
     notifyListeners();
   }
 
@@ -118,6 +122,44 @@ class BudgetController extends ChangeNotifier {
     DateTime? startDate,
     String? note,
   }) async {
+    final now = DateTime.now();
+
+    // Przelew do domowego: para spięta linkId (osobisty wydatek + domowy wpływ).
+    if (type == BudgetEntryType.householdTransfer) {
+      final linkId = _uuid.v4();
+      final personal = BudgetEntry(
+        id: _uuid.v4(),
+        name: name,
+        type: BudgetEntryType.householdTransfer,
+        amount: amount,
+        currency: currency,
+        cycle: cycle,
+        customCycleDays: customCycleDays,
+        startDate: startDate,
+        note: note,
+        dataDodania: now,
+        linkId: linkId,
+      );
+      await _storage.saveBudgetEntry(personal, BudgetScope.personal);
+      final mirror = BudgetEntry(
+        id: _uuid.v4(),
+        name: name,
+        type: BudgetEntryType.income,
+        amount: amount,
+        currency: currency,
+        cycle: cycle,
+        customCycleDays: customCycleDays,
+        startDate: startDate,
+        note: note ?? 'Z budżetu osobistego',
+        dataDodania: now,
+        linkId: linkId,
+      );
+      await _storage.saveBudgetEntry(mirror, BudgetScope.household);
+      _log.info('Created household transfer (link $linkId): $name');
+      notifyListeners();
+      return personal;
+    }
+
     final entry = BudgetEntry(
       id: _uuid.v4(),
       name: name,
@@ -130,27 +172,64 @@ class BudgetController extends ChangeNotifier {
       categoryId: categoryId,
       startDate: startDate,
       note: note,
-      dataDodania: DateTime.now(),
+      dataDodania: now,
     );
     await add(entry);
     return entry;
   }
 
   Future<void> update(BudgetEntry entry) async {
-    await _storage.saveBudgetEntry(entry);
-    _log.info('Updated budget entry: ${entry.name}');
+    await _storage.saveBudgetEntry(entry, _scope);
+    // Kaskada na lustro w domowym (gdy edytujemy przelew w osobistym).
+    if (entry.type == BudgetEntryType.householdTransfer && entry.linkId != null) {
+      final mirror = _findByLinkId(entry.linkId!, BudgetScope.household);
+      if (mirror != null) {
+        await _storage.saveBudgetEntry(
+          mirror.copyWith(
+            name: entry.name,
+            amount: entry.amount,
+            cycle: entry.cycle,
+            customCycleDays: entry.customCycleDays,
+            clearCustomCycleDays: entry.customCycleDays == null,
+            startDate: entry.startDate,
+            clearStartDate: entry.startDate == null,
+            isActive: entry.isActive,
+          ),
+          BudgetScope.household,
+        );
+      }
+    }
+    _log.info('Updated budget entry ($_scope): ${entry.name}');
     notifyListeners();
   }
 
   Future<void> delete(String id) async {
-    await _storage.deleteBudgetEntry(id);
-    _log.info('Deleted budget entry: $id');
+    final entry = _storage.getBudgetEntry(id, _scope);
+    await _storage.deleteBudgetEntry(id, _scope);
+    // Kaskada: usuń drugą stronę pary przelewu (w przeciwnym boxie).
+    if (entry?.linkId != null) {
+      final other = _scope == BudgetScope.personal
+          ? BudgetScope.household
+          : BudgetScope.personal;
+      final partner = _findByLinkId(entry!.linkId!, other);
+      if (partner != null) {
+        await _storage.deleteBudgetEntry(partner.id, other);
+      }
+    }
+    _log.info('Deleted budget entry ($_scope): $id');
     notifyListeners();
   }
 
   Future<void> toggleActive(String id) async {
-    final entry = _storage.getBudgetEntry(id);
+    final entry = _storage.getBudgetEntry(id, _scope);
     if (entry == null) return;
     await update(entry.copyWith(isActive: !entry.isActive));
+  }
+
+  BudgetEntry? _findByLinkId(String linkId, BudgetScope scope) {
+    for (final e in _storage.getBudgetEntries(scope)) {
+      if (e.linkId == linkId) return e;
+    }
+    return null;
   }
 }

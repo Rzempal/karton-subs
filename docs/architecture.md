@@ -163,18 +163,26 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
 dodatkowo czyta subskrypcje jako strumien kosztow.
 
+**Dwa zakresy = dwa boxy** (ADR-006): osobisty (`budget_entries`, lokalny) i domowy
+(`household_budget_entries`, przyszla synchronizacja). `BudgetController` trzyma aktywny
+`BudgetScope` (przelacznik na Budzecie i Dashboardzie); ten sam silnik liczy oba.
+
 ```
-BudgetController (ChangeNotifier)
-   │  nasluchuje SubscriptionController (odswiezenie przy zmianie subskrypcji)
+BudgetController (ChangeNotifier, aktywny BudgetScope)
+   │  nasluchuje SubscriptionController
    ▼
-BudgetService  ──►  BudgetEntry[]  (box: budget_entries)
-   │
+BudgetService  ──►  BudgetEntry[]  (box: budget_entries | household_budget_entries)
+   │                          + subskrypcje danego zakresu (Subscription.scope)
    └──►  AnalyticsService.getMonthlyTotal(subscriptions)  ◄─ integracja
 ```
 
 **Model czasu (hybryda):**
 - Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`
-- Wydatki jednorazowe: przypiete do miesiaca, koryguja `balanceForMonth`
+- Jednorazowe (wplyw/wydatek): przypiete do daty, koryguja `balanceForMonth`
+
+**Przelew do domowego** (`householdTransfer`): koszt w osobistym + lustrzany wplyw w
+domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz
+[ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
 
 ---
 

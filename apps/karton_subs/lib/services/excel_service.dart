@@ -50,6 +50,7 @@ class ExcelService {
     'Metoda płatności',
     'Aktywna',
     'Data startu',
+    'Zakres',
   ];
 
   static const _budgetSheetName = 'Budżet';
@@ -131,6 +132,8 @@ class ExcelService {
         TextCellValue(_sanitizeCell(s.paymentMethod ?? '')),
         TextCellValue(s.isActive ? 'tak' : 'nie'),
         TextCellValue(DateFormat('yyyy-MM-dd').format(s.startDate)),
+        TextCellValue(
+            s.scope == SubscriptionScope.household ? 'Domowe' : 'Osobiste'),
       ]);
     }
 
@@ -252,6 +255,7 @@ class ExcelService {
         startDate: row.startDate,
         isActive: row.isActive,
         paymentMethod: paymentMethod,
+        scope: row.scope,
         dataDodania: now,
       ));
     }
@@ -351,6 +355,7 @@ class ExcelService {
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
         BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
+        BudgetEntryType.householdTransfer => 'Przelew do domowego',
       };
 
   // ── Budżet: import ───────────────────────────────────────────────────────────
@@ -432,6 +437,7 @@ class _RawRow {
   final String? paymentName;
   final bool isActive;
   final DateTime startDate;
+  final SubscriptionScope scope;
 
   _RawRow({
     required this.name,
@@ -443,6 +449,7 @@ class _RawRow {
     this.paymentName,
     required this.isActive,
     required this.startDate,
+    this.scope = SubscriptionScope.personal,
   });
 }
 
@@ -456,7 +463,17 @@ const int _maxNameLength = 100;
 /// Górny rozsądny limit kwoty za okres — odrzuca śmieciowe/absurdalne wartości.
 const double _maxAmount = 1000000;
 
-enum _HeaderField { name, amount, currency, cycle, category, payment, active, date }
+enum _HeaderField {
+  name,
+  amount,
+  currency,
+  cycle,
+  category,
+  payment,
+  active,
+  date,
+  scope
+}
 
 /// Funkcja izolatu (compute): bajty .xlsx → surowe wiersze + lista pominięć.
 /// Nie dotyka bazy ani UI. Rzuca FormatException przy uszkodzonym pliku.
@@ -550,6 +567,7 @@ _RawParse _parseWorkbook(Uint8List bytes) {
       paymentName: _blankToNull(cell(_HeaderField.payment)),
       isActive: _parseActive(cell(_HeaderField.active)),
       startDate: _parseDate(cell(_HeaderField.date)),
+      scope: _parseSubscriptionScope(cell(_HeaderField.scope)),
     ));
   }
 
@@ -594,6 +612,10 @@ Map<_HeaderField, int> _detectHeader(List<Data?> headerCells) {
         h.contains('start') ||
         h.contains('date')) {
       field = _HeaderField.date;
+    } else if (h.contains('zakres') ||
+        h.contains('scope') ||
+        h.contains('przynale')) {
+      field = _HeaderField.scope;
     }
     // Pierwsze dopasowanie wygrywa (nie nadpisujemy).
     if (field != null && !map.containsKey(field)) {
@@ -634,6 +656,15 @@ String? _blankToNull(String? v) {
   if (v == null) return null;
   final t = v.trim();
   return t.isEmpty ? null : t;
+}
+
+SubscriptionScope _parseSubscriptionScope(String? raw) {
+  if (raw == null) return SubscriptionScope.personal;
+  final t = raw.toLowerCase().trim();
+  if (t.contains('domow') || t.contains('household') || t.contains('home')) {
+    return SubscriptionScope.household;
+  }
+  return SubscriptionScope.personal;
 }
 
 /// Parsuje kwotę tolerując polskie i angielskie formaty: "43,00", "43.00",
