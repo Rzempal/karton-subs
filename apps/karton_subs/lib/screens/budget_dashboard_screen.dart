@@ -3,9 +3,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
+import '../models/category.dart';
 import '../services/excel_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aurora_add_menu.dart';
+import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
@@ -23,13 +26,45 @@ class BudgetDashboardScreen extends StatefulWidget {
 class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   bool _isBusy = false;
 
+  /// Aktywny filtr kategorii (null = wszystkie). Filtruje sekcje wydatków.
+  String? _filterCategoryId;
+
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
-    final incomes = ctrl.incomes;
-    final recurring = ctrl.recurringExpenses;
-    final oneTime = ctrl.oneTimeExpenses;
-    final isEmpty = incomes.isEmpty && recurring.isEmpty && oneTime.isEmpty;
+    final allIncomes = ctrl.incomes;
+    final allRecurring = ctrl.recurringExpenses;
+    final allOneTime = ctrl.oneTimeExpenses;
+    final isEmpty =
+        allIncomes.isEmpty && allRecurring.isEmpty && allOneTime.isEmpty;
+
+    // Kategorie faktycznie użyte w wydatkach (tylko one trafiają na pasek filtra).
+    final usedCatIds = <String>{
+      for (final e in allRecurring)
+        if (e.categoryId != null) e.categoryId!,
+      for (final e in allOneTime)
+        if (e.categoryId != null) e.categoryId!,
+    };
+    final filterCategories = context
+        .read<StorageService>()
+        .getCategories()
+        .where((c) => usedCatIds.contains(c.id))
+        .toList();
+
+    // Gdy aktywny filtr wskazuje kategorię, która zniknęła — traktuj jak brak filtra.
+    final activeFilter =
+        (_filterCategoryId != null && usedCatIds.contains(_filterCategoryId))
+            ? _filterCategoryId
+            : null;
+    bool matches(BudgetEntry e) =>
+        activeFilter == null || e.categoryId == activeFilter;
+
+    // Wpływy nie mają kategorii — przy aktywnym filtrze chowamy całą sekcję.
+    final incomes = activeFilter == null ? allIncomes : const <BudgetEntry>[];
+    final recurring = allRecurring.where(matches).toList();
+    final oneTime = allOneTime.where(matches).toList();
+    final filteredEmpty =
+        incomes.isEmpty && recurring.isEmpty && oneTime.isEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -79,24 +114,34 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
             child: BudgetScopeToggle(
                 scope: ctrl.scope, onChanged: ctrl.setScope),
           ),
+          if (!isEmpty && filterCategories.isNotEmpty)
+            _CategoryFilter(
+              categories: filterCategories,
+              selected: activeFilter,
+              onSelect: (id) => setState(() => _filterCategoryId = id),
+            ),
           Expanded(
             child: isEmpty
                 ? _EmptyBudget(isHousehold: ctrl.isHousehold)
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-                    children: [
-                      _Section(
-                          title: 'Wpływy', entries: incomes, onTap: _openEdit),
-                      _Section(
-                          title: 'Koszty cykliczne',
-                          entries: recurring,
-                          onTap: _openEdit),
-                      _Section(
-                          title: 'Wydatki jednorazowe',
-                          entries: oneTime,
-                          onTap: _openEdit),
-                    ],
-                  ),
+                : filteredEmpty
+                    ? const _FilteredEmpty()
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                        children: [
+                          _Section(
+                              title: 'Wpływy',
+                              entries: incomes,
+                              onTap: _openEdit),
+                          _Section(
+                              title: 'Koszty cykliczne',
+                              entries: recurring,
+                              onTap: _openEdit),
+                          _Section(
+                              title: 'Wydatki jednorazowe',
+                              entries: oneTime,
+                              onTap: _openEdit),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -220,6 +265,73 @@ class _Section extends StatelessWidget {
             )),
         const SizedBox(height: 16),
       ],
+    );
+  }
+}
+
+class _CategoryFilter extends StatelessWidget {
+  final List<Category> categories;
+  final String? selected;
+  final void Function(String?) onSelect;
+
+  const _CategoryFilter({
+    required this.categories,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: AuroraChip(
+                label: 'Wszystkie',
+                selected: selected == null,
+                onTap: () => onSelect(null),
+              ),
+            ),
+          ),
+          ...categories.map((cat) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: AuroraChip(
+                    label: cat.name,
+                    selected: selected == cat.id,
+                    accent: cat.color,
+                    onTap: () => onSelect(selected == cat.id ? null : cat.id),
+                  ),
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilteredEmpty extends StatelessWidget {
+  const _FilteredEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(LucideIcons.inbox, size: 48, color: c.textMuted),
+          const SizedBox(height: 12),
+          Text('Brak wydatków w tej kategorii',
+              style: theme.textTheme.bodyMedium),
+        ],
+      ),
     );
   }
 }

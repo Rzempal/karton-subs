@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/budget_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
@@ -486,6 +488,10 @@ class BudgetEntryCard extends StatelessWidget {
             '${dimmed ? ' · wstrzymane' : ''}'
         : '${budgetTypeLabel(entry.type)}${dimmed ? ' · wstrzymane' : ''}';
 
+    final category = entry.categoryId != null
+        ? context.read<StorageService>().getCategory(entry.categoryId!)
+        : null;
+
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.tile),
@@ -516,6 +522,28 @@ class BudgetEntryCard extends StatelessWidget {
                       Text(subtitle,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: c.textMuted)),
+                      if (category != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: category.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              category.name,
+                              style: theme.textTheme.labelMedium
+                                  ?.copyWith(color: category.color),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
+import 'package:karton_subs/models/category.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/excel_service.dart';
 
@@ -121,6 +122,60 @@ void main() {
       expect(byName['Pensja']!.type, BudgetEntryType.income);
       expect(byName['Pralka']!.type, BudgetEntryType.oneTimeExpense);
       expect(byName['Pralka']!.month, '2026-09');
+    });
+  });
+
+  group('ExcelService — kategoria budżetu', () {
+    const headerWithCat = [
+      'Typ',
+      'Nazwa',
+      'Kwota',
+      'Waluta',
+      'Cykl',
+      'Kategoria',
+      'Miesiąc',
+      'Notatka',
+      'Aktywna'
+    ];
+
+    test('import mapuje nazwę kategorii na id (tylko wydatki)', () {
+      final bytes = _xlsx([
+        headerWithCat,
+        ['Rachunek', 'Prąd', 200.0, 'PLN', 'miesięcznie', 'Cloud', '', '', 'tak'],
+        // Wpływ ignoruje kolumnę kategorii.
+        ['Wpływ', 'Pensja', 5000.0, 'PLN', 'miesięcznie', 'Cloud', '', '', 'tak'],
+      ]);
+      final r = ExcelService.parseBudgetBytesForTest(
+          bytes, {'cloud': 'cat_cloud'});
+
+      final byName = {for (final e in r.entries) e.name: e};
+      expect(byName['Prąd']!.categoryId, 'cat_cloud');
+      expect(byName['Pensja']!.categoryId, isNull);
+    });
+
+    test('eksport → import zachowuje kategorię', () {
+      final entries = [
+        BudgetEntry(
+          id: 'a',
+          name: 'Prąd',
+          type: BudgetEntryType.bill,
+          amount: 200,
+          currency: Currency.PLN,
+          categoryId: 'cat_cloud',
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+      ];
+      final cats = [
+        const Category(
+            id: 'cat_cloud',
+            name: 'Cloud',
+            colorHex: '#0891B2',
+            iconName: 'cloud',
+            order: 0),
+      ];
+      final bytes = ExcelService.buildBudgetWorkbookForTest(entries, cats);
+      final r = ExcelService.parseBudgetBytesForTest(bytes, {'cloud': 'cat_cloud'});
+      expect(r.entries.single.categoryId, 'cat_cloud');
     });
   });
 }

@@ -62,6 +62,7 @@ class ExcelService {
     'Kwota',
     'Waluta',
     'Cykl',
+    'Kategoria',
     'Miesiąc',
     'Notatka',
     'Aktywna',
@@ -292,7 +293,7 @@ class ExcelService {
   /// Buduje arkusz ze wszystkich pozycji budżetu i udostępnia przez system share.
   Future<void> exportBudgetToFile() async {
     final entries = _storage.getBudgetEntries();
-    final bytes = _buildBudgetWorkbook(entries);
+    final bytes = _buildBudgetWorkbook(entries, _storage.getCategories());
 
     final dir = await getTemporaryDirectory();
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
@@ -321,10 +322,14 @@ class ExcelService {
     _log.info('Wyeksportowano ${entries.length} pozycji budżetu do .xlsx');
   }
 
-  static Uint8List _buildBudgetWorkbook(List<BudgetEntry> entries) {
+  static Uint8List _buildBudgetWorkbook(
+      List<BudgetEntry> entries, List<Category> categories) {
     final excel = Excel.createExcel();
     excel.rename(excel.getDefaultSheet() ?? 'Sheet1', _budgetSheetName);
     final sheet = excel[_budgetSheetName];
+
+    final catNameById = {for (final c in categories) c.id: c.name};
+    String catName(String? id) => id != null ? (catNameById[id] ?? '') : '';
 
     sheet.appendRow(
         _budgetHeaders.map<CellValue?>((h) => TextCellValue(h)).toList());
@@ -336,6 +341,7 @@ class ExcelService {
         DoubleCellValue(e.amount),
         TextCellValue(e.currency.label),
         TextCellValue(e.isOneTime ? '' : _cycleLabel(e.cycle, e.customCycleDays)),
+        TextCellValue(_sanitizeCell(catName(e.categoryId))),
         TextCellValue(e.isOneTime ? (e.month ?? '') : ''),
         TextCellValue(_sanitizeCell(e.note ?? '')),
         TextCellValue(e.isActive ? 'tak' : 'nie'),
@@ -383,18 +389,26 @@ class ExcelService {
       throw const FormatException('Plik jest za duży (limit 5 MB)');
     }
 
-    return await compute(_parseBudgetWorkbook, bytes);
+    // Dopasowanie kategorii po nazwie (case-insensitive) — jak przy subskrypcjach.
+    final catByName = <String, String>{};
+    for (final c in _storage.getCategories()) {
+      catByName[c.name.toLowerCase().trim()] = c.id;
+    }
+    return await compute(_parseBudgetWorkbook, (bytes, catByName));
   }
 
   /// Hook testowy: parsuje bajty .xlsx budżetu bez dostępu do bazy.
+  /// [catByName] (nazwa małymi literami → id) pozwala przetestować mapowanie kategorii.
   @visibleForTesting
-  static BudgetExcelImportResult parseBudgetBytesForTest(Uint8List bytes) =>
-      _parseBudgetWorkbook(bytes);
+  static BudgetExcelImportResult parseBudgetBytesForTest(Uint8List bytes,
+          [Map<String, String> catByName = const <String, String>{}]) =>
+      _parseBudgetWorkbook((bytes, catByName));
 
   /// Hook testowy: buduje bajty arkusza budżetu (ścieżka eksportu) bez share/IO.
   @visibleForTesting
-  static Uint8List buildBudgetWorkbookForTest(List<BudgetEntry> entries) =>
-      _buildBudgetWorkbook(entries);
+  static Uint8List buildBudgetWorkbookForTest(List<BudgetEntry> entries,
+          [List<Category> categories = const []]) =>
+      _buildBudgetWorkbook(entries, categories);
 }
 
 /// Wynik importu — subskrypcje gotowe do zapisu + raport.
@@ -763,11 +777,23 @@ class BudgetExcelImportResult {
   int get skippedCount => skipped.length;
 }
 
-enum _BudgetHeaderField { type, name, amount, currency, cycle, month, note, active }
+enum _BudgetHeaderField {
+  type,
+  name,
+  amount,
+  currency,
+  cycle,
+  category,
+  month,
+  note,
+  active
+}
 
 /// Funkcja izolatu (compute): bajty .xlsx → gotowe pozycje budżetu + pominięcia.
 /// Budżet nie wymaga dopasowań w bazie, więc budujemy pozycje od razu tutaj.
-BudgetExcelImportResult _parseBudgetWorkbook(Uint8List bytes) {
+BudgetExcelImportResult _parseBudgetWorkbook(
+    (Uint8List, Map<String, String>) input) {
+  final (bytes, catByName) = input;
   final Excel excel;
   try {
     excel = Excel.decodeBytes(bytes);
@@ -847,6 +873,16 @@ BudgetExcelImportResult _parseBudgetWorkbook(Uint8List bytes) {
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
             BudgetEntry.monthKeyOf(now))
         : null;
+    // Kategoria tylko dla wydatków — wpływy ignorują kolumnę.
+    final isExpenseType = type == BudgetEntryType.bill ||
+        type == BudgetEntryType.recurringCost ||
+        type == BudgetEntryType.oneTimeExpense;
+    final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
+    final categoryId = isExpenseType &&
+            rawCategory != null &&
+            rawCategory.isNotEmpty
+        ? catByName[rawCategory]
+        : null;
 
     entries.add(BudgetEntry(
       id: uuid.v4(),
@@ -857,6 +893,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(Uint8List bytes) {
       cycle: cycle,
       customCycleDays: isOneTime ? null : customDays,
       month: month,
+      categoryId: categoryId,
       isActive: _parseActive(cell(_BudgetHeaderField.active)),
       note: _blankToNull(cell(_BudgetHeaderField.note)),
       dataDodania: now,
@@ -885,6 +922,8 @@ Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
       field = _BudgetHeaderField.currency;
     } else if (h.contains('cykl') || h.contains('cycle') || h.contains('okres')) {
       field = _BudgetHeaderField.cycle;
+    } else if (h.contains('kateg') || h.contains('category')) {
+      field = _BudgetHeaderField.category;
     } else if (h.contains('mies') || h.contains('month')) {
       field = _BudgetHeaderField.month;
     } else if (h.contains('notat') || h.contains('note') || h.contains('opis')) {

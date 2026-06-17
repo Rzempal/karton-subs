@@ -43,6 +43,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   late final TextEditingController _customDaysCtrl;
 
   late BudgetEntryType _type;
+  String? _categoryId;
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
   late DateTime _oneTimeDate; // dokładna data wydatku jednorazowego
@@ -53,6 +54,13 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   bool get _isOneTime =>
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.oneTimeIncome;
+
+  /// Kategoria dotyczy tylko wydatków (rachunek / koszt cykliczny / jednorazowy).
+  /// Wpływy i przelew do domowego nie mają kategorii.
+  bool get _typeHasCategory =>
+      _type == BudgetEntryType.bill ||
+      _type == BudgetEntryType.recurringCost ||
+      _type == BudgetEntryType.oneTimeExpense;
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   List<BudgetEntryType> get _availableTypes => [
@@ -78,6 +86,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         text: e?.customCycleDays != null ? '${e!.customCycleDays}' : '');
 
     _type = e?.type ?? widget.initialType ?? BudgetEntryType.bill;
+    _categoryId = e?.categoryId;
     if (e != null) {
       _currency = e.currency;
       _cycle = e.cycle;
@@ -256,6 +265,32 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             ],
             const SizedBox(height: 24),
 
+            if (_typeHasCategory) ...[
+              _SectionLabel('Kategoria'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilterChip(
+                    label: const Text('Brak'),
+                    selected: _categoryId == null,
+                    onSelected: (_) => setState(() => _categoryId = null),
+                  ),
+                  ...context.read<StorageService>().getCategories().map(
+                        (cat) => FilterChip(
+                          label: Text(cat.name),
+                          selected: _categoryId == cat.id,
+                          selectedColor: cat.color.withValues(alpha: 0.2),
+                          onSelected: (_) =>
+                              setState(() => _categoryId = cat.id),
+                        ),
+                      ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+
             _SectionLabel('Notatka'),
             const SizedBox(height: 8),
             TextFormField(
@@ -385,6 +420,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     final monthKey = _isOneTime ? BudgetEntry.monthKeyOf(_oneTimeDate) : null;
     // Kotwica daty: jednorazowy = dokładna data; cykliczny = opcjonalna kotwica.
     final startDate = _isOneTime ? _oneTimeDate : _anchorDate;
+    // Kategoria tylko dla wydatków — przy wpływie/przelewie czyścimy.
+    final categoryId = _typeHasCategory ? _categoryId : null;
 
     try {
       if (_isEditing) {
@@ -400,6 +437,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           clearMonth: monthKey == null,
           startDate: startDate,
           clearStartDate: startDate == null,
+          categoryId: categoryId,
+          clearCategoryId: categoryId == null,
           note: note,
           clearNote: note == null,
         ));
@@ -412,6 +451,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           cycle: _cycle,
           customCycleDays: customDays,
           month: monthKey,
+          categoryId: categoryId,
           startDate: startDate,
           note: note,
         );
