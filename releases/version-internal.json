@@ -1,8 +1,16 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.4.26061708.apk",
-  "releaseDate": "2026-06-17T14:06:30Z",
-  "releaseNotes": "Personalizacja Dashboardu: klik w sekcje Podsumowanie i Subskrypcje przelacza full/compact (zapamietywane, animowane)",
+  "version": "0.5.26061710",
+  "releaseNotes": "Subskrypcje: przelacznik zakresu tylko Osobiste/Domowe (bez Wszystkie) — spojnie z Dashboard/Budzet",
+  "releaseDate": "2026-06-17T14:31:51Z",
   "changelog": [
+    {
+      "version": "0.5.26061710",
+      "notes": "Subskrypcje: przelacznik zakresu tylko Osobiste/Domowe (bez Wszystkie) — spojnie z Dashboard/Budzet"
+    },
+    {
+      "version": "0.5.26061709",
+      "notes": "Subskrypcje: przelacznik zakresu (Wszystkie/Osobiste/Domowe) jak w Dashboard/Budzet, nad zakladkami Lista/Statystyki"
+    },
     {
       "version": "0.4.26061708",
       "notes": "Personalizacja Dashboardu: klik w sekcje Podsumowanie i Subskrypcje przelacza full/compact (zapamietywane, animowane)"
@@ -34,16 +42,8 @@
     {
       "version": "0.3.26061701",
       "notes": "- Budzet domowy (osobisty i wspolny) z przelewem\n- Kalendarz przeplywow w widoku miesiaca\n- Jednorazowy wplyw (premia/bonus)\n- Subskrypcje: zakres osobisty/domowy\n- Excel i backup obejmuja budzet domowy"
-    },
-    {
-      "version": "0.3.26061700",
-      "notes": "budget tracker update"
-    },
-    {
-      "version": "0.3.26061601",
-      "notes": "budget tracker"
     }
   ],
-  "version": "0.4.26061708",
-  "versionCode": 426061708
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.5.26061710.apk",
+  "versionCode": 526061710
 }

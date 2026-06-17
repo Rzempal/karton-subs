@@ -12,6 +12,7 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
+import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_progress_bar.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/gradient_amount.dart';
@@ -34,7 +35,8 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
 
   late final TabController _tabController;
   String? _filterCategoryId;
-  SubscriptionScope? _scopeFilter; // null = wszystkie zakresy
+  // Spojnie z Dashboard/Budzet: tylko Osobiste/Domowe (bez „Wszystkie").
+  SubscriptionScope _scopeFilter = SubscriptionScope.personal;
   bool _showInactive = false;
   bool _isBusy = false;
 
@@ -72,13 +74,6 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
           ),
           const SizedBox(width: 4),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Lista'),
-            Tab(text: 'Statystyki'),
-          ],
-        ),
       ),
       floatingActionButtonLocation: kAuroraFabLocation,
       floatingActionButton: AuroraAddMenu(
@@ -96,22 +91,51 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _ListTab(
-            filterCategoryId: _filterCategoryId,
-            scopeFilter: _scopeFilter,
-            showInactive: _showInactive,
-            onSelectCategory: (id) => setState(() => _filterCategoryId = id),
-            onSelectScope: (s) => setState(() => _scopeFilter = s),
-            onToggleInactive: () =>
-                setState(() => _showInactive = !_showInactive),
-            onTapEdit: _openEdit,
+          // Zakres (Wszystkie/Osobiste/Domowe) — taki sam przelacznik jak na
+          // Dashboardzie i w Budzecie; nad zakladkami Lista/Statystyki.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: AuroraSegmented<SubscriptionScope>(
+              selected: _scopeFilter,
+              onChanged: (v) => setState(() => _scopeFilter = v),
+              segments: const [
+                AuroraSegment(
+                    value: SubscriptionScope.personal,
+                    label: 'Osobiste',
+                    icon: LucideIcons.user),
+                AuroraSegment(
+                    value: SubscriptionScope.household,
+                    label: 'Domowe',
+                    icon: LucideIcons.home),
+              ],
+            ),
           ),
-          _StatsTab(
-            scopeFilter: _scopeFilter,
-            onSelectScope: (s) => setState(() => _scopeFilter = s),
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Lista'),
+              Tab(text: 'Statystyki'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _ListTab(
+                  filterCategoryId: _filterCategoryId,
+                  scopeFilter: _scopeFilter,
+                  showInactive: _showInactive,
+                  onSelectCategory: (id) =>
+                      setState(() => _filterCategoryId = id),
+                  onToggleInactive: () =>
+                      setState(() => _showInactive = !_showInactive),
+                  onTapEdit: _openEdit,
+                ),
+                _StatsTab(scopeFilter: _scopeFilter),
+              ],
+            ),
           ),
         ],
       ),
@@ -196,10 +220,9 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
 
 class _ListTab extends StatelessWidget {
   final String? filterCategoryId;
-  final SubscriptionScope? scopeFilter;
+  final SubscriptionScope scopeFilter;
   final bool showInactive;
   final void Function(String?) onSelectCategory;
-  final void Function(SubscriptionScope?) onSelectScope;
   final VoidCallback onToggleInactive;
   final void Function(Subscription) onTapEdit;
 
@@ -208,7 +231,6 @@ class _ListTab extends StatelessWidget {
     required this.scopeFilter,
     required this.showInactive,
     required this.onSelectCategory,
-    required this.onSelectScope,
     required this.onToggleInactive,
     required this.onTapEdit,
   });
@@ -220,18 +242,25 @@ class _ListTab extends StatelessWidget {
     final categories = storage.getCategories();
     final subs = ctrl
         .sorted(categoryId: filterCategoryId, activeOnly: !showInactive)
-        .where((s) => scopeFilter == null || s.scope == scopeFilter)
+        .where((s) => s.scope == scopeFilter)
         .toList();
 
     return Column(
       children: [
+        // Filtr kategorii + przelacznik widocznosci nieaktywnych (zakres jest
+        // w naglowku ekranu).
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+          padding: const EdgeInsets.fromLTRB(0, 8, 4, 0),
           child: Row(
             children: [
               Expanded(
-                child: _ScopeFilterChips(
-                    selected: scopeFilter, onSelect: onSelectScope),
+                child: categories.isNotEmpty
+                    ? _CategoryFilter(
+                        categories: categories,
+                        selected: filterCategoryId,
+                        onSelect: onSelectCategory,
+                      )
+                    : const SizedBox.shrink(),
               ),
               IconButton(
                 icon: Icon(
@@ -243,12 +272,6 @@ class _ListTab extends StatelessWidget {
             ],
           ),
         ),
-        if (categories.isNotEmpty)
-          _CategoryFilter(
-            categories: categories,
-            selected: filterCategoryId,
-            onSelect: onSelectCategory,
-          ),
         Expanded(
           child: subs.isEmpty
               ? _EmptyState(hasFilter: filterCategoryId != null)
@@ -358,9 +381,8 @@ class _Card extends StatelessWidget {
 // ── Zakładka: Statystyki ──────────────────────────────────────────────────────
 
 class _StatsTab extends StatelessWidget {
-  final SubscriptionScope? scopeFilter;
-  final void Function(SubscriptionScope?) onSelectScope;
-  const _StatsTab({required this.scopeFilter, required this.onSelectScope});
+  final SubscriptionScope scopeFilter;
+  const _StatsTab({required this.scopeFilter});
 
   static const _analytics = AnalyticsService();
 
@@ -370,7 +392,7 @@ class _StatsTab extends StatelessWidget {
     final storage = context.read<StorageService>();
     final subs = storage
         .getSubscriptions()
-        .where((s) => scopeFilter == null || s.scope == scopeFilter)
+        .where((s) => s.scope == scopeFilter)
         .toList();
     final categories = storage.getCategories();
     final currencyLabel = storage.getCurrency();
@@ -396,8 +418,6 @@ class _StatsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
       children: [
-        _ScopeFilterChips(selected: scopeFilter, onSelect: onSelectScope),
-        const SizedBox(height: 12),
         _SummaryHero(
           monthly: monthlyTotal,
           yearly: yearly,
@@ -550,33 +570,6 @@ class _TrialCostsCard extends StatelessWidget {
 }
 
 // ── Wspólne ───────────────────────────────────────────────────────────────────
-
-class _ScopeFilterChips extends StatelessWidget {
-  final SubscriptionScope? selected;
-  final void Function(SubscriptionScope?) onSelect;
-  const _ScopeFilterChips({required this.selected, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    Widget chip(String label, SubscriptionScope? value) => Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: AuroraChip(
-            label: label,
-            selected: selected == value,
-            onTap: () => onSelect(value),
-          ),
-        );
-    return Wrap(
-      spacing: 0,
-      runSpacing: 8,
-      children: [
-        chip('Wszystkie', null),
-        chip('Osobiste', SubscriptionScope.personal),
-        chip('Domowe', SubscriptionScope.household),
-      ],
-    );
-  }
-}
 
 class _CategoryFilter extends StatelessWidget {
   final List<Category> categories;

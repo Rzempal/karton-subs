@@ -5,6 +5,7 @@ import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/budget_service.dart';
 import '../theme/app_theme.dart';
+import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
 import 'gradient_amount.dart';
 
@@ -21,79 +22,19 @@ class BudgetScopeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.frost1,
-        border: Border.all(color: AppColors.frostBorder),
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-      ),
-      child: Row(
-        children: [
-          _ScopeSegment(
+    return AuroraSegmented<BudgetScope>(
+      selected: scope,
+      onChanged: onChanged,
+      segments: const [
+        AuroraSegment(
+            value: BudgetScope.personal,
             label: 'Osobisty',
-            icon: LucideIcons.user,
-            selected: scope == BudgetScope.personal,
-            onTap: () => onChanged(BudgetScope.personal),
-          ),
-          _ScopeSegment(
+            icon: LucideIcons.user),
+        AuroraSegment(
+            value: BudgetScope.household,
             label: 'Domowy',
-            icon: LucideIcons.home,
-            selected: scope == BudgetScope.household,
-            onTap: () => onChanged(BudgetScope.household),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ScopeSegment extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _ScopeSegment({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  static const Color _activeText = AppColors.onAccent;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? _activeText : AppColors.textSecondary;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            gradient: selected ? AppColors.accentGradient : null,
-            borderRadius: BorderRadius.circular(AppRadii.control),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 15, color: fg),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: fg,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+            icon: LucideIcons.home),
+      ],
     );
   }
 }
