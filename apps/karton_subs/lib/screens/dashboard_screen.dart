@@ -52,9 +52,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final monthKey = BudgetEntry.monthKeyOf(_selectedMonth);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Dashboard'), centerTitle: false),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
         children: [
           BudgetScopeToggle(scope: budget.scope, onChanged: budget.setScope),
           const SizedBox(height: 16),

@@ -140,6 +140,45 @@ void _onCalendarSync() {}
 
 ---
 
+## Design tokens — zero zaszytych kolorów UI (Aurora)
+
+> **Powiązane:** [Design](../design.md) | [ADR-005](../adr/ADR-005-aurora-jeden-ciemny-motyw.md)
+
+Jedno źródło prawdy dla wyglądu: `apps/karton_subs/lib/theme/app_theme.dart`
+(`AppColors`, `AppRadii`, `AppSemanticColors` + `ThemeData`). Komponenty czytają
+tokeny — **nie** literały. Zaszyte na sztywno kolory/wymiary rozjeżdżają design
+przy każdej kolejnej zmianie i są najczęstszą przyczyną niespójności.
+
+| Zamiast (literał) | Użyj (token) |
+| ----------------- | ------------ |
+| `Color(0xFF....)` | `AppColors.<token>` |
+| `Colors.red` / `green` / `amber`… (akcja, status) | `AppColors.negative/positive/warning` lub `context.semanticColors.*` |
+| `Color(0xFF1B1240)` (tekst na akcencie) | `AppColors.onAccent` |
+| `BorderRadius.circular(22/18/16/12)` | `AppRadii.card/metric/tile/control` |
+| Tło dialogu/sheetu/menu | rola w `ThemeData` (`dialogTheme`, `bottomSheetTheme`, `datePickerTheme`…) — **nie** styluj per-wywołanie |
+
+**Reguła komponentów Material:** każdy stockowy komponent (dialog, picker, menu,
+snackbar, tooltip) ma własny `*ThemeData`. Nowy komponent stylujemy **raz** w
+`app_theme.dart`, nigdy w miejscu użycia — wtedy każdy przyszły ekran jest Aurora
+„za darmo".
+
+**Dozwolone literały:** `Colors.transparent`, `Colors.white`, `Colors.black`
+(prymitywy do obramowań / cieni / zasłon — nie kolory marki).
+
+**Wyjątki (allowlist):** `lib/theme/**` (źródło prawdy) oraz
+`lib/services/pdf_export_service.dart` (render PDF, własna przestrzeń kolorów).
+
+### Strażnik (automat)
+
+```powershell
+pwsh -File scripts/check_design_tokens.ps1   # exit 1 = znaleziono zaszyte kolory
+```
+
+Uruchamiaj przed commitem (i w code-review). Blokuje surowe `Color(0x…)` oraz
+nazwane kolory semantyczne poza allowlistą.
+
+---
+
 ## Struktura Plików
 
 ### Frontend (Next.js)
@@ -197,4 +236,4 @@ const ProjectCard = (props: any) => { ... }
 
 ---
 
-> 📅 **Ostatnia aktualizacja:** 2026-01-26
+> 📅 **Ostatnia aktualizacja:** 2026-06-17

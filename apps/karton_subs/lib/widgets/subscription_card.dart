@@ -57,11 +57,11 @@ class SubscriptionCard extends StatelessWidget {
     return Card(
       color: bgColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         side: BorderSide(color: borderColor),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         onTap: onTap,
         onLongPress: onLongPress,
         child: Opacity(
@@ -329,7 +329,7 @@ class _CategoryDot extends StatelessWidget {
             ? Color(int.parse(
                 'FF${subscription.colorHex!.replaceFirst('#', '')}',
                 radix: 16))
-            : AppColors.lightSecondary);
+            : AppColors.accentSolid);
 
     return Container(
       width: 40,

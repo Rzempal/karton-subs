@@ -1,6 +1,5 @@
 // budget_progress_bar.dart — Pasek budżetu z progiem ostrzeżenia
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/analytics_service.dart';

@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aurora_background.dart';
 import '../widgets/subscription_card.dart' show categoryIcon, availableIconNames;
 
 class CategoryManagementScreen extends StatefulWidget {
@@ -27,7 +28,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     final categories = storage.getCategories();
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return AuroraBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Kategorie'),
         actions: [
@@ -85,7 +88,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         ),
                         IconButton(
                           icon: const Icon(LucideIcons.trash2,
-                              size: 18, color: Colors.red),
+                              size: 18, color: AppColors.negative),
                           onPressed: () =>
                               _confirmDelete(context, storage, cat, subsCount),
                         ),
@@ -96,6 +99,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                 );
               },
             ),
+      ),
     );
   }
 
@@ -139,7 +143,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               Navigator.pop(ctx);
               _deleteCategory(storage, cat);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
           ),
         ],

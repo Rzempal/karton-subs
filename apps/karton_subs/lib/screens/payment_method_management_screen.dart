@@ -7,6 +7,8 @@ import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/aurora_background.dart';
 
 class PaymentMethodManagementScreen extends StatefulWidget {
   const PaymentMethodManagementScreen({super.key});
@@ -26,7 +28,9 @@ class _PaymentMethodManagementScreenState
     final methods = storage.getPaymentMethods();
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return AuroraBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Metody płatności'),
         actions: [
@@ -76,7 +80,7 @@ class _PaymentMethodManagementScreenState
                         ),
                         IconButton(
                           icon: const Icon(LucideIcons.trash2,
-                              size: 18, color: Colors.red),
+                              size: 18, color: AppColors.negative),
                           onPressed: () =>
                               _confirmDelete(context, storage, pm, subsCount),
                         ),
@@ -87,6 +91,7 @@ class _PaymentMethodManagementScreenState
                 );
               },
             ),
+      ),
     );
   }
 
@@ -130,7 +135,7 @@ class _PaymentMethodManagementScreenState
               Navigator.pop(ctx);
               _deletePaymentMethod(storage, pm);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
           ),
         ],

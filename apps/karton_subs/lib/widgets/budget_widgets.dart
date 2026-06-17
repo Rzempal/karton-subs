@@ -6,6 +6,7 @@ import '../models/subscription.dart';
 import '../services/budget_service.dart';
 import '../theme/app_theme.dart';
 import 'cashflow_calendar.dart';
+import 'gradient_amount.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 
@@ -20,24 +21,78 @@ class BudgetScopeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: SegmentedButton<BudgetScope>(
-        segments: const [
-          ButtonSegment(
-            value: BudgetScope.personal,
-            label: Text('Osobisty'),
-            icon: Icon(LucideIcons.user, size: 16),
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.frost1,
+        border: Border.all(color: AppColors.frostBorder),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+      ),
+      child: Row(
+        children: [
+          _ScopeSegment(
+            label: 'Osobisty',
+            icon: LucideIcons.user,
+            selected: scope == BudgetScope.personal,
+            onTap: () => onChanged(BudgetScope.personal),
           ),
-          ButtonSegment(
-            value: BudgetScope.household,
-            label: Text('Domowy'),
-            icon: Icon(LucideIcons.home, size: 16),
+          _ScopeSegment(
+            label: 'Domowy',
+            icon: LucideIcons.home,
+            selected: scope == BudgetScope.household,
+            onTap: () => onChanged(BudgetScope.household),
           ),
         ],
-        selected: {scope},
-        showSelectedIcon: false,
-        onSelectionChanged: (s) => onChanged(s.first),
+      ),
+    );
+  }
+}
+
+class _ScopeSegment extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ScopeSegment({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  static const Color _activeText = AppColors.onAccent;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? _activeText : AppColors.textSecondary;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            gradient: selected ? AppColors.accentGradient : null,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 15, color: fg),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: fg,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -75,8 +130,8 @@ class BudgetSurplusCard extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final positive = surplus >= 0;
-    final color = positive ? c.positive : c.negative;
     final sign = positive ? '' : '−';
+    final amountText = '$sign${budgetNf.format(surplus.abs())} $currency';
 
     return Card(
       child: Padding(
@@ -88,13 +143,18 @@ class BudgetSurplusCard extends StatelessWidget {
                 style: theme.textTheme.labelMedium
                     ?.copyWith(color: c.textSecondary)),
             const SizedBox(height: 8),
-            Text(
-              '$sign${budgetNf.format(surplus.abs())} $currency',
-              style: theme.textTheme.displayLarge?.copyWith(
-                color: color,
-                fontFeatures: const [FontFeature.tabularFigures()],
+            // Kwota-bohater: gradient dla nadwyżki (sygnaturowy „wow");
+            // deficyt na czerwono — znaczenie ważniejsze niż efekt.
+            if (positive)
+              GradientAmount(amountText, semanticsLabel: 'Zostaje $amountText')
+            else
+              Text(
+                amountText,
+                style: theme.textTheme.displayLarge?.copyWith(
+                  color: c.negative,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
             const SizedBox(height: 4),
             Text(
               positive
@@ -370,9 +430,13 @@ class BudgetEntryCard extends StatelessWidget {
         : '${budgetTypeLabel(entry.type)}${dimmed ? ' · wstrzymane' : ''}';
 
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        side: BorderSide(color: c.border),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.tile),
         child: Opacity(
           opacity: dimmed ? 0.5 : 1.0,
           child: Padding(

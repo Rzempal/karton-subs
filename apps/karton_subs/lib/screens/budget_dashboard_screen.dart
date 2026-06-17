@@ -5,6 +5,7 @@ import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 import '../services/excel_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aurora_add_menu.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
@@ -31,6 +32,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final isEmpty = incomes.isEmpty && recurring.isEmpty && oneTime.isEmpty;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Budżet'),
         centerTitle: false,
@@ -45,10 +47,30 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddSheet,
-        icon: const Icon(LucideIcons.plus),
-        label: const Text('Dodaj'),
+      floatingActionButtonLocation: kAuroraFabLocation,
+      floatingActionButton: AuroraAddMenu(
+        actions: [
+          AuroraAddAction(
+            icon: LucideIcons.plus,
+            label: 'Dodaj ręcznie',
+            primary: true,
+            onTap: () => _openAdd(),
+          ),
+          if (ctrl.isHousehold)
+            AuroraAddAction(
+              icon: LucideIcons.userPlus,
+              label: 'Dodaj wkład członka',
+              onTap: () => _openAdd(
+                initialType: BudgetEntryType.income,
+                initialName: 'Wkład — ',
+              ),
+            ),
+          AuroraAddAction(
+            icon: LucideIcons.fileInput,
+            label: 'Importuj z Excela',
+            onTap: _importExcel,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -61,7 +83,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
             child: isEmpty
                 ? _EmptyBudget(isHousehold: ctrl.isHousehold)
                 : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                     children: [
                       _Section(
                           title: 'Wpływy', entries: incomes, onTap: _openEdit),
@@ -77,61 +99,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                   ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _openAddSheet() {
-    final isHousehold = context.read<BudgetController>().isHousehold;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(LucideIcons.plus),
-              title: const Text('Dodaj ręcznie'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openAdd();
-              },
-            ),
-            if (isHousehold)
-              ListTile(
-                leading: const Icon(LucideIcons.userPlus),
-                title: const Text('Dodaj wkład członka'),
-                subtitle: const Text('Wpływ od osoby w gospodarstwie'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openAdd(
-                    initialType: BudgetEntryType.income,
-                    initialName: 'Wkład — ',
-                  );
-                },
-              ),
-            ListTile(
-              leading: const Icon(LucideIcons.fileInput),
-              title: const Text('Importuj z Excela'),
-              subtitle: const Text('Wczytaj pozycje z pliku .xlsx'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _importExcel();
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
       ),
     );
   }

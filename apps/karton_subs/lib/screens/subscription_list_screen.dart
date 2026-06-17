@@ -10,8 +10,11 @@ import '../services/excel_service.dart';
 import '../services/pdf_export_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aurora_add_menu.dart';
+import '../widgets/aurora_chip.dart';
 import '../widgets/budget_progress_bar.dart';
 import '../widgets/category_breakdown_chart.dart';
+import '../widgets/gradient_amount.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
 import '../widgets/spending_chart.dart';
@@ -50,6 +53,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Subskrypcje'),
         actions: [
@@ -76,10 +80,21 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddSheet,
-        icon: const Icon(LucideIcons.plus),
-        label: const Text('Dodaj'),
+      floatingActionButtonLocation: kAuroraFabLocation,
+      floatingActionButton: AuroraAddMenu(
+        actions: [
+          AuroraAddAction(
+            icon: LucideIcons.plus,
+            label: 'Dodaj ręcznie',
+            primary: true,
+            onTap: _openAdd,
+          ),
+          AuroraAddAction(
+            icon: LucideIcons.fileInput,
+            label: 'Importuj z Excela',
+            onTap: _importExcel,
+          ),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,
@@ -104,47 +119,6 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
   }
 
   // ── Akcje nagłówka / FAB ───────────────────────────────────────────────────
-
-  void _openAddSheet() {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(LucideIcons.plus),
-              title: const Text('Dodaj ręcznie'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openAdd();
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.fileInput),
-              title: const Text('Importuj z Excela'),
-              subtitle: const Text('Wczytaj listę z pliku .xlsx'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _importExcel();
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
 
   Future<void> _openAdd() => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const AddSubscriptionScreen()),
@@ -279,7 +253,7 @@ class _ListTab extends StatelessWidget {
           child: subs.isEmpty
               ? _EmptyState(hasFilter: filterCategoryId != null)
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                   itemCount: subs.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) =>
@@ -342,8 +316,8 @@ class _Card extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.trash2, color: Colors.red),
-              title: const Text('Usuń', style: TextStyle(color: Colors.red)),
+              leading: const Icon(LucideIcons.trash2, color: AppColors.negative),
+              title: const Text('Usuń', style: TextStyle(color: AppColors.negative)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, sub);
@@ -372,7 +346,7 @@ class _Card extends StatelessWidget {
               Navigator.pop(ctx);
               context.read<SubscriptionController>().delete(sub.id);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
           ),
         ],
@@ -420,7 +394,7 @@ class _StatsTab extends StatelessWidget {
           .compareTo(b.trialDaysRemaining ?? 99));
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
       children: [
         _ScopeFilterChips(selected: scopeFilter, onSelect: onSelectScope),
         const SizedBox(height: 12),
@@ -472,10 +446,10 @@ class _SummaryHero extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final nf = NumberFormat('#,##0.00', 'pl_PL');
+    final amountText = '${nf.format(monthly)} $currency';
 
     return Card(
       color: c.heroCardBg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -485,13 +459,9 @@ class _SummaryHero extends StatelessWidget {
                 style: theme.textTheme.labelMedium
                     ?.copyWith(color: c.heroCardTextSecondary)),
             const SizedBox(height: 8),
-            Text(
-              '${nf.format(monthly)} $currency',
-              style: theme.textTheme.displayLarge?.copyWith(
-                color: c.heroCardText,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
+            // Kwota-bohater zakładki Statystyki — gradient (ShaderMask).
+            GradientAmount(amountText,
+                semanticsLabel: 'Łączny koszt miesięczny $amountText'),
             const SizedBox(height: 4),
             Text('${nf.format(yearly)} $currency / rok',
                 style: theme.textTheme.bodyMedium
@@ -523,7 +493,7 @@ class _TrialCostsCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.trialBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         border: Border.all(color: c.trial.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -590,15 +560,15 @@ class _ScopeFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget chip(String label, SubscriptionScope? value) => Padding(
           padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            label: Text(label),
+          child: AuroraChip(
+            label: label,
             selected: selected == value,
-            onSelected: (_) => onSelect(value),
+            onTap: () => onSelect(value),
           ),
         );
     return Wrap(
       spacing: 0,
-      runSpacing: 4,
+      runSpacing: 8,
       children: [
         chip('Wszystkie', null),
         chip('Osobiste', SubscriptionScope.personal),
@@ -627,20 +597,25 @@ class _CategoryFilter extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
         children: [
-          FilterChip(
-            label: const Text('Wszystkie'),
-            selected: selected == null,
-            onSelected: (_) => onSelect(null),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: AuroraChip(
+                label: 'Wszystkie',
+                selected: selected == null,
+                onTap: () => onSelect(null),
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
-          ...categories.map((cat) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(cat.name),
-                  selected: selected == cat.id,
-                  selectedColor: cat.color.withValues(alpha: 0.2),
-                  onSelected: (_) =>
-                      onSelect(selected == cat.id ? null : cat.id),
+          ...categories.map((cat) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: AuroraChip(
+                    label: cat.name,
+                    selected: selected == cat.id,
+                    accent: cat.color,
+                    onTap: () => onSelect(selected == cat.id ? null : cat.id),
+                  ),
                 ),
               )),
         ],

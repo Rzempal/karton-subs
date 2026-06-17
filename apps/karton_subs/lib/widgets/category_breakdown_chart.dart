@@ -1,6 +1,5 @@
 // category_breakdown_chart.dart — Wykres kołowy podziału wg kategorii
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
@@ -19,11 +18,8 @@ class CategoryBreakdownChart extends StatelessWidget {
     required this.currencySymbol,
   });
 
-  static const _chartColors = [
-    Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFF0891B2),
-    Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFFDB2777),
-    Color(0xFFD97706), Color(0xFF64748B),
-  ];
+  // Paleta wykresów Aurora (shade 400) — fallback gdy kategoria nie ma koloru.
+  static const _chartColors = AppColors.chartColors;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +73,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: sorted.asMap().entries.map((e) {
                         final cat = _findCat(e.value.key);
-                        final color = cat?.color ?? Colors.grey;
+                        final color = cat?.color ?? AppColors.textMuted;
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
                           child: Row(

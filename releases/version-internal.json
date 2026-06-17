@@ -1,41 +1,49 @@
 {
-  "releaseNotes": "- Import i eksport subskrypcji do Excela (.xlsx)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.3.26061600.apk",
+  "version": "0.4.26061707",
+  "versionCode": 426061707,
   "changelog": [
+    {
+      "version": "0.4.26061707",
+      "notes": "Spojnosc: pelne pokrycie motywem (date picker, menu, snackbar, tooltip), tokeny AppColors.onAccent/AppRadii, akcje destrukcyjne na token negative, straznik design tokens"
+    },
+    {
+      "version": "0.4.26061706",
+      "notes": "Dialogi i bottom sheety: nieprzezroczyste jasniejsze tlo (nie zlewaja sie z przyciemnieniem)"
+    },
+    {
+      "version": "0.4.26061705",
+      "notes": "Ustawienia jako karty frost; menu Dodaj szklane jak navbar (mniej przezroczyste) + fix zoltych podkreslen"
+    },
+    {
+      "version": "0.4.26061704",
+      "notes": "Menu Dodaj wysuwane w gore nad przyciskiem (zamiast bottom sheet); przycisk uniesiony nad navbar"
+    },
+    {
+      "version": "0.4.26061703",
+      "notes": "Aurora: poprawka pozycji paska nawigacji (dol ekranu)"
+    },
+    {
+      "version": "0.4.26061702",
+      "notes": "Redesign Aurora: jeden ciemny motyw, gradient + frost, pasek nawigacji szklany, kwoty-bohater gradientowe"
+    },
+    {
+      "version": "0.3.26061701",
+      "notes": "- Budzet domowy (osobisty i wspolny) z przelewem\n- Kalendarz przeplywow w widoku miesiaca\n- Jednorazowy wplyw (premia/bonus)\n- Subskrypcje: zakres osobisty/domowy\n- Excel i backup obejmuja budzet domowy"
+    },
+    {
+      "version": "0.3.26061700",
+      "notes": "budget tracker update"
+    },
+    {
+      "version": "0.3.26061601",
+      "notes": "budget tracker"
+    },
     {
       "version": "0.3.26061600",
       "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
-    },
-    {
-      "version": "0.2.26040900",
-      "notes": "- bug fixes"
-    },
-    {
-      "version": "0.2.26032918",
-      "notes": "zmiana ikony aplikacji"
-    },
-    {
-      "version": "0.1.26032917",
-      "notes": "- bug fixes"
-    },
-    {
-      "version": "0.1.26032904",
-      "notes": "fix crash"
-    },
-    {
-      "version": "0.1.26032903",
-      "notes": "- bug fixes"
-    },
-    {
-      "version": "0.1.26032901",
-      "notes": "faza 2"
-    },
-    {
-      "version": "0.1.26032900",
-      "notes": "- bug fixes"
     }
   ],
-  "releaseDate": "2026-06-16T18:51:55Z",
-  "version": "0.3.26061600",
-  "versionCode": 326061600
+  "releaseDate": "2026-06-17T13:49:59Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.4.26061707.apk",
+  "releaseNotes": "Spojnosc: pelne pokrycie motywem (date picker, menu, snackbar, tooltip), tokeny AppColors.onAccent/AppRadii, akcje destrukcyjne na token negative, straznik design tokens"
 }

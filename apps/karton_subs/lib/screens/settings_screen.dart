@@ -8,7 +8,6 @@ import '../controllers/budget_controller.dart';
 import '../services/backup_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
-import '../services/theme_provider.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../config/app_config.dart';
@@ -20,74 +19,68 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
     final ctrl = context.watch<SubscriptionController>();
     final storage = context.read<StorageService>();
     final currency = storage.getCurrency();
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Ustawienia')),
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 112),
         children: [
-          // ── Wygląd ──────────────────────────────────────────────────────
-          const _SectionDivider('Wygląd'),
-          ListTile(
-            leading: Icon(theme.isDarkMode
-                ? LucideIcons.moon
-                : LucideIcons.sun),
-            title: const Text('Motyw'),
-            subtitle: Text(_themeName(theme.themeMode)),
-            trailing: const Icon(LucideIcons.chevronRight),
-            onTap: () => _showThemePicker(context, theme),
-          ),
-          ListTile(
-            leading: const Icon(LucideIcons.tag),
-            title: const Text('Zarządzaj kategoriami'),
-            trailing: const Icon(LucideIcons.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const CategoryManagementScreen(),
+          _FrostGroup(children: [
+            ListTile(
+              leading: const Icon(LucideIcons.tag),
+              title: const Text('Zarządzaj kategoriami'),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CategoryManagementScreen(),
+                ),
               ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(LucideIcons.creditCard),
-            title: const Text('Metody płatności'),
-            trailing: const Icon(LucideIcons.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const PaymentMethodManagementScreen(),
+            ListTile(
+              leading: const Icon(LucideIcons.creditCard),
+              title: const Text('Metody płatności'),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PaymentMethodManagementScreen(),
+                ),
               ),
             ),
-          ),
-          const Divider(indent: 16, endIndent: 16),
+          ]),
 
           // ── Waluta ──────────────────────────────────────────────────────
           const _SectionDivider('Waluta domyślna'),
-          ...Currency.values.map((c) => RadioListTile<String>(
-                value: c.label,
-                groupValue: currency,
-                title: Text('${c.label} (${c.symbol})'),
-                onChanged: (v) {
-                  if (v != null) {
-                    storage.setCurrency(v);
-                    ctrl.refresh();
-                  }
-                },
-              )),
-          ListTile(
-            leading: const Icon(LucideIcons.target),
-            title: const Text('Limit budżetowy'),
-            subtitle: Text(
-              storage.getBudgetLimit() != null
-                  ? '${storage.getBudgetLimit()!.toStringAsFixed(0)} $currency/mies'
-                  : 'Nie ustawiono',
+          _FrostGroup(children: [
+            ...Currency.values.map((c) => RadioListTile<String>(
+                  value: c.label,
+                  groupValue: currency,
+                  title: Text('${c.label} (${c.symbol})'),
+                  onChanged: (v) {
+                    if (v != null) {
+                      storage.setCurrency(v);
+                      ctrl.refresh();
+                    }
+                  },
+                )),
+            ListTile(
+              leading: const Icon(LucideIcons.target),
+              title: const Text('Limit budżetowy'),
+              subtitle: Text(
+                storage.getBudgetLimit() != null
+                    ? '${storage.getBudgetLimit()!.toStringAsFixed(0)} $currency/mies'
+                    : 'Nie ustawiono',
+              ),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () =>
+                  _showBudgetLimitDialog(context, storage, currency, ctrl),
             ),
-            trailing: const Icon(LucideIcons.chevronRight),
-            onTap: () => _showBudgetLimitDialog(context, storage, currency, ctrl),
-          ),
+          ]),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             child: Text(
               'Kursy walut: 1 EUR = 4,28 PLN · 1 USD = 3,95 PLN · 1 GBP = 5,02 PLN',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -95,64 +88,63 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const Divider(indent: 16, endIndent: 16),
 
           // ── Powiadomienia ────────────────────────────────────────────────
           const _SectionDivider('Powiadomienia'),
           _NotificationSection(),
-          const Divider(indent: 16, endIndent: 16),
 
           // ── Backup ──────────────────────────────────────────────────────
           const _SectionDivider('Backup'),
           _BackupSection(),
-          const Divider(indent: 16, endIndent: 16),
 
           // ── Aktualizacje ────────────────────────────────────────────────
           const _SectionDivider('Aktualizacje'),
-          _OtaSection(),
-          const Divider(indent: 16, endIndent: 16),
+          _FrostGroup(children: [_OtaSection()]),
 
           // ── Developer Tools (internal only) ─────────────────────────────
           if (AppConfig.isInternal) ...[
             const _SectionDivider('Developer Tools'),
-            ListTile(
-              leading: const Icon(LucideIcons.calendar),
-              title: const Text('Override daty'),
-              subtitle: Text(
-                storage.getDevDateOverride() != null
-                    ? DateFormat('dd.MM.yyyy').format(storage.getDevDateOverride()!)
-                    : 'Wyłączony (używa aktualnej daty)',
-              ),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () => _showDevDatePicker(context, storage),
-            ),
-            if (storage.getDevDateOverride() != null)
+            _FrostGroup(children: [
               ListTile(
-                leading: const Icon(LucideIcons.x),
-                title: const Text('Wyłącz override daty'),
-                onTap: () {
-                  storage.setDevDateOverride(null);
-                  Subscription.devDateOverride = null;
-                  ctrl.refresh();
-                },
+                leading: const Icon(LucideIcons.calendar),
+                title: const Text('Override daty'),
+                subtitle: Text(
+                  storage.getDevDateOverride() != null
+                      ? DateFormat('dd.MM.yyyy')
+                          .format(storage.getDevDateOverride()!)
+                      : 'Wyłączony (używa aktualnej daty)',
+                ),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () => _showDevDatePicker(context, storage),
               ),
-            const Divider(indent: 16, endIndent: 16),
+              if (storage.getDevDateOverride() != null)
+                ListTile(
+                  leading: const Icon(LucideIcons.x),
+                  title: const Text('Wyłącz override daty'),
+                  onTap: () {
+                    storage.setDevDateOverride(null);
+                    Subscription.devDateOverride = null;
+                    ctrl.refresh();
+                  },
+                ),
+            ]),
             _DevNotificationTriggers(),
-            const Divider(indent: 16, endIndent: 16),
           ],
 
           // ── Informacje ──────────────────────────────────────────────────
           const _SectionDivider('Informacje'),
-          Consumer<UpdateService>(
-            builder: (_, svc, _) => ListTile(
-              leading: const Icon(LucideIcons.info),
-              title: const Text('Wersja aplikacji'),
-              trailing: Text(
-                svc.currentVersionName ?? '1.0.0',
-                style: const TextStyle(color: Colors.grey),
+          _FrostGroup(children: [
+            Consumer<UpdateService>(
+              builder: (_, svc, _) => ListTile(
+                leading: const Icon(LucideIcons.info),
+                title: const Text('Wersja aplikacji'),
+                trailing: Text(
+                  svc.currentVersionName ?? '1.0.0',
+                  style: TextStyle(color: context.semanticColors.textMuted),
+                ),
               ),
             ),
-          ),
+          ]),
         ],
       ),
     );
@@ -228,70 +220,6 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
-  void _showThemePicker(BuildContext context, ThemeProvider provider) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 32, height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const ListTile(
-              title: Text('Wybierz motyw',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-            Column(
-              children: [
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.system,
-                  groupValue: provider.themeMode,
-                  title: const Text('Systemowy'),
-                  secondary: const Icon(LucideIcons.monitor),
-                  onChanged: (v) {
-                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
-                  },
-                ),
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.light,
-                  groupValue: provider.themeMode,
-                  title: const Text('Jasny'),
-                  secondary: const Icon(LucideIcons.sun),
-                  onChanged: (v) {
-                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
-                  },
-                ),
-                RadioListTile<ThemeMode>(
-                  value: ThemeMode.dark,
-                  groupValue: provider.themeMode,
-                  title: const Text('Ciemny'),
-                  secondary: const Icon(LucideIcons.moon),
-                  onChanged: (v) {
-                    if (v != null) { provider.setThemeMode(v); Navigator.pop(ctx); }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _themeName(ThemeMode mode) => switch (mode) {
-        ThemeMode.system => 'Systemowy',
-        ThemeMode.light => 'Jasny',
-        ThemeMode.dark => 'Ciemny',
-      };
 }
 
 // ── Notification Section ──────────────────────────────────────────────────
@@ -327,32 +255,30 @@ class _NotificationSectionState extends State<_NotificationSection> {
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    return Column(
-      children: [
-        SwitchListTile(
-          secondary: const Icon(LucideIcons.clock),
-          title: const Text('Przypomnienia o trialach'),
-          subtitle: const Text('3 dni, 1 dzień przed i w dniu końca'),
-          value: _trialReminders ?? true,
-          onChanged: (v) async {
-            setState(() => _trialReminders = v);
-            await storage.setNotifyTrialReminders(v);
-            await _onChanged();
-          },
-        ),
-        SwitchListTile(
-          secondary: const Icon(LucideIcons.calendarClock),
-          title: const Text('Przypomnienia o odnowieniach'),
-          subtitle: const Text('Przed odnowieniem subskrypcji'),
-          value: _renewalReminders ?? true,
-          onChanged: (v) async {
-            setState(() => _renewalReminders = v);
-            await storage.setNotifyRenewalReminders(v);
-            await _onChanged();
-          },
-        ),
-      ],
-    );
+    return _FrostGroup(children: [
+      SwitchListTile(
+        secondary: const Icon(LucideIcons.clock),
+        title: const Text('Przypomnienia o trialach'),
+        subtitle: const Text('3 dni, 1 dzień przed i w dniu końca'),
+        value: _trialReminders ?? true,
+        onChanged: (v) async {
+          setState(() => _trialReminders = v);
+          await storage.setNotifyTrialReminders(v);
+          await _onChanged();
+        },
+      ),
+      SwitchListTile(
+        secondary: const Icon(LucideIcons.calendarClock),
+        title: const Text('Przypomnienia o odnowieniach'),
+        subtitle: const Text('Przed odnowieniem subskrypcji'),
+        value: _renewalReminders ?? true,
+        onChanged: (v) async {
+          setState(() => _renewalReminders = v);
+          await storage.setNotifyRenewalReminders(v);
+          await _onChanged();
+        },
+      ),
+    ]);
   }
 }
 
@@ -368,34 +294,32 @@ class _BackupSectionState extends State<_BackupSection> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: const Icon(LucideIcons.upload),
-          title: const Text('Eksportuj backup'),
-          subtitle: const Text('Zaszyfrowany plik .subkarton (klucz urządzenia)'),
-          trailing: _isBusy
-              ? const SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(LucideIcons.chevronRight),
-          onTap: _isBusy ? null : _export,
-        ),
-        ListTile(
-          leading: const Icon(LucideIcons.uploadCloud),
-          title: const Text('Eksportuj z hasłem'),
-          subtitle: const Text('Do przenoszenia między urządzeniami'),
-          trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
-          onTap: _isBusy ? null : _exportWithPassword,
-        ),
-        ListTile(
-          leading: const Icon(LucideIcons.download),
-          title: const Text('Importuj backup'),
-          subtitle: const Text('Przywróć z pliku .subkarton'),
-          trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
-          onTap: _isBusy ? null : _import,
-        ),
-      ],
-    );
+    return _FrostGroup(children: [
+      ListTile(
+        leading: const Icon(LucideIcons.upload),
+        title: const Text('Eksportuj backup'),
+        subtitle: const Text('Zaszyfrowany plik .subkarton (klucz urządzenia)'),
+        trailing: _isBusy
+            ? const SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(LucideIcons.chevronRight),
+        onTap: _isBusy ? null : _export,
+      ),
+      ListTile(
+        leading: const Icon(LucideIcons.uploadCloud),
+        title: const Text('Eksportuj z hasłem'),
+        subtitle: const Text('Do przenoszenia między urządzeniami'),
+        trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
+        onTap: _isBusy ? null : _exportWithPassword,
+      ),
+      ListTile(
+        leading: const Icon(LucideIcons.download),
+        title: const Text('Importuj backup'),
+        subtitle: const Text('Przywróć z pliku .subkarton'),
+        trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
+        onTap: _isBusy ? null : _import,
+      ),
+    ]);
   }
 
   Future<void> _export() async {
@@ -613,7 +537,7 @@ class _UpdateAvailableTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: c.positiveBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadii.control),
         border: Border.all(color: c.positive.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -777,6 +701,37 @@ class _DevNotificationTriggers extends StatelessWidget {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+/// Grupa wierszy ustawień jako karta „frost" z cienkimi dzielnikami między
+/// wierszami (Aurora — docs/design.md, ekran Ustawienia).
+class _FrostGroup extends StatelessWidget {
+  final List<Widget> children;
+  const _FrostGroup({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) {
+        rows.add(Divider(
+            height: 1, thickness: 1, color: AppColors.frostBorder));
+      }
+      rows.add(children[i]);
+    }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      decoration: BoxDecoration(
+        color: AppColors.frost1,
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        border: Border.all(color: AppColors.frostBorder),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+      ),
+    );
+  }
+}
+
 class _SectionDivider extends StatelessWidget {
   final String text;
   const _SectionDivider(this.text);
@@ -789,7 +744,7 @@ class _SectionDivider extends StatelessWidget {
         text.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               letterSpacing: 0.8,
-              color: Theme.of(context).colorScheme.primary,
+              color: context.semanticColors.textMuted,
             ),
       ),
     );

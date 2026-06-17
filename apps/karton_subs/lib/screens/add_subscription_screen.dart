@@ -7,6 +7,7 @@ import '../models/quick_add_templates.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aurora_background.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -86,7 +87,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     final hasOrphan = _paymentMethod != null &&
         !paymentMethods.any((pm) => pm.name == _paymentMethod);
 
-    return Scaffold(
+    return AuroraBackground(
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj subskrypcję' : 'Dodaj subskrypcję'),
         actions: [
@@ -369,17 +372,18 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
-                icon: const Icon(LucideIcons.trash2, color: Colors.red),
+                icon: const Icon(LucideIcons.trash2, color: AppColors.negative),
                 label: const Text('Usuń subskrypcję',
-                    style: TextStyle(color: Colors.red)),
+                    style: TextStyle(color: AppColors.negative)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
+                  side: const BorderSide(color: AppColors.negative),
                 ),
               ),
             ],
             const SizedBox(height: 16),
           ],
         ),
+      ),
       ),
     );
   }
@@ -406,7 +410,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   .delete(widget.existing!.id);
               if (mounted) Navigator.of(context).pop(true);
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
           ),
         ],

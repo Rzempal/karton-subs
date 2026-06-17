@@ -12,12 +12,13 @@ import 'services/app_logger.dart';
 import 'services/backup_service.dart';
 import 'services/excel_service.dart';
 import 'services/storage_service.dart';
-import 'services/theme_provider.dart';
 import 'services/update_service.dart';
 import 'services/notification_service.dart';
 import 'models/subscription.dart';
 import 'config/app_config.dart';
 import 'theme/app_theme.dart';
+import 'widgets/aurora_background.dart';
+import 'widgets/glass_nav_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,9 +34,6 @@ void main() async {
     Subscription.devDateOverride = storage.getDevDateOverride();
   }
 
-  final themeProvider = ThemeProvider();
-  await themeProvider.init();
-
   final updateService = UpdateService();
   // OTA check w tle — nie blokujemy startu
   updateService.init();
@@ -48,7 +46,6 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: themeProvider),
         Provider.value(value: storage),
         ChangeNotifierProvider(
           create: (_) => SubscriptionController(storage, notificationService),
@@ -80,15 +77,12 @@ class KartonApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
-
     return MaterialApp(
       title: 'Karton na subskrypcje',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeProvider.themeMode,
+      // Aurora — jeden uniwersalny ciemny motyw (ADR-005).
+      theme: AppTheme.theme,
       home: const _MainShell(),
     );
   }
@@ -111,70 +105,30 @@ class _MainShellState extends State<_MainShell> {
     SettingsScreen(),
   ];
 
+  static const _navItems = [
+    GlassNavItem(icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
+    GlassNavItem(icon: LucideIcons.repeat, label: 'Subskrypcje'),
+    GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
+    GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: _buildNavigationBar(),
-    );
-  }
-
-  Widget _buildNavigationBar() {
-    final navBar = NavigationBar(
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (i) => setState(() => _currentIndex = i),
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(LucideIcons.layoutDashboard),
-          selectedIcon: Icon(LucideIcons.layoutDashboard),
-          label: 'Dashboard',
+    return AuroraBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        // Treść przewija się za pływającym paskiem nawigacji.
+        extendBody: true,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
         ),
-        NavigationDestination(
-          icon: Icon(LucideIcons.repeat),
-          selectedIcon: Icon(LucideIcons.repeat),
-          label: 'Subskrypcje',
+        bottomNavigationBar: GlassNavBar(
+          currentIndex: _currentIndex,
+          onTap: (i) => setState(() => _currentIndex = i),
+          items: _navItems,
+          isDev: AppConfig.isInternal,
         ),
-        NavigationDestination(
-          icon: Icon(LucideIcons.wallet),
-          selectedIcon: Icon(LucideIcons.wallet),
-          label: 'Budżet',
-        ),
-        NavigationDestination(
-          icon: Icon(LucideIcons.settings),
-          selectedIcon: Icon(LucideIcons.settings),
-          label: 'Ustawienia',
-        ),
-      ],
-    );
-
-    if (!AppConfig.isInternal) return navBar;
-
-    // Dev: red gradient background on navigation bar
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF7F1D1D), Color(0xFF991B1B)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Colors.transparent,
-            indicatorColor: Colors.white.withValues(alpha: 0.15),
-            iconTheme: WidgetStateProperty.all(
-              const IconThemeData(color: Colors.white),
-            ),
-            labelTextStyle: WidgetStateProperty.all(
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
-            ),
-          ),
-        ),
-        child: navBar,
       ),
     );
   }
