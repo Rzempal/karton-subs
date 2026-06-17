@@ -332,4 +332,63 @@ class AppColors {
 
 ---
 
+## Makiety ekranow (Aurora) — sciaga do Fazy 6
+
+> Podglad wizualny 4 ekranow na realnych danych: [`design-mockups/aurora-makiety.html`](design-mockups/aurora-makiety.html)
+> (otworz w przegladarce). Ponizej mapowanie tresci ekranu → tokeny i komponenty Aurora.
+
+### Wspolne (kazdy ekran)
+
+- Tlo: `AuroraBackground` (`--bg-gradient` + 2 statyczne poswiaty)
+- AppBar: tytul 20px/600, tlo transparentne; akcje jako ikona + etykieta (XLSX/PDF)
+- Nawigacja: `GlassNavBar` (plywajaca pigulka, jedyny `BackdropFilter`); aktywna zakladka =
+  `--accent-gradient` (tekst `#1B1240`), reszta `--text-secondary`
+- Karty: `FrostCard` (`--frost-1`, border `--frost-border`, radius 22) — **bez blur**
+- Kwoty: tabular figures; dodatnie `--positive`, ujemne `--negative`
+- Przelacznik Osobisty/Domowy, chipy, aktywne taby: stan aktywny = `--accent-gradient`
+
+### Dashboard
+
+| Element | Realizacja Aurora |
+|---------|-------------------|
+| Hero „Zostaje miesiecznie" | `GradientAmount` (ShaderMask `--accent-gradient`) + caption `--text-muted` |
+| Wplywy / Koszty | 2× `MetricTile`: trending-up `--positive` / trending-down `--negative` |
+| Karta Subskrypcje | `FrostCard`: header + „N aktywne"; Miesiecznie / Rocznie |
+| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol |
+| Kropki w kalendarzu | wplyw `--positive`, wydatek `--negative` |
+| Dzis / wybrany dzien | dzis = border `--accent-violet`; wybrany = tlo `--frost-2` |
+| Szczegoly dnia | lista pod kalendarzem (ikona kierunku + nazwa + kwota semantic) |
+
+### Subskrypcje
+
+| Element | Realizacja Aurora |
+|---------|-------------------|
+| Taby Lista / Statystyki | aktywny: podkreslenie 2px `--accent-violet` |
+| Filtry (zakres + kategorie) | chipy; aktywny = `--accent-gradient` lub `--frost-2` |
+| Wiersz subskrypcji | kafel ikony w tincie koloru kategorii + kropka statusu `--positive` + nazwa + etykieta kategorii (kolor); prawa: kwota/okres + /os. |
+| Odnowienie wkrotce / trial | tlo `--warning` @ 0.10 + border `--warning` @ 0.30 |
+| Kolory kategorii | Streaming `#60A5FA`, Software `#FB923C`, Cloud `--accent-cyan`, Muzyka `--accent-violet` |
+| „Dodaj" | pigulka `--accent-gradient` |
+
+### Budzet
+
+| Element | Realizacja Aurora |
+|---------|-------------------|
+| Przelacznik Osobisty/Domowy | segmented frost; aktywny = gradient |
+| Naglowki sekcji | „Wplywy" / „Koszty cykliczne" — 15px/600 `--text-primary` |
+| Wiersz pozycji | ikona trending-up `--positive` / trending-down `--negative` + nazwa + typ (`--text-muted`) + kwota (semantic) |
+| „Dodaj" | pigulka `--accent-gradient` |
+
+### Ustawienia
+
+| Element | Realizacja Aurora |
+|---------|-------------------|
+| Wiersze listy | `FrostCard` z ikona `--accent-violet` + chevron `--text-muted` |
+| Naglowki sekcji | 11px, letter-spacing, `--text-muted`, wersaliki |
+| Radio waluty | zaznaczony: pierscien + kropka `--accent-violet` |
+| Toggle ON / OFF | tor ON `--accent-gradient` + biala galka; OFF tor `--frost-2` |
+| Brak wiersza „Motyw" | jeden motyw — przelacznik usuniety (zob. [ADR-005](adr/ADR-005-aurora-jeden-ciemny-motyw.md)) |
+
+---
+
 > **Ostatnia aktualizacja:** 2026-06-17

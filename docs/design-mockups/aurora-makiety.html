@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora — makiety ekranow</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+  :root{--color-background-secondary:#1b1726;--border-radius-lg:14px;--font-sans:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#100d18;color:#E6E1FA;font-family:var(--font-sans);padding:28px;}
+  h1{font-weight:600;font-size:22px;margin:0 0 4px;}
+  p.sub{color:#A99FD0;font-size:13px;margin:0 0 24px;max-width:760px;}
+  .gallery{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;}
+  .screen{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .screen h3{font-weight:600;font-size:14px;color:#C2B9EC;margin:0;}
+  .au1-cd{display:flex;flex-direction:column;align-items:center;justify-content:center;height:34px;font-size:12px;color:#E6E1FA;border-radius:9px;position:relative;}
+  .au1-dot{width:5px;height:5px;border-radius:50%;position:absolute;bottom:4px;}
+</style>
+</head>
+<body>
+<h1>Aurora &mdash; makiety ekranow</h1>
+<p class="sub">Podglad redesignu (Faza 6) na realnych danych z aplikacji. Karty „frost" bez rozmycia (polprzezroczyste tlo na gradiencie); prawdziwy blur tylko na plywajacym pasku nawigacji. Spec: docs/design.md.</p>
+<div class="gallery">
+
+<div class="screen"><h3>Dashboard</h3>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;display:flex;justify-content:center;">
+  <div style="position:relative;width:330px;background:linear-gradient(165deg,#241B4B 0%,#16113A 52%,#0B0822 100%);border:1px solid rgba(255,255,255,0.13);border-radius:36px;overflow:hidden;font-family:var(--font-sans);color:#F3F0FF;padding-bottom:84px;">
+    <div style="position:absolute;top:-46px;right:-34px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,255,0.5),transparent 70%);"></div>
+    <div style="position:absolute;bottom:120px;left:-46px;width:170px;height:170px;background:radial-gradient(circle,rgba(34,211,238,0.28),transparent 70%);"></div>
+    <div style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px 4px;font-size:11px;color:#B7AEE0;"><span>10:05</span><span><i class="ti ti-wifi" style="font-size:13px;margin-right:6px"></i><i class="ti ti-battery-2" style="font-size:14px"></i></span></div>
+      <div style="padding:8px 20px 12px;font-size:20px;font-weight:600;">Dashboard</div>
+      <div style="margin:0 18px 14px;display:flex;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:4px;">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:12px;font-size:13px;color:#C2B9EC;"><i class="ti ti-user" style="font-size:14px;margin-right:5px"></i>Osobisty</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:12px;font-size:13px;font-weight:600;color:#1B1240;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);"><i class="ti ti-home" style="font-size:14px;margin-right:5px"></i>Domowy</div>
+      </div>
+      <div style="margin:0 18px 12px;padding:18px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:22px;">
+        <div style="font-size:12px;color:#C6BDF0;">Zostaje miesiecznie</div>
+        <div style="font-size:40px;font-weight:700;line-height:1.05;margin-top:3px;background:linear-gradient(90deg,#C4B5FD,#5EEAD4);-webkit-background-clip:text;background-clip:text;color:transparent;">681,47 PLN</div>
+        <div style="font-size:12px;color:#A99FD0;margin-top:6px;">Wplywy pokrywaja koszty cykliczne i subskrypcje.</div>
+      </div>
+      <div style="display:flex;gap:10px;margin:0 18px 12px;">
+        <div style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:18px;padding:13px 14px;"><div style="font-size:11px;color:#C2B9EC;"><i class="ti ti-trending-up" style="font-size:14px;color:#34D399;margin-right:5px"></i>Wplywy / mies.</div><div style="font-size:17px;font-weight:600;margin-top:6px;color:#34D399;">9 000,00 PLN</div></div>
+        <div style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:18px;padding:13px 14px;"><div style="font-size:11px;color:#C2B9EC;"><i class="ti ti-trending-down" style="font-size:14px;color:#F87171;margin-right:5px"></i>Koszty / mies.</div><div style="font-size:17px;font-weight:600;margin-top:6px;color:#F87171;">8 318,53 PLN</div></div>
+      </div>
+      <div style="margin:0 18px 12px;padding:15px 16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;font-weight:600;"><i class="ti ti-repeat" style="font-size:15px;color:#A78BFA;margin-right:6px"></i>Subskrypcje</span><span style="font-size:11px;color:#A99FD0;">0 aktywne</span></div>
+        <div style="display:flex;justify-content:space-between;margin-top:12px;"><div><div style="font-size:11px;color:#A99FD0;">Miesiecznie</div><div style="font-size:15px;font-weight:600;margin-top:2px;">0,00 PLN</div></div><div style="text-align:right;"><div style="font-size:11px;color:#A99FD0;">Rocznie</div><div style="font-size:15px;font-weight:600;margin-top:2px;">0,00 PLN</div></div></div>
+      </div>
+      <div style="margin:0 18px;padding:15px 16px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;"><i class="ti ti-chevron-left" style="font-size:18px;color:#A99FD0;"></i><span style="font-size:14px;font-weight:600;">czerwiec 2026</span><i class="ti ti-chevron-right" style="font-size:18px;color:#A99FD0;"></i></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;"><span style="font-size:13px;color:#C2B9EC;">Bilans miesiaca</span><span style="font-size:16px;font-weight:700;color:#F87171;">-635,24 PLN</span></div>
+        <div style="font-size:10px;color:#A99FD0;margin-top:3px;">Saldo "zostaje" po odjeciu wydatkow jednorazowych.</div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-top:12px;font-size:10px;color:#8E84BC;text-align:center;">
+          <div>Pn</div><div>Wt</div><div>Sr</div><div>Cz</div><div>Pt</div><div>So</div><div>Nd</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-top:4px;">
+          <div class="au1-cd">1</div><div class="au1-cd">2<span class="au1-dot" style="background:#34D399"></span></div><div class="au1-cd">3</div><div class="au1-cd">4</div><div class="au1-cd">5</div><div class="au1-cd">6</div><div class="au1-cd">7</div>
+          <div class="au1-cd">8</div><div class="au1-cd">9</div><div class="au1-cd">10<span class="au1-dot" style="background:#F87171"></span></div><div class="au1-cd">11</div><div class="au1-cd">12</div><div class="au1-cd" style="background:rgba(255,255,255,0.12);font-weight:600;">13<span class="au1-dot" style="background:#F87171"></span></div><div class="au1-cd">14<span class="au1-dot" style="background:#34D399"></span></div>
+          <div class="au1-cd">15</div><div class="au1-cd">16</div><div class="au1-cd" style="border:1px solid #A78BFA;font-weight:600;">17<span class="au1-dot" style="background:#F87171"></span></div><div class="au1-cd">18</div><div class="au1-cd">19</div><div class="au1-cd">20</div><div class="au1-cd">21</div>
+          <div class="au1-cd">22</div><div class="au1-cd">23</div><div class="au1-cd">24</div><div class="au1-cd">25</div><div class="au1-cd">26</div><div class="au1-cd">27</div><div class="au1-cd">28</div>
+          <div class="au1-cd">29</div><div class="au1-cd">30</div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:10px;padding-top:10px;">
+          <div style="font-size:11px;color:#A99FD0;margin-bottom:6px;">13 czerwca</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13px;"><i class="ti ti-trending-down" style="font-size:14px;color:#F87171;margin-right:6px"></i>podatek</span><span style="font-size:13px;font-weight:600;color:#F87171;">-47,00 PLN</span></div>
+        </div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-68px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.16);border-radius:30px;padding:7px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;border-radius:22px;padding:7px 12px;"><i class="ti ti-layout-dashboard" style="font-size:18px;"></i><span style="font-size:8px;font-weight:600;">Dashboard</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-repeat" style="font-size:18px;"></i><span style="font-size:8px;">Subskrypcje</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-wallet" style="font-size:18px;"></i><span style="font-size:8px;">Budzet</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-settings" style="font-size:18px;"></i><span style="font-size:8px;">Ustawienia</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen"><h3>Subskrypcje</h3>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;display:flex;justify-content:center;">
+  <div style="position:relative;width:330px;background:linear-gradient(165deg,#241B4B 0%,#16113A 52%,#0B0822 100%);border:1px solid rgba(255,255,255,0.13);border-radius:36px;overflow:hidden;font-family:var(--font-sans);color:#F3F0FF;padding-bottom:84px;">
+    <div style="position:absolute;top:-46px;right:-34px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,255,0.5),transparent 70%);"></div>
+    <div style="position:absolute;bottom:120px;left:-46px;width:170px;height:170px;background:radial-gradient(circle,rgba(34,211,238,0.26),transparent 70%);"></div>
+    <div style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px 4px;font-size:11px;color:#B7AEE0;"><span>10:05</span><span><i class="ti ti-wifi" style="font-size:13px;margin-right:6px"></i><i class="ti ti-battery-2" style="font-size:14px"></i></span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 20px 8px;">
+        <span style="font-size:20px;font-weight:600;">Subskrypcje</span>
+        <span style="display:flex;gap:8px;"><span style="display:flex;flex-direction:column;align-items:center;color:#C2B9EC;"><i class="ti ti-file-spreadsheet" style="font-size:18px;"></i><span style="font-size:8px;">XLSX</span></span><span style="display:flex;flex-direction:column;align-items:center;color:#C2B9EC;"><i class="ti ti-file-text" style="font-size:18px;"></i><span style="font-size:8px;">PDF</span></span></span>
+      </div>
+      <div style="display:flex;padding:0 20px;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div style="flex:1;text-align:center;padding:10px;font-size:14px;font-weight:600;color:#F3F0FF;border-bottom:2px solid #A78BFA;">Lista</div>
+        <div style="flex:1;text-align:center;padding:10px;font-size:14px;color:#A99FD0;">Statystyki</div>
+      </div>
+      <div style="display:flex;gap:7px;padding:12px 18px 6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;font-weight:600;"><i class="ti ti-check" style="font-size:12px;margin-right:3px"></i>Wszystkie</span>
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#C2B9EC;">Osobiste</span>
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#C2B9EC;">Domowe</span>
+        <i class="ti ti-eye" style="font-size:16px;color:#A99FD0;margin-left:auto;"></i>
+      </div>
+      <div style="display:flex;gap:7px;padding:2px 18px 12px;align-items:center;overflow:hidden;">
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.12);color:#F3F0FF;"><i class="ti ti-check" style="font-size:12px;margin-right:3px"></i>Wszystkie</span>
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#C2B9EC;">Streaming</span>
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#C2B9EC;">Muzyka</span>
+        <span style="font-size:11px;padding:5px 11px;border-radius:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#C2B9EC;">Cloud</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(251,191,36,0.10);border:1px solid rgba(251,191,36,0.30);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-player-play" style="font-size:17px;color:#60A5FA;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Canal+</div><div style="font-size:11px;color:#60A5FA;">Streaming &middot; <span style="color:#A99FD0;">1/2</span></div></div></div>
+          <div style="text-align:right;"><div style="font-size:14px;font-weight:600;">79,00 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div><div style="font-size:10px;color:#A99FD0;">39,50 zl/os.</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(251,191,36,0.10);border:1px solid rgba(251,191,36,0.30);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(251,146,60,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-code" style="font-size:17px;color:#FB923C;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>ChatGPT</div><div style="font-size:11px;color:#FB923C;">Software</div></div></div>
+          <div style="font-size:14px;font-weight:600;">34,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(251,146,60,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-code" style="font-size:17px;color:#FB923C;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Claude AI</div><div style="font-size:11px;color:#FB923C;">Software</div></div></div>
+          <div style="text-align:right;"><div style="font-size:14px;font-weight:600;">110,70 EUR<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div><div style="font-size:10px;color:#A99FD0;">473,80 zl/mies.</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(251,146,60,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-code" style="font-size:17px;color:#FB923C;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Foxit PDF Editor</div><div style="font-size:11px;color:#FB923C;">Software</div></div></div>
+          <div style="text-align:right;"><div style="font-size:14px;font-weight:600;">63,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/rok</span></div><div style="font-size:10px;color:#A99FD0;">5,33 zl/mies.</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(94,234,212,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-cloud" style="font-size:17px;color:#5EEAD4;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Google One</div><div style="font-size:11px;color:#5EEAD4;">Cloud</div></div></div>
+          <div style="font-size:14px;font-weight:600;">48,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(251,146,60,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-code" style="font-size:17px;color:#FB923C;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Microsoft 365 Family</div><div style="font-size:11px;color:#FB923C;">Software &middot; <span style="color:#A99FD0;">1/2</span></div></div></div>
+          <div style="text-align:right;"><div style="font-size:14px;font-weight:600;">559,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/rok</span></div><div style="font-size:10px;color:#A99FD0;">23,33 zl/os.</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(251,191,36,0.10);border:1px solid rgba(251,191,36,0.30);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(167,139,250,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-headphones" style="font-size:17px;color:#A78BFA;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>Spotify</div><div style="font-size:11px;color:#A78BFA;">Muzyka &middot; <span style="color:#A99FD0;">1/4</span></div></div></div>
+          <div style="text-align:right;"><div style="font-size:14px;font-weight:600;">37,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div><div style="font-size:10px;color:#A99FD0;">9,50 zl/os.</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:11px 13px;">
+          <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(96,165,250,0.16);display:flex;align-items:center;justify-content:center;"><i class="ti ti-player-play" style="font-size:17px;color:#60A5FA;"></i></div><div><div style="font-size:14px;font-weight:600;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34D399;margin-right:6px;"></span>YouTube Premium</div><div style="font-size:11px;color:#60A5FA;">Streaming</div></div></div>
+          <div style="font-size:14px;font-weight:600;">29,99 zl<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;padding:14px 18px 0;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;font-size:13px;font-weight:600;padding:9px 18px;border-radius:20px;"><i class="ti ti-plus" style="font-size:16px;"></i>Dodaj</span>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-68px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.16);border-radius:30px;padding:7px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-layout-dashboard" style="font-size:18px;"></i><span style="font-size:8px;">Dashboard</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;border-radius:22px;padding:7px 12px;"><i class="ti ti-repeat" style="font-size:18px;"></i><span style="font-size:8px;font-weight:600;">Subskrypcje</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-wallet" style="font-size:18px;"></i><span style="font-size:8px;">Budzet</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-settings" style="font-size:18px;"></i><span style="font-size:8px;">Ustawienia</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen"><h3>Budzet</h3>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;display:flex;justify-content:center;">
+  <div style="position:relative;width:330px;background:linear-gradient(165deg,#241B4B 0%,#16113A 52%,#0B0822 100%);border:1px solid rgba(255,255,255,0.13);border-radius:36px;overflow:hidden;font-family:var(--font-sans);color:#F3F0FF;padding-bottom:84px;">
+    <div style="position:absolute;top:-46px;right:-34px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,255,0.5),transparent 70%);"></div>
+    <div style="position:absolute;bottom:120px;left:-46px;width:170px;height:170px;background:radial-gradient(circle,rgba(34,211,238,0.26),transparent 70%);"></div>
+    <div style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px 4px;font-size:11px;color:#B7AEE0;"><span>10:05</span><span><i class="ti ti-wifi" style="font-size:13px;margin-right:6px"></i><i class="ti ti-battery-2" style="font-size:14px"></i></span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 20px 10px;">
+        <span style="font-size:20px;font-weight:600;">Budzet</span>
+        <span style="display:flex;flex-direction:column;align-items:center;color:#C2B9EC;"><i class="ti ti-file-spreadsheet" style="font-size:18px;"></i><span style="font-size:8px;">XLSX</span></span>
+      </div>
+      <div style="margin:0 18px 16px;display:flex;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:4px;">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:12px;font-size:13px;color:#C2B9EC;"><i class="ti ti-user" style="font-size:14px;margin-right:5px"></i>Osobisty</div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:12px;font-size:13px;font-weight:600;color:#1B1240;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);"><i class="ti ti-home" style="font-size:14px;margin-right:5px"></i>Domowy</div>
+      </div>
+      <div style="padding:0 18px;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:10px;">Wplywy</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-up" style="font-size:18px;color:#34D399;"></i><div><div style="font-size:14px;font-weight:600;">Budzet domowy</div><div style="font-size:11px;color:#A99FD0;">Wplyw</div></div></div><div style="font-size:14px;font-weight:600;color:#34D399;">+5 000,00 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-up" style="font-size:18px;color:#34D399;"></i><div><div style="font-size:14px;font-weight:600;">Wklad &mdash; E</div><div style="font-size:11px;color:#A99FD0;">Wplyw</div></div></div><div style="font-size:14px;font-weight:600;color:#34D399;">+4 000,00 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+        </div>
+        <div style="font-size:15px;font-weight:600;margin:18px 0 10px;">Koszty cykliczne</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">GastroPaczka</div><div style="font-size:11px;color:#A99FD0;">Koszt cykliczny</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-3 002,41 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">PBKM</div><div style="font-size:11px;color:#A99FD0;">Koszt cykliczny</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-77,00 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">Simparica</div><div style="font-size:11px;color:#A99FD0;">Koszt cykliczny</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-44,25 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">chusteczki</div><div style="font-size:11px;color:#A99FD0;">Koszt cykliczny</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-151,72 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">gaz</div><div style="font-size:11px;color:#A99FD0;">Rachunek</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-391,05 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:12px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-trending-down" style="font-size:18px;color:#F87171;"></i><div><div style="font-size:14px;font-weight:600;">internet</div><div style="font-size:11px;color:#A99FD0;">Rachunek</div></div></div><div style="font-size:14px;font-weight:600;color:#F87171;">-75,00 PLN<span style="font-size:10px;color:#A99FD0;font-weight:400;">/mies.</span></div></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;padding:14px 18px 0;">
+        <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;font-size:13px;font-weight:600;padding:9px 18px;border-radius:20px;"><i class="ti ti-plus" style="font-size:16px;"></i>Dodaj</span>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-68px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.16);border-radius:30px;padding:7px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-layout-dashboard" style="font-size:18px;"></i><span style="font-size:8px;">Dashboard</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-repeat" style="font-size:18px;"></i><span style="font-size:8px;">Subskrypcje</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;border-radius:22px;padding:7px 12px;"><i class="ti ti-wallet" style="font-size:18px;"></i><span style="font-size:8px;font-weight:600;">Budzet</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-settings" style="font-size:18px;"></i><span style="font-size:8px;">Ustawienia</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="screen"><h3>Ustawienia</h3>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;display:flex;justify-content:center;">
+  <div style="position:relative;width:330px;background:linear-gradient(165deg,#241B4B 0%,#16113A 52%,#0B0822 100%);border:1px solid rgba(255,255,255,0.13);border-radius:36px;overflow:hidden;font-family:var(--font-sans);color:#F3F0FF;padding-bottom:84px;">
+    <div style="position:absolute;top:-46px;right:-34px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,255,0.5),transparent 70%);"></div>
+    <div style="position:absolute;bottom:120px;left:-46px;width:170px;height:170px;background:radial-gradient(circle,rgba(34,211,238,0.26),transparent 70%);"></div>
+    <div style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 20px 4px;font-size:11px;color:#B7AEE0;"><span>10:06</span><span><i class="ti ti-wifi" style="font-size:13px;margin-right:6px"></i><i class="ti ti-battery-2" style="font-size:14px"></i></span></div>
+      <div style="padding:8px 20px 12px;font-size:20px;font-weight:600;">Ustawienia</div>
+      <div style="padding:0 18px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:14px;"><span style="font-size:14px;"><i class="ti ti-tag" style="font-size:18px;color:#A78BFA;margin-right:10px;vertical-align:-3px"></i>Zarzadzaj kategoriami</span><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:14px;"><span style="font-size:14px;"><i class="ti ti-credit-card" style="font-size:18px;color:#A78BFA;margin-right:10px;vertical-align:-3px"></i>Metody platnosci</span><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+      </div>
+      <div style="padding:18px 20px 8px;font-size:11px;font-weight:500;letter-spacing:0.8px;color:#8E84BC;">WALUTA DOMYSLNA</div>
+      <div style="padding:0 18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;margin:0 18px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 4px;font-size:14px;"><span style="width:18px;height:18px;border-radius:50%;border:2px solid #A78BFA;display:flex;align-items:center;justify-content:center;"><span style="width:8px;height:8px;border-radius:50%;background:#A78BFA;"></span></span>PLN (zl)</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 4px;font-size:14px;color:#C2B9EC;border-top:1px solid rgba(255,255,255,0.07);"><span style="width:18px;height:18px;border-radius:50%;border:2px solid #6B6191;"></span>EUR (EUR)</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 4px;font-size:14px;color:#C2B9EC;border-top:1px solid rgba(255,255,255,0.07);"><span style="width:18px;height:18px;border-radius:50%;border:2px solid #6B6191;"></span>USD ($)</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 4px;font-size:14px;color:#C2B9EC;border-top:1px solid rgba(255,255,255,0.07);"><span style="width:18px;height:18px;border-radius:50%;border:2px solid #6B6191;"></span>GBP (&pound;)</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 18px 0;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:14px;"><div><div style="font-size:14px;"><i class="ti ti-target" style="font-size:18px;color:#A78BFA;margin-right:10px;vertical-align:-3px"></i>Limit budzetowy</div><div style="font-size:11px;color:#A99FD0;margin-left:28px;">Nie ustawiono</div></div><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+      <div style="font-size:10px;color:#8E84BC;padding:8px 22px 0;">Kursy walut: 1 EUR = 4,28 PLN &middot; 1 USD = 3,95 PLN &middot; 1 GBP = 5,02 PLN</div>
+      <div style="padding:18px 20px 8px;font-size:11px;font-weight:500;letter-spacing:0.8px;color:#8E84BC;">POWIADOMIENIA</div>
+      <div style="padding:0 18px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:13px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-clock" style="font-size:18px;color:#A78BFA;"></i><div><div style="font-size:14px;">Przypomnienia o trialach</div><div style="font-size:11px;color:#A99FD0;">3 dni, 1 dzien przed i w dniu konca</div></div></div><span style="width:40px;height:23px;border-radius:20px;background:linear-gradient(135deg,#A78BFA,#5EEAD4);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:19px;height:19px;border-radius:50%;background:#fff;"></span></span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:13px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-calendar" style="font-size:18px;color:#A78BFA;"></i><div><div style="font-size:14px;">Przypomnienia o odnowieniach</div><div style="font-size:11px;color:#A99FD0;">Przed odnowieniem subskrypcji</div></div></div><span style="width:40px;height:23px;border-radius:20px;background:linear-gradient(135deg,#A78BFA,#5EEAD4);display:flex;align-items:center;justify-content:flex-end;padding:2px;"><span style="width:19px;height:19px;border-radius:50%;background:#fff;"></span></span></div>
+      </div>
+      <div style="padding:18px 20px 8px;font-size:11px;font-weight:500;letter-spacing:0.8px;color:#8E84BC;">BACKUP</div>
+      <div style="padding:0 18px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:13px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-upload" style="font-size:18px;color:#A78BFA;"></i><div><div style="font-size:14px;">Eksportuj backup</div><div style="font-size:11px;color:#A99FD0;">Zaszyfrowany plik .subkarton (klucz urzadzenia)</div></div></div><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:13px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-cloud-upload" style="font-size:18px;color:#A78BFA;"></i><div><div style="font-size:14px;">Eksportuj z haslem</div><div style="font-size:11px;color:#A99FD0;">Do przenoszenia miedzy urzadzeniami</div></div></div><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:13px 14px;"><div style="display:flex;align-items:center;gap:11px;"><i class="ti ti-download" style="font-size:18px;color:#A78BFA;"></i><div><div style="font-size:14px;">Importuj backup</div><div style="font-size:11px;color:#A99FD0;">Przywroc z pliku .subkarton</div></div></div><i class="ti ti-chevron-right" style="font-size:17px;color:#A99FD0;"></i></div>
+      </div>
+      <div style="position:absolute;left:50%;transform:translateX(-50%);bottom:-68px;display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.1);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.16);border-radius:30px;padding:7px 8px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-layout-dashboard" style="font-size:18px;"></i><span style="font-size:8px;">Dashboard</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-repeat" style="font-size:18px;"></i><span style="font-size:8px;">Subskrypcje</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;color:#C2B9EC;padding:7px 10px;"><i class="ti ti-wallet" style="font-size:18px;"></i><span style="font-size:8px;">Budzet</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);color:#1B1240;border-radius:22px;padding:7px 12px;"><i class="ti ti-settings" style="font-size:18px;"></i><span style="font-size:8px;font-weight:600;">Ustawienia</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
