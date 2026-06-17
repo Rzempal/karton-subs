@@ -119,6 +119,7 @@ class BudgetController extends ChangeNotifier {
     int? customCycleDays,
     String? month,
     String? categoryId,
+    Map<String, BillMonthOverride>? monthOverrides,
     DateTime? startDate,
     String? note,
   }) async {
@@ -170,6 +171,7 @@ class BudgetController extends ChangeNotifier {
       customCycleDays: customCycleDays,
       month: month,
       categoryId: categoryId,
+      monthOverrides: monthOverrides,
       startDate: startDate,
       note: note,
       dataDodania: now,

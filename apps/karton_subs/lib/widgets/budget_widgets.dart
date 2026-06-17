@@ -483,10 +483,13 @@ class BudgetEntryCard extends StatelessWidget {
         ? '$sign${budgetNf.format(entry.amount)} $cur'
         : '$sign${budgetNf.format(entry.amount)} $cur/${budgetCycleSuffix(entry.cycle)}';
 
+    final overrideCount = entry.monthOverrides?.length ?? 0;
+    final overrideSuffix = overrideCount > 0 ? ' · korekt: $overrideCount' : '';
     final subtitle = entry.isOneTime
         ? '${budgetTypeLabel(entry.type)} · ${entry.month ?? ''}'
             '${dimmed ? ' · wstrzymane' : ''}'
-        : '${budgetTypeLabel(entry.type)}${dimmed ? ' · wstrzymane' : ''}';
+        : '${budgetTypeLabel(entry.type)}$overrideSuffix'
+            '${dimmed ? ' · wstrzymane' : ''}';
 
     final category = entry.categoryId != null
         ? context.read<StorageService>().getCategory(entry.categoryId!)

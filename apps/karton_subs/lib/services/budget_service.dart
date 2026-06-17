@@ -136,7 +136,30 @@ class BudgetService {
       _sumAmount(
           oneTimeIncomesForMonth(entries, monthKey), target ?? Currency.PLN);
 
-  /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki.
+  /// Korekta bilansu z tytułu zmiennych rachunków w danym miesiącu (ADR-008).
+  /// Zwraca sumę `(kwota korekty − kwota bazowa)` po aktywnych rachunkach, które
+  /// mają w tym miesiącu nadpisaną kwotę. Dodatnia = rachunki droższe niż baza.
+  /// Korekta tylko daty (bez kwoty) nie wpływa na bilans.
+  double billOverrideDeltaForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    double delta = 0;
+    for (final e in entries.where(
+        (e) => e.isActive && e.type == BudgetEntryType.bill)) {
+      final ov = e.overrideForMonth(monthKey);
+      if (ov?.amount != null) {
+        delta += _currency.convert(ov!.amount! - e.amount, e.currency, t);
+      }
+    }
+    return delta;
+  }
+
+  /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki
+  /// − korekty zmiennych rachunków tego miesiąca. Surplus pozostaje „planem"
+  /// (kwoty bazowe); różnicę realnego miesiąca pokazuje właśnie bilans (ADR-008).
   double balanceForMonth(
     List<BudgetEntry> entries,
     List<Subscription> subs,
@@ -145,7 +168,8 @@ class BudgetService {
   }) =>
       monthlySurplus(entries, subs, target: target) +
       oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
-      oneTimeTotalForMonth(entries, monthKey, target: target);
+      oneTimeTotalForMonth(entries, monthKey, target: target) -
+      billOverrideDeltaForMonth(entries, monthKey, target: target);
 
   /// Nadchodzące wydatki jednorazowe (miesiąc ≥ bieżący), posortowane rosnąco.
   List<BudgetEntry> upcomingOneTime(
@@ -215,6 +239,31 @@ class BudgetService {
         }
       } else {
         final anchor = e.startDate;
+        // Rachunek zmienny z korektą dla wyświetlanego miesiąca (ADR-008):
+        // data korekty zastępuje projekcję, kwota korekty zastępuje bazę.
+        if (e.type == BudgetEntryType.bill) {
+          final ov = e.overrideForMonth(BudgetEntry.monthKeyOf(mStart));
+          if (ov != null && !ov.isEmpty) {
+            final amt =
+                _currency.convert(ov.amount ?? e.amount, e.currency, t);
+            final od = ov.date;
+            if (od != null && !od.isBefore(mStart) && !od.isAfter(mEnd)) {
+              // Korekta z datą: pojedyncze wystąpienie tego dnia.
+              add(od.day,
+                  CalendarItem(name: e.name, amount: amt, isIncome: false));
+              continue;
+            }
+            if (anchor != null) {
+              // Korekta tylko kwoty: projekcja wg cyklu, ale z kwotą korekty.
+              for (final d in occurrencesInRange(
+                  anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {
+                add(d.day,
+                    CalendarItem(name: e.name, amount: amt, isIncome: false));
+              }
+              continue;
+            }
+          }
+        }
         if (anchor == null) continue;
         for (final d in occurrencesInRange(
             anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {

@@ -48,6 +48,7 @@ erDiagram
         string cycle
         int customCycleDays
         string month
+        map monthOverrides
         string categoryId
         bool isActive
         timestamp dataDodania
@@ -125,7 +126,8 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
 | `customCycleDays` | int | nie | Liczba dni (gdy cycle == custom) |
 | `month` | string "YYYY-MM" | tak* | Miesiac przypisania (typy jednorazowe) |
-| `categoryId` | UUID | nie | Kategoria budzetu (Faza 5b) |
+| `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — tylko `bill`** (rachunek zmienny): inna data/kwota w danym miesiacu. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) |
+| `categoryId` | UUID | nie | Kategoria pozycji (subskrypcje + wydatki budzetu) |
 | `startDate` | ISO8601 | nie | **Kotwica daty kalendarza:** dokladna data jednorazowego; data pierwszego wystapienia cyklicznego |
 | `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
 | `note` | string | nie | Opcjonalna notatka |
@@ -139,7 +141,22 @@ enum BudgetEntryType {
   income, bill, recurringCost, oneTimeExpense, oneTimeIncome, householdTransfer
 }
 enum BudgetScope { personal, household } // wybiera box (osobny zbior dla domowego)
+
+class BillMonthOverride {       // korekta rachunku dla jednego miesiaca
+  final double? amount;         // null = kwota bazowa
+  final DateTime? date;         // null = data projekcji wg cyklu
+}
 ```
+
+**`bill` vs `recurringCost` (ADR-008):** oba to koszty cykliczne, ale rozne:
+- **`bill` (rachunek) = zmienny** — kwota bazowa + cykl jako domyslne; w kazdym
+  miesiacu mozna nadpisac date i kwote (`monthOverrides`). Przyklad: fryzjer co
+  miesiac, inny dzien, czasem inna cena.
+- **`recurringCost` (koszt cykliczny) = staly** — stala kwota w interwale, bez korekt.
+
+**Korekty NIE zmieniaja „zostaje/mies" (surplus = plan, liczony z kwoty bazowej)** —
+wplywaja tylko na **bilans danego miesiaca** i **kalendarz**. Patrz
+[ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md).
 
 **Zakres (osobisty vs domowy):** to nie pole pozycji, lecz **osobny box**:
 `budget_entries` (osobisty, lokalny) i `household_budget_entries` (domowy, przyszla
@@ -157,9 +174,9 @@ w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zb
 |------------|------|
 | Wplywy/mies | suma `monthlyAmount` aktywnych wplywow cyklicznych |
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
-| Zostaje/mies (surplus) | wplywy - koszty/mies |
-| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki danego miesiaca |
-| Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`) na dni miesiaca |
+| Zostaje/mies (surplus) | wplywy - koszty/mies (rachunki liczone z **kwoty bazowej**) |
+| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki - **korekty rachunkow** danego miesiaca |
+| Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`); rachunek z korekta bierze jej date/kwote |
 
 Normalizacja cyklu i rzutowanie wystapien: `lib/utils/cycle_math.dart`
 (`monthlyFromCycle`, `occurrencesInRange`).
@@ -334,6 +351,11 @@ backupu `.subkarton`. Serwis: `lib/services/excel_service.dart`.
 Naglowek jest wykrywany automatycznie. Brak rozpoznawalnego naglowka → uklad
 pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
+**Arkusz budzetu** (osobny): kolumny Typ / Nazwa / Kwota / Waluta / Cykl / **Kategoria** /
+Miesiac / Notatka / Aktywna. Kategoria dopasowywana po nazwie (tylko dla wydatkow).
+Korekty miesieczne rachunku (`monthOverrides`) NIE sa eksportowane — Excel niesie
+tylko kwote bazowa (decyzja: pierwsza iteracja).
+
 ### Reguly bezpieczenstwa importu
 
 - Parsowanie poza glownym watkiem (`compute`) — duzy/spreparowany plik nie zawiesi UI.
@@ -349,4 +371,4 @@ pozycyjny: kolumna 0 = Nazwa, kolumna 1 = Kwota.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-16
+> **Ostatnia aktualizacja:** 2026-06-17

@@ -44,6 +44,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   late BudgetEntryType _type;
   String? _categoryId;
+  late Map<String, BillMonthOverride> _overrides;
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
   late DateTime _oneTimeDate; // dokładna data wydatku jednorazowego
@@ -61,6 +62,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _type == BudgetEntryType.bill ||
       _type == BudgetEntryType.recurringCost ||
       _type == BudgetEntryType.oneTimeExpense;
+
+  /// Rachunek zmienny — jedyny typ z korektami miesięcznymi (ADR-008).
+  bool get _isBill => _type == BudgetEntryType.bill;
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   List<BudgetEntryType> get _availableTypes => [
@@ -87,6 +91,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
     _type = e?.type ?? widget.initialType ?? BudgetEntryType.bill;
     _categoryId = e?.categoryId;
+    _overrides = {...?e?.monthOverrides};
     if (e != null) {
       _currency = e.currency;
       _cycle = e.cycle;
@@ -150,6 +155,15 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 );
               }).toList(),
             ),
+            if (_typeHint() != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _typeHint()!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
             const SizedBox(height: 24),
 
             _SectionLabel('Podstawowe'),
@@ -264,6 +278,43 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               ),
             ],
             const SizedBox(height: 24),
+
+            if (_isBill) ...[
+              _SectionLabel('Korekty miesięczne'),
+              const SizedBox(height: 4),
+              Text(
+                'Rachunek zmienny: w wybranym miesiącu możesz ustawić inną datę '
+                'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
+                'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              ..._sortedOverrideKeys().map((mk) {
+                final ov = _overrides[mk]!;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: const Icon(LucideIcons.calendarClock, size: 20),
+                  title: Text(_overrideTitle(mk, ov)),
+                  subtitle: Text(_overrideSubtitle(ov)),
+                  trailing: IconButton(
+                    icon: const Icon(LucideIcons.x, size: 18),
+                    tooltip: 'Usuń korektę',
+                    onPressed: () => setState(() => _overrides.remove(mk)),
+                  ),
+                  onTap: () => _editOverride(existingKey: mk),
+                );
+              }),
+              const SizedBox(height: 4),
+              OutlinedButton.icon(
+                onPressed: () => _editOverride(),
+                icon: const Icon(LucideIcons.plus, size: 18),
+                label: const Text('Dodaj korektę miesiąca'),
+              ),
+              const SizedBox(height: 24),
+            ],
 
             if (_typeHasCategory) ...[
               _SectionLabel('Kategoria'),
@@ -422,6 +473,10 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     final startDate = _isOneTime ? _oneTimeDate : _anchorDate;
     // Kategoria tylko dla wydatków — przy wpływie/przelewie czyścimy.
     final categoryId = _typeHasCategory ? _categoryId : null;
+    // Korekty miesięczne tylko dla rachunku.
+    final overrides = _isBill && _overrides.isNotEmpty
+        ? Map<String, BillMonthOverride>.from(_overrides)
+        : null;
 
     try {
       if (_isEditing) {
@@ -439,6 +494,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           clearStartDate: startDate == null,
           categoryId: categoryId,
           clearCategoryId: categoryId == null,
+          monthOverrides: overrides,
+          clearMonthOverrides: overrides == null,
           note: note,
           clearNote: note == null,
         ));
@@ -452,6 +509,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           customCycleDays: customDays,
           month: monthKey,
           categoryId: categoryId,
+          monthOverrides: overrides,
           startDate: startDate,
           note: note,
         );
@@ -469,6 +527,16 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
         BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
         BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
+      };
+
+  /// Krótkie wyjaśnienie różnicy między rachunkiem (zmienny) a kosztem cyklicznym (stały).
+  String? _typeHint() => switch (_type) {
+        BudgetEntryType.bill =>
+          'Rachunek: kwota bazowa i cykl, ale w każdym miesiącu możesz ustawić '
+              'inną datę i kwotę (zmienny — np. fryzjer).',
+        BudgetEntryType.recurringCost =>
+          'Koszt cykliczny: stała kwota w każdym interwale (np. ubezpieczenie).',
+        _ => null,
       };
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
@@ -489,6 +557,112 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       };
 
   String _dateLabel(DateTime d) => DateFormat('d MMMM yyyy', 'pl').format(d);
+
+  // ── Korekty miesięczne rachunku (ADR-008) ────────────────────────────────────
+
+  List<String> _sortedOverrideKeys() => _overrides.keys.toList()..sort();
+
+  String _overrideTitle(String monthKey, BillMonthOverride ov) {
+    final base = DateTime.tryParse('$monthKey-01');
+    final label =
+        base != null ? DateFormat('LLLL yyyy', 'pl').format(base) : monthKey;
+    return label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
+  }
+
+  String _overrideSubtitle(BillMonthOverride ov) {
+    final parts = <String>[];
+    if (ov.date != null) {
+      parts.add('dzień ${DateFormat('d MMM', 'pl').format(ov.date!)}');
+    }
+    if (ov.amount != null) {
+      parts.add('${ov.amount!.toStringAsFixed(2)} ${_currency.label}');
+    }
+    return parts.isEmpty ? 'bez zmian' : parts.join(' · ');
+  }
+
+  Future<void> _editOverride({String? existingKey}) async {
+    final now = Subscription.devDateOverride ?? DateTime.now();
+    final existing = existingKey != null ? _overrides[existingKey] : null;
+    var date = existing?.date ??
+        (existingKey != null
+            ? (DateTime.tryParse('$existingKey-01') ?? now)
+            : DateTime(now.year, now.month, now.day));
+    final amountCtrl = TextEditingController(
+        text: existing?.amount != null ? existing!.amount!.toStringAsFixed(2) : '');
+
+    final result = await showDialog<BillMonthOverride>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(existingKey == null ? 'Dodaj korektę' : 'Edytuj korektę'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(LucideIcons.calendar),
+                title: Text(_dateLabel(date)),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: date,
+                    firstDate: DateTime(now.year - 2, 1, 1),
+                    lastDate: DateTime(now.year + 5, 12, 31),
+                    helpText: 'Data wystąpienia w danym miesiącu',
+                  );
+                  if (picked != null) {
+                    setLocal(() =>
+                        date = DateTime(picked.year, picked.month, picked.day));
+                  }
+                },
+              ),
+              TextField(
+                controller: amountCtrl,
+                decoration: InputDecoration(
+                    labelText: 'Kwota — opcjonalnie (${_currency.label})',
+                    hintText: 'puste = kwota bazowa'),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Anuluj')),
+            FilledButton(
+              onPressed: () {
+                final txt = amountCtrl.text.trim();
+                double? amt;
+                if (txt.isNotEmpty) {
+                  amt = double.tryParse(txt.replaceAll(',', '.'));
+                  if (amt == null || amt <= 0) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                        content: Text('Nieprawidłowa kwota')));
+                    return;
+                  }
+                }
+                Navigator.pop(ctx, BillMonthOverride(amount: amt, date: date));
+              },
+              child: const Text('Zapisz'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    amountCtrl.dispose();
+    if (result != null) {
+      final newKey = BudgetEntry.monthKeyOf(result.date!);
+      setState(() {
+        if (existingKey != null && existingKey != newKey) {
+          _overrides.remove(existingKey);
+        }
+        _overrides[newKey] = result;
+      });
+    }
+  }
 }
 
 class _SectionLabel extends StatelessWidget {

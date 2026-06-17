@@ -109,7 +109,7 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 | Wydatki jednorazowe | Selektor miesiaca + bilans + lista per miesiac | ✅ B2 |
 | Backup v3 | Eksport/import obejmuje `budgetEntries` | ✅ |
 | Testy BudgetService | Normalizacja, surplus, bilans, konwersja walut | ✅ |
-| Kategorie budzetu | Osobny box + breakdown wg kategorii | ⏳ B3 |
+| Kategorie budzetu | Oznaczanie wydatkow + filtr listy (wspolna lista kategorii) | ✅ B3 (Faza 5e) |
 | Powiadomienia budzetu | Alert przekroczenia / nadchodzacy duzy wydatek | ⏳ B3 |
 
 ### Faza 5b: Restrukturyzacja nawigacji + Excel budzetu (2026-06-16)
@@ -156,6 +156,26 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 | Synchronizacja online domowego | Backend + konta (koszt) | ⏳ #TODO przyszlosc |
 
 > Niesymetria swiadoma: budzet = osobny box (wymog sync), subskrypcje = pole `scope`.
+
+---
+
+### Faza 5e: Kategorie wydatkow + rachunek zmienny (2026-06-17)
+
+**Cel:** Domkniecie kategorii budzetu (B3) oraz rozdzielenie zdublowanych typow
+`bill` i `recurringCost`.
+
+> **ADR:** [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
+
+| Zadanie | Opis | Status |
+|---------|------|--------|
+| Kategorie wydatkow budzetu | Wspolna lista kategorii; oznaczanie wydatkow + filtr listy budzetu | ✅ B3 (prod 0.6) |
+| Kategoria w Excelu budzetu | Kolumna „Kategoria" w eksporcie/imporcie (dopasowanie po nazwie) | ✅ |
+| Rachunek zmienny | `bill`: kwota bazowa + korekty per miesiac (`monthOverrides`: inna data/kwota) | ✅ (dev 0.6) |
+| Rozdzielenie bill vs recurringCost | `recurringCost` = staly; `bill` = zmienny; podpowiedzi w UI | ✅ |
+| Strażnik invariantu | Test: korekta zmienia bilans miesiaca, NIE surplus (ADR-008) | ✅ |
+
+> Korekty rachunku NIE wplywaja na „zostaje/mies" (plan = kwota bazowa) — tylko na
+> bilans danego miesiaca i kalendarz. Excel niesie tylko kwote bazowa (1. iteracja).
 
 ---
 

@@ -10,18 +10,24 @@ Ten dokument opisuje proces wdrożenia aplikacji mobilnej (APK) oraz webowej.
 
 ### Skrypty Deploymentu
 
-- `scripts/deploy_apk.ps1` – Główny skrypt do budowania i wysyłania APK na serwer.
+- `scripts/deploy_apk.ps1` – Główny (i jedyny) skrypt do budowania i wysyłania APK na serwer.
 
 #### Terminal command
 
-```
-.\scripts\run_deploy_dev.bat
+DEV (kanal `internal`) — build + upload, bez bumpu wersji, bez tagu:
+
+```powershell
+.\scripts\deploy_apk.ps1 -Channel internal -BumpType patch -ReleaseNotes "- opis zmian"
 ```
 
-#### IDE Shortcuts (Antigravity & VS Code)
+PROD (kanal `production`) — z bumpem wersji (minor/major) i opcjonalnym tagiem:
 
-- **Antigravity Workflows:** wpisz `/deploy-dev` lub `/deploy-release` w czacie.
-- **VS Code Tasks:** `Ctrl+Shift+B` (domyślnie uruchamia `Deploy DEV`).
+```powershell
+.\scripts\deploy_apk.ps1 -Channel production -BumpType minor -ReleaseNotes "- opis zmian" -CreateTag
+```
+
+> Podanie `-BumpType` i `-ReleaseNotes` daje tryb w pelni automatyczny (bez pytan
+> interaktywnych). Bez nich skrypt pyta o typ wersji i release notes.
 
 ---
 
@@ -87,4 +93,4 @@ Aplikacja webowa jest wdrażana automatycznie po pushu na branch `main` przez in
 
 ---
 
-> 📅 **Ostatnia aktualizacja:** 2026-01-15
+> 📅 **Ostatnia aktualizacja:** 2026-06-17

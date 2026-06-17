@@ -26,6 +26,46 @@ enum BudgetEntryType {
 /// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
 enum BudgetScope { personal, household }
 
+/// Korekta rachunku ([BudgetEntryType.bill]) dla konkretnego miesiąca.
+///
+/// Rachunek ma kwotę bazową i cykl jako domyślne; korekta nadpisuje je dla
+/// danego miesiąca: [amount] zmienia kwotę (bilans + kalendarz), [date] zmienia
+/// dzień wystąpienia (kalendarz). Pola opcjonalne — `null` = użyj wartości bazowej.
+/// Patrz [ADR-008]. Korekty NIE wpływają na „zostaje miesięcznie" (surplus).
+class BillMonthOverride {
+  final double? amount;
+  final DateTime? date;
+
+  const BillMonthOverride({this.amount, this.date});
+
+  /// Pusta korekta (oba pola null) — traktowana jak brak korekty.
+  bool get isEmpty => amount == null && date == null;
+
+  factory BillMonthOverride.fromJson(Map<String, dynamic> json) =>
+      BillMonthOverride(
+        amount: (json['amount'] as num?)?.toDouble(),
+        date: json['date'] != null
+            ? DateTime.parse(json['date'] as String)
+            : null,
+      );
+
+  Map<String, dynamic> toJson() => {
+        if (amount != null) 'amount': amount,
+        if (date != null) 'date': date!.toIso8601String(),
+      };
+
+  BillMonthOverride copyWith({
+    double? amount,
+    bool clearAmount = false,
+    DateTime? date,
+    bool clearDate = false,
+  }) =>
+      BillMonthOverride(
+        amount: clearAmount ? null : (amount ?? this.amount),
+        date: clearDate ? null : (date ?? this.date),
+      );
+}
+
 /// Pozycja budżetu domowego.
 ///
 /// Jeden model dla wpływów i wydatków. Typy cykliczne (income/bill/recurringCost)
@@ -48,6 +88,11 @@ class BudgetEntry {
 
   /// Miesiąc przypisania w formacie "YYYY-MM" — tylko dla [oneTimeExpense].
   final String? month;
+
+  /// Korekty miesięczne — tylko dla [BudgetEntryType.bill] (rachunek zmienny).
+  /// Klucz = "YYYY-MM". Nadpisują kwotę/datę danego miesiąca; nie ruszają surplus.
+  /// Patrz [ADR-008].
+  final Map<String, BillMonthOverride>? monthOverrides;
 
   final String? categoryId;
 
@@ -73,6 +118,7 @@ class BudgetEntry {
     this.cycle = BillingCycle.monthly,
     this.customCycleDays,
     this.month,
+    this.monthOverrides,
     this.categoryId,
     this.startDate,
     this.isActive = true,
@@ -83,6 +129,18 @@ class BudgetEntry {
 
   /// Czy to pozycja powiazana (lustro przelewu) — w domowym tylko do odczytu.
   bool get isLinked => linkId != null;
+
+  /// Czy typ obsługuje korekty miesięczne (tylko rachunek).
+  bool get supportsMonthOverrides => type == BudgetEntryType.bill;
+
+  /// Korekta wskazanego miesiąca ("YYYY-MM") lub `null`.
+  BillMonthOverride? overrideForMonth(String monthKey) =>
+      monthOverrides?[monthKey];
+
+  /// Kwota dla wskazanego miesiąca: korekta (jeśli ustawiona) lub kwota bazowa.
+  /// Dotyczy rachunku; dla pozostałych typów zwraca [amount].
+  double amountForMonth(String monthKey) =>
+      overrideForMonth(monthKey)?.amount ?? amount;
 
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
@@ -129,6 +187,10 @@ class BudgetEntry {
       ),
       customCycleDays: json['customCycleDays'] as int?,
       month: json['month'] as String?,
+      monthOverrides: (json['monthOverrides'] as Map<String, dynamic>?)?.map(
+        (k, v) =>
+            MapEntry(k, BillMonthOverride.fromJson(v as Map<String, dynamic>)),
+      ),
       categoryId: json['categoryId'] as String?,
       startDate: json['startDate'] != null
           ? DateTime.parse(json['startDate'] as String)
@@ -149,6 +211,10 @@ class BudgetEntry {
         'cycle': cycle.name,
         if (customCycleDays != null) 'customCycleDays': customCycleDays,
         if (month != null) 'month': month,
+        if (monthOverrides != null && monthOverrides!.isNotEmpty)
+          'monthOverrides': {
+            for (final e in monthOverrides!.entries) e.key: e.value.toJson()
+          },
         if (categoryId != null) 'categoryId': categoryId,
         if (startDate != null) 'startDate': startDate!.toIso8601String(),
         'isActive': isActive,
@@ -168,6 +234,8 @@ class BudgetEntry {
     bool clearCustomCycleDays = false,
     String? month,
     bool clearMonth = false,
+    Map<String, BillMonthOverride>? monthOverrides,
+    bool clearMonthOverrides = false,
     String? categoryId,
     bool clearCategoryId = false,
     DateTime? startDate,
@@ -190,6 +258,9 @@ class BudgetEntry {
           ? null
           : (customCycleDays ?? this.customCycleDays),
       month: clearMonth ? null : (month ?? this.month),
+      monthOverrides: clearMonthOverrides
+          ? null
+          : (monthOverrides ?? this.monthOverrides),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
       isActive: isActive ?? this.isActive,
