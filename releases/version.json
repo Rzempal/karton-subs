@@ -1,7 +1,9 @@
 {
-  "releaseDate": "2026-06-17T18:12:24Z",
-  "versionCode": 626061702,
   "changelog": [
+    {
+      "version": "0.7.26061703",
+      "notes": "- Metody platnosci: automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)\n- Pelny eksport/import Excel i backup (nic nie ginie)\n- Wiecej ikon kategorii domowych"
+    },
     {
       "version": "0.6.26061702",
       "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy\n- Kategoria w eksporcie i imporcie Excel budzetu"
@@ -37,13 +39,11 @@
     {
       "version": "0.1.26032803",
       "notes": "OTA"
-    },
-    {
-      "version": "0.1.26032802",
-      "notes": "- bug fixes"
     }
   ],
-  "version": "0.6.26061702",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.6.26061702.apk",
-  "releaseNotes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy\n- Kategoria w eksporcie i imporcie Excel budzetu"
+  "versionCode": 726061703,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.7.26061703.apk",
+  "version": "0.7.26061703",
+  "releaseDate": "2026-06-17T22:29:36Z",
+  "releaseNotes": "- Metody platnosci: automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)\n- Pelny eksport/import Excel i backup (nic nie ginie)\n- Wiecej ikon kategorii domowych"
 }

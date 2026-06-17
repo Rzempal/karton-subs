@@ -1,7 +1,21 @@
 {
-  "releaseDate": "2026-06-17T16:59:52Z",
-  "releaseNotes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu",
+  "releaseNotes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.6.26061714.apk",
+  "versionCode": 626061714,
+  "version": "0.6.26061714",
   "changelog": [
+    {
+      "version": "0.6.26061714",
+      "notes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)"
+    },
+    {
+      "version": "0.6.26061713",
+      "notes": "- Metody platnosci: tryb automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)"
+    },
+    {
+      "version": "0.6.26061712",
+      "notes": "- Rachunek zmienny: korekty daty i kwoty per miesiac\n- Rozdzielenie rachunku (zmienny) od kosztu cyklicznego (staly)"
+    },
     {
       "version": "0.5.26061711",
       "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu"
@@ -29,21 +43,7 @@
     {
       "version": "0.4.26061705",
       "notes": "Ustawienia jako karty frost; menu Dodaj szklane jak navbar (mniej przezroczyste) + fix zoltych podkreslen"
-    },
-    {
-      "version": "0.4.26061704",
-      "notes": "Menu Dodaj wysuwane w gore nad przyciskiem (zamiast bottom sheet); przycisk uniesiony nad navbar"
-    },
-    {
-      "version": "0.4.26061703",
-      "notes": "Aurora: poprawka pozycji paska nawigacji (dol ekranu)"
-    },
-    {
-      "version": "0.4.26061702",
-      "notes": "Redesign Aurora: jeden ciemny motyw, gradient + frost, pasek nawigacji szklany, kwoty-bohater gradientowe"
     }
   ],
-  "versionCode": 526061711,
-  "version": "0.5.26061711",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.5.26061711.apk"
+  "releaseDate": "2026-06-17T22:18:20Z"
 }
