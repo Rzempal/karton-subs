@@ -1,6 +1,10 @@
 {
   "changelog": [
     {
+      "version": "0.8.26061704",
+      "notes": "- Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu\n- Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)\n- Sumy w naglowkach sekcji (miesiecznie)\n- Dashboard: zwijanie kalendarza i listy platnosci"
+    },
+    {
       "version": "0.7.26061703",
       "notes": "- Metody platnosci: automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)\n- Pelny eksport/import Excel i backup (nic nie ginie)\n- Wiecej ikon kategorii domowych"
     },
@@ -35,15 +39,11 @@
     {
       "version": "0.1.26032900",
       "notes": "- bug fixes"
-    },
-    {
-      "version": "0.1.26032803",
-      "notes": "OTA"
     }
   ],
-  "versionCode": 726061703,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.7.26061703.apk",
-  "version": "0.7.26061703",
-  "releaseDate": "2026-06-17T22:29:36Z",
-  "releaseNotes": "- Metody platnosci: automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)\n- Pelny eksport/import Excel i backup (nic nie ginie)\n- Wiecej ikon kategorii domowych"
+  "releaseNotes": "- Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu\n- Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)\n- Sumy w naglowkach sekcji (miesiecznie)\n- Dashboard: zwijanie kalendarza i listy platnosci",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.8.26061704.apk",
+  "version": "0.8.26061704",
+  "releaseDate": "2026-06-17T23:44:45Z",
+  "versionCode": 826061704
 }

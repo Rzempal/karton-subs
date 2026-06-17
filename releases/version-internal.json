@@ -1,9 +1,34 @@
 {
-  "releaseNotes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.6.26061714.apk",
-  "versionCode": 626061714,
-  "version": "0.6.26061714",
+  "versionCode": 726061720,
+  "releaseDate": "2026-06-17T23:37:13Z",
+  "releaseNotes": "- Sumy sekcji budzetu znormalizowane przez cykl (kwota/mies; jednorazowe pelna kwota)\n- Dashboard: kalendarz zwijany (ikona kalendarza + chevron up/down, nawigacja miesiaca po srodku)\n- Dashboard: lista platnosci zwijana do naglowka i opisu",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.7.26061720.apk",
+  "version": "0.7.26061720",
   "changelog": [
+    {
+      "version": "0.7.26061720",
+      "notes": "- Sumy sekcji budzetu znormalizowane przez cykl (kwota/mies; jednorazowe pelna kwota)\n- Dashboard: kalendarz zwijany (ikona kalendarza + chevron up/down, nawigacja miesiaca po srodku)\n- Dashboard: lista platnosci zwijana do naglowka i opisu"
+    },
+    {
+      "version": "0.7.26061719",
+      "notes": "- Naglowki sekcji budzetu: suma pozycji (po filtrach) wyrownana do prawej"
+    },
+    {
+      "version": "0.7.26061718",
+      "notes": "- Filtr kategorii: etykieta Wszystkie kategorie (spojnie z Wszystkie typy)"
+    },
+    {
+      "version": "0.7.26061717",
+      "notes": "- Grupowanie wg typu: pod-naglowki tylko w kubelkach z wieloma typami (Wplywy/Przelew bez zbednych naglowkow)"
+    },
+    {
+      "version": "0.7.26061716",
+      "notes": "- Budzet UI: sortowanie jako ikona (A-Z / 1-0), grupowanie jako ikona (podswietlona gdy aktywne)\n- Filtr typu pozycji jako pasek chipow (pod filtrem kategorii)"
+    },
+    {
+      "version": "0.7.26061715",
+      "notes": "- Budzet: sortowanie (A-Z / kwota malejaco)\n- Filtr typu pozycji + grupowanie wg typu\n- Przelew do domowego: osobna sekcja Przelew wewnetrzny\n- Przelew: korekty miesieczne kwoty (jak rachunek), spojne z budzetem domowym"
+    },
     {
       "version": "0.6.26061714",
       "notes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)"
@@ -19,31 +44,6 @@
     {
       "version": "0.5.26061711",
       "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu"
-    },
-    {
-      "version": "0.5.26061710",
-      "notes": "Subskrypcje: przelacznik zakresu tylko Osobiste/Domowe (bez Wszystkie) — spojnie z Dashboard/Budzet"
-    },
-    {
-      "version": "0.5.26061709",
-      "notes": "Subskrypcje: przelacznik zakresu (Wszystkie/Osobiste/Domowe) jak w Dashboard/Budzet, nad zakladkami Lista/Statystyki"
-    },
-    {
-      "version": "0.4.26061708",
-      "notes": "Personalizacja Dashboardu: klik w sekcje Podsumowanie i Subskrypcje przelacza full/compact (zapamietywane, animowane)"
-    },
-    {
-      "version": "0.4.26061707",
-      "notes": "Spojnosc: pelne pokrycie motywem (date picker, menu, snackbar, tooltip), tokeny AppColors.onAccent/AppRadii, akcje destrukcyjne na token negative, straznik design tokens"
-    },
-    {
-      "version": "0.4.26061706",
-      "notes": "Dialogi i bottom sheety: nieprzezroczyste jasniejsze tlo (nie zlewaja sie z przyciemnieniem)"
-    },
-    {
-      "version": "0.4.26061705",
-      "notes": "Ustawienia jako karty frost; menu Dodaj szklane jak navbar (mniej przezroczyste) + fix zoltych podkreslen"
     }
-  ],
-  "releaseDate": "2026-06-17T22:18:20Z"
+  ]
 }
