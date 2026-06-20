@@ -2,7 +2,7 @@
 ///
 /// ZMIEN:
 ///   1. _baseReleasesUrl → twoja domena + nazwa aplikacji
-///   2. remoteReleasePath → sciezka na serwerze (uzywana przez deploy_apk.ps1)
+///   2. remoteReleasePath → sciezka na serwerze (uzywana przez deploy.ps1)
 class AppConfig {
   static const String channel = String.fromEnvironment(
     'CHANNEL',

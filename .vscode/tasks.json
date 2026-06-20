@@ -4,7 +4,7 @@
     {
       "label": "Deploy DEV",
       "type": "shell",
-      "command": ".\\scripts\\deploy_apk.ps1 -Channel internal",
+      "command": ".\\scripts\\deploy.ps1 -Channel internal",
       "options": {
         "shell": {
           "executable": "powershell.exe",
@@ -25,7 +25,7 @@
     {
       "label": "Deploy PROD",
       "type": "shell",
-      "command": ".\\scripts\\deploy_apk.ps1",
+      "command": ".\\scripts\\deploy.ps1",
       "options": {
         "shell": {
           "executable": "powershell.exe",

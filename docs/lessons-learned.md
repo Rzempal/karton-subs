@@ -311,7 +311,7 @@ geometria/render runtime — wychwycila je dopiero weryfikacja na urzadzeniu):
 ## 2026-06-17: Deploy buduje z drzewa roboczego — prod bez commita = rozjazd git↔produkcja
 
 ### Problem
-`deploy_apk.ps1` buduje APK z **biezacego stanu plikow**, nie z commita. Wydanie produkcyjne
+`deploy.ps1` buduje APK z **biezacego stanu plikow**, nie z commita. Wydanie produkcyjne
 (0.4) zrobiono z niezacommitowanej galezi — na produkcji jest kod, ktorego nie ma w git
 (`origin/main` stoi na starszym commicie). Brak punktu rollbacku; tag (`-CreateTag`) wskazalby
 ostatni commit, NIE faktycznie wydany kod → tag by „klamal".
@@ -331,7 +331,7 @@ w ignorowanym katalogu (`docs/_sandbox/`), zeby `git add .` ich nie wciagnal.
 ## 2026-06-18: WinSCP "Kod bledu 4" przy deploy = katalog juz istnieje (nie blad)
 
 ### Problem
-`deploy_apk.ps1` (kanal internal) wyswietla podczas uploadu glosny komunikat:
+`deploy.ps1` (kanal internal) wyswietla podczas uploadu glosny komunikat:
 `Nie mozna utworzyc katalogu '.../internal/'. Ogolna awaria. Kod bledu: 4 ... Failure`.
 Wyglada jak awaria uploadu, ale deploy konczy sie sukcesem (pliki wgrane 100%).
 

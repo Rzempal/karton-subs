@@ -1,4 +1,4 @@
-# OTA Update Setup — Flutter + ota_update + deploy_apk.ps1
+# OTA Update Setup — Flutter + ota_update + deploy.ps1
 
 > **Cel:** Wdrozenie OTA updates w nowej aplikacji Flutter w < 15 minut.
 > Przetestowano na: `ota_update: ^7.1.0`, Flutter 3.32+, Android 7+.
@@ -49,7 +49,7 @@ W bloku `<application>` wklej calosc z `templates/AndroidManifest-ota-block.xml`
 ### 6. Deploy
 
 ```powershell
-.\scripts\deploy_apk.ps1
+.\scripts\deploy.ps1
 ```
 
 Pierwszy APK zainstaluj recznie. Od drugiego deployu OTA dziala automatycznie.
@@ -66,7 +66,7 @@ Jesli zwraca JSON — dziala.
 ```
 [Flutter App] → HTTP GET version.json → [Serwer: /releases/nazwa-aplikacji/]
                                               ├── version.json
-                                              ├── nazwa-aplikacji_0.1.26032800.apk
+                                              ├── nazwa-aplikacji_latest.apk
                                               └── changelog.md
                    ↓
           Porownanie versionCode

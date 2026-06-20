@@ -2,9 +2,9 @@
 # Wymaga adaptacji: nazwy APK, remote paths, URL-e, nazwa aplikacji w logach.
 # Reusable: semantic versioning, versionCode formula, WinSCP upload, changelog, git tagging.
 
-# deploy_apk.ps1
+# deploy.ps1
 # Skrypt do budowania i deploymentu APK (Build + Copy + Versioning + WinSCP Upload)
-# Uzycie: .\scripts\deploy_apk.ps1 [-SkipBuild] [-SkipUpload] [-Channel internal|production]
+# Uzycie: .\scripts\deploy.ps1 [-SkipBuild] [-SkipUpload] [-Channel internal|production]
 #                                  [-BumpType patch|minor|major|changelog] [-ReleaseNotes "..."] [-CreateTag]
 #
 # -BumpType / -ReleaseNotes: gdy podane, pomijaja pytania interaktywne (tryb automatyczny,
@@ -415,12 +415,15 @@ $VERSION_CODE = [int64]$MAJOR * 1000000000 + [int64]$MINOR * 100000000 + [int64]
 Show-Info "Patch: $PATCH (deploy #$($COUNT.ToString('00')) dzisiaj)"
 
 # Channel-specific naming
+# Nazwa APK jest STALA (_latest) — jeden plik na kanal, bez mnozenia kopii.
+# Kontrola wersji NIE zalezy od nazwy pliku: OTA porownuje versionCode z version.json.
+# Swiezosc pobrania zapewnia cache-busting (?v=versionCode) w apkUrl ponizej.
 if ($Channel -eq "internal") {
-    $APK_NAME = "karton-subs-dev_$VERSION_NAME.apk"
+    $APK_NAME = "karton-subs-dev_latest.apk"
     $VERSION_JSON_NAME = "version-internal.json"
 }
 else {
-    $APK_NAME = "karton-subs_$VERSION_NAME.apk"
+    $APK_NAME = "karton-subs_latest.apk"
     $VERSION_JSON_NAME = "version.json"
 }
 
@@ -471,15 +474,27 @@ if (-not (Test-Path $RELEASES_DIR)) { New-Item -ItemType Directory -Path $RELEAS
 Copy-Item $SOURCE_APK $DEST_APK -Force
 Show-Success "[2/4] APK skopiowane: $APK_NAME"
 
+# Sprzatanie starych wersjonowanych APK tego kanalu (zostaje tylko *_latest.apk).
+# Wzorce sa rozlaczne: 'karton-subs_*' nie lapie 'karton-subs-dev_*'.
+$APK_PATTERN = if ($Channel -eq "internal") { "karton-subs-dev_*.apk" } else { "karton-subs_*.apk" }
+Get-ChildItem -Path $RELEASES_DIR -Filter $APK_PATTERN -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -ne $APK_NAME } |
+    ForEach-Object {
+        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+        Show-Info "  Usunieto stary APK: $($_.Name)"
+    }
+
 # 3. Generowanie version.json
 Show-Warning "[3/4] Generowanie $VERSION_JSON_NAME..."
 
-# Determine public URL for APK
+# Determine public URL for APK.
+# Cache-busting (?v=versionCode): nazwa pliku jest stala (_latest), wiec doklejamy
+# wersje do URL, by OTA zawsze pobralo swiezy plik (omija cache serwera/klienta).
 if ($Channel -eq "internal") {
-    $APK_PUBLIC_URL = "$DEPLOY_PUBLIC_URL/internal/$APK_NAME"
+    $APK_PUBLIC_URL = "$DEPLOY_PUBLIC_URL/internal/${APK_NAME}?v=$VERSION_CODE"
 }
 else {
-    $APK_PUBLIC_URL = "$DEPLOY_PUBLIC_URL/$APK_NAME"
+    $APK_PUBLIC_URL = "$DEPLOY_PUBLIC_URL/${APK_NAME}?v=$VERSION_CODE"
 }
 
 # Build changelog array (cumulative, deduplicated, max 10 entries)
@@ -591,6 +606,9 @@ if (-not $SkipUpload) {
 
     "option batch continue" | Out-File $tempScript -Append -Encoding UTF8
     "mkdir ""$UPLOAD_REMOTE_PATH""" | Out-File $tempScript -Append -Encoding UTF8
+    # Usun stare APK tego kanalu na serwerze (w tym poprzedni _latest) — zostaje jeden plik.
+    # batch continue: brak pasujacych plikow nie przerywa deployu.
+    "rm ""$UPLOAD_REMOTE_PATH$APK_PATTERN""" | Out-File $tempScript -Append -Encoding UTF8
     "option batch on" | Out-File $tempScript -Append -Encoding UTF8
 
     "put ""$DEST_APK"" ""$UPLOAD_REMOTE_PATH""" | Out-File $tempScript -Append -Encoding UTF8

@@ -3,7 +3,7 @@
 ## "Blad serwera: 404"
 
 **Przyczyna:** `version.json` nie istnieje na serwerze.
-**Rozwiazanie:** Odpal `deploy_apk.ps1` — stworzy i uploaduje version.json.
+**Rozwiazanie:** Odpal `deploy.ps1` — stworzy i uploaduje version.json.
 
 ---
 
@@ -31,7 +31,7 @@
 
 ## Upload pominiety — pliki tylko lokalnie
 
-**Przyczyna:** `$SkipUpload = $true` jako domyslna wartosc w deploy_apk.ps1.
+**Przyczyna:** `$SkipUpload = $true` jako domyslna wartosc w deploy.ps1.
 **Rozwiazanie:** Zmien parametr na `[switch]$SkipUpload` (domyslnie `$false`).
 
 ---

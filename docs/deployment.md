@@ -10,26 +10,45 @@ Ten dokument opisuje proces wdrożenia aplikacji mobilnej (APK) oraz webowej.
 
 ### Skrypty Deploymentu
 
-- `scripts/deploy_apk.ps1` – Główny (i jedyny) skrypt do budowania i wysyłania APK na serwer.
+- `scripts/deploy.ps1` – Główny (i jedyny) skrypt do budowania i wysyłania APK na serwer.
 
 #### Terminal command
 
 DEV (kanal `internal`) — build + upload, bez bumpu wersji, bez tagu:
 
 ```powershell
-.\scripts\deploy_apk.ps1 -Channel internal -BumpType patch -ReleaseNotes "- opis zmian"
+.\scripts\deploy.ps1 -Channel internal -BumpType patch -ReleaseNotes "- opis zmian"
 ```
 
 PROD (kanal `production`) — z bumpem wersji (minor/major) i opcjonalnym tagiem:
 
 ```powershell
-.\scripts\deploy_apk.ps1 -Channel production -BumpType minor -ReleaseNotes "- opis zmian" -CreateTag
+.\scripts\deploy.ps1 -Channel production -BumpType minor -ReleaseNotes "- opis zmian" -CreateTag
 ```
 
 > Podanie `-BumpType` i `-ReleaseNotes` daje tryb w pelni automatyczny (bez pytan
 > interaktywnych). Bez nich skrypt pyta o typ wersji i release notes.
 
 ---
+
+## Nazewnictwo APK i kontrola wersji
+
+APK ma **stałą nazwę** zależną tylko od kanału — na serwerze i w `releases/` jest
+**jeden plik na kanał**, nadpisywany przy każdym deployu (bez mnożenia kopii):
+
+| Kanał | Plik APK | Plik wersji |
+| --- | --- | --- |
+| `internal` (DEV) | `karton-subs-dev_latest.apk` | `version-internal.json` |
+| `production` (PROD) | `karton-subs_latest.apk` | `version.json` |
+
+**Kontrola wersji nie zależy od nazwy pliku.** OTA porównuje `versionCode` z pliku
+`version*.json` z wersją zainstalowaną — `versionName`/`versionCode` nadal rosną przy
+każdym deployu (`Major.Minor.yyMMDDcc`). Nazwa pliku jest stała, ale:
+
+- **Cache-busting:** `apkUrl` w `version*.json` ma dopisek `?v=<versionCode>`, więc
+  każda wersja ma unikalny URL — OTA zawsze pobiera świeży plik mimo stałej nazwy.
+- Skrypt automatycznie usuwa stare, wersjonowane APK danego kanału (lokalnie i na
+  serwerze), zostawiając wyłącznie `_latest`.
 
 ## Wdrożenie Mobile (Android)
 
@@ -56,7 +75,7 @@ DEPLOY_PUBLIC_URL=https://your-domain.example.com/releases
 ### Uruchomienie deploymentu
 
 ```powershell
-./scripts/deploy_apk.ps1
+./scripts/deploy.ps1
 ```
 
 Parametry opcjonalne:
@@ -72,7 +91,7 @@ Podanie `-BumpType` i `-ReleaseNotes` daje tryb w pelni automatyczny (bez `Read-
 np. deploy na DEV jednym poleceniem:
 
 ```powershell
-./scripts/deploy_apk.ps1 -Channel internal -BumpType minor -ReleaseNotes "- Import/eksport Excel"
+./scripts/deploy.ps1 -Channel internal -BumpType minor -ReleaseNotes "- Import/eksport Excel"
 ```
 
 ---

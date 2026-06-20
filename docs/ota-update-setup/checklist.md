@@ -26,7 +26,7 @@ Odznacz kazdy punkt przed pierwszym deployem.
 - [ ] `.env`: `DEPLOY_PUBLIC_URL` **ODKOMENTOWANY** z pelna sciezka
 - [ ] `.env`: `DEPLOY_REMOTE_PATH` konczy sie na `/NAZWA-APLIKACJI/`
 - [ ] `.env`: dodany do `.gitignore`
-- [ ] `deploy_apk.ps1`: `[switch]$SkipUpload` (domyslnie false)
+- [ ] `deploy.ps1`: `[switch]$SkipUpload` (domyslnie false)
 - [ ] `pubspec.yaml`: `version` ustawiony (np. `0.1.0+1`)
 
 ## Serwer

@@ -75,7 +75,7 @@ karton-subs/
 │   └── standards/              # Standardy kodu i procesu
 ├── reference-code/             # Wzorce z APPteczka (zrodlo Fazy 1)
 └── scripts/
-    └── deploy_apk.ps1          # Deploy pipeline (do adaptacji)
+    └── deploy.ps1              # Deploy pipeline (build + version + upload OTA)
 ```
 
 ---

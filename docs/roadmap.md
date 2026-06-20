@@ -36,7 +36,7 @@
 | Quick Add | Predefiniowane szablony (Netflix, Spotify...) | ⏳ Faza 1b |
 | Backup | Szyfrowany eksport/import (.subkarton) | ⏳ Faza 1b |
 | OTA | Aktualizacje z wlasnego serwera | ⏳ Faza 1b |
-| Deploy | Adaptacja deploy_apk.ps1 | ⏳ Faza 1b |
+| Deploy | Adaptacja deploy.ps1 | ⏳ Faza 1b |
 
 ---
 
