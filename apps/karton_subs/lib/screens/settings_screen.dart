@@ -56,31 +56,33 @@ class SettingsScreen extends StatelessWidget {
 
           // ── Waluta ──────────────────────────────────────────────────────
           const _SectionDivider('Waluta domyślna'),
-          _FrostGroup(children: [
-            ...Currency.values.map((c) => RadioListTile<String>(
-                  value: c.label,
-                  groupValue: currency,
-                  title: Text('${c.label} (${c.symbol})'),
-                  onChanged: (v) {
-                    if (v != null) {
-                      storage.setCurrency(v);
-                      ctrl.refresh();
-                    }
-                  },
-                )),
-            ListTile(
-              leading: const Icon(LucideIcons.target),
-              title: const Text('Limit budżetowy'),
-              subtitle: Text(
-                storage.getBudgetLimit() != null
-                    ? '${storage.getBudgetLimit()!.toStringAsFixed(0)} $currency/mies'
-                    : 'Nie ustawiono',
+          RadioGroup<String>(
+            groupValue: currency,
+            onChanged: (v) {
+              if (v != null) {
+                storage.setCurrency(v);
+                ctrl.refresh();
+              }
+            },
+            child: _FrostGroup(children: [
+              ...Currency.values.map((c) => RadioListTile<String>(
+                    value: c.label,
+                    title: Text('${c.label} (${c.symbol})'),
+                  )),
+              ListTile(
+                leading: const Icon(LucideIcons.target),
+                title: const Text('Limit budżetowy'),
+                subtitle: Text(
+                  storage.getBudgetLimit() != null
+                      ? '${storage.getBudgetLimit()!.toStringAsFixed(0)} $currency/mies'
+                      : 'Nie ustawiono',
+                ),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () =>
+                    _showBudgetLimitDialog(context, storage, currency, ctrl),
               ),
-              trailing: const Icon(LucideIcons.chevronRight),
-              onTap: () =>
-                  _showBudgetLimitDialog(context, storage, currency, ctrl),
-            ),
-          ]),
+            ]),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             child: Text(
