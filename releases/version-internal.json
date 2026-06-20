@@ -1,9 +1,15 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.8.26061800.apk",
-  "version": "0.8.26061800",
-  "versionCode": 826061800,
-  "releaseDate": "2026-06-18T23:40:44Z",
+  "versionCode": 826062001,
+  "version": "0.8.26062001",
   "changelog": [
+    {
+      "version": "0.8.26062001",
+      "notes": "- Synchronizacja budzetu domowego (preview)"
+    },
+    {
+      "version": "0.8.26062000",
+      "notes": "dodano badge preview dla funkcji synchronizacji"
+    },
     {
       "version": "0.8.26061800",
       "notes": "- Synchronizacja budzetu domowego (parowanie QR + haslo, relay E2E)"
@@ -35,15 +41,9 @@
     {
       "version": "0.6.26061714",
       "notes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)"
-    },
-    {
-      "version": "0.6.26061713",
-      "notes": "- Metody platnosci: tryb automatyczna/manualna\n- Kalendarz: wydatki auto na zolto, manualne na czerwono\n- Dashboard: sekcja Platnosci (manualne do odhaczenia)\n- Nowy typ wydatku: Rata (start + liczba rat lub data ostatniej)"
-    },
-    {
-      "version": "0.6.26061712",
-      "notes": "- Rachunek zmienny: korekty daty i kwoty per miesiac\n- Rozdzielenie rachunku (zmienny) od kosztu cyklicznego (staly)"
     }
   ],
-  "releaseNotes": "- Synchronizacja budzetu domowego (parowanie QR + haslo, relay E2E)"
+  "releaseDate": "2026-06-20T12:28:36Z",
+  "releaseNotes": "- Synchronizacja budzetu domowego (preview)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_latest.apk?v=826062001"
 }

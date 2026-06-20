@@ -1,8 +1,17 @@
 {
-  "releaseDate": "2026-06-19T05:16:09Z",
-  "version": "0.8.26061900",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.8.26061900.apk",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_latest.apk?v=926062001",
+  "releaseNotes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty",
+  "version": "0.9.26062001",
+  "releaseDate": "2026-06-20T12:31:53Z",
   "changelog": [
+    {
+      "version": "0.9.26062001",
+      "notes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty"
+    },
+    {
+      "version": "0.8.26062000",
+      "notes": "dodano badge preview dla funkcji synchronizacji"
+    },
     {
       "version": "0.8.26061900",
       "notes": "-sync"
@@ -34,16 +43,7 @@
     {
       "version": "0.2.26040900",
       "notes": "- bug fixes"
-    },
-    {
-      "version": "0.2.26032902",
-      "notes": "fix ikony"
-    },
-    {
-      "version": "0.2.26032901",
-      "notes": "zmiana ikony aplikacji"
     }
   ],
-  "versionCode": 826061900,
-  "releaseNotes": "-sync"
+  "versionCode": 926062001
 }
