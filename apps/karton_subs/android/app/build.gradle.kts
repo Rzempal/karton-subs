@@ -33,12 +33,12 @@ android {
         create("production") {
             dimension = "channel"
             applicationId = "com.karton.subs"
-            resValue("string", "app_name", "Karton na subskrypcje")
+            resValue("string", "app_name", "Zostaje")
         }
         create("internal") {
             dimension = "channel"
             applicationId = "com.karton.subs.dev"
-            resValue("string", "app_name", "karton-subs-dev")
+            resValue("string", "app_name", "Zostaje DEV")
         }
     }
 

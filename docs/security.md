@@ -124,7 +124,7 @@ Referencja: `reference-code/services/update_service.dart`
 
 ## Disclaimer
 
-> **Karton na subskrypcje** jest narzedziem informacyjnym do sledzenia wydatkow na subskrypcje.
+> **Zostaje** jest narzedziem informacyjnym do sledzenia wydatkow na subskrypcje.
 > Aplikacja NIE jest usluga finansowa, NIE udziela porad finansowych i NIE laczy sie
 > z kontami bankowymi. Wszystkie dane sa wprowadzane recznie przez uzytkownika.
 

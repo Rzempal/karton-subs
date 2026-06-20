@@ -1,11 +1,11 @@
-# Karton na subskrypcje
+# Zostaje
 
 Mobilny tracker subskrypcji cyfrowych **oraz menedzer budzetu domowego**.
 Zero logowania, 100% prywatnosci, offline-first.
 
 ---
 
-## Czym jest Karton na subskrypcje
+## Czym jest Zostaje
 
 Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budzet domowy. Cel: pokazac dokladnie gdzie ida pieniadze i ile zostaje na koniec miesiaca.
 

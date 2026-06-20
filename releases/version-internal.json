@@ -1,7 +1,13 @@
 {
-  "versionCode": 826062001,
-  "version": "0.8.26062001",
+  "version": "0.9.26062002",
+  "versionCode": 926062002,
+  "releaseDate": "2026-06-20T13:14:03Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_latest.apk?v=926062002",
   "changelog": [
+    {
+      "version": "0.9.26062002",
+      "notes": "bugs"
+    },
     {
       "version": "0.8.26062001",
       "notes": "- Synchronizacja budzetu domowego (preview)"
@@ -37,13 +43,7 @@
     {
       "version": "0.7.26061715",
       "notes": "- Budzet: sortowanie (A-Z / kwota malejaco)\n- Filtr typu pozycji + grupowanie wg typu\n- Przelew do domowego: osobna sekcja Przelew wewnetrzny\n- Przelew: korekty miesieczne kwoty (jak rachunek), spojne z budzetem domowym"
-    },
-    {
-      "version": "0.6.26061714",
-      "notes": "- Excel budzetu: pelny round-trip (metoda platnosci, data startu, liczba rat, korekty rachunku)\n- Backup v5: obejmuje stan wykonanych platnosci\n- Wiecej ikon kategorii domowych (dziecko, pies, zakupy, jedzenie, rachunki, prezent)"
     }
   ],
-  "releaseDate": "2026-06-20T12:28:36Z",
-  "releaseNotes": "- Synchronizacja budzetu domowego (preview)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_latest.apk?v=826062001"
+  "releaseNotes": "bugs"
 }

@@ -1,0 +1,9 @@
+# Ikona DEV (flavor internal -> src/internal/res). Wyrozniona czerwonym portfelem.
+# Uruchom: dart run flutter_launcher_icons -f flutter_launcher_icons-internal.yaml
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "../../docs/icons/icon.png"
+  adaptive_icon_background: "../../docs/icons/icon_background.png"
+  adaptive_icon_foreground: "../../docs/icons/dev_icon_foreground.png"
+  min_sdk_android: 24

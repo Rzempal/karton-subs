@@ -17,7 +17,7 @@ flowchart TB
         View["Przegladaj wydatki"]
     end
 
-    subgraph App ["Karton na subskrypcje"]
+    subgraph App ["Zostaje"]
         CRUD["CRUD Subskrypcji"]
         DB["Hive (lokalna baza)"]
         Analytics["Engine Analityczny"]

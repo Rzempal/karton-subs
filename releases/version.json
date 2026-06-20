@@ -1,9 +1,12 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_latest.apk?v=926062001",
-  "releaseNotes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty",
-  "version": "0.9.26062001",
-  "releaseDate": "2026-06-20T12:31:53Z",
+  "version": "0.9.26062002",
+  "releaseNotes": "bugs",
+  "releaseDate": "2026-06-20T13:13:53Z",
   "changelog": [
+    {
+      "version": "0.9.26062002",
+      "notes": "bugs"
+    },
     {
       "version": "0.9.26062001",
       "notes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty"
@@ -39,11 +42,8 @@
     {
       "version": "0.3.26061600",
       "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
-    },
-    {
-      "version": "0.2.26040900",
-      "notes": "- bug fixes"
     }
   ],
-  "versionCode": 926062001
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_latest.apk?v=926062002",
+  "versionCode": 926062002
 }

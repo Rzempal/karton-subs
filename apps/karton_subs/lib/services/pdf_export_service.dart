@@ -48,7 +48,7 @@ class PdfExportService {
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Karton na subskrypcje',
+              pw.Text('Zostaje',
                   style: pw.TextStyle(font: fontBold, fontSize: 16)),
               pw.Text(dateStr,
                   style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey700)),

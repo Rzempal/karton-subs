@@ -249,7 +249,7 @@ class BackupService {
 
     await Share.shareXFiles(
       [XFile(file.path, mimeType: 'application/octet-stream')],
-      subject: 'Karton na subskrypcje — backup',
+      subject: 'Zostaje — backup',
     );
 
     // Plik tymczasowy — usuwamy po chwili

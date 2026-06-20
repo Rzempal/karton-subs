@@ -85,7 +85,7 @@ class KartonApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Karton na subskrypcje',
+      title: 'Zostaje',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: scaffoldMessengerKey,
       // Aurora — jeden uniwersalny ciemny motyw (ADR-005).

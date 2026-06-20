@@ -94,7 +94,7 @@ class ExcelService {
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
       ],
-      subject: 'Karton na subskrypcje — arkusz',
+      subject: 'Zostaje — arkusz',
     );
 
     // Plik tymczasowy zawiera jawne dane finansowe — kasujemy po chwili.
@@ -313,7 +313,7 @@ class ExcelService {
               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
       ],
-      subject: 'Karton na subskrypcje — budżet',
+      subject: 'Zostaje — budżet',
     );
 
     Future.delayed(const Duration(minutes: 2), () {

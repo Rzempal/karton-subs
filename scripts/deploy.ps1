@@ -141,7 +141,7 @@ function Update-ProdChangelog {
 
     $CHANGELOG_PATH = Join-Path $RELEASES_DIR "changelog.md"
     $MAX_ENTRIES = 1000
-    $HEADER = "# Karton na subskrypcje - Historia zmian"
+    $HEADER = "# Zostaje - Historia zmian"
 
     # Format new entry
     $notesLines = ($ReleaseNotes -replace "`r`n", "`n") -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
@@ -250,7 +250,7 @@ $timerPs = [powershell]::Create().AddScript({
         while ($true) {
             $elapsed = $startTime.Elapsed
             $timeStr = "$($elapsed.Minutes.ToString('00')):$($elapsed.Seconds.ToString('00'))"
-            [Console]::Title = "Karton Subs Deploy | Czas: $timeStr"
+            [Console]::Title = "Zostaje Deploy | Czas: $timeStr"
             [System.Threading.Thread]::Sleep(1000)
         }
     }).AddArgument($startTime)
