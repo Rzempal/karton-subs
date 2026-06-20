@@ -1,10 +1,13 @@
 {
-  "versionCode": 726061720,
-  "releaseDate": "2026-06-17T23:37:13Z",
-  "releaseNotes": "- Sumy sekcji budzetu znormalizowane przez cykl (kwota/mies; jednorazowe pelna kwota)\n- Dashboard: kalendarz zwijany (ikona kalendarza + chevron up/down, nawigacja miesiaca po srodku)\n- Dashboard: lista platnosci zwijana do naglowka i opisu",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.7.26061720.apk",
-  "version": "0.7.26061720",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_0.8.26061800.apk",
+  "version": "0.8.26061800",
+  "versionCode": 826061800,
+  "releaseDate": "2026-06-18T23:40:44Z",
   "changelog": [
+    {
+      "version": "0.8.26061800",
+      "notes": "- Synchronizacja budzetu domowego (parowanie QR + haslo, relay E2E)"
+    },
     {
       "version": "0.7.26061720",
       "notes": "- Sumy sekcji budzetu znormalizowane przez cykl (kwota/mies; jednorazowe pelna kwota)\n- Dashboard: kalendarz zwijany (ikona kalendarza + chevron up/down, nawigacja miesiaca po srodku)\n- Dashboard: lista platnosci zwijana do naglowka i opisu"
@@ -40,10 +43,7 @@
     {
       "version": "0.6.26061712",
       "notes": "- Rachunek zmienny: korekty daty i kwoty per miesiac\n- Rozdzielenie rachunku (zmienny) od kosztu cyklicznego (staly)"
-    },
-    {
-      "version": "0.5.26061711",
-      "notes": "- Kategorie wydatkow w budzecie: oznaczanie pozycji + filtr listy\n- Kategoria w eksporcie/imporcie Excel budzetu"
     }
-  ]
+  ],
+  "releaseNotes": "- Synchronizacja budzetu domowego (parowanie QR + haslo, relay E2E)"
 }

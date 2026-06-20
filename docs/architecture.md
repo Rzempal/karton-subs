@@ -85,6 +85,9 @@ lib/
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
+│   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
+│   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
+│   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
 │   ├── notification_service.dart # Lokalne powiadomienia
 │   ├── update_service.dart      # OTA updates
 │   └── pdf_export_service.dart  # Eksport raportu PDF
@@ -96,7 +99,8 @@ lib/
 │   ├── add_subscription_screen.dart # Formularz subskrypcji
 │   ├── budget_dashboard_screen.dart  # Budzet: zarzadzanie pozycjami + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (4 typy)
-│   └── settings_screen.dart     # Ustawienia, backup, OTA
+│   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
+│   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
 ├── widgets/
 │   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
 │   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)
@@ -190,6 +194,13 @@ BudgetService  ──►  BudgetEntry[]  (box: budget_entries | household_budget
 **Przelew do domowego** (`householdTransfer`): koszt w osobistym + lustrzany wplyw w
 domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz
 [ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
+
+**Synchronizacja domowego (ADR-009):** box `household_budget_entries` jest opcjonalnie
+synchronizowany miedzy urzadzeniami przez relay E2E (Supabase) — bez kont, parowanie
+QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmiana
+wygrywa" per pozycja (`updatedAt`) + nagrobki (`deleted`). Osobisty zostaje lokalny.
+Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
+[security.md](security.md).
 
 ---
 

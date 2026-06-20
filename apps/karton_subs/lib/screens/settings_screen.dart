@@ -13,6 +13,8 @@ import '../theme/app_theme.dart';
 import '../config/app_config.dart';
 import 'category_management_screen.dart';
 import 'payment_method_management_screen.dart';
+import 'household_sync_screen.dart';
+import '../services/sync_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -92,6 +94,30 @@ class SettingsScreen extends StatelessWidget {
           // ── Powiadomienia ────────────────────────────────────────────────
           const _SectionDivider('Powiadomienia'),
           _NotificationSection(),
+
+          // ── Budzet domowy (synchronizacja) ───────────────────────────────
+          const _SectionDivider('Budżet domowy'),
+          _FrostGroup(children: [
+            Consumer<SyncService>(
+              builder: (_, sync, _) => ListTile(
+                leading: const Icon(LucideIcons.users),
+                title: Row(
+                  children: [
+                    const Flexible(child: Text('Synchronizacja')),
+                    const SizedBox(width: 8),
+                    const _PreviewBadge(),
+                  ],
+                ),
+                subtitle: Text(sync.isPaired ? 'Połączono' : 'Nie połączono'),
+                trailing: const Icon(LucideIcons.chevronRight),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const HouseholdSyncScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ]),
 
           // ── Backup ──────────────────────────────────────────────────────
           const _SectionDivider('Backup'),
@@ -727,6 +753,33 @@ class _FrostGroup extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.tile),
         child: Column(mainAxisSize: MainAxisSize.min, children: rows),
+      ),
+    );
+  }
+}
+
+/// Mały znacznik „PREVIEW" — funkcja w wersji wczesnej (synchronizacja, ADR-009).
+class _PreviewBadge extends StatelessWidget {
+  const _PreviewBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(AppRadii.control),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        'PREVIEW',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: c,
+        ),
       ),
     );
   }

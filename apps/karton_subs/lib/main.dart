@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -12,6 +13,7 @@ import 'services/app_logger.dart';
 import 'services/backup_service.dart';
 import 'services/excel_service.dart';
 import 'services/storage_service.dart';
+import 'services/sync_service.dart';
 import 'services/update_service.dart';
 import 'services/notification_service.dart';
 import 'models/subscription.dart';
@@ -33,6 +35,10 @@ void main() async {
   if (AppConfig.isInternal) {
     Subscription.devDateOverride = storage.getDevDateOverride();
   }
+
+  // Synchronizacja budzetu domowego (relay E2E, ADR-009) — wczytaj sparowanie.
+  final syncService = SyncService(storage);
+  await syncService.init();
 
   final updateService = UpdateService();
   // OTA check w tle — nie blokujemy startu
@@ -61,6 +67,7 @@ void main() async {
           update: (_, _, budget) => budget!,
         ),
         ChangeNotifierProvider.value(value: updateService),
+        ChangeNotifierProvider.value(value: syncService),
         Provider(create: (_) => BackupService(storage)),
         Provider(create: (_) => ExcelService(storage)),
         Provider.value(value: notificationService),
@@ -97,6 +104,43 @@ class _MainShell extends StatefulWidget {
 
 class _MainShellState extends State<_MainShell> {
   int _currentIndex = 0;
+  Timer? _syncDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-synchronizacja po zmianie budzetu domowego (debounced).
+    context.read<BudgetController>().onHouseholdChanged = _scheduleSync;
+    // Synchronizacja budzetu domowego przy starcie (jesli sparowane).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final sync = context.read<SyncService>();
+      if (!sync.isPaired) return;
+      final result = await sync.syncNow();
+      if (result.changedLocal && mounted) {
+        context.read<BudgetController>().refresh();
+      }
+    });
+  }
+
+  /// Synchronizacja z opóźnieniem — seria szybkich zmian = jeden sync.
+  void _scheduleSync() {
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(seconds: 2), () async {
+      if (!mounted) return;
+      final sync = context.read<SyncService>();
+      if (!sync.isPaired) return;
+      final result = await sync.syncNow();
+      if (result.changedLocal && mounted) {
+        context.read<BudgetController>().refresh();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncDebounce?.cancel();
+    super.dispose();
+  }
 
   static const _screens = [
     DashboardScreen(),

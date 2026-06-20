@@ -137,6 +137,8 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 | `isActive` | bool | tak | Wstrzymane pozycje nie licza sie do sum |
 | `note` | string | nie | Opcjonalna notatka |
 | `linkId` | string | nie | Spina pare przelew↔wklad (osobisty↔domowy) |
+| `updatedAt` | ISO8601 | nie | **Synchronizacja domowego (ADR-009):** znacznik ostatniej zmiany — podstawa scalania „ostatnia zmiana wygrywa". Brak (stare dane) → fallback na `dataDodania` |
+| `deleted` | bool | nie | **Nagrobek (ADR-009):** pozycja usunieta, ale zachowana, by usuniecie propagowalo sie na drugie urzadzenie. Pomijana w UI/agregatach. Default `false` (tylko box domowy) |
 | `dataDodania` | ISO8601 | tak | Timestamp dodania |
 
 `* zaleznie od typu` — `cycle` dla cyklicznych, `month` dla jednorazowych.
@@ -335,7 +337,7 @@ class PaymentMethod {
 | Hive Box: `categories` | JSON kategorii |
 | Hive Box: `payment_methods` | JSON metod platnosci |
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
-| Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** (przyszla synchronizacja) |
+| Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** — synchronizowany E2E (ADR-009); pozycje niosa `updatedAt`/`deleted` (nagrobki) |
 | Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
 | Hive Box: `settings` | Key-value: waluta domyslna, budzet, preferencje |
 

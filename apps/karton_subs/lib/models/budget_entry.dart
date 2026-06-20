@@ -122,6 +122,16 @@ class BudgetEntry {
   /// Ustawione na obu pozycjach (ten sam identyfikator).
   final String? linkId;
 
+  /// Znacznik ostatniej zmiany pozycji — podstawa scalania przy synchronizacji
+  /// budżetu domowego (Last-Write-Wins per pozycja, ADR-009). `null` dla starych
+  /// danych sprzed synchronizacji — patrz [effectiveUpdatedAt].
+  final DateTime? updatedAt;
+
+  /// Nagrobek (tombstone): pozycja usunięta, ale zachowana, by usunięcie
+  /// propagowało się do drugiego urządzenia przy synchronizacji (ADR-009).
+  /// Pozycje z `deleted == true` są pomijane w UI i agregatach. Domyślnie `false`.
+  final bool deleted;
+
   const BudgetEntry({
     required this.id,
     required this.name,
@@ -140,10 +150,16 @@ class BudgetEntry {
     this.note,
     required this.dataDodania,
     this.linkId,
+    this.updatedAt,
+    this.deleted = false,
   });
 
   /// Czy to pozycja powiazana (lustro przelewu) — w domowym tylko do odczytu.
   bool get isLinked => linkId != null;
+
+  /// Znacznik ostatniej zmiany dla potrzeb scalania (LWW). Stare pozycje bez
+  /// [updatedAt] traktujemy jak zmienione w chwili dodania ([dataDodania]).
+  DateTime get effectiveUpdatedAt => updatedAt ?? dataDodania;
 
   /// Czy typ obsługuje korekty miesięczne (rachunek + przelew do domowego).
   bool get supportsMonthOverrides =>
@@ -245,6 +261,10 @@ class BudgetEntry {
       note: json['note'] as String?,
       dataDodania: DateTime.parse(json['dataDodania'] as String),
       linkId: json['linkId'] as String?,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+      deleted: json['deleted'] as bool? ?? false,
     );
   }
 
@@ -269,6 +289,8 @@ class BudgetEntry {
         if (note != null) 'note': note,
         'dataDodania': dataDodania.toIso8601String(),
         if (linkId != null) 'linkId': linkId,
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+        if (deleted) 'deleted': true,
       };
 
   BudgetEntry copyWith({
@@ -298,6 +320,9 @@ class BudgetEntry {
     DateTime? dataDodania,
     String? linkId,
     bool clearLinkId = false,
+    DateTime? updatedAt,
+    bool clearUpdatedAt = false,
+    bool? deleted,
   }) {
     return BudgetEntry(
       id: id ?? this.id,
@@ -324,6 +349,8 @@ class BudgetEntry {
       note: clearNote ? null : (note ?? this.note),
       dataDodania: dataDodania ?? this.dataDodania,
       linkId: clearLinkId ? null : (linkId ?? this.linkId),
+      updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
+      deleted: deleted ?? this.deleted,
     );
   }
 }

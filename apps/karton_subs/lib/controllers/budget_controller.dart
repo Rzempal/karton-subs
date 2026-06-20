@@ -28,6 +28,16 @@ class BudgetController extends ChangeNotifier {
 
   void _onSubscriptionsChanged() => notifyListeners();
 
+  /// Wywoływane po zmianie dotykającej budżetu domowego — `main` podpina tu
+  /// (debounced) synchronizację (ADR-009). `null` = brak synchronizacji.
+  void Function()? onHouseholdChanged;
+
+  /// Powiadamia UI i — gdy zmiana dotknęła domowego — wyzwala synchronizację.
+  void _notifyMutation({required bool touchedHousehold}) {
+    notifyListeners();
+    if (touchedHousehold) onHouseholdChanged?.call();
+  }
+
   @override
   void dispose() {
     _subscriptions.removeListener(_onSubscriptionsChanged);
@@ -64,7 +74,10 @@ class BudgetController extends ChangeNotifier {
 
   // ── Listy (aktywny zakres) ───────────────────────────────────────────────
 
-  List<BudgetEntry> get all => _storage.getBudgetEntries(_scope);
+  /// Pozycje aktywnego zakresu widoczne dla UI/agregatów — bez nagrobków
+  /// (pozycji oznaczonych `deleted` przy synchronizacji domowego, ADR-009).
+  List<BudgetEntry> get all =>
+      _storage.getBudgetEntries(_scope).where((e) => !e.deleted).toList();
 
   /// Wpływy: cykliczne (pensja) + jednorazowe (premia) + wkłady (lustro przelewu w domowym).
   List<BudgetEntry> get incomes =>
@@ -154,11 +167,18 @@ class BudgetController extends ChangeNotifier {
 
   // ── CRUD (aktywny zakres) ──────────────────────────────────────────────────
 
+  /// Zapis pozycji z odświeżeniem znacznika zmiany (`updatedAt`) — podstawa
+  /// scalania przy synchronizacji domowego (ADR-009). Hurtowy zapis po scaleniu
+  /// idzie osobną ścieżką ([StorageService.replaceBudgetEntries]), by zachować
+  /// oryginalne znaczniki.
+  Future<void> _saveStamped(BudgetEntry entry, BudgetScope scope) =>
+      _storage.saveBudgetEntry(entry.copyWith(updatedAt: DateTime.now()), scope);
+
   /// Zapis pozycji w aktywnym zakresie (używane m.in. przez import Excel).
   Future<void> add(BudgetEntry entry) async {
-    await _storage.saveBudgetEntry(entry, _scope);
+    await _saveStamped(entry, _scope);
     _log.info('Added budget entry ($_scope): ${entry.name}');
-    notifyListeners();
+    _notifyMutation(touchedHousehold: _scope == BudgetScope.household);
   }
 
   Future<BudgetEntry> create({
@@ -195,7 +215,7 @@ class BudgetController extends ChangeNotifier {
         dataDodania: now,
         linkId: linkId,
       );
-      await _storage.saveBudgetEntry(personal, BudgetScope.personal);
+      await _saveStamped(personal, BudgetScope.personal);
       final mirror = BudgetEntry(
         id: _uuid.v4(),
         name: name,
@@ -210,9 +230,9 @@ class BudgetController extends ChangeNotifier {
         dataDodania: now,
         linkId: linkId,
       );
-      await _storage.saveBudgetEntry(mirror, BudgetScope.household);
+      await _saveStamped(mirror, BudgetScope.household);
       _log.info('Created household transfer (link $linkId): $name');
-      notifyListeners();
+      _notifyMutation(touchedHousehold: true); // lustro w domowym
       return personal;
     }
 
@@ -238,12 +258,12 @@ class BudgetController extends ChangeNotifier {
   }
 
   Future<void> update(BudgetEntry entry) async {
-    await _storage.saveBudgetEntry(entry, _scope);
+    await _saveStamped(entry, _scope);
     // Kaskada na lustro w domowym (gdy edytujemy przelew w osobistym).
     if (entry.type == BudgetEntryType.householdTransfer && entry.linkId != null) {
       final mirror = _findByLinkId(entry.linkId!, BudgetScope.household);
       if (mirror != null) {
-        await _storage.saveBudgetEntry(
+        await _saveStamped(
           mirror.copyWith(
             name: entry.name,
             amount: entry.amount,
@@ -262,24 +282,39 @@ class BudgetController extends ChangeNotifier {
       }
     }
     _log.info('Updated budget entry ($_scope): ${entry.name}');
-    notifyListeners();
+    _notifyMutation(
+        touchedHousehold: _scope == BudgetScope.household ||
+            entry.type == BudgetEntryType.householdTransfer);
   }
 
   Future<void> delete(String id) async {
     final entry = _storage.getBudgetEntry(id, _scope);
-    await _storage.deleteBudgetEntry(id, _scope);
+    if (entry == null) return;
+    await _removeOrTombstone(entry, _scope);
     // Kaskada: usuń drugą stronę pary przelewu (w przeciwnym boxie).
-    if (entry?.linkId != null) {
+    if (entry.linkId != null) {
       final other = _scope == BudgetScope.personal
           ? BudgetScope.household
           : BudgetScope.personal;
-      final partner = _findByLinkId(entry!.linkId!, other);
+      final partner = _findByLinkId(entry.linkId!, other);
       if (partner != null) {
-        await _storage.deleteBudgetEntry(partner.id, other);
+        await _removeOrTombstone(partner, other);
       }
     }
     _log.info('Deleted budget entry ($_scope): $id');
-    notifyListeners();
+    _notifyMutation(
+        touchedHousehold:
+            _scope == BudgetScope.household || entry.linkId != null);
+  }
+
+  /// Usuwa pozycję: domowy zostawia **nagrobek** (deleted=true), by usunięcie
+  /// propagowało się przy synchronizacji; osobisty kasuje twardo (brak sync).
+  Future<void> _removeOrTombstone(BudgetEntry entry, BudgetScope scope) async {
+    if (scope == BudgetScope.household) {
+      await _saveStamped(entry.copyWith(deleted: true), scope);
+    } else {
+      await _storage.deleteBudgetEntry(entry.id, scope);
+    }
   }
 
   Future<void> toggleActive(String id) async {
@@ -290,7 +325,7 @@ class BudgetController extends ChangeNotifier {
 
   BudgetEntry? _findByLinkId(String linkId, BudgetScope scope) {
     for (final e in _storage.getBudgetEntries(scope)) {
-      if (e.linkId == linkId) return e;
+      if (e.linkId == linkId && !e.deleted) return e;
     }
     return null;
   }

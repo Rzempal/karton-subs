@@ -6,10 +6,37 @@
 
 ## Zasada glowna
 
-**Dane finansowe nigdy nie opuszczaja urzadzenia.**
+**Dane finansowe nigdy nie opuszczaja urzadzenia w czytelnej formie.**
 
-Aplikacja dziala 100% offline. Nie ma serwera, nie ma kont, nie ma synchronizacji w chmurze.
-Jedyny moment, gdy dane opuszczaja urzadzenie, to swiadomy eksport backupu przez uzytkownika.
+Aplikacja dziala domyslnie 100% offline. Nie ma kont ani logowania. Dane opuszczaja
+urzadzenie tylko w dwoch swiadomie wlaczonych przypadkach, zawsze **zaszyfrowane**:
+1. **Eksport backupu** przez uzytkownika (`.subkarton`, AES-256-GCM).
+2. **Synchronizacja budzetu domowego** (opcjonalna, po sparowaniu) — patrz nizej.
+
+Budzety osobiste, subskrypcje i ustawienia **nigdy** nie opuszczaja urzadzenia.
+
+---
+
+## Synchronizacja budzetu domowego (relay E2E)
+
+> **ADR:** [ADR-009 Synchronizacja budzetu domowego — relay E2E](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md)
+
+Synchronizacja jest **opcjonalna** i obejmuje **wylacznie** box `household_budget_entries`.
+Po sparowaniu (QR + haslo) zmiany przeplywaja przez **skrzynke relay w chmurze**
+(Supabase, darmowy tier). Model bezpieczenstwa:
+
+| Aspekt | Rozwiazanie |
+|--------|-------------|
+| Szyfrowanie tresci | **End-to-end (E2E)** — AES-256-GCM, klucz z hasla (PBKDF2-SHA256, 100k) |
+| Co widzi serwer | **Tylko zaszyfrowany blob + metadane** (rozmiar, znacznik czasu). NIE widzi kwot ani nazw |
+| Gdzie jest klucz | Wylacznie na urzadzeniach (wyprowadzany z hasla). Nigdy na serwerze |
+| Dostep do skrzynki | Po sekretnym `household_id` (z kodu QR), nie po koncie |
+| Zakres | Tylko budzet domowy. Osobiste dane sie nie synchronizuja |
+
+**Swiadomy wyjatek od „zero cloud":** wlaczenie synchronizacji oznacza, ze serwer relay
+posredniczy w przesylaniu zaszyfrowanych paczek. Serwer nie odczytuje tresci, ale widzi
+**metadane** (ze i kiedy nastapila wymiana, jej rozmiar). Bez wlaczonej synchronizacji
+aplikacja dziala jak dotad — w pelni offline.
 
 ---
 

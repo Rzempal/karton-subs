@@ -14,6 +14,7 @@
 | 4 | Polish + Release | Planowana |
 | 5 | Budzet domowy | W trakcie (B1+B2 gotowe 2026-06-16) |
 | 6 | Redesign Aurora (jeden ciemny motyw) | ✅ Ukonczona (2026-06-17, prod 0.5) |
+| 7 | Synchronizacja budzetu domowego (relay E2E) | 🚧 Work in progress (preview) |
 
 ---
 
@@ -153,9 +154,10 @@ wplywy, koszty stale (rachunki), koszty cykliczne, wieksze wydatki jednorazowe.
 | Czlonek rodziny | Recznie jako wplyw w domowym („Wklad — imie") | ✅ |
 | Subskrypcje per zakres | `SubscriptionScope` + filtr w Liscie i Statystykach + formularz | ✅ |
 | Backup v4 + Excel | `householdBudgetEntries` + kolumna „Zakres"; testy | ✅ |
-| Synchronizacja online domowego | Backend + konta (koszt) | ⏳ #TODO przyszlosc |
+| Synchronizacja online domowego | Relay w chmurze + E2E, BEZ kont (parowanie QR + haslo) | ⏳ Faza 7 |
 
 > Niesymetria swiadoma: budzet = osobny box (wymog sync), subskrypcje = pole `scope`.
+> Synchronizacja: relay E2E bez kont (nie backend z kontami) — patrz Faza 7.
 
 ---
 
@@ -240,6 +242,42 @@ jeden uniwersalny ciemny motyw, premium fintech, gradient aurora + powierzchnie 
 |---------|------|--------|
 | Sekcje full/compact | Klik w „Podsumowanie" / „Subskrypcje" zwija/rozwija (chevron, animacja) | ✅ |
 | Trwalosc | 2 flagi w StorageService — stan zostaje po restarcie | ✅ |
+
+---
+
+## Faza 7: Synchronizacja budzetu domowego (relay E2E)
+
+**Status: 🚧 Work in progress (preview).** Kod i testy automatyczne (109) gotowe,
+build i UI dzialaja, ale funkcja wymaga jeszcze walidacji realnego obiegu na dwoch
+fizycznych urzadzeniach (skan QR kamera, sync A↔B). Oznaczona w UI badgem „PREVIEW"
++ disclaimer na ekranie synchronizacji. Nie traktowac jako stabilnej do czasu testow.
+
+**Cel:** Wspoldzielenie budzetu domowego miedzy urzadzeniami czlonkow gospodarstwa,
+bez kont, z parowaniem QR + haslo. Tylko box domowy; osobiste zostaja lokalne.
+
+> **ADR:** [ADR-009 Synchronizacja budzetu domowego — relay E2E](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md)
+> &middot; **Bezpieczenstwo:** [security.md](security.md) (sekcja „Synchronizacja budzetu domowego")
+
+| # | Zadanie | Opis | Status |
+|---|---------|------|--------|
+| 0 | ADR + security.md | Decyzja na papierze: relay E2E, wyjatek od „zero cloud" | ✅ |
+| 1 | Model danych | `BudgetEntry`: `updatedAt` + `deleted` (nagrobek); addytywnie | ✅ |
+| 2 | Klucz z hasla | `SyncCryptoService` (PBKDF2 + AES-256-GCM, klucz wspolny) | ✅ |
+| 3 | Parowanie UI | „Dodaj czlonka" (QR + haslo) / „Dolacz" (skan + haslo) | ✅ |
+| 4 | SyncService + scalanie | `SyncMerge` (LWW + nagrobki) + `SyncService` (pull/scal/push CAS) | ✅ |
+| 5 | Skrzynka Supabase | Tabela `sync_envelopes` zamknieta RLS + RPC `sync_pull`/`sync_push` | ✅ |
+| 6 | Wyzwalacze | Po zmianie domowego (debounce 2s) + przy starcie + reczny | ✅ |
+| 7 | Przelew / lustro | Lustro wkladu synchronizuje sie jak pozycja; read-only u partnera (`isLinked`) | ✅ |
+
+**Swiadome granice v1:** scalanie „ostatnia zmiana wygrywa" per pozycja (bez CRDT);
+brak historii „kto co zmienil"; dostep do skrzynki po sekrecie, nie po koncie;
+darmowy tier Supabase uspia projekt po ~tygodniu (pierwszy sync budzi z cold startem).
+
+**Komponenty (kod):** `lib/services/sync_crypto_service.dart` (szyfrowanie),
+`lib/services/sync_merge.dart` (scalanie + snapshot), `lib/services/sync_service.dart`
+(orkiestracja + RPC + przechowywanie pary), `lib/screens/household_sync_screen.dart`
+(UI parowania). Testy: `sync_crypto_test`, `sync_merge_test`, `sync_service_test`,
+`budget_sync_fields_test`.
 
 ---
 

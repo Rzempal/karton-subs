@@ -327,3 +327,22 @@ otagowanego) kodu** — inaczej wydanie jest niereprodukowalne. Pliki z danymi o
 w ignorowanym katalogu (`docs/_sandbox/`), zeby `git add .` ich nie wciagnal.
 
 ---
+
+## 2026-06-18: WinSCP "Kod bledu 4" przy deploy = katalog juz istnieje (nie blad)
+
+### Problem
+`deploy_apk.ps1` (kanal internal) wyswietla podczas uploadu glosny komunikat:
+`Nie mozna utworzyc katalogu '.../internal/'. Ogolna awaria. Kod bledu: 4 ... Failure`.
+Wyglada jak awaria uploadu, ale deploy konczy sie sukcesem (pliki wgrane 100%).
+
+### Rozwiazanie
+To NIE jest blad. WinSCP probuje utworzyc katalog docelowy, ktory **juz istnieje** z poprzednich
+deployow → SFTP zwraca kod 4, skrypt robi „Pomin" i kontynuuje upload plikow. Wskaznikiem sukcesu
+jest `[4/4] Upload zakonczony sukcesem!` + linie `... | 100%` dla APK i version-json.
+
+### Wniosek
+Przy deployu czytaj koncowy status skryptu, nie pojedyncze ostrzezenia WinSCP. „Kod bledu 4" przy
+tworzeniu istniejacego katalogu jest oczekiwany i nieszkodliwy. (Ewentualne wyciszenie: utworzyc
+katalog raz i nie ponawiac `mkdir` w skrypcie.)
+
+---

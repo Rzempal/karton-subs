@@ -1,5 +1,12 @@
 {
+  "releaseDate": "2026-06-19T05:16:09Z",
+  "version": "0.8.26061900",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.8.26061900.apk",
   "changelog": [
+    {
+      "version": "0.8.26061900",
+      "notes": "-sync"
+    },
     {
       "version": "0.8.26061704",
       "notes": "- Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu\n- Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)\n- Sumy w naglowkach sekcji (miesiecznie)\n- Dashboard: zwijanie kalendarza i listy platnosci"
@@ -35,15 +42,8 @@
     {
       "version": "0.2.26032901",
       "notes": "zmiana ikony aplikacji"
-    },
-    {
-      "version": "0.1.26032900",
-      "notes": "- bug fixes"
     }
   ],
-  "releaseNotes": "- Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu\n- Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)\n- Sumy w naglowkach sekcji (miesiecznie)\n- Dashboard: zwijanie kalendarza i listy platnosci",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_0.8.26061704.apk",
-  "version": "0.8.26061704",
-  "releaseDate": "2026-06-17T23:44:45Z",
-  "versionCode": 826061704
+  "versionCode": 826061900,
+  "releaseNotes": "-sync"
 }

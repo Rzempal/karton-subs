@@ -221,6 +221,22 @@ class StorageService {
     _log.info('Deleted budget entry ($scope): $id');
   }
 
+  /// Zastępuje cały zbiór danego zakresu (po scaleniu przy synchronizacji,
+  /// ADR-009). W odróżnieniu od [saveBudgetEntry] NIE modyfikuje pozycji —
+  /// zachowuje ich `updatedAt`/`deleted` (łącznie z nagrobkami).
+  Future<void> replaceBudgetEntries(
+      BudgetScope scope, List<BudgetEntry> entries) async {
+    final box = _budgetBox(scope);
+    final cache = _budgetCache(scope);
+    await box.clear();
+    cache.clear();
+    for (final e in entries) {
+      await box.put(e.id, jsonEncode(e.toJson()));
+      cache[e.id] = e;
+    }
+    _log.info('Replaced ${entries.length} budget entries ($scope) [sync]');
+  }
+
   // ── Platnosci „wykonane" (lokalne, poza backupem) ───────────────────────────
   // Klucz: "<scope>|<sourceId>|<YYYY-MM-DD>". Brak wpisu = niewykonane.
 
