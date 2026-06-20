@@ -120,7 +120,7 @@ class UpdateService extends ChangeNotifier {
 
     try {
       OtaUpdate()
-          .execute(_apkUrl!, destinationFilename: 'karton_subs_update.apk')
+          .execute(_apkUrl!, destinationFilename: 'zostaje_update.apk')
           .listen(
         (OtaEvent event) {
           switch (event.status) {

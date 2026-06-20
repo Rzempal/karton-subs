@@ -1,4 +1,4 @@
-package com.karton.subs
+package app.michalrapala.zostaje
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.karton.subs"
+    namespace = "app.michalrapala.zostaje"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -32,12 +32,12 @@ android {
     productFlavors {
         create("production") {
             dimension = "channel"
-            applicationId = "com.karton.subs"
+            applicationId = "app.michalrapala.zostaje"
             resValue("string", "app_name", "Zostaje")
         }
         create("internal") {
             dimension = "channel"
-            applicationId = "com.karton.subs.dev"
+            applicationId = "app.michalrapala.zostaje.dev"
             resValue("string", "app_name", "Zostaje DEV")
         }
     }

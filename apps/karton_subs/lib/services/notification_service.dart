@@ -172,7 +172,7 @@ class NotificationService {
     final tzDateTime = tz.TZDateTime.from(dateTime, tz.local);
 
     const androidDetails = AndroidNotificationDetails(
-      'karton_subs_reminders',
+      'zostaje_reminders',
       'Przypomnienia',
       channelDescription: 'Powiadomienia o trialach i odnowieniach subskrypcji',
       importance: Importance.high,
@@ -206,7 +206,7 @@ class NotificationService {
     if (!_initialized) return;
 
     const androidDetails = AndroidNotificationDetails(
-      'karton_subs_reminders',
+      'zostaje_reminders',
       'Przypomnienia',
       channelDescription: 'Powiadomienia o trialach i odnowieniach subskrypcji',
       importance: Importance.high,
