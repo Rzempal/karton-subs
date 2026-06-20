@@ -20,9 +20,9 @@ The goal is not to simplify the content, but to make it understandable without a
 
 ## Workflow & Autonomy
 - **Rule 0 — Sync:** na starcie sesji uruchom /start (sync = `git pull --rebase origin main` gdy drzewo czyste; gdy brudne — zapytaj, nie rebase'uj automatycznie).
-- **Git:** commit/push przez /commit lub /commit-push, scalanie do main przez /merge. Commit: zwiezly opis po polsku, BEZ numeracji, bez znakow diakrytycznych.
+- **Git:** commit przez /commit; commit+push przez /commit-push lub /end. Bezposredni push na main to ZAMIERZONY workflow (solo, trunk-based; review = test wersji roboczej przed /end). /merge tylko gdy swiadomie pracuje na galezi roboczej. Commit: zwiezly opis po polsku, BEZ numeracji, bez znakow diakrytycznych.
 - **Shell:** to Windows — domyslnie PowerShell.
-- **Autonomia:** nie commituj/pushuj/deployuj bez zgody, chyba ze zadanie wprost o to prosi.
+- **Autonomia:** push na main (w /end, /commit-push) jest pre-approved - nie pytaj o niego za kazdym razem. Nadal pytaj przed: kasowaniem danych, platnymi uslugami i innymi dzialaniami nieodwracalnymi spoza zwyklego push/deploy.
 
 ## Goal
 You are a senior software architect and production-grade engineer. 
