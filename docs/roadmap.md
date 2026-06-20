@@ -34,7 +34,7 @@
 | Quick log usage | Przycisk "Uzylem dzisiaj" na kartach | ✅ |
 | Ghost detection | Algorytm: aktywna + >30 dni bez uzycia | ✅ |
 | Quick Add | Predefiniowane szablony (Netflix, Spotify...) | ⏳ Faza 1b |
-| Backup | Szyfrowany eksport/import (.subkarton) | ⏳ Faza 1b |
+| Backup | Szyfrowany eksport/import (.zostaje) | ⏳ Faza 1b |
 | OTA | Aktualizacje z wlasnego serwera | ⏳ Faza 1b |
 | Deploy | Adaptacja deploy.ps1 | ⏳ Faza 1b |
 

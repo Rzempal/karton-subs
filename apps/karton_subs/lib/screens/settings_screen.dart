@@ -326,7 +326,7 @@ class _BackupSectionState extends State<_BackupSection> {
       ListTile(
         leading: const Icon(LucideIcons.upload),
         title: const Text('Eksportuj backup'),
-        subtitle: const Text('Zaszyfrowany plik .subkarton (klucz urządzenia)'),
+        subtitle: const Text('Zaszyfrowany plik .zostaje (klucz urządzenia)'),
         trailing: _isBusy
             ? const SizedBox(width: 20, height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2))
@@ -343,7 +343,7 @@ class _BackupSectionState extends State<_BackupSection> {
       ListTile(
         leading: const Icon(LucideIcons.download),
         title: const Text('Importuj backup'),
-        subtitle: const Text('Przywróć z pliku .subkarton'),
+        subtitle: const Text('Przywróć z pliku .zostaje (lub starego .subkarton)'),
         trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
         onTap: _isBusy ? null : _import,
       ),

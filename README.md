@@ -23,7 +23,7 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
 - Przypomnienia o odnowieniach i trialach
 - Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
-- Szyfrowany backup `.subkarton` (obejmuje subskrypcje i budzet)
+- Szyfrowany backup `.zostaje` (obejmuje subskrypcje i budzet; stare `.subkarton` nadal importowalne)
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena

@@ -162,7 +162,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 | **Dashboard** | Pelny przeglad: surplus „zostaje/mies", wplywy/koszty (z subskrypcjami), bilans miesiaca |
 | **Subskrypcje** | Pod-zakladki Lista / Statystyki (hero koszt mies./rok, trend, kategorie, limit, triale); CTA Excel + PDF; import pod „Dodaj" |
 | **Budzet** | Zarzadzanie pozycjami (wplywy/koszty/jednorazowe); CTA Excel; import pod „Dodaj" |
-| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.subkarton`, OTA (karty frost; bez przelacznika motywu) |
+| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, OTA (karty frost; bez przelacznika motywu) |
 
 ---
 

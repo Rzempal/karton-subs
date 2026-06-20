@@ -58,7 +58,9 @@ class BackupService {
 
   BackupService(this._storage) : _crypto = BackupCryptoService();
 
-  static const _fileExtension = 'subkarton';
+  static const _fileExtension = 'zostaje';
+  // Stare rozszerzenie — backupy sprzed zmiany nazwy nadal sie importuja.
+  static const _legacyFileExtension = 'subkarton';
 
   // ── Eksport ────────────────────────────────────────────────────────────────
 
@@ -93,9 +95,11 @@ class BackupService {
     }
 
     final pickedFile = result.files.first;
-    if (!pickedFile.name.toLowerCase().endsWith('.$_fileExtension')) {
+    final lowerName = pickedFile.name.toLowerCase();
+    if (!lowerName.endsWith('.$_fileExtension') &&
+        !lowerName.endsWith('.$_legacyFileExtension')) {
       throw FormatException(
-        'Nieprawidłowy plik. Wybierz plik z rozszerzeniem .$_fileExtension',
+        'Nieprawidłowy plik. Wybierz plik kopii zapasowej (.$_fileExtension)',
       );
     }
 
@@ -244,7 +248,7 @@ class BackupService {
   Future<void> _shareFile(Uint8List bytes) async {
     final dir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final file = File('${dir.path}/karton-subs-backup-$timestamp.$_fileExtension');
+    final file = File('${dir.path}/zostaje-backup-$timestamp.$_fileExtension');
     await file.writeAsBytes(bytes);
 
     await Share.shareXFiles(

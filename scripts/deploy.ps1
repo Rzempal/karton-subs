@@ -419,12 +419,15 @@ Show-Info "Patch: $PATCH (deploy #$($COUNT.ToString('00')) dzisiaj)"
 # Kontrola wersji NIE zalezy od nazwy pliku: OTA porownuje versionCode z version.json.
 # Swiezosc pobrania zapewnia cache-busting (?v=versionCode) w apkUrl ponizej.
 if ($Channel -eq "internal") {
-    $APK_NAME = "karton-subs-dev_latest.apk"
+    $APK_NAME = "zostaje-dev_latest.apk"
     $VERSION_JSON_NAME = "version-internal.json"
+    # Wzorce sprzatania: nowy + legacy (stare 'karton-subs-dev_*' do usuniecia w przejsciu).
+    $APK_PATTERNS = @("zostaje-dev_*.apk", "karton-subs-dev_*.apk")
 }
 else {
-    $APK_NAME = "karton-subs_latest.apk"
+    $APK_NAME = "zostaje_latest.apk"
     $VERSION_JSON_NAME = "version.json"
+    $APK_PATTERNS = @("zostaje_*.apk", "karton-subs_*.apk")
 }
 
 Show-Info "Kanal: $Channel"
@@ -474,15 +477,16 @@ if (-not (Test-Path $RELEASES_DIR)) { New-Item -ItemType Directory -Path $RELEAS
 Copy-Item $SOURCE_APK $DEST_APK -Force
 Show-Success "[2/4] APK skopiowane: $APK_NAME"
 
-# Sprzatanie starych wersjonowanych APK tego kanalu (zostaje tylko *_latest.apk).
-# Wzorce sa rozlaczne: 'karton-subs_*' nie lapie 'karton-subs-dev_*'.
-$APK_PATTERN = if ($Channel -eq "internal") { "karton-subs-dev_*.apk" } else { "karton-subs_*.apk" }
-Get-ChildItem -Path $RELEASES_DIR -Filter $APK_PATTERN -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -ne $APK_NAME } |
-    ForEach-Object {
-        Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
-        Show-Info "  Usunieto stary APK: $($_.Name)"
-    }
+# Sprzatanie starych APK tego kanalu (zostaje tylko biezacy _latest.apk).
+# Obejmuje nowe 'zostaje*' oraz legacy 'karton-subs*' (przejscie na nowa nazwe).
+foreach ($pat in $APK_PATTERNS) {
+    Get-ChildItem -Path $RELEASES_DIR -Filter $pat -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ne $APK_NAME } |
+        ForEach-Object {
+            Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue
+            Show-Info "  Usunieto stary APK: $($_.Name)"
+        }
+}
 
 # 3. Generowanie version.json
 Show-Warning "[3/4] Generowanie $VERSION_JSON_NAME..."
@@ -606,9 +610,11 @@ if (-not $SkipUpload) {
 
     "option batch continue" | Out-File $tempScript -Append -Encoding UTF8
     "mkdir ""$UPLOAD_REMOTE_PATH""" | Out-File $tempScript -Append -Encoding UTF8
-    # Usun stare APK tego kanalu na serwerze (w tym poprzedni _latest) — zostaje jeden plik.
+    # Usun stare APK tego kanalu na serwerze (nowe 'zostaje*' + legacy 'karton-subs*').
     # batch continue: brak pasujacych plikow nie przerywa deployu.
-    "rm ""$UPLOAD_REMOTE_PATH$APK_PATTERN""" | Out-File $tempScript -Append -Encoding UTF8
+    foreach ($pat in $APK_PATTERNS) {
+        "rm ""$UPLOAD_REMOTE_PATH$pat""" | Out-File $tempScript -Append -Encoding UTF8
+    }
     "option batch on" | Out-File $tempScript -Append -Encoding UTF8
 
     "put ""$DEST_APK"" ""$UPLOAD_REMOTE_PATH""" | Out-File $tempScript -Append -Encoding UTF8

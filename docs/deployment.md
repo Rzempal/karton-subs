@@ -38,8 +38,8 @@ APK ma **stałą nazwę** zależną tylko od kanału — na serwerze i w `releas
 
 | Kanał | Plik APK | Plik wersji |
 | --- | --- | --- |
-| `internal` (DEV) | `karton-subs-dev_latest.apk` | `version-internal.json` |
-| `production` (PROD) | `karton-subs_latest.apk` | `version.json` |
+| `internal` (DEV) | `zostaje-dev_latest.apk` | `version-internal.json` |
+| `production` (PROD) | `zostaje_latest.apk` | `version.json` |
 
 **Kontrola wersji nie zależy od nazwy pliku.** OTA porównuje `versionCode` z pliku
 `version*.json` z wersją zainstalowaną — `versionName`/`versionCode` nadal rosną przy

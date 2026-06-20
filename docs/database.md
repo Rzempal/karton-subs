@@ -360,7 +360,7 @@ Do zdefiniowania w fazie implementacji:
 > **ADR:** [ADR-003 Format importu/eksportu Excel](adr/ADR-003-format-import-eksport-excel.md)
 
 Format "otwarty", czytelny i edytowalny recznie — w odroznieniu od zaszyfrowanego
-backupu `.subkarton`. Serwis: `lib/services/excel_service.dart`.
+backupu `.zostaje`. Serwis: `lib/services/excel_service.dart`.
 
 ### Kolumny arkusza
 

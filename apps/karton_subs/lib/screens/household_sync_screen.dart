@@ -57,7 +57,7 @@ class HouseholdSyncScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 const Text(
                   'Synchronizacja jest jeszcze testowana i może działać '
-                  'nieprawidłowo. Zachowaj kopię zapasową (backup .subkarton) '
+                  'nieprawidłowo. Zachowaj kopię zapasową (backup .zostaje) '
                   'i traktuj wyniki ostrożnie.',
                   style: TextStyle(fontSize: 13, height: 1.4),
                 ),

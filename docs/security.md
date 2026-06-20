@@ -10,7 +10,7 @@
 
 Aplikacja dziala domyslnie 100% offline. Nie ma kont ani logowania. Dane opuszczaja
 urzadzenie tylko w dwoch swiadomie wlaczonych przypadkach, zawsze **zaszyfrowane**:
-1. **Eksport backupu** przez uzytkownika (`.subkarton`, AES-256-GCM).
+1. **Eksport backupu** przez uzytkownika (`.zostaje`, dawniej `.subkarton`, AES-256-GCM).
 2. **Synchronizacja budzetu domowego** (opcjonalna, po sparowaniu) — patrz nizej.
 
 Budzety osobiste, subskrypcje i ustawienia **nigdy** nie opuszczaja urzadzenia.
