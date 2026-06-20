@@ -176,10 +176,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       builder: (ctx) => _CategoryEditor(
         existing: existing,
         onSave: (cat) async {
+          final ctrl = context.read<SubscriptionController>();
           await storage.saveCategory(cat);
-          if (mounted) {
-            context.read<SubscriptionController>().refresh();
-          }
+          if (mounted) ctrl.refresh();
         },
       ),
     );

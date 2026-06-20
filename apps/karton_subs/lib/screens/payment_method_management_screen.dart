@@ -165,15 +165,12 @@ class _PaymentMethodManagementScreenState
       builder: (ctx) => _PaymentMethodEditor(
         existing: existing,
         onSave: (pm, oldName) async {
+          final ctrl = context.read<SubscriptionController>();
           await storage.savePaymentMethod(pm);
           if (oldName != null && oldName != pm.name && mounted) {
-            await context
-                .read<SubscriptionController>()
-                .renamePaymentMethod(oldName, pm.name);
+            await ctrl.renamePaymentMethod(oldName, pm.name);
           }
-          if (mounted) {
-            context.read<SubscriptionController>().refresh();
-          }
+          if (mounted) ctrl.refresh();
         },
       ),
     );

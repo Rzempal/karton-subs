@@ -295,7 +295,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int?>(
-                    value: _sharedWith,
+                    initialValue: _sharedWith,
                     decoration: const InputDecoration(
                       labelText: 'Dzielona na',
                       prefixIcon: Icon(LucideIcons.users),
@@ -320,7 +320,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
             // Metoda płatności
             DropdownButtonFormField<String?>(
-              value: _paymentMethod,
+              initialValue: _paymentMethod,
               decoration: const InputDecoration(
                 labelText: 'Metoda płatności',
                 prefixIcon: Icon(LucideIcons.creditCard),
@@ -404,11 +404,12 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           ),
           FilledButton(
             onPressed: () async {
+              final navigator = Navigator.of(context);
               Navigator.pop(ctx);
               await context
                   .read<SubscriptionController>()
                   .delete(widget.existing!.id);
-              if (mounted) Navigator.of(context).pop(true);
+              if (mounted) navigator.pop(true);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
             child: const Text('Usuń'),
