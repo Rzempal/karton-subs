@@ -6,6 +6,7 @@ import '../controllers/subscription_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
+import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/budget_widgets.dart';
 
@@ -93,6 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
         children: [
+          const _UpdateBanner(),
           BudgetScopeToggle(scope: budget.scope, onChanged: budget.setScope),
           const SizedBox(height: 16),
           BudgetSummarySection(
@@ -145,6 +147,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Baner aktualizacji na Dashboardzie — proaktywny sygnal, gdy dostepna jest
+/// nowsza wersja (OTA). Pokazuje tez postep pobierania/instalacji.
+class _UpdateBanner extends StatefulWidget {
+  const _UpdateBanner();
+
+  @override
+  State<_UpdateBanner> createState() => _UpdateBannerState();
+}
+
+class _UpdateBannerState extends State<_UpdateBanner> {
+  bool _dismissed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<UpdateService>(
+      builder: (context, svc, _) {
+        final c = context.semanticColors;
+
+        Widget shell(Widget child) => Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: c.positiveBg,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                border: Border.all(color: c.positive.withValues(alpha: 0.3)),
+              ),
+              child: child,
+            );
+
+        // Pobieranie — postep (niezaleznie od dismiss).
+        if (svc.status == UpdateStatus.downloading) {
+          return shell(Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Pobieranie aktualizacji… ${svc.downloadProgress.toInt()}%',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: c.positive)),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: svc.downloadProgress / 100,
+                backgroundColor: c.positive.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation(c.positive),
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ],
+          ));
+        }
+
+        if (svc.status == UpdateStatus.launchingInstaller) {
+          return shell(Row(children: [
+            Icon(LucideIcons.smartphone, color: c.positive, size: 20),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Uruchamianie instalatora…')),
+          ]));
+        }
+
+        // Dostepna aktualizacja (stan spoczynku) — info + akcja.
+        if (!svc.updateAvailable || _dismissed) return const SizedBox.shrink();
+
+        return shell(Row(children: [
+          Icon(LucideIcons.download, color: c.positive, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Dostępna aktualizacja ${svc.latestVersion ?? ''}',
+              style: TextStyle(fontWeight: FontWeight.w600, color: c.positive),
+            ),
+          ),
+          TextButton(
+            onPressed: () => svc.startUpdate(),
+            child: const Text('Zainstaluj'),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.x, size: 18),
+            tooltip: 'Ukryj',
+            onPressed: () => setState(() => _dismissed = true),
+          ),
+        ]));
+      },
     );
   }
 }
