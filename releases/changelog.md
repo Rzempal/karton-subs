@@ -1,15 +1,28 @@
 # Zostaje - Historia zmian
 
+## v0.9.26062004
+- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)
+
+## v0.9.26062003
+- Nowa nazwa (Zostaje) i ikona aplikacji
+
+
 ## v0.9.26062002
 bugs
+
+
 
 ## v0.9.26062001
 - Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)
 - Modernizacja wyboru waluty
 
 
+
+
 ## v0.8.26062000
 dodano badge preview dla funkcji synchronizacji
+
+
 
 
 
@@ -19,11 +32,15 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
+
 ## v0.8.26061704
 - Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu
 - Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)
 - Sumy w naglowkach sekcji (miesiecznie)
 - Dashboard: zwijanie kalendarza i listy platnosci
+
+
 
 
 
@@ -42,9 +59,13 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
+
 ## v0.6.26061702
 - Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy
 - Kategoria w eksporcie i imporcie Excel budzetu
+
+
 
 
 
@@ -58,6 +79,8 @@ dodano badge preview dla funkcji synchronizacji
 - Menu Dodaj wysuwane nad przyciskiem
 - Personalizacja Dashboardu: zwijanie sekcji (full/compact)
 - Spojny system kolorow i zaokraglen (tokeny)
+
+
 
 
 
@@ -83,8 +106,12 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
+
 ## v0.3.26061600
 - Import i eksport subskrypcji do Excela (.xlsx)
+
+
 
 
 
@@ -108,8 +135,12 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
+
 ## v0.2.26032905
 - bug fixes
+
+
 
 
 
@@ -137,8 +168,12 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
+
 ## v0.2.26032903
 - bug fixes
+
+
 
 
 
@@ -170,8 +205,12 @@ fix ikony
 
 
 
+
+
 ## v0.2.26032901
 zmiana ikony aplikacji
+
+
 
 
 
@@ -207,8 +246,12 @@ zmiana ikony aplikacji
 
 
 
+
+
 ## v0.1.26032808
 - bug fixes
+
+
 
 
 
@@ -248,8 +291,12 @@ zmiana ikony aplikacji
 
 
 
+
+
 ## v0.1.26032805
 - bug fixes
+
+
 
 
 
@@ -293,8 +340,12 @@ zmiana ikony aplikacji
 
 
 
+
+
 ## v0.1.26032803
 OTA
+
+
 
 
 
@@ -342,8 +393,12 @@ OTA
 
 
 
+
+
 ## v0.1.26032801
 - bug fixes
+
+
 
 
 

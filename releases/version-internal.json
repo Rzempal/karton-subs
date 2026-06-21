@@ -1,9 +1,15 @@
 {
-  "version": "0.9.26062002",
-  "versionCode": 926062002,
-  "releaseDate": "2026-06-20T13:14:03Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/karton-subs-dev_latest.apk?v=926062002",
+  "version": "0.9.26062004",
+  "versionCode": 926062004,
   "changelog": [
+    {
+      "version": "0.9.26062004",
+      "notes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)"
+    },
+    {
+      "version": "0.9.26062003",
+      "notes": "- Nowa nazwa (Zostaje) i ikona aplikacji"
+    },
     {
       "version": "0.9.26062002",
       "notes": "bugs"
@@ -35,15 +41,9 @@
     {
       "version": "0.7.26061717",
       "notes": "- Grupowanie wg typu: pod-naglowki tylko w kubelkach z wieloma typami (Wplywy/Przelew bez zbednych naglowkow)"
-    },
-    {
-      "version": "0.7.26061716",
-      "notes": "- Budzet UI: sortowanie jako ikona (A-Z / 1-0), grupowanie jako ikona (podswietlona gdy aktywne)\n- Filtr typu pozycji jako pasek chipow (pod filtrem kategorii)"
-    },
-    {
-      "version": "0.7.26061715",
-      "notes": "- Budzet: sortowanie (A-Z / kwota malejaco)\n- Filtr typu pozycji + grupowanie wg typu\n- Przelew do domowego: osobna sekcja Przelew wewnetrzny\n- Przelew: korekty miesieczne kwoty (jak rachunek), spojne z budzetem domowym"
     }
   ],
-  "releaseNotes": "bugs"
+  "releaseDate": "2026-06-20T15:47:41Z",
+  "releaseNotes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062004"
 }

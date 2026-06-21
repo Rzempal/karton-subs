@@ -1,8 +1,14 @@
 {
-  "version": "0.9.26062002",
-  "releaseNotes": "bugs",
-  "releaseDate": "2026-06-20T13:13:53Z",
+  "releaseDate": "2026-06-20T15:49:53Z",
   "changelog": [
+    {
+      "version": "0.9.26062004",
+      "notes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)"
+    },
+    {
+      "version": "0.9.26062003",
+      "notes": "- Nowa nazwa (Zostaje) i ikona aplikacji"
+    },
     {
       "version": "0.9.26062002",
       "notes": "bugs"
@@ -34,16 +40,10 @@
     {
       "version": "0.5.26061701",
       "notes": "- Nowy wyglad Aurora: jeden ciemny motyw, gradient i powierzchnie frost\n- Plywajacy szklany pasek nawigacji\n- Menu Dodaj wysuwane nad przyciskiem\n- Personalizacja Dashboardu: zwijanie sekcji (full/compact)\n- Spojny system kolorow i zaokraglen (tokeny)"
-    },
-    {
-      "version": "0.4.26061700",
-      "notes": "- Nowy Dashboard: pelny przeglad budzetu razem z subskrypcjami\n- Budzet domowy (wspolny) obok osobistego + przelew miedzy budzetami\n- Kalendarz przeplywow w widoku miesiaca (dni wplywow i wydatkow)\n- Jednorazowy wplyw (premia/bonus)\n- Subskrypcje: pod-zakladki Lista/Statystyki + zakres osobisty/domowy\n- Excel i backup obejmuja budzet domowy\n- Uproszczenie: usunieto wykrywanie nieuzywanych i koszt-za-uzycie"
-    },
-    {
-      "version": "0.3.26061600",
-      "notes": "- Import i eksport subskrypcji do Excela (.xlsx)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/karton-subs_latest.apk?v=926062002",
-  "versionCode": 926062002
+  "versionCode": 926062004,
+  "version": "0.9.26062004",
+  "releaseNotes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=926062004"
 }
