@@ -15,7 +15,7 @@ class AuroraBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.bgGradient),
+      decoration: BoxDecoration(gradient: AppColors.bgGradient),
       child: Stack(
         children: [
           // Poświaty — dekoracja tła, nie łapią dotyku, statyczne.

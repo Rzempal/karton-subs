@@ -275,6 +275,20 @@ class StorageService {
     await _settingsBox.put('currency', currencyCode);
   }
 
+  /// Tryb motywu: 'light' | 'dark' | 'system'. Default = 'dark' (obecny wyglad).
+  String getThemeMode() =>
+      _settingsBox.get('themeMode', defaultValue: 'dark') as String;
+
+  Future<void> setThemeMode(String mode) async =>
+      _settingsBox.put('themeMode', mode);
+
+  /// Kolor motywu (id akcentu Aurora). Default = 'purple'.
+  String getAccentId() =>
+      _settingsBox.get('accentId', defaultValue: 'purple') as String;
+
+  Future<void> setAccentId(String id) async =>
+      _settingsBox.put('accentId', id);
+
   /// Dev-only: override daty do testowania ghost detection
   DateTime? getDevDateOverride() {
     final v = _settingsBox.get('devDateOverride') as String?;

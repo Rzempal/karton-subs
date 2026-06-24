@@ -1,7 +1,12 @@
 # ADR-005: Aurora — jeden uniwersalny ciemny motyw (porzucenie przełącznika light/dark)
 
 Data: 2026-06-17
-Status: zaakceptowany
+Status: zastapiony przez [ADR-010](ADR-010-wiele-motywow-tryb-x-kolor.md) (2026-06-23)
+
+> ⚠️ **Nieaktualne:** decyzja „jeden ciemny motyw" zostala zastapiona. Aplikacja
+> ma teraz wiele motywow (Tryb jasny/ciemny/systemowy x Kolor) — patrz
+> [ADR-010](ADR-010-wiele-motywow-tryb-x-kolor.md). Ponizsza tresc zachowana jako
+> zapis historyczny.
 
 > **Wdrożenie w kodzie: Faza 6** ([roadmap](../roadmap.md)). Ten ADR utrwala decyzję projektową;
 > migracja `app_theme.dart` / `theme_provider.dart` jest osobnym etapem.

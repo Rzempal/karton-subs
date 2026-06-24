@@ -5,6 +5,11 @@
 
 > **Status:** ✅ wdrożone w kodzie (Faza 6, prod 0.5 — 2026-06-17). Tokeny i pełne pokrycie
 > motywem pilnowane przez strażnika ([ADR-007](adr/ADR-007-design-tokens-jedyne-zrodlo-prawdy.md)).
+>
+> 🎨 **Aktualizacja (ADR-010, 2026-06-23):** aplikacja ma teraz **wiele motywów** —
+> Tryb (jasny / ciemny / systemowy) × Kolor (Purple / Blue). Poniższa paleta opisuje
+> wariant ciemny Purple (bazowy); pozostałe to ta sama mechanika z inną paletą.
+> Przełącznik: Ustawienia → Wygląd. Patrz [ADR-010](adr/ADR-010-wiele-motywow-tryb-x-kolor.md).
 
 ---
 

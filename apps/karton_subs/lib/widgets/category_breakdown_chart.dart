@@ -19,7 +19,7 @@ class CategoryBreakdownChart extends StatelessWidget {
   });
 
   // Paleta wykresów Aurora (shade 400) — fallback gdy kategoria nie ma koloru.
-  static const _chartColors = AppColors.chartColors;
+  static List<Color> get _chartColors => AppColors.chartColors;
 
   @override
   Widget build(BuildContext context) {

@@ -451,6 +451,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                                 ? LucideIcons.zap
                                 : LucideIcons.hand,
                             size: 16,
+                            // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
+                            // byc kontrastowa (onAccent), tak jak tekst.
+                            color: _paymentMethod == pm.name
+                                ? AppColors.onAccent
+                                : null,
                           ),
                           label: Text(pm.name),
                           selected: _paymentMethod == pm.name,
@@ -509,11 +514,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
-                icon: const Icon(LucideIcons.trash2, color: AppColors.negative),
-                label: const Text('Usuń pozycję',
+                icon: Icon(LucideIcons.trash2, color: AppColors.negative),
+                label: Text('Usuń pozycję',
                     style: TextStyle(color: AppColors.negative)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.negative),
+                  side: BorderSide(color: AppColors.negative),
                 ),
               ),
             ],

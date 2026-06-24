@@ -47,7 +47,7 @@ class MetricTile extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ),
               if (deltaLabel != null) _DeltaPill(deltaLabel!, deltaColor!, deltaBg!),

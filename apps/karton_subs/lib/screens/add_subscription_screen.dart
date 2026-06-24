@@ -372,11 +372,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
-                icon: const Icon(LucideIcons.trash2, color: AppColors.negative),
-                label: const Text('Usuń subskrypcję',
+                icon: Icon(LucideIcons.trash2, color: AppColors.negative),
+                label: Text('Usuń subskrypcję',
                     style: TextStyle(color: AppColors.negative)),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.negative),
+                  side: BorderSide(color: AppColors.negative),
                 ),
               ),
             ],

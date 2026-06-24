@@ -20,7 +20,7 @@ class AuroraChip extends StatelessWidget {
     this.accent,
   });
 
-  static const Color _activeText = AppColors.onAccent;
+  static Color get _activeText => AppColors.onAccent;
 
   @override
   Widget build(BuildContext context) {

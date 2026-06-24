@@ -61,7 +61,7 @@ class _AuroraAddMenuState extends State<AuroraAddMenu>
   OverlayEntry? _entry;
   bool _open = false;
 
-  static const Color _activeText = AppColors.onAccent;
+  static Color get _activeText => AppColors.onAccent;
 
   @override
   void initState() {
@@ -176,12 +176,12 @@ class _AuroraAddMenuState extends State<AuroraAddMenu>
               AnimatedRotation(
                 turns: _open ? 0.125 : 0, // + → ×
                 duration: const Duration(milliseconds: 220),
-                child: const Icon(Icons.add, size: 20, color: _activeText),
+                child: Icon(Icons.add, size: 20, color: _activeText),
               ),
               const SizedBox(width: 8),
               Text(
                 widget.label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _activeText,

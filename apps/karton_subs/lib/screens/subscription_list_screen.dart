@@ -339,8 +339,8 @@ class _Card extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.trash2, color: AppColors.negative),
-              title: const Text('Usuń', style: TextStyle(color: AppColors.negative)),
+              leading: Icon(LucideIcons.trash2, color: AppColors.negative),
+              title: Text('Usuń', style: TextStyle(color: AppColors.negative)),
               onTap: () {
                 Navigator.pop(ctx);
                 _confirmDelete(context, sub);

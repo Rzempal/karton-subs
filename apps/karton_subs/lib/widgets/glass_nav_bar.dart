@@ -28,8 +28,8 @@ class GlassNavBar extends StatelessWidget {
     this.isDev = false,
   });
 
-  static const Color _activeText = AppColors.onAccent;
-  static const Color _devBorder = AppColors.negative;
+  static Color get _activeText => AppColors.onAccent;
+  static Color get _devBorder => AppColors.negative;
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +52,12 @@ class GlassNavBar extends StatelessWidget {
                     color: AppColors.navGlass,
                     borderRadius: BorderRadius.circular(AppRadii.pill),
                     border: Border.all(
+                      // Token zalezny od trybu: w jasnym to ciemny hairline
+                      // (widoczny na jasnym tle), w ciemnym subtelny jasny kontur.
+                      // Staly bialy zlewal sie z tlem w trybie jasnym.
                       color: isDev
                           ? _devBorder.withValues(alpha: 0.55)
-                          : Colors.white.withValues(alpha: 0.16),
+                          : AppColors.frostBorderStrong,
                       width: isDev ? 1.5 : 1,
                     ),
                   ),

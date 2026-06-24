@@ -1,49 +1,49 @@
 {
-  "version": "0.9.26062004",
-  "versionCode": 926062004,
+  "releaseDate": "2026-06-24T13:03:38Z",
+  "versionCode": 926062404,
+  "releaseNotes": "Poprawka kontrastu chipow: kolor tekstu stanowy (WidgetStateColor) - zaznaczony jasny na akcencie, niezaznaczony widoczny",
   "changelog": [
     {
-      "version": "0.9.26062004",
-      "notes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)"
+      "version": "0.9.26062404",
+      "notes": "Poprawka kontrastu chipow: kolor tekstu stanowy (WidgetStateColor) - zaznaczony jasny na akcencie, niezaznaczony widoczny"
     },
     {
-      "version": "0.9.26062003",
-      "notes": "- Nowa nazwa (Zostaje) i ikona aplikacji"
+      "version": "0.9.26062403",
+      "notes": "Poprawka kontrastu: zaznaczony chip metody platnosci ma teraz jasny tekst i ikone na ciemnym akcencie"
     },
     {
-      "version": "0.9.26062002",
-      "notes": "bugs"
+      "version": "0.9.26062402",
+      "notes": "- Material You: kafelek na poczatku + ksztalt scalloped (sygnatura Material You)"
     },
     {
-      "version": "0.8.26062001",
-      "notes": "- Synchronizacja budzetu domowego (preview)"
+      "version": "0.9.26062401",
+      "notes": "- Fix: Material You wczytywany asynchronicznie (kafelek pojawia sie gdy system dostarczy kolor)"
     },
     {
-      "version": "0.8.26062000",
-      "notes": "dodano badge preview dla funkcji synchronizacji"
+      "version": "0.9.26062400",
+      "notes": "- Material You: kolor pobierany z urzadzenia (Android 12+); akcent + tlo z systemu, mechanika Aurora\n- Kafelek widoczny tylko gdy urzadzenie wspiera"
     },
     {
-      "version": "0.8.26061800",
-      "notes": "- Synchronizacja budzetu domowego (parowanie QR + haslo, relay E2E)"
+      "version": "0.9.26062303",
+      "notes": "- OLED zastapiony przez Mono (czern w ciemnym, biel w jasnym; oba tryby)\n- Podpis trybu systemowego przeniesiony miedzy Tryb a Kolor"
     },
     {
-      "version": "0.7.26061720",
-      "notes": "- Sumy sekcji budzetu znormalizowane przez cykl (kwota/mies; jednorazowe pelna kwota)\n- Dashboard: kalendarz zwijany (ikona kalendarza + chevron up/down, nawigacja miesiaca po srodku)\n- Dashboard: lista platnosci zwijana do naglowka i opisu"
+      "version": "0.9.26062302",
+      "notes": "- Kolory jako kafelki (PROD); w DEV przelacznik kafelki/lista z nazwami\n- Nowy kolor OLED (czerń, tylko tryb ciemny)\n- Nazwy: Purple Green, Laguna Ocean"
     },
     {
-      "version": "0.7.26061719",
-      "notes": "- Naglowki sekcji budzetu: suma pozycji (po filtrach) wyrownana do prawej"
+      "version": "0.9.26062301",
+      "notes": "- Motywy w 2 wymiarach: Tryb (jasny/ciemny/systemowy) + Kolor (Purple/Blue)\n- Ustawienia: kazda sekcja na osobnym ekranie"
     },
     {
-      "version": "0.7.26061718",
-      "notes": "- Filtr kategorii: etykieta Wszystkie kategorie (spojnie z Wszystkie typy)"
+      "version": "0.9.26062300",
+      "notes": "- Zmiana motywu odswieza cala aplikacje (fix)\n- Ustawienia: kazda sekcja na osobnym ekranie"
     },
     {
-      "version": "0.7.26061717",
-      "notes": "- Grupowanie wg typu: pod-naglowki tylko w kubelkach z wieloma typami (Wplywy/Przelew bez zbednych naglowkow)"
+      "version": "0.9.26062101",
+      "notes": "- Przelacznik motywow: 4 motywy Aurora (Purple/Blue x Light/Frost) w Ustawieniach"
     }
   ],
-  "releaseDate": "2026-06-20T15:47:41Z",
-  "releaseNotes": "- Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062004"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062404",
+  "version": "0.9.26062404"
 }

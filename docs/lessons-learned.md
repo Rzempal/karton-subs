@@ -346,3 +346,29 @@ tworzeniu istniejacego katalogu jest oczekiwany i nieszkodliwy. (Ewentualne wyci
 katalog raz i nie ponawiac `mkdir` w skrypcie.)
 
 ---
+
+## 2026-06-24: Kolory na sztywno w widgetach lamia sie przy wielu motywach
+
+### Problem
+Po wprowadzeniu systemu motywow (tryb jasny/ciemny x kolor, ADR-010) dwa miejsca
+psuly sie w trybie jasnym, bo mialy kolor zaszyty na sztywno zamiast tokenu z palety:
+1. **Chip metody platnosci** (`FilterChip`): tekst zaznaczonego chipa znikal na
+   ciemnym akcencie. `ChipThemeData.secondaryLabelStyle` NIE jest uzywany przez
+   `FilterChip` dla stanu zaznaczonego — kolor trzeba podac stanowo.
+2. **Navbar** (`glass_nav_bar`): obramowanie `Colors.white @ 0.16` bylo niewidoczne
+   na jasnym tle (w ciemnym dawalo subtelny kontur, w jasnym zlewalo sie z tlem).
+
+### Rozwiazanie
+- Chip: kolor tekstu jako `WidgetStateColor.resolveWith` wewnatrz zwyklego
+  `TextStyle` (zaznaczony → `onAccent`, inaczej `textSecondary`). UWAGA: NIE
+  `WidgetStateTextStyle.resolveWith` — po scaleniu w chipie gubi kolor dla stanu
+  niezaznaczonego (bazowe `.color` jest null → tekst znika).
+- Navbar: zamiast stalego bialego → `AppColors.frostBorderStrong` (token zalezny
+  od trybu: w jasnym ciemny hairline, w ciemnym jasny kontur).
+
+### Wniosek
+Przy wielu motywach **nie zaszywaj kolorow** (`Colors.white`, `Colors.black`,
+stale hex) w widgetach — uzywaj tokenow z palety (`AppColors.*` / `frostBorder*`),
+ktore zmieniaja sie z trybem. Dla kontrastu na akcencie: `onAccent`. Dla kolorow
+zaleznych od stanu w komponentach Material uzywaj `WidgetStateColor`, nie
+`WidgetStateTextStyle` (ten ostatni gubi kolor po merge w chipie).

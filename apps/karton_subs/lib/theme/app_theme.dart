@@ -1,83 +1,487 @@
 import 'package:flutter/material.dart';
 
-/// Aurora — design system wg docs/design.md (ADR-005).
-/// Jeden uniwersalny ciemny motyw: gradient aurora w tle, powierzchnie „frost"
-/// (półprzezroczystość bez rozmycia), akcent fiolet→cyan. Zero wariantu light.
+/// Aurora — design system z obsługą wielu motywow (ADR-010, zastepuje ADR-005).
+///
+/// Cztery motywy w siatce 2x2: {Purple, Blue} x {Light, Frost}.
+/// - Frost = ciemne tlo + powierzchnie polprzezroczyste + jasny tekst.
+/// - Light = jasne tlo + jasne karty + ciemny tekst.
+///
+/// Mechanizm: [AppColors] eksponuje tokeny jako statyczne gettery czytajace
+/// aktywna [AuroraPalette] ([AppColors.active]). Przelacznik podmienia palete
+/// (ThemeProvider) i przebudowuje MaterialApp — dzieki czemu ~145 wywolan
+/// `AppColors.X` w kodzie dziala bez zmian. Swiadomy, pragmatyczny wybor zamiast
+/// pelnego ThemeExtension (mniej refactoru); `AppSemanticColors` pozostaje dla
+/// `context.semanticColors`.
+
+/// Paleta jednego motywu — wszystkie tokeny kolorystyczne.
+class AuroraPalette {
+  final String id;
+  final String label;
+  final Brightness brightness;
+
+  final Color bgSolid;
+  final Color surfaceElevated;
+  final List<Color> bgGradientColors;
+  final Color glow1;
+  final Color glow2;
+
+  final Color frost1;
+  final Color frost2;
+  final Color frostBorder;
+  final Color frostBorderStrong;
+  final Color navGlass;
+
+  /// Akcent glowny (historyczna nazwa „violet"; w motywach Blue to blekit).
+  final Color accentViolet;
+  final Color accentCyan;
+  final Color accentSolid;
+  final List<Color> accentGradientColors;
+  final Color onAccent;
+
+  final Color textPrimary;
+  final Color textSecondary;
+  final Color textMuted;
+
+  final Color positive;
+  final Color negative;
+  final Color warning;
+  final Color trial;
+
+  final List<Color> chartColors;
+  final Color barIdle;
+  final List<Color> barHighlightColors;
+
+  const AuroraPalette({
+    required this.id,
+    required this.label,
+    required this.brightness,
+    required this.bgSolid,
+    required this.surfaceElevated,
+    required this.bgGradientColors,
+    required this.glow1,
+    required this.glow2,
+    required this.frost1,
+    required this.frost2,
+    required this.frostBorder,
+    required this.frostBorderStrong,
+    required this.navGlass,
+    required this.accentViolet,
+    required this.accentCyan,
+    required this.accentSolid,
+    required this.accentGradientColors,
+    required this.onAccent,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.positive,
+    required this.negative,
+    required this.warning,
+    required this.trial,
+    required this.chartColors,
+    required this.barIdle,
+    required this.barHighlightColors,
+  });
+
+  LinearGradient get bgGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: bgGradientColors,
+        stops: const [0.0, 0.52, 1.0],
+      );
+
+  LinearGradient get accentGradient =>
+      LinearGradient(colors: accentGradientColors);
+
+  LinearGradient get barHighlight => LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: barHighlightColors,
+      );
+
+  bool get isLight => brightness == Brightness.light;
+}
+
+/// Tryb jasnosci aplikacji.
+enum AuroraMode { light, dark }
+
+/// Mechanika trybu — wspolna dla wszystkich kolorow (powierzchnie, tekst,
+/// bordery, semantyka, jasnosc). Tekst/bordery sa NEUTRALNE (bez hue per kolor)
+/// — swiadome uproszczenie; hue mozna dodac do akcentu w razie potrzeby.
+class _ModeColors {
+  final Brightness brightness;
+  final Color frost1, frost2, frostBorder, frostBorderStrong, navGlass;
+  final Color textPrimary, textSecondary, textMuted;
+  final Color positive, negative, warning, trial;
+  final Color barIdle;
+  const _ModeColors({
+    required this.brightness,
+    required this.frost1,
+    required this.frost2,
+    required this.frostBorder,
+    required this.frostBorderStrong,
+    required this.navGlass,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textMuted,
+    required this.positive,
+    required this.negative,
+    required this.warning,
+    required this.trial,
+    required this.barIdle,
+  });
+}
+
+/// Kolor + tlo akcentu dla jednego trybu (jasnego LUB ciemnego).
+class AccentColors {
+  final Color accentViolet, accentCyan, accentSolid, onAccent;
+  final List<Color> accentGradientColors;
+  final Color bgSolid, surfaceElevated;
+  final List<Color> bgGradientColors;
+  final Color glow1, glow2;
+  final List<Color> chartColors;
+  final List<Color> barHighlightColors;
+  const AccentColors({
+    required this.accentViolet,
+    required this.accentCyan,
+    required this.accentSolid,
+    required this.onAccent,
+    required this.accentGradientColors,
+    required this.bgSolid,
+    required this.surfaceElevated,
+    required this.bgGradientColors,
+    required this.glow1,
+    required this.glow2,
+    required this.chartColors,
+    required this.barHighlightColors,
+  });
+}
+
+/// Kolor (accent) — niesie warianty dla trybu jasnego i ciemnego.
+/// Dodanie nowego koloru = jeden taki obiekt → automatycznie 2 motywy.
+class AuroraAccent {
+  final String id;
+  final String label;
+
+  /// Kolor dostepny tylko w trybie ciemnym (np. OLED — czysta czern).
+  /// Wymusza tryb ciemny i wyszarza wybor trybu w UI.
+  final bool darkOnly;
+
+  final AccentColors dark;
+  final AccentColors light;
+  const AuroraAccent({
+    required this.id,
+    required this.label,
+    this.darkOnly = false,
+    required this.dark,
+    required this.light,
+  });
+  AccentColors _forMode(AuroraMode m) => m == AuroraMode.dark ? dark : light;
+
+  /// Gradient do podgladu koloru w UI (kafelek): ciemne tlo motywu → akcent.
+  /// Rozpoznawalny bez nazwy: Purple=czern→fiolet, Laguna=czern→blekit, OLED=czern→biel.
+  LinearGradient get previewGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [dark.bgSolid, dark.accentSolid],
+      );
+}
+
+/// Definicje trybow i kolorow + kompozycja w [AuroraPalette].
+class AuroraThemes {
+  AuroraThemes._();
+
+  // ── Mechanika trybow (wspolna dla kolorow) ──────────────────────────────
+  static const _darkMode = _ModeColors(
+    brightness: Brightness.dark,
+    frost1: Color(0x12FFFFFF), // white @ 0.07
+    frost2: Color(0x1AFFFFFF), // white @ 0.10
+    frostBorder: Color(0x24FFFFFF), // white @ 0.14
+    frostBorderStrong: Color(0x33FFFFFF), // white @ 0.20
+    navGlass: Color(0x1AFFFFFF),
+    textPrimary: Color(0xFFF1F2F8),
+    textSecondary: Color(0xFFC3C6D4),
+    textMuted: Color(0xFF9AA0B2),
+    positive: Color(0xFF34D399),
+    negative: Color(0xFFF87171),
+    warning: Color(0xFFFBBF24),
+    trial: Color(0xFF60A5FA),
+    barIdle: Color(0x1FFFFFFF), // white @ 0.12
+  );
+
+  static const _lightMode = _ModeColors(
+    brightness: Brightness.light,
+    frost1: Color(0xC7FFFFFF), // white @ 0.78
+    frost2: Color(0x8CFFFFFF), // white @ 0.55
+    frostBorder: Color(0x1F000000), // black @ 0.12 (neutralny)
+    frostBorderStrong: Color(0x33000000),
+    navGlass: Color(0xD1FFFFFF),
+    textPrimary: Color(0xFF232838),
+    textSecondary: Color(0xFF54586A),
+    textMuted: Color(0xFF868B9E),
+    positive: Color(0xFF16A34A),
+    negative: Color(0xFFDC2626),
+    warning: Color(0xFFB45309),
+    trial: Color(0xFF2563EB),
+    barIdle: Color(0x1A000000), // black @ ~0.10
+  );
+
+  // ── Kolory (accent) — kazdy z wariantem dark i light ────────────────────
+  static const purple = AuroraAccent(
+    id: 'purple',
+    label: 'Purple Green',
+    dark: AccentColors(
+      accentViolet: Color(0xFFA78BFA),
+      accentCyan: Color(0xFF5EEAD4),
+      accentSolid: Color(0xFF8B7BF7),
+      onAccent: Color(0xFF1B1240),
+      accentGradientColors: [Color(0xFFC4B5FD), Color(0xFF5EEAD4)],
+      bgSolid: Color(0xFF0E0A1F),
+      surfaceElevated: Color(0xFF231C49),
+      bgGradientColors: [Color(0xFF241B4B), Color(0xFF16113A), Color(0xFF0B0822)],
+      glow1: Color(0x737C5CFF),
+      glow2: Color(0x4022D3EE),
+      chartColors: [
+        Color(0xFFA78BFA), Color(0xFF5EEAD4), Color(0xFF60A5FA),
+        Color(0xFFFB923C), Color(0xFF34D399), Color(0xFFF472B6),
+      ],
+      barHighlightColors: [Color(0xFFA78BFA), Color(0xFF5EEAD4)],
+    ),
+    light: AccentColors(
+      accentViolet: Color(0xFF7C6CF5),
+      accentCyan: Color(0xFFB0A0FF),
+      accentSolid: Color(0xFF7C6CF5),
+      onAccent: Color(0xFFFFFFFF),
+      accentGradientColors: [Color(0xFF7C6CF5), Color(0xFFB0A0FF)],
+      bgSolid: Color(0xFFECE6F6),
+      surfaceElevated: Color(0xFFFFFFFF),
+      bgGradientColors: [Color(0xFFE9E3FB), Color(0xFFEFE6F6), Color(0xFFFBE9EF)],
+      glow1: Color(0x4DA78BFA),
+      glow2: Color(0x2EF472B6),
+      chartColors: [
+        Color(0xFF7C6CF5), Color(0xFF0D9488), Color(0xFF2563EB),
+        Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFFDB2777),
+      ],
+      barHighlightColors: [Color(0xFF7C6CF5), Color(0xFFB0A0FF)],
+    ),
+  );
+
+  static const blue = AuroraAccent(
+    id: 'blue',
+    label: 'Laguna Ocean',
+    dark: AccentColors(
+      accentViolet: Color(0xFF38BDF8),
+      accentCyan: Color(0xFF2DD4BF),
+      accentSolid: Color(0xFF38BDF8),
+      onAccent: Color(0xFF06283B),
+      accentGradientColors: [Color(0xFF38BDF8), Color(0xFF2DD4BF)],
+      bgSolid: Color(0xFF0C1A2A),
+      surfaceElevated: Color(0xFF14304C),
+      bgGradientColors: [Color(0xFF22466E), Color(0xFF173353), Color(0xFF0E2034)],
+      glow1: Color(0x4D38BDF8),
+      glow2: Color(0x3814B8A6),
+      chartColors: [
+        Color(0xFF38BDF8), Color(0xFF2DD4BF), Color(0xFF60A5FA),
+        Color(0xFFFB923C), Color(0xFF34D399), Color(0xFFF472B6),
+      ],
+      barHighlightColors: [Color(0xFF38BDF8), Color(0xFF2DD4BF)],
+    ),
+    light: AccentColors(
+      accentViolet: Color(0xFF0284C7),
+      accentCyan: Color(0xFF2DD4BF),
+      accentSolid: Color(0xFF0284C7),
+      onAccent: Color(0xFF06283B),
+      accentGradientColors: [Color(0xFF0EA5E9), Color(0xFF2DD4BF)],
+      bgSolid: Color(0xFFE4EDF7),
+      surfaceElevated: Color(0xFFFFFFFF),
+      bgGradientColors: [Color(0xFFE2EDFB), Color(0xFFE8F2FA), Color(0xFFE0F3F0)],
+      glow1: Color(0x4738BDF8),
+      glow2: Color(0x2E2DD4BF),
+      chartColors: [
+        Color(0xFF0284C7), Color(0xFF0D9488), Color(0xFF2563EB),
+        Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFFDB2777),
+      ],
+      barHighlightColors: [Color(0xFF0EA5E9), Color(0xFF2DD4BF)],
+    ),
+  );
+
+  // Mono — neutralny czarno-bialy. Ciemny = czysta czern (korzysc OLED:
+  // wygaszone piksele), jasny = czysta biel (jak shadcn Default). Oba tryby.
+  static const _monoDark = AccentColors(
+    accentViolet: Color(0xFFE5E5E5),
+    accentCyan: Color(0xFFA3A3A3),
+    accentSolid: Color(0xFFE5E5E5),
+    onAccent: Color(0xFF000000),
+    accentGradientColors: [Color(0xFFF5F5F5), Color(0xFFA3A3A3)],
+    bgSolid: Color(0xFF000000),
+    surfaceElevated: Color(0xFF121212),
+    bgGradientColors: [Color(0xFF000000), Color(0xFF000000), Color(0xFF000000)],
+    glow1: Color(0x0AFFFFFF),
+    glow2: Color(0x08FFFFFF),
+    chartColors: [
+      Color(0xFFE5E5E5), Color(0xFF60A5FA), Color(0xFF2DD4BF),
+      Color(0xFFFB923C), Color(0xFF34D399), Color(0xFFF472B6),
+    ],
+    barHighlightColors: [Color(0xFFF5F5F5), Color(0xFFA3A3A3)],
+  );
+
+  static const _monoLight = AccentColors(
+    accentViolet: Color(0xFF171717),
+    accentCyan: Color(0xFF404040),
+    accentSolid: Color(0xFF171717),
+    onAccent: Color(0xFFFFFFFF),
+    accentGradientColors: [Color(0xFF171717), Color(0xFF404040)],
+    // Tlo lekko szare (nie czysta biel), by biale karty sie odcinaly.
+    bgSolid: Color(0xFFF4F4F6),
+    surfaceElevated: Color(0xFFFFFFFF),
+    bgGradientColors: [Color(0xFFF7F7F9), Color(0xFFF2F2F5), Color(0xFFEDEDF1)],
+    glow1: Color(0x08000000),
+    glow2: Color(0x05000000),
+    chartColors: [
+      Color(0xFF171717), Color(0xFF2563EB), Color(0xFF0D9488),
+      Color(0xFFEA580C), Color(0xFF16A34A), Color(0xFFDB2777),
+    ],
+    barHighlightColors: [Color(0xFF171717), Color(0xFF404040)],
+  );
+
+  static const mono = AuroraAccent(
+    id: 'mono',
+    label: 'Mono',
+    dark: _monoDark,
+    light: _monoLight,
+  );
+
+  /// Wbudowane kolory (statyczne). Material You dokladany dynamicznie (gdy dostepny).
+  static const accents = [purple, blue, mono];
+
+  static AuroraAccent accentById(String? id) =>
+      accents.firstWhere((a) => a.id == id, orElse: () => purple);
+
+  /// Akcent Material You z systemowych [ColorScheme] (dynamic_color, Android 12+):
+  /// akcent = primary, tlo z Material surfaces, glow z primary. Mechanika (frost/
+  /// tekst/semantyka) pochodzi z trybu — zachowuje tozsamosc Aurora.
+  static AuroraAccent materialAccent(ColorScheme light, ColorScheme dark) =>
+      AuroraAccent(
+        id: 'material',
+        label: 'Material You',
+        dark: _fromScheme(dark, AuroraMode.dark),
+        light: _fromScheme(light, AuroraMode.light),
+      );
+
+  static AccentColors _fromScheme(ColorScheme cs, AuroraMode mode) {
+    final isDark = mode == AuroraMode.dark;
+    return AccentColors(
+      accentViolet: cs.primary,
+      accentCyan: cs.tertiary,
+      accentSolid: cs.primary,
+      onAccent: cs.onPrimary,
+      accentGradientColors: [cs.primary, cs.tertiary],
+      bgSolid: cs.surface,
+      surfaceElevated: cs.surfaceContainerHigh,
+      bgGradientColors: [
+        cs.surfaceContainerHigh,
+        cs.surface,
+        cs.surfaceContainerLow,
+      ],
+      glow1: cs.primary.withValues(alpha: isDark ? 0.35 : 0.22),
+      glow2: cs.tertiary.withValues(alpha: isDark ? 0.25 : 0.16),
+      chartColors: [
+        cs.primary, cs.secondary, cs.tertiary,
+        cs.error, cs.primaryContainer, cs.tertiaryContainer,
+      ],
+      barHighlightColors: [cs.primary, cs.tertiary],
+    );
+  }
+
+  /// Komponuje palete z trybu (mechanika) i koloru (akcent + tlo).
+  static AuroraPalette compose(AuroraMode mode, AuroraAccent accent) {
+    final m = mode == AuroraMode.dark ? _darkMode : _lightMode;
+    final a = accent._forMode(mode);
+    return AuroraPalette(
+      id: '${accent.id}-${mode == AuroraMode.dark ? 'dark' : 'light'}',
+      label: '${accent.label} ${mode == AuroraMode.dark ? 'Dark' : 'Light'}',
+      brightness: m.brightness,
+      bgSolid: a.bgSolid,
+      surfaceElevated: a.surfaceElevated,
+      bgGradientColors: a.bgGradientColors,
+      glow1: a.glow1,
+      glow2: a.glow2,
+      frost1: m.frost1,
+      frost2: m.frost2,
+      frostBorder: m.frostBorder,
+      frostBorderStrong: m.frostBorderStrong,
+      navGlass: m.navGlass,
+      accentViolet: a.accentViolet,
+      accentCyan: a.accentCyan,
+      accentSolid: a.accentSolid,
+      accentGradientColors: a.accentGradientColors,
+      onAccent: a.onAccent,
+      textPrimary: m.textPrimary,
+      textSecondary: m.textSecondary,
+      textMuted: m.textMuted,
+      positive: m.positive,
+      negative: m.negative,
+      warning: m.warning,
+      trial: m.trial,
+      chartColors: a.chartColors,
+      barIdle: m.barIdle,
+      barHighlightColors: a.barHighlightColors,
+    );
+  }
+}
+
+/// Tokeny kolorystyczne — gettery czytajace aktywny motyw [active].
+/// API zgodne wstecz: kod uzywa `AppColors.frost1` itd. bez zmian.
 class AppColors {
   AppColors._();
 
-  // ── Tło ─────────────────────────────────────────────────────────────────
-  static const Color bgSolid = Color(0xFF0E0A1F); // fallback / ekrany bez gradientu
-  // Nieprzezroczysta powierzchnia „uniesiona" dla dialogów i bottom sheetów —
-  // jaśniejsza od tła, by panel nie zlewał się z przyciemnionym obszarem.
-  static const Color surfaceElevated = Color(0xFF231C49);
-  static const LinearGradient bgGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF241B4B), Color(0xFF16113A), Color(0xFF0B0822)],
-    stops: [0.0, 0.52, 1.0],
-  );
-  static final Color glowViolet = const Color(0xFF7C5CFF).withValues(alpha: 0.45);
-  static final Color glowCyan = const Color(0xFF22D3EE).withValues(alpha: 0.25);
+  static AuroraPalette active =
+      AuroraThemes.compose(AuroraMode.dark, AuroraThemes.purple);
 
-  // ── Frost (powierzchnie — przezroczystość, BEZ BackdropFilter) ────────────
-  static final Color frost1 = Colors.white.withValues(alpha: 0.07); // karty
-  static final Color frost2 = Colors.white.withValues(alpha: 0.10); // kafle zagnieżdżone, chipy
-  static final Color frostBorder = Colors.white.withValues(alpha: 0.14);
-  static final Color frostBorderStrong = Colors.white.withValues(alpha: 0.20); // focus/aktywne
-  static final Color navGlass = Colors.white.withValues(alpha: 0.10); // jedyne prawdziwe szkło
+  static Color get bgSolid => active.bgSolid;
+  static Color get surfaceElevated => active.surfaceElevated;
+  static LinearGradient get bgGradient => active.bgGradient;
+  static Color get glowViolet => active.glow1;
+  static Color get glowCyan => active.glow2;
 
-  // ── Akcenty ──────────────────────────────────────────────────────────────
-  static const Color accentViolet = Color(0xFFA78BFA); // główny akcent (ikony, aktywne)
-  static const Color accentCyan = Color(0xFF5EEAD4); // drugorzędny
-  static const Color accentSolid = Color(0xFF8B7BF7); // gdy gradient niewskazany
-  static const LinearGradient accentGradient = LinearGradient(
-    colors: [Color(0xFFC4B5FD), Color(0xFF5EEAD4)],
-  );
-  // Tekst/ikona na jasnym akcencie (gradient/pigułka aktywna) — kontrast WCAG OK.
-  static const Color onAccent = Color(0xFF1B1240);
+  static Color get frost1 => active.frost1;
+  static Color get frost2 => active.frost2;
+  static Color get frostBorder => active.frostBorder;
+  static Color get frostBorderStrong => active.frostBorderStrong;
+  static Color get navGlass => active.navGlass;
 
-  // ── Tekst ────────────────────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFF3F0FF);
-  static const Color textSecondary = Color(0xFFC2B9EC);
-  static const Color textMuted = Color(0xFFA99FD0);
+  static Color get accentViolet => active.accentViolet;
+  static Color get accentCyan => active.accentCyan;
+  static Color get accentSolid => active.accentSolid;
+  static LinearGradient get accentGradient => active.accentGradient;
+  static Color get onAccent => active.onAccent;
 
-  // ── Semantyczne (foreground — shade 400 na ciemnym; tło @ 14% alpha) ──────
-  static const Color positive = Color(0xFF34D399);
-  static const Color negative = Color(0xFFF87171);
-  static const Color warning = Color(0xFFFBBF24);
-  static const Color trial = Color(0xFF60A5FA);
+  static Color get textPrimary => active.textPrimary;
+  static Color get textSecondary => active.textSecondary;
+  static Color get textMuted => active.textMuted;
 
-  // ── Wykresy ──────────────────────────────────────────────────────────────
-  static const List<Color> chartColors = [
-    Color(0xFFA78BFA), Color(0xFF5EEAD4), Color(0xFF60A5FA),
-    Color(0xFFFB923C), Color(0xFF34D399), Color(0xFFF472B6),
-  ];
-  static final Color barIdle = Colors.white.withValues(alpha: 0.12);
-  static const LinearGradient barHighlight = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFFA78BFA), Color(0xFF5EEAD4)],
-  );
+  static Color get positive => active.positive;
+  static Color get negative => active.negative;
+  static Color get warning => active.warning;
+  static Color get trial => active.trial;
+
+  static List<Color> get chartColors => active.chartColors;
+  static Color get barIdle => active.barIdle;
+  static LinearGradient get barHighlight => active.barHighlight;
 }
 
 /// Promienie zaokrągleń (geometria marki Aurora) — jedno źródło prawdy.
-/// Nie zaszywaj liczb w widgetach; używaj tych tokenów.
 class AppRadii {
   AppRadii._();
 
-  static const double card = 22; // karty standardowe, dialogi, bottom sheety
-  static const double metric = 18; // kafle metryk, karty strumienia
-  static const double tile = 16; // wiersze list, chipy, grupy ustawień
-  static const double pill = 30; // pasek nawigacji (pełna pigułka)
-  static const double pillAction = 26; // pigułki akcji menu „Dodaj"
-  static const double control = 12; // pola tekstowe, segment przełącznika
+  static const double card = 22;
+  static const double metric = 18;
+  static const double tile = 16;
+  static const double pill = 30;
+  static const double pillAction = 26;
+  static const double control = 12;
 }
 
-// ── Semantic Color Tokens ─────────────────────────────────────────────────
-/// Theme-aware semantic colors resolved via [ThemeExtension].
-/// Aurora ma JEDEN zestaw wartości (brak wariantu light) — mechanizm dostępu
-/// `context.semanticColors` pozostaje bez zmian (ADR-002 / ADR-005).
+// ── Semantic Color Tokens (theme-aware przez ThemeExtension) ───────────────
 class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
   final Color positive;
   final Color positiveBg;
@@ -119,27 +523,27 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     required this.trialBg,
   });
 
-  // ── Aurora (jedyny zestaw) ─────────────────────────────────────────────────
-  static final aurora = AppSemanticColors(
-    positive: AppColors.positive,
-    positiveBg: AppColors.positive.withValues(alpha: 0.14),
-    negative: AppColors.negative,
-    negativeBg: AppColors.negative.withValues(alpha: 0.14),
-    warning: AppColors.warning,
-    warningBg: AppColors.warning.withValues(alpha: 0.14),
-    textPrimary: AppColors.textPrimary,
-    textSecondary: AppColors.textSecondary,
-    textMuted: AppColors.textMuted,
-    border: AppColors.frostBorder,
-    surface: AppColors.frost1,
-    surfaceVariant: AppColors.frost2,
-    primary: AppColors.accentViolet,
-    heroCardBg: AppColors.frost1,
-    heroCardText: AppColors.textPrimary,
-    heroCardTextSecondary: AppColors.textSecondary,
-    trial: AppColors.trial,
-    trialBg: AppColors.trial.withValues(alpha: 0.14),
-  );
+  /// Buduje zestaw semantyczny z palety motywu.
+  factory AppSemanticColors.of(AuroraPalette p) => AppSemanticColors(
+        positive: p.positive,
+        positiveBg: p.positive.withValues(alpha: 0.14),
+        negative: p.negative,
+        negativeBg: p.negative.withValues(alpha: 0.14),
+        warning: p.warning,
+        warningBg: p.warning.withValues(alpha: 0.14),
+        textPrimary: p.textPrimary,
+        textSecondary: p.textSecondary,
+        textMuted: p.textMuted,
+        border: p.frostBorder,
+        surface: p.frost1,
+        surfaceVariant: p.frost2,
+        primary: p.accentViolet,
+        heroCardBg: p.frost1,
+        heroCardText: p.textPrimary,
+        heroCardTextSecondary: p.textSecondary,
+        trial: p.trial,
+        trialBg: p.trial.withValues(alpha: 0.14),
+      );
 
   @override
   AppSemanticColors copyWith({
@@ -203,7 +607,8 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       primary: Color.lerp(primary, other.primary, t)!,
       heroCardBg: Color.lerp(heroCardBg, other.heroCardBg, t)!,
       heroCardText: Color.lerp(heroCardText, other.heroCardText, t)!,
-      heroCardTextSecondary: Color.lerp(heroCardTextSecondary, other.heroCardTextSecondary, t)!,
+      heroCardTextSecondary:
+          Color.lerp(heroCardTextSecondary, other.heroCardTextSecondary, t)!,
       trial: Color.lerp(trial, other.trial, t)!,
       trialBg: Color.lerp(trialBg, other.trialBg, t)!,
     );
@@ -219,51 +624,43 @@ extension SemanticColorsExtension on BuildContext {
 class AppTheme {
   AppTheme._();
 
-  /// Jedyny motyw aplikacji (Aurora, ciemny).
-  static ThemeData get theme => _build();
+  /// Buduje ThemeData dla podanej palety. NIE ustawia [AppColors.active] —
+  /// robi to jawnie warstwa nadrzedna (main) wg faktycznego trybu, bo przy
+  /// ThemeMode.system budowane sa oba motywy (jasny i ciemny).
+  static ThemeData build(AuroraPalette palette) {
+    final p = palette;
 
-  // Aliasy zgodności — usuwane w Checkpoint 2 wraz z ThemeProvider.
-  // Oba zwracają ten sam motyw Aurora, więc apka jest ciemna niezależnie od
-  // ustawienia systemowego jeszcze przed wyczyszczeniem main.dart.
-  static ThemeData get light => _build();
-  static ThemeData get dark => _build();
-
-  static ThemeData _build() {
     final colorScheme = ColorScheme(
-      brightness: Brightness.dark,
-      primary: AppColors.accentViolet,
-      onPrimary: AppColors.bgSolid,
-      primaryContainer: AppColors.accentSolid,
-      onPrimaryContainer: AppColors.textPrimary,
-      secondary: AppColors.accentCyan,
-      onSecondary: AppColors.bgSolid,
-      secondaryContainer: AppColors.frost2,
-      onSecondaryContainer: AppColors.textPrimary,
-      error: AppColors.negative,
-      onError: AppColors.bgSolid,
-      errorContainer: AppColors.negative.withValues(alpha: 0.14),
-      onErrorContainer: AppColors.negative,
-      surface: AppColors.bgSolid,
-      onSurface: AppColors.textPrimary,
-      onSurfaceVariant: AppColors.textSecondary,
-      outline: AppColors.frostBorder,
-      outlineVariant: AppColors.frostBorder,
-      surfaceContainerHighest: AppColors.frost2,
-      surfaceContainerHigh: AppColors.frost2,
-      surfaceContainer: AppColors.frost1,
+      brightness: p.brightness,
+      primary: p.accentViolet,
+      onPrimary: p.onAccent,
+      primaryContainer: p.accentSolid,
+      onPrimaryContainer: p.textPrimary,
+      secondary: p.accentCyan,
+      onSecondary: p.onAccent,
+      secondaryContainer: p.frost2,
+      onSecondaryContainer: p.textPrimary,
+      error: p.negative,
+      onError: p.isLight ? const Color(0xFFFFFFFF) : p.bgSolid,
+      errorContainer: p.negative.withValues(alpha: 0.14),
+      onErrorContainer: p.negative,
+      surface: p.bgSolid,
+      onSurface: p.textPrimary,
+      onSurfaceVariant: p.textSecondary,
+      outline: p.frostBorder,
+      outlineVariant: p.frostBorder,
+      surfaceContainerHighest: p.frost2,
+      surfaceContainerHigh: p.frost2,
+      surfaceContainer: p.frost1,
     );
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: p.brightness,
       colorScheme: colorScheme,
-      // Ekrany jeszcze nie owinięte w AuroraBackground pokażą jednolite ciemne
-      // tło; owinięte ustawiają własny transparent Scaffold nad gradientem.
-      scaffoldBackgroundColor: AppColors.bgSolid,
+      scaffoldBackgroundColor: p.bgSolid,
+      extensions: [AppSemanticColors.of(p)],
 
-      extensions: [AppSemanticColors.aurora],
-
-      // Typografia — tabular figures dla kwot finansowych (skala wg design.md)
       textTheme: const TextTheme(
         displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, fontFeatures: [FontFeature.tabularFigures()]),
         headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
@@ -273,93 +670,85 @@ class AppTheme {
         bodySmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
       ),
 
-      // Karty: frost (przezroczystość + border), radius 22, elevation 0, BEZ blur
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: AppColors.frostBorder),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: BorderSide(color: p.frostBorder),
         ),
-        color: AppColors.frost1,
+        color: p.frost1,
         surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
       ),
 
-      // FilledButton — akcent, radius 16
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.accentSolid,
-          foregroundColor: AppColors.textPrimary,
+          backgroundColor: p.accentSolid,
+          foregroundColor: p.onAccent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
       ),
 
-      // FloatingActionButton „Dodaj" — jasny akcent + ciemny tekst (jak pigułki w makiecie)
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accentViolet,
-        foregroundColor: AppColors.onAccent,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: p.accentViolet,
+        foregroundColor: p.onAccent,
         elevation: 2,
       ),
 
-      // OutlinedButton
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.textPrimary,
-          side: BorderSide(color: AppColors.frostBorder),
+          foregroundColor: p.textPrimary,
+          side: BorderSide(color: p.frostBorder),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         ),
       ),
 
-      // TextField — tło frost, radius 12, focus akcent
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.frost1,
+        fillColor: p.frost1,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.frostBorder),
+          borderSide: BorderSide(color: p.frostBorder),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.frostBorder),
+          borderSide: BorderSide(color: p.frostBorder),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accentViolet, width: 2),
+          borderSide: BorderSide(color: p.accentViolet, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
 
-      // AppBar — transparentny (gradient widoczny pod spodem)
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: p.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: p.textPrimary,
         ),
       ),
 
-      // Dialogi (AlertDialog) — nieprzezroczysta uniesiona powierzchnia + border frost
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: p.surfaceElevated,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: AppColors.frostBorder),
+          borderRadius: BorderRadius.circular(AppRadii.card),
+          side: BorderSide(color: p.frostBorder),
         ),
       ),
 
-      // Bottom sheets — to samo tło, by nie zlewały się z przyciemnieniem
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: AppColors.surfaceElevated,
-        modalBackgroundColor: AppColors.surfaceElevated,
+        backgroundColor: p.surfaceElevated,
+        modalBackgroundColor: p.surfaceElevated,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         modalElevation: 0,
@@ -368,81 +757,71 @@ class AppTheme {
         ),
       ),
 
-      // Date picker — osobny ThemeData (NIE dialogTheme); bez tego spada do
-      // domyślnego półprzezroczystego tła.
       datePickerTheme: DatePickerThemeData(
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: p.surfaceElevated,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.card),
-          side: BorderSide(color: AppColors.frostBorder),
+          side: BorderSide(color: p.frostBorder),
         ),
       ),
 
-      // Time picker — analogicznie (gdyby kiedyś użyty)
       timePickerTheme: TimePickerThemeData(
-        backgroundColor: AppColors.surfaceElevated,
+        backgroundColor: p.surfaceElevated,
       ),
 
-      // Menu / popup / dropdown — uniesiona powierzchnia zamiast domyślnej
       popupMenuTheme: PopupMenuThemeData(
-        color: AppColors.surfaceElevated,
+        color: p.surfaceElevated,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.tile),
-          side: BorderSide(color: AppColors.frostBorder),
+          side: BorderSide(color: p.frostBorder),
         ),
       ),
       menuTheme: MenuThemeData(
         style: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(AppColors.surfaceElevated),
+          backgroundColor: WidgetStatePropertyAll(p.surfaceElevated),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
         menuStyle: MenuStyle(
-          backgroundColor: WidgetStatePropertyAll(AppColors.surfaceElevated),
+          backgroundColor: WidgetStatePropertyAll(p.surfaceElevated),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
       ),
 
-      // SnackBar — uniesiona powierzchnia, jasny tekst, pływający
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceElevated,
-        contentTextStyle: const TextStyle(color: AppColors.textPrimary),
+        backgroundColor: p.surfaceElevated,
+        contentTextStyle: TextStyle(color: p.textPrimary),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.control),
         ),
       ),
 
-      // Tooltip
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: p.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadii.control),
-          border: Border.all(color: AppColors.frostBorder),
+          border: Border.all(color: p.frostBorder),
         ),
-        textStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+        textStyle: TextStyle(color: p.textPrimary, fontSize: 12),
       ),
 
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.accentViolet,
-      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: p.accentViolet),
 
-      // Zaznaczanie tekstu — akcent
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: AppColors.accentViolet,
-        selectionColor: AppColors.accentViolet.withValues(alpha: 0.3),
-        selectionHandleColor: AppColors.accentViolet,
+        cursorColor: p.accentViolet,
+        selectionColor: p.accentViolet.withValues(alpha: 0.3),
+        selectionHandleColor: p.accentViolet,
       ),
 
-      // NavigationBar — placeholder do czasu GlassNavBar (Checkpoint 2)
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.bgSolid,
-        indicatorColor: AppColors.accentViolet.withValues(alpha: 0.15),
+        backgroundColor: p.bgSolid,
+        indicatorColor: p.accentViolet.withValues(alpha: 0.15),
         elevation: 0,
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -450,54 +829,61 @@ class AppTheme {
       ),
 
       dividerTheme: DividerThemeData(
-        color: AppColors.frostBorder,
+        color: p.frostBorder,
         thickness: 1,
         space: 1,
       ),
 
-      // ListTile — ikony akcentowe, jasny tekst (Ustawienia w stylu Aurora)
-      listTileTheme: const ListTileThemeData(
-        iconColor: AppColors.accentViolet,
-        textColor: AppColors.textPrimary,
+      listTileTheme: ListTileThemeData(
+        iconColor: p.accentViolet,
+        textColor: p.textPrimary,
       ),
 
-      // Switch — tor aktywny w akcencie, biała gałka
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? Colors.white : AppColors.textMuted,
+          (s) => s.contains(WidgetState.selected) ? Colors.white : p.textMuted,
         ),
         trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? AppColors.accentSolid : AppColors.frost2,
+          (s) => s.contains(WidgetState.selected) ? p.accentSolid : p.frost2,
         ),
-        trackOutlineColor: WidgetStateProperty.all(AppColors.frostBorder),
+        trackOutlineColor: WidgetStateProperty.all(p.frostBorder),
       ),
 
-      // Radio — akcent
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? AppColors.accentViolet : AppColors.textMuted,
+          (s) => s.contains(WidgetState.selected) ? p.accentViolet : p.textMuted,
         ),
       ),
 
-      // Chipy filtrów — frost; aktywny = akcent z ciemnym tekstem
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.frost2,
-        selectedColor: AppColors.accentSolid,
-        side: BorderSide(color: AppColors.frostBorder),
+        backgroundColor: p.frost2,
+        selectedColor: p.accentSolid,
+        side: BorderSide(color: p.frostBorder),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        labelStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        secondaryLabelStyle: const TextStyle(fontSize: 12, color: AppColors.onAccent),
-        checkmarkColor: AppColors.onAccent,
+        // Zaznaczony chip ma tlo akcentu (ciemne) — tekst musi byc kontrastowy
+        // (onAccent), inaczej ciemny tekst znika na ciemnym akcencie. FilterChip
+        // nie uzywa secondaryLabelStyle dla zaznaczenia, wiec rozwiazujemy kolor
+        // stanowo przez WidgetStateColor (zwykly TextStyle zachowuje fontSize,
+        // a chip rozwiazuje sam kolor per-stan).
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: WidgetStateColor.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? p.onAccent
+                : p.textSecondary,
+          ),
+        ),
+        secondaryLabelStyle: TextStyle(fontSize: 12, color: p.onAccent),
+        checkmarkColor: p.onAccent,
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
 
-      // Zakładki (TabBar) — wskaźnik akcentowy
       tabBarTheme: TabBarThemeData(
-        labelColor: AppColors.textPrimary,
-        unselectedLabelColor: AppColors.textMuted,
-        indicatorColor: AppColors.accentViolet,
-        dividerColor: AppColors.frostBorder,
+        labelColor: p.textPrimary,
+        unselectedLabelColor: p.textMuted,
+        indicatorColor: p.accentViolet,
+        dividerColor: p.frostBorder,
         labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
       ),

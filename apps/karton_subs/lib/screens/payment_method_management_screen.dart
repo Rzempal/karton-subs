@@ -80,7 +80,7 @@ class _PaymentMethodManagementScreenState
                           onPressed: () => _showEditor(context, storage, pm),
                         ),
                         IconButton(
-                          icon: const Icon(LucideIcons.trash2,
+                          icon: Icon(LucideIcons.trash2,
                               size: 18, color: AppColors.negative),
                           onPressed: () =>
                               _confirmDelete(context, storage, pm, subsCount),
