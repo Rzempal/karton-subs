@@ -190,6 +190,10 @@ BudgetService  ──►  BudgetEntry[]  (box: budget_entries | household_budget
 **Model czasu (hybryda):**
 - Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`
 - Jednorazowe (wplyw/wydatek): przypiete do daty, koryguja `balanceForMonth`
+- Roznice „bilans − saldo" rozbija `balanceBreakdownForMonth` (jednorazowe,
+  korekty kwot, korekty rat) — suma delt = `balanceForMonth − monthlySurplus`
+- `BudgetEntry.appliesToMonth` = przynaleznosc pozycji do snapshotu miesiaca
+  (filtr czasu w Budzecie): cykliczne zawsze, jednorazowe = swoj miesiac, raty = okno
 
 **Przelew do domowego** (`householdTransfer`): koszt w osobistym + lustrzany wplyw w
 domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz

@@ -78,6 +78,36 @@ void main() {
     });
   });
 
+  group('BudgetEntry — appliesToMonth (filtr czasu, snapshot)', () {
+    BudgetEntry oneTime(String month) => BudgetEntry(
+          id: 'o_$month',
+          name: 'Jednorazowy',
+          type: BudgetEntryType.oneTimeExpense,
+          amount: 300,
+          currency: t,
+          month: month,
+          dataDodania: DateTime(2026, 1, 1),
+        );
+
+    test('cykliczny wpływ dotyczy każdego miesiąca', () {
+      expect(income().appliesToMonth('2026-03'), isTrue);
+      expect(income().appliesToMonth('2030-12'), isTrue);
+    });
+
+    test('jednorazowy dotyczy tylko swojego miesiąca', () {
+      final e = oneTime('2026-07');
+      expect(e.appliesToMonth('2026-07'), isTrue);
+      expect(e.appliesToMonth('2026-08'), isFalse);
+    });
+
+    test('rata dotyczy tylko miesięcy w oknie spłaty', () {
+      final r = installment(); // I..X 2026
+      expect(r.appliesToMonth('2026-01'), isTrue);
+      expect(r.appliesToMonth('2026-10'), isTrue);
+      expect(r.appliesToMonth('2026-11'), isFalse);
+    });
+  });
+
   group('BudgetService — tryb auto/manual na kalendarzu', () {
     BudgetEntry bill(String name, String pm) => BudgetEntry(
           id: name,

@@ -53,6 +53,27 @@ class DayCashflow {
       items.where((i) => !i.isIncome).fold(0.0, (s, i) => s + i.amount);
 }
 
+/// Rodzaj pozycji w rozbiciu różnicy „bilans − saldo" (ADR-008).
+enum BalanceContributionKind {
+  oneTimeIncome, // jednorazowy wpływ (+)
+  oneTimeExpense, // jednorazowy wydatek (−)
+  amountOverride, // korekta kwoty (rachunek/przelew/wpływ, ze znakiem)
+  installment, // korekta raty (rata w tym miesiącu vs teraz)
+}
+
+/// Pojedyncza pozycja, która sprawia, że bilans miesiąca różni się od salda.
+/// `delta` jest ze znakiem, w walucie docelowej; suma delt == bilans − saldo.
+class BalanceContribution {
+  final String name;
+  final double delta;
+  final BalanceContributionKind kind;
+  const BalanceContribution({
+    required this.name,
+    required this.delta,
+    required this.kind,
+  });
+}
+
 class BudgetService {
   static const _currency = CurrencyService();
   static const _analytics = AnalyticsService();
@@ -210,6 +231,62 @@ class BudgetService {
       oneTimeTotalForMonth(entries, monthKey, target: target) +
       overrideDeltaForMonth(entries, monthKey, target: target) -
       installmentDeltaForMonth(entries, monthKey, target: target);
+
+  /// Rozbicie różnicy „bilans − saldo" danego miesiąca na pojedyncze pozycje
+  /// (ADR-008). Suma `delta` zwróconych pozycji jest równa
+  /// `balanceForMonth − monthlySurplus`. Kolejność: jednorazowe wpływy,
+  /// jednorazowe wydatki, korekty kwot, korekty rat.
+  List<BalanceContribution> balanceBreakdownForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final out = <BalanceContribution>[];
+
+    for (final e in oneTimeIncomesForMonth(entries, monthKey)) {
+      out.add(BalanceContribution(
+        name: e.name,
+        delta: _currency.convert(e.amount, e.currency, t),
+        kind: BalanceContributionKind.oneTimeIncome,
+      ));
+    }
+    for (final e in oneTimeExpensesForMonth(entries, monthKey)) {
+      out.add(BalanceContribution(
+        name: e.name,
+        delta: -_currency.convert(e.amount, e.currency, t),
+        kind: BalanceContributionKind.oneTimeExpense,
+      ));
+    }
+    for (final e
+        in entries.where((e) => e.isActive && e.monthOverrides != null)) {
+      final ov = e.overrideForMonth(monthKey);
+      if (ov?.amount != null) {
+        final d = _currency.convert(ov!.amount! - e.amount, e.currency, t);
+        out.add(BalanceContribution(
+          name: e.name,
+          delta: e.isIncome ? d : -d,
+          kind: BalanceContributionKind.amountOverride,
+        ));
+      }
+    }
+    final now = _now;
+    for (final e in entries.where((e) => e.isActive && e.isInstallment)) {
+      final amt = _monthly(e, t);
+      final inMonth = e.isInstallmentActiveInMonth(monthKey) ? amt : 0.0;
+      final inNow = e.isInstallmentActiveOn(now) ? amt : 0.0;
+      final raw = inMonth - inNow;
+      if (raw != 0) {
+        // Bilans odejmuje installmentDelta → wkład pozycji = −(inMonth − inNow).
+        out.add(BalanceContribution(
+          name: e.name,
+          delta: -raw,
+          kind: BalanceContributionKind.installment,
+        ));
+      }
+    }
+    return out;
+  }
 
   /// Nadchodzące wydatki jednorazowe (miesiąc ≥ bieżący), posortowane rosnąco.
   List<BudgetEntry> upcomingOneTime(

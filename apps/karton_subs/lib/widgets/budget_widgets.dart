@@ -59,9 +59,9 @@ String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
       BillingCycle.custom => 'cykl',
     };
 
-/// Sekcja „Podsumowanie" Dashboardu: hero „Zostaje miesięcznie" + wpływy/koszty.
-/// Tap przełącza full ↔ compact (z animacją). W compact wpływy/koszty są jedną
-/// linią pod kwotą-bohaterem; w full to dwie osobne karty [BudgetFlowCard].
+/// Sekcja „Podsumowanie" Dashboardu: jedna karta „Saldo: zostaje miesięcznie".
+/// Kwota-bohater + linia wpływy/koszty (zawsze widoczne). Tap rozwija/zwija opis
+/// wyjaśniający jak liczone jest saldo (odróżnienie od „bilansu miesiąca").
 class BudgetSummarySection extends StatelessWidget {
   final double surplus;
   final double income;
@@ -84,49 +84,6 @@ class BudgetSummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedCrossFade(
-      duration: const Duration(milliseconds: 180),
-      sizeCurve: Curves.easeInOut,
-      crossFadeState:
-          compact ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-      firstChild: Column(
-        children: [
-          _heroCard(context, compact: false),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: BudgetFlowCard(
-                  label: 'Wpływy / mies.',
-                  amount: income,
-                  currency: currency,
-                  icon: LucideIcons.trendingUp,
-                  positive: true,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: BudgetFlowCard(
-                  label: 'Koszty / mies.',
-                  amount: expenses,
-                  currency: currency,
-                  icon: LucideIcons.trendingDown,
-                  positive: false,
-                  footnote: subscriptionsExpense > 0
-                      ? 'w tym subskrypcje: '
-                          '${budgetNf.format(subscriptionsExpense)} $currency'
-                      : null,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      secondChild: _heroCard(context, compact: true),
-    );
-  }
-
-  Widget _heroCard(BuildContext context, {required bool compact}) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final positive = surplus >= 0;
@@ -145,7 +102,7 @@ class BudgetSummarySection extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Zostaje miesięcznie',
+                    child: Text('Saldo: zostaje miesięcznie',
                         style: theme.textTheme.labelMedium
                             ?.copyWith(color: c.textSecondary)),
                   ),
@@ -160,8 +117,7 @@ class BudgetSummarySection extends StatelessWidget {
               // Kwota-bohater: gradient dla nadwyżki (sygnaturowy „wow");
               // deficyt na czerwono — znaczenie ważniejsze niż efekt.
               if (positive)
-                GradientAmount(amountText,
-                    semanticsLabel: 'Zostaje $amountText')
+                GradientAmount(amountText, semanticsLabel: 'Saldo $amountText')
               else
                 Text(
                   amountText,
@@ -170,20 +126,44 @@ class BudgetSummarySection extends StatelessWidget {
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
-              if (!compact) ...[
-                const SizedBox(height: 4),
-                Text(
-                  positive
-                      ? 'Wpływy pokrywają koszty cykliczne i subskrypcje.'
-                      : 'Koszty cykliczne przewyższają wpływy.',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: c.textSecondary),
+              const SizedBox(height: 12),
+              _InlineTrends(
+                income: income,
+                expenses: expenses,
+                currency: currency,
+              ),
+              // Rozwijane tapnięciem: przypis subskrypcji + opis „jak liczone
+              // jest saldo" (odróżnia saldo — plan, stałe koszty — od bilansu).
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 180),
+                sizeCurve: Curves.easeInOut,
+                crossFadeState: compact
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (subscriptionsExpense > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'w tym subskrypcje: '
+                        '${budgetNf.format(subscriptionsExpense)} $currency',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: c.textMuted),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Text(
+                      'Plan: wpływy minus koszty stałe (cykliczne, rachunki, '
+                      'subskrypcje). Bez pozycji jednorazowych i korekt — te '
+                      'liczy bilans miesiąca.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: c.textSecondary),
+                    ),
+                  ],
                 ),
-              ] else ...[
-                const SizedBox(height: 12),
-                _InlineTrends(
-                    income: income, expenses: expenses, currency: currency),
-              ],
+                secondChild: const SizedBox(width: double.infinity),
+              ),
             ],
           ),
         ),
@@ -192,13 +172,16 @@ class BudgetSummarySection extends StatelessWidget {
   }
 }
 
-/// Jednolinijkowe wpływy/koszty (wariant compact sekcji Podsumowanie).
+/// Jednolinijkowe wpływy/koszty wewnątrz karty „Saldo" (zawsze widoczne).
 class _InlineTrends extends StatelessWidget {
   final double income;
   final double expenses;
   final String currency;
-  const _InlineTrends(
-      {required this.income, required this.expenses, required this.currency});
+  const _InlineTrends({
+    required this.income,
+    required this.expenses,
+    required this.currency,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -230,72 +213,16 @@ class _InlineTrends extends StatelessWidget {
   }
 }
 
-/// Karta strumienia (Wpływy / Koszty) — z opcjonalnym przypisem.
-class BudgetFlowCard extends StatelessWidget {
-  final String label;
-  final double amount;
-  final String currency;
-  final IconData icon;
-  final bool positive;
-  final String? footnote;
-
-  const BudgetFlowCard({
-    super.key,
-    required this.label,
-    required this.amount,
-    required this.currency,
-    required this.icon,
-    required this.positive,
-    this.footnote,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-    final color = positive ? c.positive : c.negative;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(label,
-                      style: theme.textTheme.labelMedium
-                          ?.copyWith(color: c.textSecondary)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${budgetNf.format(amount)} $currency',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: color,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            if (footnote != null) ...[
-              const SizedBox(height: 4),
-              Text(footnote!,
-                  style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Sekcja miesiąca: selektor + bilans + kalendarz przepływów + szczegóły dnia.
 class BudgetMonthSection extends StatelessWidget {
   final DateTime month;
   final double balance;
+
+  /// Saldo planu (`monthlySurplus`) — punkt odniesienia dla rozbicia różnicy.
+  final double surplus;
+
+  /// Pozycje, które sprawiają, że bilans różni się od salda (bottom sheet).
+  final List<BalanceContribution> breakdown;
   final String currency;
   final Map<int, DayCashflow> calendar;
   final int? selectedDay;
@@ -310,6 +237,8 @@ class BudgetMonthSection extends StatelessWidget {
     super.key,
     required this.month,
     required this.balance,
+    required this.surplus,
+    required this.breakdown,
     required this.currency,
     required this.calendar,
     required this.selectedDay,
@@ -373,17 +302,21 @@ class BudgetMonthSection extends StatelessWidget {
                 Text('Bilans miesiąca',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: c.textSecondary)),
-                Text(
-                  '$sign${budgetNf.format(balance.abs())} $currency',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: balanceColor,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+                GestureDetector(
+                  onLongPress: () => _showBalanceBreakdown(context),
+                  child: Text(
+                    '$sign${budgetNf.format(balance.abs())} $currency',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: balanceColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ],
             ),
             Text(
-              'Saldo „zostaje" po odjęciu wydatków jednorazowych tego miesiąca.',
+              'Saldo skorygowane o ten miesiąc: pozycje jednorazowe i korekty '
+              'kwot. Przytrzymaj kwotę, by zobaczyć szczegóły.',
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
             if (!compact) ...[
@@ -405,6 +338,153 @@ class BudgetMonthSection extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBalanceBreakdown(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _BalanceBreakdownSheet(
+        surplus: surplus,
+        balance: balance,
+        items: breakdown,
+        currency: currency,
+        monthLabel: DateFormat('LLLL yyyy', 'pl').format(month),
+      ),
+    );
+  }
+}
+
+/// Treść bottom sheeta „dlaczego bilans ≠ saldo": saldo planu → pozycje
+/// (grupowane wg rodzaju, ze znakiem) → bilans miesiąca.
+class _BalanceBreakdownSheet extends StatelessWidget {
+  final double surplus;
+  final double balance;
+  final List<BalanceContribution> items;
+  final String currency;
+  final String monthLabel;
+
+  const _BalanceBreakdownSheet({
+    required this.surplus,
+    required this.balance,
+    required this.items,
+    required this.currency,
+    required this.monthLabel,
+  });
+
+  static const _order = [
+    BalanceContributionKind.oneTimeIncome,
+    BalanceContributionKind.oneTimeExpense,
+    BalanceContributionKind.amountOverride,
+    BalanceContributionKind.installment,
+  ];
+
+  String _groupLabel(BalanceContributionKind k) => switch (k) {
+        BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
+        BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
+        BalanceContributionKind.amountOverride => 'Korekty kwot',
+        BalanceContributionKind.installment => 'Korekty rat',
+      };
+
+  String _signed(double v) =>
+      '${v >= 0 ? '+' : '−'}${budgetNf.format(v.abs())} $currency';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Skąd bilans $monthLabel', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Bilans to saldo planu skorygowane o ten konkretny miesiąc.',
+              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+            ),
+            const SizedBox(height: 16),
+            _summaryRow(theme, c, 'Saldo planu', surplus,
+                color: c.textSecondary),
+            const Divider(height: 24),
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Brak pozycji jednorazowych i korekt — bilans równy saldu.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: c.textMuted),
+                ),
+              )
+            else
+              for (final kind in _order)
+                if (items.any((it) => it.kind == kind)) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    child: Text(_groupLabel(kind),
+                        style: theme.textTheme.labelMedium
+                            ?.copyWith(color: c.textSecondary)),
+                  ),
+                  ...items.where((it) => it.kind == kind).map(
+                        (it) => _itemRow(theme, c, it),
+                      ),
+                ],
+            const Divider(height: 24),
+            _summaryRow(theme, c, 'Bilans miesiąca', balance,
+                color: balance >= 0 ? c.positive : c.negative, bold: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(ThemeData theme, AppSemanticColors c, String label,
+      double value, {required Color color, bool bold = false}) {
+    final sign = value >= 0 ? '' : '−';
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
+                ?.copyWith(color: bold ? null : c.textSecondary)),
+        Text(
+          '$sign${budgetNf.format(value.abs())} $currency',
+          style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
+              ?.copyWith(
+            color: color,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _itemRow(ThemeData theme, AppSemanticColors c, BalanceContribution it) {
+    final color = it.delta >= 0 ? c.positive : c.negative;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(it.name,
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _signed(it.delta),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -175,6 +175,40 @@ void main() {
     });
   });
 
+  group('BudgetService — rozbicie bilansu (balanceBreakdownForMonth)', () {
+    final entries = [
+      _entry(type: BudgetEntryType.income, amount: 5000),
+      _entry(type: BudgetEntryType.bill, amount: 1500),
+      _entry(
+          type: BudgetEntryType.oneTimeExpense, amount: 3000, month: '2026-07'),
+      _entry(
+          type: BudgetEntryType.oneTimeIncome, amount: 2000, month: '2026-07'),
+    ];
+
+    test('suma delt == bilans − saldo (lipiec)', () {
+      final diff = _svc.balanceForMonth(entries, const [], '2026-07') -
+          _svc.monthlySurplus(entries, const []);
+      final sum = _svc
+          .balanceBreakdownForMonth(entries, '2026-07')
+          .fold<double>(0, (s, it) => s + it.delta);
+      expect(sum, closeTo(diff, 0.001));
+    });
+
+    test('rozbicie zawiera jednorazowy wpływ (+) i wydatek (−)', () {
+      final items = _svc.balanceBreakdownForMonth(entries, '2026-07');
+      final income = items.firstWhere(
+          (it) => it.kind == BalanceContributionKind.oneTimeIncome);
+      final expense = items.firstWhere(
+          (it) => it.kind == BalanceContributionKind.oneTimeExpense);
+      expect(income.delta, closeTo(2000, 0.001));
+      expect(expense.delta, closeTo(-3000, 0.001));
+    });
+
+    test('miesiąc bez różnic: pusta lista', () {
+      expect(_svc.balanceBreakdownForMonth(entries, '2026-08'), isEmpty);
+    });
+  });
+
   group('BudgetService — konwersja walut', () {
     test('wpływ w EUR przeliczony na PLN (kurs 4.28)', () {
       final r = _svc.monthlyIncome(

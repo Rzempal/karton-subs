@@ -202,6 +202,15 @@ class BudgetEntry {
     return d != null && isInstallmentActiveOn(d);
   }
 
+  /// Czy pozycja należy do snapshotu miesiąca "YYYY-MM" (filtr czasu w Budżecie):
+  /// jednorazowa — gdy przypisana do tego miesiąca; rata — gdy aktywna w oknie
+  /// spłaty; pozostałe cykliczne — zawsze (dotyczą każdego miesiąca).
+  bool appliesToMonth(String monthKey) {
+    if (isOneTime) return month == monthKey;
+    if (isInstallment) return isInstallmentActiveInMonth(monthKey);
+    return true;
+  }
+
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
   bool get isOneTime =>

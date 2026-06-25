@@ -125,6 +125,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           BudgetMonthSection(
             month: _selectedMonth,
             balance: budget.balanceForMonth(monthKey),
+            surplus: budget.monthlySurplus,
+            breakdown: budget.balanceBreakdownForMonth(monthKey),
             currency: currency,
             calendar: calendar,
             selectedDay: _selectedDay,

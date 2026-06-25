@@ -138,6 +138,11 @@ class BudgetController extends ChangeNotifier {
   double balanceForMonth(String monthKey) =>
       _budget.balanceForMonth(all, _subsForScope, monthKey, target: _target);
 
+  /// Pozycje, które sprawiają, że bilans miesiąca różni się od salda planu
+  /// (jednorazowe, korekty kwot i rat). Do bottom sheeta „dlaczego inny bilans".
+  List<BalanceContribution> balanceBreakdownForMonth(String monthKey) =>
+      _budget.balanceBreakdownForMonth(all, monthKey, target: _target);
+
   /// Mapa „nazwa metody platnosci → automatyczna?" (do koloru/listy Platnosci).
   Map<String, bool> get _autoByPayment => {
         for (final pm in _storage.getPaymentMethods()) pm.name: pm.isAutomatic,

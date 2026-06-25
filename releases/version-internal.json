@@ -1,8 +1,21 @@
 {
-  "releaseDate": "2026-06-24T13:03:38Z",
-  "versionCode": 926062404,
-  "releaseNotes": "Poprawka kontrastu chipow: kolor tekstu stanowy (WidgetStateColor) - zaznaczony jasny na akcencie, niezaznaczony widoczny",
   "changelog": [
+    {
+      "version": "0.9.26062503",
+      "notes": "- Budzet: filtr czasu (snapshot) rok i miesiac obok kategorii i typow"
+    },
+    {
+      "version": "0.9.26062502",
+      "notes": "- Lepszy opis bilansu (wspomina korekty)\n- Przytrzymanie kwoty bilansu otwiera rozbicie roznicy wzgledem salda"
+    },
+    {
+      "version": "0.9.26062501",
+      "notes": "- Zwiniecie karty Saldo chowa opis i przypis subskrypcji"
+    },
+    {
+      "version": "0.9.26062500",
+      "notes": "- Sekcja Saldo: zostaje miesiecznie scalona w jedna karte\n- Nowy opis jak liczone jest saldo (odroznienie od bilansu miesiaca)"
+    },
     {
       "version": "0.9.26062404",
       "notes": "Poprawka kontrastu chipow: kolor tekstu stanowy (WidgetStateColor) - zaznaczony jasny na akcencie, niezaznaczony widoczny"
@@ -26,24 +39,11 @@
     {
       "version": "0.9.26062303",
       "notes": "- OLED zastapiony przez Mono (czern w ciemnym, biel w jasnym; oba tryby)\n- Podpis trybu systemowego przeniesiony miedzy Tryb a Kolor"
-    },
-    {
-      "version": "0.9.26062302",
-      "notes": "- Kolory jako kafelki (PROD); w DEV przelacznik kafelki/lista z nazwami\n- Nowy kolor OLED (czerń, tylko tryb ciemny)\n- Nazwy: Purple Green, Laguna Ocean"
-    },
-    {
-      "version": "0.9.26062301",
-      "notes": "- Motywy w 2 wymiarach: Tryb (jasny/ciemny/systemowy) + Kolor (Purple/Blue)\n- Ustawienia: kazda sekcja na osobnym ekranie"
-    },
-    {
-      "version": "0.9.26062300",
-      "notes": "- Zmiana motywu odswieza cala aplikacje (fix)\n- Ustawienia: kazda sekcja na osobnym ekranie"
-    },
-    {
-      "version": "0.9.26062101",
-      "notes": "- Przelacznik motywow: 4 motywy Aurora (Purple/Blue x Light/Frost) w Ustawieniach"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062404",
-  "version": "0.9.26062404"
+  "versionCode": 926062503,
+  "releaseDate": "2026-06-25T21:13:07Z",
+  "releaseNotes": "- Budzet: filtr czasu (snapshot) rok i miesiac obok kategorii i typow",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062503",
+  "version": "0.9.26062503"
 }

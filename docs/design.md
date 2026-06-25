@@ -356,10 +356,9 @@ class AppColors {
 
 | Element | Realizacja Aurora |
 |---------|-------------------|
-| Hero „Zostaje miesiecznie" | `GradientAmount` (ShaderMask `--accent-gradient`) + caption `--text-muted` |
-| Wplywy / Koszty | 2× `MetricTile`: trending-up `--positive` / trending-down `--negative` |
+| Karta „Saldo: zostaje miesiecznie" | jedna karta: `GradientAmount` + linia wplywy/koszty (trending-up/down) zawsze widoczna; tap rozwija/zwija opis „jak liczone jest saldo" + przypis subskrypcji |
 | Karta Subskrypcje | `FrostCard`: header + „N aktywne"; Miesiecznie / Rocznie |
-| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol |
+| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol. Przytrzymanie kwoty bilansu → bottom sheet z rozbiciem roznicy „bilans − saldo" (jednorazowe, korekty kwot, korekty rat) |
 | Kropki w kalendarzu | wplyw `--positive`, wydatek `--negative` |
 | Dzis / wybrany dzien | dzis = border `--accent-violet`; wybrany = tlo `--frost-2` |
 | Szczegoly dnia | lista pod kalendarzem (ikona kierunku + nazwa + kwota semantic) |
@@ -380,6 +379,7 @@ class AppColors {
 | Element | Realizacja Aurora |
 |---------|-------------------|
 | Przelacznik Osobisty/Domowy | segmented frost; aktywny = gradient |
+| Filtry | chipy: kategorie, typy oraz czas (rok → po wybraniu roku pasek miesiecy). Filtr czasu = snapshot: cykliczne zawsze, jednorazowe danego miesiaca, raty w oknie. Pasek czasu widoczny tylko gdy sa pozycje jednorazowe lub raty |
 | Naglowki sekcji | „Wplywy" / „Koszty cykliczne" — 15px/600 `--text-primary` |
 | Wiersz pozycji | ikona trending-up `--positive` / trending-down `--negative` + nazwa + typ (`--text-muted`) + kwota (semantic) |
 | „Dodaj" | pigulka `--accent-gradient` |

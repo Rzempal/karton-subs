@@ -38,9 +38,49 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// Filtr typu pozycji (null = wszystkie).
   BudgetEntryType? _filterType;
 
+  /// Filtr czasu (snapshot): wybrany rok i opcjonalnie miesiąc danego roku.
+  /// `null` = bez filtra czasu. Miesiąc bez roku nie występuje.
+  int? _filterYear;
+  int? _filterMonth;
+
   /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
   _BudgetGroup _group = _BudgetGroup.none;
+
+  /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i
+  /// okien spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wchodzą.
+  Set<String> _variableMonths(List<BudgetEntry> entries) {
+    final months = <String>{};
+    for (final e in entries) {
+      if (e.isOneTime) {
+        if (e.month != null) months.add(e.month!);
+      } else if (e.isInstallment) {
+        final s = e.startDate;
+        final last = e.lastInstallmentDate;
+        if (s == null || last == null) continue;
+        var d = DateTime(s.year, s.month);
+        final to = DateTime(last.year, last.month);
+        while (!d.isAfter(to)) {
+          months.add(BudgetEntry.monthKeyOf(d));
+          d = DateTime(d.year, d.month + 1);
+        }
+      }
+    }
+    return months;
+  }
+
+  /// Czy pozycja należy do snapshotu wybranego roku (dowolny miesiąc roku).
+  bool _appliesToYear(BudgetEntry e, int year) {
+    if (e.isOneTime) return e.month?.startsWith('$year-') ?? false;
+    if (e.isInstallment) {
+      for (var m = 1; m <= 12; m++) {
+        final key = '$year-${m.toString().padLeft(2, '0')}';
+        if (e.isInstallmentActiveInMonth(key)) return true;
+      }
+      return false;
+    }
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,14 +124,46 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final filterTypes = presentTypes.toList()
       ..sort((a, b) => a.index.compareTo(b.index));
 
+    // Filtr czasu (snapshot) — lata/miesiące obecne w danych zmiennych.
+    final variableMonths = _variableMonths(ctrl.all);
+    final availableYears = variableMonths
+        .map((m) => int.parse(m.substring(0, 4)))
+        .toSet()
+        .toList()
+      ..sort();
+    final activeYear =
+        (_filterYear != null && availableYears.contains(_filterYear))
+            ? _filterYear
+            : null;
+    final monthsOfYear = activeYear == null
+        ? <int>[]
+        : (variableMonths
+            .where((m) => m.startsWith('$activeYear-'))
+            .map((m) => int.parse(m.substring(5, 7)))
+            .toSet()
+            .toList()
+          ..sort());
+    final activeMonth =
+        (_filterMonth != null && monthsOfYear.contains(_filterMonth))
+            ? _filterMonth
+            : null;
+
     int cmp(BudgetEntry a, BudgetEntry b) => switch (_sort) {
           _BudgetSort.alpha =>
             a.name.toLowerCase().compareTo(b.name.toLowerCase()),
           _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
         };
+    bool keepTime(BudgetEntry e) {
+      if (activeYear == null) return true;
+      if (activeMonth == null) return _appliesToYear(e, activeYear);
+      final key = '$activeYear-${activeMonth.toString().padLeft(2, '0')}';
+      return e.appliesToMonth(key);
+    }
+
     bool keep(BudgetEntry e) =>
         (activeType == null || e.type == activeType) &&
-        (activeCat == null || e.categoryId == activeCat);
+        (activeCat == null || e.categoryId == activeCat) &&
+        keepTime(e);
 
     final buckets = rawBuckets
         .map((b) => (b.$1, b.$2.where(keep).toList()..sort(cmp)))
@@ -186,6 +258,18 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               types: filterTypes,
               selected: activeType,
               onSelect: (tp) => setState(() => _filterType = tp),
+            ),
+          if (!isEmpty && availableYears.isNotEmpty)
+            _TimeFilter(
+              years: availableYears,
+              activeYear: activeYear,
+              monthsOfYear: monthsOfYear,
+              activeMonth: activeMonth,
+              onSelectYear: (y) => setState(() {
+                _filterYear = y;
+                _filterMonth = null;
+              }),
+              onSelectMonth: (m) => setState(() => _filterMonth = m),
             ),
           Expanded(
             child: isEmpty
@@ -468,6 +552,75 @@ class _TypeFilter extends StatelessWidget {
   }
 }
 
+/// Krótkie polskie nazwy miesięcy (bez zależności od inicjalizacji locale).
+const _plMonthsShort = [
+  'sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
+  'lip', 'sie', 'wrz', 'paź', 'lis', 'gru',
+];
+
+/// Filtr czasu (snapshot): pasek lat, a po wybraniu roku — pasek jego miesięcy.
+class _TimeFilter extends StatelessWidget {
+  final List<int> years;
+  final int? activeYear;
+  final List<int> monthsOfYear;
+  final int? activeMonth;
+  final void Function(int?) onSelectYear;
+  final void Function(int?) onSelectMonth;
+
+  const _TimeFilter({
+    required this.years,
+    required this.activeYear,
+    required this.monthsOfYear,
+    required this.activeMonth,
+    required this.onSelectYear,
+    required this.onSelectMonth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget chip(String label, bool selected, VoidCallback onTap) => Center(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AuroraChip(label: label, selected: selected, onTap: onTap),
+          ),
+        );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 48,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            children: [
+              chip('Wszystkie lata', activeYear == null,
+                  () => onSelectYear(null)),
+              ...years.map((y) => chip('$y', activeYear == y,
+                  () => onSelectYear(activeYear == y ? null : y))),
+            ],
+          ),
+        ),
+        if (activeYear != null)
+          SizedBox(
+            height: 48,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              children: [
+                chip('Cały rok', activeMonth == null,
+                    () => onSelectMonth(null)),
+                ...monthsOfYear.map((m) => chip(
+                    _plMonthsShort[m - 1], activeMonth == m,
+                    () => onSelectMonth(activeMonth == m ? null : m))),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _FilteredEmpty extends StatelessWidget {
   const _FilteredEmpty();
 
@@ -481,7 +634,7 @@ class _FilteredEmpty extends StatelessWidget {
         children: [
           Icon(LucideIcons.inbox, size: 48, color: c.textMuted),
           const SizedBox(height: 12),
-          Text('Brak wydatków w tej kategorii',
+          Text('Brak pozycji dla wybranych filtrów',
               style: theme.textTheme.bodyMedium),
         ],
       ),

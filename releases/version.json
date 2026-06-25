@@ -1,6 +1,9 @@
 {
-  "releaseDate": "2026-06-24T15:36:22Z",
   "changelog": [
+    {
+      "version": "0.10.26062500",
+      "notes": "- Dashboard: sekcja Saldo zostaje miesiecznie scalona w jedna karte z opisem jak liczone jest saldo\n- Bilans miesiaca: lepszy opis + przytrzymanie kwoty pokazuje rozbicie roznicy wzgledem salda\n- Budzet: filtr czasu (rok i miesiac) obok kategorii i typow"
+    },
     {
       "version": "0.9.26062401",
       "notes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu: zaznaczone chipy oraz obramowanie paska nawigacji w trybie jasnym"
@@ -36,14 +39,11 @@
     {
       "version": "0.8.26061900",
       "notes": "-sync"
-    },
-    {
-      "version": "0.8.26061704",
-      "notes": "- Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu\n- Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)\n- Sumy w naglowkach sekcji (miesiecznie)\n- Dashboard: zwijanie kalendarza i listy platnosci"
     }
   ],
-  "versionCode": 926062401,
-  "version": "0.9.26062401",
-  "releaseNotes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu: zaznaczone chipy oraz obramowanie paska nawigacji w trybie jasnym",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=926062401"
+  "versionCode": 1026062500,
+  "version": "0.10.26062500",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1026062500",
+  "releaseNotes": "- Dashboard: sekcja Saldo zostaje miesiecznie scalona w jedna karte z opisem jak liczone jest saldo\n- Bilans miesiaca: lepszy opis + przytrzymanie kwoty pokazuje rozbicie roznicy wzgledem salda\n- Budzet: filtr czasu (rok i miesiac) obok kategorii i typow",
+  "releaseDate": "2026-06-25T21:34:28Z"
 }
