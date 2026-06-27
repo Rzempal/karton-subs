@@ -1,6 +1,10 @@
 {
   "changelog": [
     {
+      "version": "0.10.26062700",
+      "notes": "- Nowy wyglad paska nawigacji: animowana pigulka aktywnej zakladki + separator Ustawien"
+    },
+    {
       "version": "0.9.26062503",
       "notes": "- Budzet: filtr czasu (snapshot) rok i miesiac obok kategorii i typow"
     },
@@ -35,15 +39,11 @@
     {
       "version": "0.9.26062400",
       "notes": "- Material You: kolor pobierany z urzadzenia (Android 12+); akcent + tlo z systemu, mechanika Aurora\n- Kafelek widoczny tylko gdy urzadzenie wspiera"
-    },
-    {
-      "version": "0.9.26062303",
-      "notes": "- OLED zastapiony przez Mono (czern w ciemnym, biel w jasnym; oba tryby)\n- Podpis trybu systemowego przeniesiony miedzy Tryb a Kolor"
     }
   ],
-  "versionCode": 926062503,
-  "releaseDate": "2026-06-25T21:13:07Z",
-  "releaseNotes": "- Budzet: filtr czasu (snapshot) rok i miesiac obok kategorii i typow",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=926062503",
-  "version": "0.9.26062503"
+  "version": "0.10.26062700",
+  "versionCode": 1026062700,
+  "releaseDate": "2026-06-27T22:57:37Z",
+  "releaseNotes": "- Nowy wyglad paska nawigacji: animowana pigulka aktywnej zakladki + separator Ustawien",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026062700"
 }

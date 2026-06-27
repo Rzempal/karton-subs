@@ -84,7 +84,7 @@ i bez asystenta AI (zgodnie z DNA projektu).
 |-------|-----|--------|
 | `--accent-violet` | `#A78BFA` | Główny akcent (ikony, aktywne) |
 | `--accent-cyan` | `#5EEAD4` | Akcent drugorzędny, druga końcówka gradientu |
-| `--accent-gradient` | `linear-gradient(90°, #C4B5FD, #5EEAD4)` | Kwota-bohater, aktywny element nawigacji |
+| `--accent-gradient` | `linear-gradient(90°, #C4B5FD, #5EEAD4)` | Kwota-bohater, aktywne chipy/taby, „Dodaj" |
 | `--accent-solid` | `#8B7BF7` | Gdy gradient niewskazany (np. pojedyncza ikona) |
 
 ### Tekst
@@ -346,8 +346,10 @@ class AppColors {
 
 - Tlo: `AuroraBackground` (`--bg-gradient` + 2 statyczne poswiaty)
 - AppBar: tytul 20px/600, tlo transparentne; akcje jako ikona + etykieta (XLSX/PDF)
-- Nawigacja: `GlassNavBar` (plywajaca pigulka, jedyny `BackdropFilter`); aktywna zakladka =
-  `--accent-gradient` (tekst `#1B1240`), reszta `--text-secondary`
+- Nawigacja: `GlassNavBar` (plywajaca pigulka, jedyny `BackdropFilter`); nieaktywna zakladka =
+  sama ikona (`--text-secondary`), aktywna = pozioma pigulka (ikona + etykieta w kolorze
+  `--accent-solid` na tincie akcentu @0.16); etykieta rozsuwa/zwija sie animacja (`AnimatedSize`,
+  ~220 ms `easeOutCubic`). Pionowy separator oddziela ostatnia pozycje (Ustawienia) od funkcji
 - Karty: `FrostCard` (`--frost-1`, border `--frost-border`, radius 22) — **bez blur**
 - Kwoty: tabular figures; dodatnie `--positive`, ujemne `--negative`
 - Przelacznik Osobisty/Domowy, chipy, aktywne taby: stan aktywny = `--accent-gradient`

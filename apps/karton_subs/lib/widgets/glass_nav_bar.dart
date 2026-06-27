@@ -12,7 +12,10 @@ class GlassNavItem {
 /// Pływająca pigułka nawigacji — JEDYNE prawdziwe szkło w aplikacji
 /// (`BackdropFilter`, maks. 1 warstwa na ekran; docs/design.md → Wydajność).
 ///
-/// Aktywna zakładka: pigułka w `--accent-gradient` z ciemnym tekstem.
+/// Nieaktywna zakładka: sama ikona (`textSecondary`). Aktywna: pigułka z
+/// subtelnym tintem akcentu, ikona + etykieta poziomo w kolorze akcentu;
+/// etykieta rozsuwa/zwija się animacją (`AnimatedSize`, ~220 ms `easeOutCubic`).
+/// Separator [_dividerBefore] oddziela ostatnią pozycję (Ustawienia) od funkcji.
 /// Wariant [isDev]: czerwone obramowanie sygnalizujące kanał internal.
 class GlassNavBar extends StatelessWidget {
   final int currentIndex;
@@ -28,8 +31,11 @@ class GlassNavBar extends StatelessWidget {
     this.isDev = false,
   });
 
-  static Color get _activeText => AppColors.onAccent;
   static Color get _devBorder => AppColors.negative;
+
+  /// Indeks, PRZED którym wstawiamy pionowy separator (oddziela Ustawienia
+  /// od trójki funkcyjnej). Brak separatora, gdy pozycji jest za mało.
+  int get _dividerBefore => items.length - 1;
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +70,15 @@ class GlassNavBar extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (var i = 0; i < items.length; i++)
+                      for (var i = 0; i < items.length; i++) ...[
+                        if (i == _dividerBefore && _dividerBefore > 0)
+                          const _NavDivider(),
                         _NavCell(
                           item: items[i],
                           selected: i == currentIndex,
                           onTap: () => onTap(i),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -78,6 +87,21 @@ class GlassNavBar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Pionowy hairline oddzielający grupy zakładek (wzór z mockupu).
+class _NavDivider extends StatelessWidget {
+  const _NavDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 22,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      color: AppColors.frostBorderStrong,
     );
   }
 }
@@ -93,9 +117,13 @@ class _NavCell extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _anim = Duration(milliseconds: 220);
+  static const _curve = Curves.easeOutCubic;
+
   @override
   Widget build(BuildContext context) {
-    final fg = selected ? GlassNavBar._activeText : AppColors.textSecondary;
+    final accent = AppColors.accentSolid;
+    final fg = selected ? accent : AppColors.textSecondary;
 
     return Semantics(
       button: true,
@@ -105,24 +133,48 @@ class _NavCell extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(horizontal: selected ? 12 : 10, vertical: 7),
-          decoration: BoxDecoration(
-            gradient: selected ? AppColors.accentGradient : null,
-            borderRadius: BorderRadius.circular(AppRadii.card),
+          duration: _anim,
+          curve: _curve,
+          padding: EdgeInsets.symmetric(
+            horizontal: selected ? 14 : 11,
+            vertical: 9,
           ),
-          child: Column(
+          decoration: BoxDecoration(
+            // Subtelny tint akcentu jako "elevowane" tlo aktywnej pigulki —
+            // jeden token dziala na wszystkich motywach (ciemny/jasny/mono/MY).
+            color: selected ? accent.withValues(alpha: 0.16) : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+          ),
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(item.icon, size: 22, color: fg),
-              const SizedBox(height: 2),
-              Text(
-                item.label,
-                style: TextStyle(
-                  fontSize: 10,
-                  height: 1.0,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  color: fg,
+              // Etykieta tylko dla aktywnej; ClipRect + AnimatedSize daje
+              // efekt plynnego rozsuwania/zwijania szerokosci pigulki.
+              ClipRect(
+                child: AnimatedSize(
+                  duration: _anim,
+                  curve: _curve,
+                  child: selected
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 140),
+                            child: Text(
+                              item.label,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.0,
+                                fontWeight: FontWeight.w600,
+                                color: fg,
+                              ),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ],
