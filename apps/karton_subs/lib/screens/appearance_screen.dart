@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../services/theme_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Ekran wygladu (ADR-010) — Tryb (jasny/ciemny/systemowy) x Kolor.
@@ -26,58 +25,73 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
     final tp = context.watch<ThemeProvider>();
     final darkOnly = tp.accent.darkOnly;
 
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: const Text('Wygląd'),
-          actions: [
-            // DEV: przelacznik kafelki <-> lista z nazwami.
-            if (AppConfig.isInternal)
-              IconButton(
-                icon: Icon(_showList ? LucideIcons.grid : LucideIcons.list),
-                tooltip: _showList ? 'Kafelki' : 'Lista z nazwami',
-                onPressed: () => setState(() => _showList = !_showList),
-              ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            const SettingsSectionLabel('Tryb'),
-            SettingsGroup(children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Wygląd'),
+        actions: [
+          // DEV: przelacznik kafelki <-> lista z nazwami.
+          if (AppConfig.isInternal)
+            IconButton(
+              icon: Icon(_showList ? LucideIcons.grid : LucideIcons.list),
+              tooltip: _showList ? 'Kafelki' : 'Lista z nazwami',
+              onPressed: () => setState(() => _showList = !_showList),
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          const SettingsSectionLabel('Tryb'),
+          SettingsGroup(
+            children: [
               _modeTile(context, tp, ThemeMode.light, 'Jasny', LucideIcons.sun),
-              _modeTile(context, tp, ThemeMode.dark, 'Ciemny', LucideIcons.moon),
-              _modeTile(context, tp, ThemeMode.system, 'Systemowy',
-                  LucideIcons.smartphone),
-            ]),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text(
-                darkOnly
-                    ? 'Kolor OLED działa tylko w trybie ciemnym.'
-                    : 'Tryb „Systemowy" podąża za ustawieniem telefonu (jasny/ciemny).',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: context.semanticColors.textMuted,
-                    ),
+              _modeTile(
+                context,
+                tp,
+                ThemeMode.dark,
+                'Ciemny',
+                LucideIcons.moon,
+              ),
+              _modeTile(
+                context,
+                tp,
+                ThemeMode.system,
+                'Systemowy',
+                LucideIcons.smartphone,
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            child: Text(
+              darkOnly
+                  ? 'Kolor OLED działa tylko w trybie ciemnym.'
+                  : 'Tryb „Systemowy" podąża za ustawieniem telefonu (jasny/ciemny).',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.semanticColors.textMuted,
               ),
             ),
-            const SettingsSectionLabel('Kolor'),
-            (AppConfig.isInternal && _showList)
-                ? _colorList(context, tp)
-                : _colorTiles(context, tp),
-          ],
-        ),
+          ),
+          const SettingsSectionLabel('Kolor'),
+          (AppConfig.isInternal && _showList)
+              ? _colorList(context, tp)
+              : _colorTiles(context, tp),
+        ],
       ),
     );
   }
 
   // ── Tryb ──────────────────────────────────────────────────────────────────
-  Widget _modeTile(BuildContext context, ThemeProvider tp, ThemeMode mode,
-      String label, IconData icon) {
+  Widget _modeTile(
+    BuildContext context,
+    ThemeProvider tp,
+    ThemeMode mode,
+    String label,
+    IconData icon,
+  ) {
     final darkOnly = tp.accent.darkOnly;
-    final selected =
-        darkOnly ? mode == ThemeMode.dark : tp.mode == mode;
+    final selected = darkOnly ? mode == ThemeMode.dark : tp.mode == mode;
     return ListTile(
       enabled: !darkOnly, // OLED wyszarza wybor trybu
       leading: Icon(icon),
@@ -85,15 +99,17 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
       trailing: selected
           ? Icon(LucideIcons.check, color: context.semanticColors.primary)
           : null,
-      onTap: darkOnly ? null : () => context.read<ThemeProvider>().setMode(mode),
+      onTap: darkOnly
+          ? null
+          : () => context.read<ThemeProvider>().setMode(mode),
     );
   }
 
   // Material You na poczatku, reszta w kolejnosci.
   List<AuroraAccent> _ordered(ThemeProvider tp) => [
-        ...tp.accents.where((a) => a.id == 'material'),
-        ...tp.accents.where((a) => a.id != 'material'),
-      ];
+    ...tp.accents.where((a) => a.id == 'material'),
+    ...tp.accents.where((a) => a.id != 'material'),
+  ];
 
   // ── Kolor: kafelki (bez nazw) ───────────────────────────────────────────────
   Widget _colorTiles(BuildContext context, ThemeProvider tp) {
@@ -119,26 +135,28 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
 
   // ── Kolor: lista z nazwami (DEV) ────────────────────────────────────────────
   Widget _colorList(BuildContext context, ThemeProvider tp) {
-    return SettingsGroup(children: [
-      for (final a in _ordered(tp))
-        ListTile(
-          leading: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              gradient: a.previewGradient,
-              borderRadius: BorderRadius.circular(AppRadii.control),
-              border: Border.all(color: AppColors.frostBorder),
+    return SettingsGroup(
+      children: [
+        for (final a in _ordered(tp))
+          ListTile(
+            leading: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: a.previewGradient,
+                borderRadius: BorderRadius.circular(AppRadii.control),
+                border: Border.all(color: AppColors.frostBorder),
+              ),
             ),
+            title: Text(a.label),
+            subtitle: a.darkOnly ? const Text('Tylko ciemny') : null,
+            trailing: a.id == tp.accent.id
+                ? Icon(LucideIcons.check, color: context.semanticColors.primary)
+                : null,
+            onTap: () => context.read<ThemeProvider>().setAccent(a),
           ),
-          title: Text(a.label),
-          subtitle: a.darkOnly ? const Text('Tylko ciemny') : null,
-          trailing: a.id == tp.accent.id
-              ? Icon(LucideIcons.check, color: context.semanticColors.primary)
-              : null,
-          onTap: () => context.read<ThemeProvider>().setAccent(a),
-        ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -200,8 +218,11 @@ class _ColorTile extends StatelessWidget {
       ),
       child: selected
           ? Center(
-              child: Icon(LucideIcons.check,
-                  color: accent.dark.onAccent, size: 22),
+              child: Icon(
+                LucideIcons.check,
+                color: accent.dark.onAccent,
+                size: 22,
+              ),
             )
           : null,
     );

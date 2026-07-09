@@ -117,7 +117,7 @@ lib/
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
 │   ├── labeled_icon_button.dart # Akcja naglowka: ikona + etykieta (XLSX/PDF)
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
-└── main.dart                    # Entry point, provider setup (4 zakladki, AuroraBackground + GlassNavBar)
+└── main.dart                    # Entry point, provider setup (4 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
 ```
 
 ---

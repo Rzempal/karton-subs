@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 /// Aurora — design system z obsługą wielu motywow (ADR-010, zastepuje ADR-005).
@@ -660,6 +661,22 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: p.bgSolid,
       extensions: [AppSemanticColors.of(p)],
+
+      // Przejścia tras: fade-through (stary ekran znika CAŁKOWICIE, dopiero
+      // potem pojawia się nowy — fazy się nie nakładają). Domyślny androidowy
+      // zoom pokazuje oba ekrany jednocześnie, a przy przezroczystych
+      // Scaffoldach (wspólne tło Aurora) treść poprzedniego ekranu prześwituje
+      // jak duch podczas powrotu. fillColor transparent — tło daje Aurora.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeThroughPageTransitionsBuilder(
+            fillColor: Colors.transparent,
+          ),
+          TargetPlatform.iOS: FadeThroughPageTransitionsBuilder(
+            fillColor: Colors.transparent,
+          ),
+        },
+      ),
 
       textTheme: const TextTheme(
         displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, fontFeatures: [FontFeature.tabularFigures()]),

@@ -3,7 +3,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Ekran aktualizacji (OTA) + wersja aplikacji.
@@ -12,16 +11,16 @@ class UpdatesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Aktualizacje')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            SettingsGroup(children: [_OtaSection()]),
-            const SettingsSectionLabel('Informacje'),
-            SettingsGroup(children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Aktualizacje')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          SettingsGroup(children: [_OtaSection()]),
+          const SettingsSectionLabel('Informacje'),
+          SettingsGroup(
+            children: [
               Consumer<UpdateService>(
                 builder: (_, svc, _) => ListTile(
                   leading: const Icon(LucideIcons.info),
@@ -32,9 +31,9 @@ class UpdatesScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            ]),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -71,8 +70,10 @@ class _OtaSection extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Uruchamianie instalatora…',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          const Text(
+                            'Uruchamianie instalatora…',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             svc.showInstallerHint
@@ -96,8 +97,10 @@ class _OtaSection extends StatelessWidget {
         }
         if (svc.isUpToDate) {
           return ListTile(
-            leading: Icon(LucideIcons.checkCircle,
-                color: context.semanticColors.positive),
+            leading: Icon(
+              LucideIcons.checkCircle,
+              color: context.semanticColors.positive,
+            ),
             title: const Text('Aplikacja jest aktualna'),
             subtitle: Text('Sprawdzono: ${_formatTime(svc.lastCheckTime)}'),
             trailing: IconButton(
@@ -113,14 +116,17 @@ class _OtaSection extends StatelessWidget {
           subtitle: svc.status == UpdateStatus.checking
               ? const Text('Sprawdzanie…')
               : svc.errorMessage != null
-                  ? Text(svc.errorMessage!,
-                      style: TextStyle(color: context.semanticColors.negative))
-                  : null,
+              ? Text(
+                  svc.errorMessage!,
+                  style: TextStyle(color: context.semanticColors.negative),
+                )
+              : null,
           trailing: svc.status == UpdateStatus.checking
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2))
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Icon(LucideIcons.chevronRight),
           onTap: svc.status == UpdateStatus.checking
               ? null
@@ -154,19 +160,29 @@ class _UpdateAvailableTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(LucideIcons.download, color: c.positive),
-            const SizedBox(width: 8),
-            Text('Dostępna aktualizacja ${svc.latestVersion}',
-                style:
-                    TextStyle(fontWeight: FontWeight.w600, color: c.positive)),
-          ]),
+          Row(
+            children: [
+              Icon(LucideIcons.download, color: c.positive),
+              const SizedBox(width: 8),
+              Text(
+                'Dostępna aktualizacja ${svc.latestVersion}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: c.positive,
+                ),
+              ),
+            ],
+          ),
           if (svc.changelog.isNotEmpty) ...[
             const SizedBox(height: 8),
-            ...svc.changelog.take(3).map((e) => Text(
-                  '• ${e['notes'] ?? ''}',
-                  style: const TextStyle(fontSize: 13),
-                )),
+            ...svc.changelog
+                .take(3)
+                .map(
+                  (e) => Text(
+                    '• ${e['notes'] ?? ''}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
           ],
           const SizedBox(height: 12),
           Row(
@@ -202,8 +218,10 @@ class _DownloadProgress extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Pobieranie aktualizacji… ${progress.toInt()}%',
-              style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            'Pobieranie aktualizacji… ${progress.toInt()}%',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: progress / 100,
@@ -232,10 +250,7 @@ class _UpdateProcessControls extends StatelessWidget {
           label: const Text('Zrestartuj aktualizację'),
         ),
         const SizedBox(width: 8),
-        TextButton(
-          onPressed: () => svc.reset(),
-          child: const Text('Anuluj'),
-        ),
+        TextButton(onPressed: () => svc.reset(), child: const Text('Anuluj')),
       ],
     );
   }

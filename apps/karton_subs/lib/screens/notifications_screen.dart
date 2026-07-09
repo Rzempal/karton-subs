@@ -3,7 +3,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Ekran ustawien powiadomien (przypomnienia o trialach i odnowieniach).
@@ -40,14 +39,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Powiadomienia')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            SettingsGroup(children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Powiadomienia')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          SettingsGroup(
+            children: [
               SwitchListTile(
                 secondary: const Icon(LucideIcons.clock),
                 title: const Text('Przypomnienia o trialach'),
@@ -70,9 +69,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   await _reschedule();
                 },
               ),
-            ]),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

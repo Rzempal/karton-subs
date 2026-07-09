@@ -7,7 +7,6 @@ import '../controllers/subscription_controller.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Narzedzia deweloperskie (tylko kanal internal): override daty + testy powiadomien.
@@ -20,22 +19,23 @@ class DevToolsScreen extends StatelessWidget {
     final storage = context.read<StorageService>();
     final notifications = context.read<NotificationService>();
 
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Developer Tools')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            const SettingsSectionLabel('Data testowa'),
-            SettingsGroup(children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Developer Tools')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          const SettingsSectionLabel('Data testowa'),
+          SettingsGroup(
+            children: [
               ListTile(
                 leading: const Icon(LucideIcons.calendar),
                 title: const Text('Override daty'),
                 subtitle: Text(
                   storage.getDevDateOverride() != null
-                      ? DateFormat('dd.MM.yyyy')
-                          .format(storage.getDevDateOverride()!)
+                      ? DateFormat(
+                          'dd.MM.yyyy',
+                        ).format(storage.getDevDateOverride()!)
                       : 'Wyłączony (używa aktualnej daty)',
                 ),
                 trailing: const Icon(LucideIcons.chevronRight),
@@ -51,45 +51,56 @@ class DevToolsScreen extends StatelessWidget {
                     ctrl.refresh();
                   },
                 ),
-            ]),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(
-                'TEST POWIADOMIEŃ',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      letterSpacing: 0.8,
-                      color: context.semanticColors.warning,
-                    ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              'TEST POWIADOMIEŃ',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                letterSpacing: 0.8,
+                color: context.semanticColors.warning,
               ),
             ),
-            SettingsGroup(children: [
+          ),
+          SettingsGroup(
+            children: [
               ListTile(
                 leading: const Icon(LucideIcons.clock),
                 title: const Text('Trial reminder'),
                 subtitle: const Text('Symuluje: trial kończy się za 3 dni'),
-                onTap: () => _fire(context, notifications,
-                    title: 'Trial Spotify kończy się za 3 dni',
-                    body: 'Po trialu: 19,99 zł/mies'),
+                onTap: () => _fire(
+                  context,
+                  notifications,
+                  title: 'Trial Spotify kończy się za 3 dni',
+                  body: 'Po trialu: 19,99 zł/mies',
+                ),
               ),
               ListTile(
                 leading: const Icon(LucideIcons.calendarClock),
                 title: const Text('Renewal reminder'),
                 subtitle: const Text('Symuluje: odnowienie za 3 dni'),
-                onTap: () => _fire(context, notifications,
-                    title: 'Netflix odnawia się za 3 dni',
-                    body: 'Kwota: 49,00 zł/mies'),
+                onTap: () => _fire(
+                  context,
+                  notifications,
+                  title: 'Netflix odnawia się za 3 dni',
+                  body: 'Kwota: 49,00 zł/mies',
+                ),
               ),
               ListTile(
                 leading: const Icon(LucideIcons.ghost),
                 title: const Text('Ghost warning'),
                 subtitle: const Text('Symuluje: nieużywana >30 dni'),
-                onTap: () => _fire(context, notifications,
-                    title: 'Adobe CC — nieużywana od 30 dni',
-                    body: 'Płacisz 239 zł/mies za coś, czego nie używasz.'),
+                onTap: () => _fire(
+                  context,
+                  notifications,
+                  title: 'Adobe CC — nieużywana od 30 dni',
+                  body: 'Płacisz 239 zł/mies za coś, czego nie używasz.',
+                ),
               ),
-            ]),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -112,8 +123,12 @@ class DevToolsScreen extends StatelessWidget {
     }
   }
 
-  void _fire(BuildContext context, NotificationService svc,
-      {required String title, required String body}) {
+  void _fire(
+    BuildContext context,
+    NotificationService svc, {
+    required String title,
+    required String body,
+  }) {
     svc.showTestNotification(title: title, body: body);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -372,3 +372,34 @@ stale hex) w widgetach — uzywaj tokenow z palety (`AppColors.*` / `frostBorder
 ktore zmieniaja sie z trybem. Dla kontrastu na akcencie: `onAccent`. Dla kolorow
 zaleznych od stanu w komponentach Material uzywaj `WidgetStateColor`, nie
 `WidgetStateTextStyle` (ten ostatni gubi kolor po merge w chipie).
+
+---
+
+## 2026-07-09: Efekt „ducha" przy animacji powrotu = dwie warstwy (tlo + przejscie tras)
+
+### Problem
+Przy powrocie z pod-ekranu (Ustawienia → opcja → wstecz) przez ulamek sekundy prześwitywala
+tresc znikajacego ekranu przez ekran docelowy (np. tekst „Waluta i limit" na liscie Ustawien).
+Pierwsza proba naprawy (samo tlo) NIE wystarczyla — bug mial dwie niezalezne przyczyny:
+1. **Tlo powielone per ekran:** kazdy ekran owijal swoj Scaffold wlasna kopia `AuroraBackground`.
+   Podczas przejscia dwa identyczne gradienty nakladaly sie i „pompowaly" jasnoscia, a poswiaty
+   jechaly razem z ekranem.
+2. **Domyslne przejscie tras naklada oba ekrany:** androidowy `ZoomPageTransitionsBuilder` pokazuje
+   stary i nowy ekran jednoczesnie (przenikanie). Przy przezroczystych Scaffoldach (wspolne tlo)
+   tresc starego ekranu przeswituje jak duch — mimo naprawionego tla.
+
+### Rozwiazanie
+1. Tlo montowane RAZ globalnie w `MaterialApp.builder` (pod Navigatorem); wszystkie ekrany na
+   `Scaffold(backgroundColor: Colors.transparent)`; usuniete owijanie tlem z 10 ekranow.
+2. Przejscie `FadeThroughPageTransitionsBuilder` (pakiet `animations`) w `ThemeData.pageTransitionsTheme`
+   dla android+iOS, z `fillColor: Colors.transparent` — stary ekran gasnie CALKOWICIE, dopiero
+   potem pojawia sie nowy (fazy sie nie nakladaja). `fillColor` transparent, inaczej pod animacja
+   mignie nieprzezroczysty prostokat zamiast tla aplikacji.
+
+### Wniosek
+Aplikacje z przezroczystymi ekranami na wspolnym tle: **tlo montuj raz w `MaterialApp.builder`,
+nigdy nie owijaj pojedynczych ekranow** (podwojne tlo pompuje jasnoscia) ORAZ **zamien domyslne
+przejscie zoom na fade-through** (domyslne przenikanie pokazuje oba ekrany naraz → duch). Obie
+warstwy sa wymagane — sama naprawa tla nie wystarczy. Bledy przechodza `analyze`/`test`,
+**weryfikacja wizualna na urzadzeniu obowiazkowa** (potrzebna byla klatka nagrania, by zdiagnozowac
+druga warstwe). Ta sama estetyka = ten sam bug w kazdej takiej aplikacji (dotyczy tez APPteczki).

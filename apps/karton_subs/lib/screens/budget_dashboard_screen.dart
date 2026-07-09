@@ -12,6 +12,7 @@ import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
+import '../widgets/sync_now_button.dart';
 import 'add_budget_entry_screen.dart';
 
 /// Sortowanie listy budżetu.
@@ -177,6 +178,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         title: const Text('Budżet'),
         centerTitle: false,
         actions: [
+          const SyncNowButton(),
           if (!isEmpty) ...[
             IconButton(
               tooltip: _sort == _BudgetSort.alpha

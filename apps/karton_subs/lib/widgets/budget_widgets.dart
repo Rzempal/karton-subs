@@ -297,11 +297,20 @@ class BudgetMonthSection extends StatelessWidget {
             const Divider(),
             const SizedBox(height: 4),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Bilans miesiąca',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: c.textSecondary)),
+                IconButton(
+                  onPressed: () => _showMonthSummary(context),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                  icon: Icon(LucideIcons.list, size: 18, color: c.textSecondary),
+                  tooltip: 'Wpływy i wydatki miesiąca',
+                ),
+                const Spacer(),
                 GestureDetector(
                   onLongPress: () => _showBalanceBreakdown(context),
                   child: Text(
@@ -353,6 +362,19 @@ class BudgetMonthSection extends StatelessWidget {
         items: breakdown,
         currency: currency,
         monthLabel: DateFormat('LLLL yyyy', 'pl').format(month),
+      ),
+    );
+  }
+
+  void _showMonthSummary(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _MonthSummarySheet(
+        month: month,
+        calendar: calendar,
+        currency: currency,
       ),
     );
   }
@@ -490,12 +512,167 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   }
 }
 
-/// Sekcja „Płatności" — manualne wydatki danego miesiąca do zrealizowania.
-/// Checkbox oznacza „wykonane" (przekreślenie). Stan trzymany lokalnie per miesiąc.
+/// Treść bottom sheeta „Podsumowanie miesiąca": pełne listy wpływów i wydatków
+/// z kalendarza przepływów, posortowane wg dnia, z sumami sekcji. Kwoty to
+/// realne płatności miesiąca (po korektach, z pozycjami jednorazowymi), więc
+/// suma może różnić się od bilansu, który uśrednia koszty cykliczne.
+class _MonthSummarySheet extends StatelessWidget {
+  final DateTime month;
+  final Map<int, DayCashflow> calendar;
+  final String currency;
+
+  const _MonthSummarySheet({
+    required this.month,
+    required this.calendar,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    final incomes = <({int day, CalendarItem item})>[];
+    final expenses = <({int day, CalendarItem item})>[];
+    final days = calendar.keys.toList()..sort();
+    for (final day in days) {
+      for (final it in calendar[day]!.items) {
+        (it.isIncome ? incomes : expenses).add((day: day, item: it));
+      }
+    }
+    final incomeTotal = incomes.fold(0.0, (s, r) => s + r.item.amount);
+    final expenseTotal = expenses.fold(0.0, (s, r) => s + r.item.amount);
+    final monthLabel = DateFormat('LLLL yyyy', 'pl').format(month);
+
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Podsumowanie · $monthLabel',
+                  style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                'Realne wpływy i wydatki tego miesiąca — kwoty po korektach, '
+                'z pozycjami jednorazowymi. Suma może różnić się od bilansu, '
+                'który uśrednia koszty cykliczne.',
+                style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+              ),
+              const SizedBox(height: 8),
+              if (incomes.isEmpty && expenses.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Text(
+                    'Brak wpływów i wydatków w tym miesiącu.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: c.textMuted),
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      if (incomes.isNotEmpty) ...[
+                        _sectionHeader(theme, c, 'Wpływy', incomeTotal,
+                            income: true),
+                        ...incomes.map((r) => _itemRow(theme, c, r.day, r.item)),
+                      ],
+                      if (expenses.isNotEmpty) ...[
+                        if (incomes.isNotEmpty) const Divider(height: 24),
+                        _sectionHeader(theme, c, 'Wydatki', expenseTotal,
+                            income: false),
+                        ...expenses
+                            .map((r) => _itemRow(theme, c, r.day, r.item)),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(ThemeData theme, AppSemanticColors c, String label,
+      double total, {required bool income}) {
+    final color = income ? c.positive : c.negative;
+    final sign = income ? '+' : '−';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: c.textSecondary)),
+          Text(
+            '$sign${budgetNf.format(total)} $currency',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemRow(
+      ThemeData theme, AppSemanticColors c, int day, CalendarItem it) {
+    final color = it.isIncome ? c.positive : c.negative;
+    final sign = it.isIncome ? '+' : '−';
+    final dateLabel =
+        DateFormat('d MMM', 'pl').format(DateTime(month.year, month.month, day));
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(
+            it.isSubscription
+                ? LucideIcons.repeat
+                : (it.isIncome
+                    ? LucideIcons.trendingUp
+                    : LucideIcons.trendingDown),
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('${it.name} · $dateLabel',
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$sign${budgetNf.format(it.amount)} $currency',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sekcja płatności miesiąca do odhaczania. [automatic] = false → „Płatności"
+/// (manualne przelewy do zrealizowania); true → „Płatności automatyczne"
+/// (pobierane same — odhaczanie po zaksięgowaniu). Checkbox oznacza „wykonane"
+/// (przekreślenie). Stan trzymany lokalnie per pozycja i data.
 class PaymentsSection extends StatelessWidget {
   final DateTime month;
   final Map<int, DayCashflow> calendar;
   final String currency;
+  final bool automatic;
   final bool compact;
   final VoidCallback onToggleCompact;
   final bool Function(String sourceId, DateTime date) isDone;
@@ -506,23 +683,33 @@ class PaymentsSection extends StatelessWidget {
     required this.month,
     required this.calendar,
     required this.currency,
+    this.automatic = false,
     required this.compact,
     required this.onToggleCompact,
     required this.isDone,
     required this.onToggle,
   });
 
+  /// Czy miesiąc ma jakiekolwiek pozycje danego trybu — do warunkowego
+  /// renderowania sekcji (wraz z odstępem) na Dashboardzie.
+  static bool hasAny(Map<int, DayCashflow> calendar,
+          {required bool automatic}) =>
+      calendar.values.any((f) => f.items.any((it) =>
+          !it.isIncome && it.isAutomatic == automatic && it.sourceId != null));
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
 
-    // Zbierz manualne wydatki miesiąca (pomijamy auto i wpływy), posortowane wg dnia.
+    // Zbierz wydatki miesiąca danego trybu (manual/auto), posortowane wg dnia.
     final rows = <({String name, double amount, DateTime date, String sourceId})>[];
     final days = calendar.keys.toList()..sort();
     for (final day in days) {
       for (final it in calendar[day]!.items) {
-        if (it.isIncome || it.isAutomatic || it.sourceId == null) continue;
+        if (it.isIncome || it.isAutomatic != automatic || it.sourceId == null) {
+          continue;
+        }
         rows.add((
           name: it.name,
           amount: it.amount,
@@ -534,6 +721,12 @@ class PaymentsSection extends StatelessWidget {
     if (rows.isEmpty) return const SizedBox.shrink();
 
     final doneCount = rows.where((r) => isDone(r.sourceId, r.date)).length;
+    // Suma nieodhaczonych — aktualizuje się na żywo przy każdym odhaczeniu
+    // (toggle w kontrolerze → notifyListeners → rebuild sekcji).
+    final remaining = rows
+        .where((r) => !isDone(r.sourceId, r.date))
+        .fold(0.0, (s, r) => s + r.amount);
+    final allPaid = remaining < 0.005;
 
     return Card(
       child: Padding(
@@ -544,7 +737,8 @@ class PaymentsSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Płatności', style: theme.textTheme.titleMedium),
+                Text(automatic ? 'Płatności automatyczne' : 'Płatności',
+                    style: theme.textTheme.titleMedium),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -564,8 +758,33 @@ class PaymentsSection extends StatelessWidget {
               ],
             ),
             Text(
-              'Manualne przelewy do zrealizowania w tym miesiącu.',
+              automatic
+                  ? 'Pobierane automatycznie w tym miesiącu.'
+                  : 'Manualne przelewy do zrealizowania w tym miesiącu.',
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+            ),
+            const SizedBox(height: 10),
+            // Pozostała suma — zawsze widoczna (też po zwinięciu listy). Maleje
+            // przy każdym odhaczeniu, więc na bieżąco widać, ile zostało.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  allPaid ? 'Wszystko rozliczone' : 'Pozostało do rozliczenia',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: allPaid ? c.positive : c.textSecondary,
+                  ),
+                ),
+                Text(
+                  allPaid
+                      ? '${budgetNf.format(0)} $currency'
+                      : '−${budgetNf.format(remaining)} $currency',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: allPaid ? c.positive : c.negative,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
             ),
             if (!compact) ...[
               const SizedBox(height: 8),

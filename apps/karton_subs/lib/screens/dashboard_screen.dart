@@ -9,6 +9,7 @@ import '../services/storage_service.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/budget_widgets.dart';
+import '../widgets/sync_now_button.dart';
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
 class DashboardScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late bool _subsCompact;
   late bool _monthCompact;
   late bool _paymentsCompact;
+  late bool _autoPaymentsCompact;
 
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
@@ -41,6 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _subsCompact = storage.getDashboardSubscriptionsCompact();
     _monthCompact = storage.getDashboardMonthCompact();
     _paymentsCompact = storage.getDashboardPaymentsCompact();
+    _autoPaymentsCompact = storage.getDashboardAutoPaymentsCompact();
   }
 
   void _toggleSummary() {
@@ -67,6 +70,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .setDashboardPaymentsCompact(_paymentsCompact);
   }
 
+  void _toggleAutoPayments() {
+    setState(() => _autoPaymentsCompact = !_autoPaymentsCompact);
+    context
+        .read<StorageService>()
+        .setDashboardAutoPaymentsCompact(_autoPaymentsCompact);
+  }
+
   void _shiftMonth(int delta) {
     setState(() {
       _selectedMonth =
@@ -90,7 +100,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Dashboard'), centerTitle: false),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        centerTitle: false,
+        actions: const [SyncNowButton(), SizedBox(width: 4)],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
         children: [
@@ -137,16 +151,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onNext: () => _shiftMonth(1),
             onSelectDay: (d) => setState(() => _selectedDay = d),
           ),
-          const SizedBox(height: 24),
-          PaymentsSection(
-            month: _selectedMonth,
-            calendar: calendar,
-            currency: currency,
-            compact: _paymentsCompact,
-            onToggleCompact: _togglePayments,
-            isDone: budget.isPaymentDone,
-            onToggle: budget.togglePaymentDone,
-          ),
+          if (PaymentsSection.hasAny(calendar, automatic: false)) ...[
+            const SizedBox(height: 24),
+            PaymentsSection(
+              month: _selectedMonth,
+              calendar: calendar,
+              currency: currency,
+              compact: _paymentsCompact,
+              onToggleCompact: _togglePayments,
+              isDone: budget.isPaymentDone,
+              onToggle: budget.togglePaymentDone,
+            ),
+          ],
+          if (PaymentsSection.hasAny(calendar, automatic: true)) ...[
+            const SizedBox(height: 24),
+            PaymentsSection(
+              month: _selectedMonth,
+              calendar: calendar,
+              currency: currency,
+              automatic: true,
+              compact: _autoPaymentsCompact,
+              onToggleCompact: _toggleAutoPayments,
+              isDone: budget.isPaymentDone,
+              onToggle: budget.togglePaymentDone,
+            ),
+          ],
         ],
       ),
     );

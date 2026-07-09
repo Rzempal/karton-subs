@@ -357,4 +357,11 @@ class StorageService {
 
   Future<void> setDashboardPaymentsCompact(bool value) async =>
       _settingsBox.put('dashboardPaymentsCompact', value);
+
+  bool getDashboardAutoPaymentsCompact() =>
+      _settingsBox.get('dashboardAutoPaymentsCompact', defaultValue: false)
+          as bool;
+
+  Future<void> setDashboardAutoPaymentsCompact(bool value) async =>
+      _settingsBox.put('dashboardAutoPaymentsCompact', value);
 }

@@ -7,7 +7,6 @@ import '../models/quick_add_templates.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -46,13 +45,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     final s = widget.existing;
     _nameCtrl = TextEditingController(text: s?.name ?? '');
     _amountCtrl = TextEditingController(
-        text: s != null ? s.amount.toStringAsFixed(2) : '');
+      text: s != null ? s.amount.toStringAsFixed(2) : '',
+    );
     _descCtrl = TextEditingController(text: s?.description ?? '');
     _cancelUrlCtrl = TextEditingController(text: s?.cancellationUrl ?? '');
     _postTrialAmountCtrl = TextEditingController(
-        text: s?.postTrialAmount != null
-            ? s!.postTrialAmount!.toStringAsFixed(2)
-            : '');
+      text: s?.postTrialAmount != null
+          ? s!.postTrialAmount!.toStringAsFixed(2)
+          : '',
+    );
     if (s != null) {
       _currency = s.currency;
       _cycle = s.billingCycle;
@@ -84,11 +85,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     // Tolerancja orphana: jeśli istniejąca subskrypcja ma wartość spoza
     // aktualnej listy (np. po usunięciu metody albo imporcie starego backupu),
     // pokazujemy ją w dropdownie, żeby nie "znikła" po wejściu w edycję.
-    final hasOrphan = _paymentMethod != null &&
+    final hasOrphan =
+        _paymentMethod != null &&
         !paymentMethods.any((pm) => pm.name == _paymentMethod);
 
-    return AuroraBackground(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj subskrypcję' : 'Dodaj subskrypcję'),
@@ -121,7 +122,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _descCtrl,
-              decoration: const InputDecoration(labelText: 'Opis (opcjonalnie)'),
+              decoration: const InputDecoration(
+                labelText: 'Opis (opcjonalnie)',
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -155,12 +158,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   child: TextFormField(
                     controller: _amountCtrl,
                     decoration: const InputDecoration(labelText: 'Kwota *'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Wymagane';
                       final parsed = double.tryParse(v.replaceAll(',', '.'));
-                      if (parsed == null || parsed <= 0) return 'Nieprawidłowa kwota';
+                      if (parsed == null || parsed <= 0) {
+                        return 'Nieprawidłowa kwota';
+                      }
                       return null;
                     },
                   ),
@@ -172,8 +178,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                     initialValue: _currency,
                     decoration: const InputDecoration(labelText: 'Waluta'),
                     items: Currency.values
-                        .map((c) => DropdownMenuItem(
-                            value: c, child: Text(c.label)))
+                        .map(
+                          (c) =>
+                              DropdownMenuItem(value: c, child: Text(c.label)),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _currency = v!),
                   ),
@@ -183,10 +191,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<BillingCycle>(
               initialValue: _cycle,
-              decoration: const InputDecoration(labelText: 'Cykl rozliczeniowy'),
+              decoration: const InputDecoration(
+                labelText: 'Cykl rozliczeniowy',
+              ),
               items: BillingCycle.values
-                  .map((c) => DropdownMenuItem(
-                      value: c, child: Text(_cycleLabel(c))))
+                  .map(
+                    (c) =>
+                        DropdownMenuItem(value: c, child: Text(_cycleLabel(c))),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _cycle = v!),
             ),
@@ -203,13 +215,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   selected: _categoryId == null,
                   onSelected: (_) => setState(() => _categoryId = null),
                 ),
-                ...categories.map((cat) => FilterChip(
-                      label: Text(cat.name),
-                      selected: _categoryId == cat.id,
-                      selectedColor: cat.color.withValues(alpha: 0.2),
-                      onSelected: (_) =>
-                          setState(() => _categoryId = cat.id),
-                    )),
+                ...categories.map(
+                  (cat) => FilterChip(
+                    label: Text(cat.name),
+                    selected: _categoryId == cat.id,
+                    selectedColor: cat.color.withValues(alpha: 0.2),
+                    onSelected: (_) => setState(() => _categoryId = cat.id),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -231,10 +244,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               contentPadding: EdgeInsets.zero,
               title: const Text('Okres próbny'),
               subtitle: const Text('Subskrypcja na trialu'),
-              secondary: Icon(LucideIcons.clock,
-                  color: _isTrial
-                      ? context.semanticColors.trial
-                      : null),
+              secondary: Icon(
+                LucideIcons.clock,
+                color: _isTrial ? context.semanticColors.trial : null,
+              ),
               value: _isTrial,
               onChanged: (v) => setState(() {
                 _isTrial = v;
@@ -248,11 +261,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(LucideIcons.calendarClock),
-                title: Text(_trialEndDate != null
-                    ? DateFormat('d MMMM yyyy', 'pl').format(_trialEndDate!)
-                    : 'Wybierz datę końca triala'),
+                title: Text(
+                  _trialEndDate != null
+                      ? DateFormat('d MMMM yyyy', 'pl').format(_trialEndDate!)
+                      : 'Wybierz datę końca triala',
+                ),
                 subtitle: _trialEndDate != null
-                    ? Text('Za ${_trialEndDate!.difference(DateTime.now()).inDays} dni')
+                    ? Text(
+                        'Za ${_trialEndDate!.difference(DateTime.now()).inDays} dni',
+                      )
                     : null,
                 trailing: const Icon(LucideIcons.chevronRight),
                 onTap: _pickTrialEndDate,
@@ -265,12 +282,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   hintText: 'np. 49.99 (puste = ta sama co kwota)',
                   prefixIcon: Icon(LucideIcons.arrowRight),
                 ),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return null;
                   final parsed = double.tryParse(v.replaceAll(',', '.'));
-                  if (parsed == null || parsed < 0) return 'Nieprawidłowa kwota';
+                  if (parsed == null || parsed < 0) {
+                    return 'Nieprawidłowa kwota';
+                  }
                   return null;
                 },
               ),
@@ -306,10 +326,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                         child: Text('Nie dzielona'),
                       ),
                       for (int i = 2; i <= 10; i++)
-                        DropdownMenuItem(
-                          value: i,
-                          child: Text('$i osób'),
-                        ),
+                        DropdownMenuItem(value: i, child: Text('$i osób')),
                     ],
                     onChanged: (v) => setState(() => _sharedWith = v),
                   ),
@@ -326,14 +343,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                 prefixIcon: Icon(LucideIcons.creditCard),
               ),
               items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('Nie wybrano'),
+                const DropdownMenuItem(value: null, child: Text('Nie wybrano')),
+                ...paymentMethods.map(
+                  (pm) =>
+                      DropdownMenuItem(value: pm.name, child: Text(pm.name)),
                 ),
-                ...paymentMethods.map((pm) => DropdownMenuItem(
-                      value: pm.name,
-                      child: Text(pm.name),
-                    )),
                 if (hasOrphan)
                   DropdownMenuItem(
                     value: _paymentMethod,
@@ -373,8 +387,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
                 icon: Icon(LucideIcons.trash2, color: AppColors.negative),
-                label: Text('Usuń subskrypcję',
-                    style: TextStyle(color: AppColors.negative)),
+                label: Text(
+                  'Usuń subskrypcję',
+                  style: TextStyle(color: AppColors.negative),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: AppColors.negative),
                 ),
@@ -383,7 +399,6 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             const SizedBox(height: 16),
           ],
         ),
-      ),
       ),
     );
   }
@@ -406,9 +421,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             onPressed: () async {
               final navigator = Navigator.of(context);
               Navigator.pop(ctx);
-              await context
-                  .read<SubscriptionController>()
-                  .delete(widget.existing!.id);
+              await context.read<SubscriptionController>().delete(
+                widget.existing!.id,
+              );
               if (mounted) navigator.pop(true);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
@@ -438,7 +453,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   Future<void> _pickTrialEndDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _trialEndDate ?? DateTime.now().add(const Duration(days: 30)),
+      initialDate:
+          _trialEndDate ?? DateTime.now().add(const Duration(days: 30)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 730)),
       helpText: 'Data końca triala',
@@ -473,32 +489,34 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         // Pobierz aktualny obiekt z cache (świeży stan)
         final current =
             storage.getSubscription(widget.existing!.id) ?? widget.existing!;
-        await ctrl.update(current.copyWith(
-          name: _nameCtrl.text.trim(),
-          description: _descCtrl.text.trim().isEmpty
-              ? null
-              : _descCtrl.text.trim(),
-          clearDescription: _descCtrl.text.trim().isEmpty,
-          amount: amount,
-          currency: _currency,
-          billingCycle: _cycle,
-          categoryId: _categoryId,
-          startDate: _startDate,
-          cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
-              ? null
-              : _cancelUrlCtrl.text.trim(),
-          clearCancellationUrl: _cancelUrlCtrl.text.trim().isEmpty,
-          sharedWith: _sharedWith,
-          clearSharedWith: _sharedWith == null,
-          paymentMethod: _paymentMethod,
-          clearPaymentMethod: _paymentMethod == null,
-          isTrial: _isTrial,
-          trialEndDate: _isTrial ? _trialEndDate : null,
-          clearTrialEndDate: !_isTrial,
-          postTrialAmount: _isTrial ? postTrialAmt : null,
-          clearPostTrialAmount: !_isTrial,
-          scope: _scope,
-        ));
+        await ctrl.update(
+          current.copyWith(
+            name: _nameCtrl.text.trim(),
+            description: _descCtrl.text.trim().isEmpty
+                ? null
+                : _descCtrl.text.trim(),
+            clearDescription: _descCtrl.text.trim().isEmpty,
+            amount: amount,
+            currency: _currency,
+            billingCycle: _cycle,
+            categoryId: _categoryId,
+            startDate: _startDate,
+            cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
+                ? null
+                : _cancelUrlCtrl.text.trim(),
+            clearCancellationUrl: _cancelUrlCtrl.text.trim().isEmpty,
+            sharedWith: _sharedWith,
+            clearSharedWith: _sharedWith == null,
+            paymentMethod: _paymentMethod,
+            clearPaymentMethod: _paymentMethod == null,
+            isTrial: _isTrial,
+            trialEndDate: _isTrial ? _trialEndDate : null,
+            clearTrialEndDate: !_isTrial,
+            postTrialAmount: _isTrial ? postTrialAmt : null,
+            clearPostTrialAmount: !_isTrial,
+            scope: _scope,
+          ),
+        );
       } else {
         await ctrl.create(
           name: _nameCtrl.text.trim(),
@@ -557,9 +575,9 @@ class _QuickAddBar extends StatelessWidget {
             Text(
               'SZYBKIE DODAWANIE',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    letterSpacing: 0.8,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                letterSpacing: 0.8,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             TextButton(
               onPressed: () => _showAll(context),
@@ -606,7 +624,8 @@ class _QuickAddBar extends StatelessWidget {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 32, height: 4,
+              width: 32,
+              height: 4,
               decoration: BoxDecoration(
                 color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
@@ -614,8 +633,10 @@ class _QuickAddBar extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text('Wybierz szablon',
-                  style: Theme.of(context).textTheme.titleMedium),
+              child: Text(
+                'Wybierz szablon',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
             Expanded(
               child: ListView(
@@ -628,7 +649,8 @@ class _QuickAddBar extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         _catLabel(entry.key).toUpperCase(),
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
                               letterSpacing: 0.8,
                               color: Theme.of(context).colorScheme.primary,
                             ),
@@ -638,13 +660,18 @@ class _QuickAddBar extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: entry.value.map((t) {
-                          final color = Color(int.parse(
+                          final color = Color(
+                            int.parse(
                               'FF${t.colorHex.replaceFirst('#', '')}',
-                              radix: 16));
+                              radix: 16,
+                            ),
+                          );
                           return ActionChip(
                             label: Text(t.name),
                             avatar: CircleAvatar(
-                                backgroundColor: color, radius: 8),
+                              backgroundColor: color,
+                              radius: 8,
+                            ),
                             onPressed: () {
                               Navigator.pop(ctx);
                               onSelected(t);
@@ -664,14 +691,14 @@ class _QuickAddBar extends StatelessWidget {
   }
 
   String _catLabel(String catId) => switch (catId) {
-        'cat_streaming' => 'Streaming',
-        'cat_music' => 'Muzyka',
-        'cat_cloud' => 'Cloud',
-        'cat_software' => 'Software',
-        'cat_gaming' => 'Gaming',
-        'cat_fitness' => 'Fitness',
-        _ => 'Inne',
-      };
+    'cat_streaming' => 'Streaming',
+    'cat_music' => 'Muzyka',
+    'cat_cloud' => 'Cloud',
+    'cat_software' => 'Software',
+    'cat_gaming' => 'Gaming',
+    'cat_fitness' => 'Fitness',
+    _ => 'Inne',
+  };
 }
 
 class _SectionLabel extends StatelessWidget {
@@ -683,9 +710,9 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            letterSpacing: 0.8,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        letterSpacing: 0.8,
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }

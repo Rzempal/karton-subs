@@ -8,7 +8,6 @@ import '../models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 
 class PaymentMethodManagementScreen extends StatefulWidget {
   const PaymentMethodManagementScreen({super.key});
@@ -28,8 +27,7 @@ class _PaymentMethodManagementScreenState
     final methods = storage.getPaymentMethods();
     final theme = Theme.of(context);
 
-    return AuroraBackground(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Metody płatności'),
@@ -80,8 +78,11 @@ class _PaymentMethodManagementScreenState
                           onPressed: () => _showEditor(context, storage, pm),
                         ),
                         IconButton(
-                          icon: Icon(LucideIcons.trash2,
-                              size: 18, color: AppColors.negative),
+                          icon: Icon(
+                            LucideIcons.trash2,
+                            size: 18,
+                            color: AppColors.negative,
+                          ),
                           onPressed: () =>
                               _confirmDelete(context, storage, pm, subsCount),
                         ),
@@ -92,7 +93,6 @@ class _PaymentMethodManagementScreenState
                 );
               },
             ),
-      ),
     );
   }
 
@@ -123,8 +123,7 @@ class _PaymentMethodManagementScreenState
       builder: (ctx) => AlertDialog(
         title: Text('Usunąć "${pm.name}"?'),
         content: subsCount > 0
-            ? Text(
-                '$subsCount subskrypcji straci oznaczenie metody płatności.')
+            ? Text('$subsCount subskrypcji straci oznaczenie metody płatności.')
             : null,
         actions: [
           TextButton(
@@ -246,21 +245,24 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
             contentPadding: EdgeInsets.zero,
             value: _isAutomatic,
             onChanged: (v) => setState(() => _isAutomatic = v),
-            secondary: Icon(
-                _isAutomatic ? LucideIcons.zap : LucideIcons.hand),
+            secondary: Icon(_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
             title: Text(_isAutomatic ? 'Automatyczna' : 'Manualna'),
-            subtitle: Text(_isAutomatic
-                ? 'Pobierana automatycznie (żółty na kalendarzu)'
-                : 'Przelew do zrobienia ręcznie (lista „Płatności")'),
+            subtitle: Text(
+              _isAutomatic
+                  ? 'Pobierana automatycznie (żółty na kalendarzu)'
+                  : 'Przelew do zrobienia ręcznie (lista „Płatności")',
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
               onPressed: _save,
-              child: Text(widget.existing != null
-                  ? 'Zapisz zmiany'
-                  : 'Dodaj metodę płatności'),
+              child: Text(
+                widget.existing != null
+                    ? 'Zapisz zmiany'
+                    : 'Dodaj metodę płatności',
+              ),
             ),
           ),
         ],
@@ -277,9 +279,11 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
 
     // Walidacja unikalności (case-insensitive)
     final storage = context.read<StorageService>();
-    final duplicate = storage.getPaymentMethods().any((pm) =>
-        pm.name.toLowerCase() == name.toLowerCase() &&
-        pm.id != widget.existing?.id);
+    final duplicate = storage.getPaymentMethods().any(
+      (pm) =>
+          pm.name.toLowerCase() == name.toLowerCase() &&
+          pm.id != widget.existing?.id,
+    );
     if (duplicate) {
       setState(() => _errorText = 'Metoda o tej nazwie już istnieje');
       return;

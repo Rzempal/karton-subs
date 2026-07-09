@@ -217,7 +217,7 @@ koszcie GPU. Jedyny realny blur (pasek nawigacji) to jedna warstwa, statyczna po
 
 | Widget | Cel |
 |--------|-----|
-| `AuroraBackground` | Wrapper Scaffoldu: gradient + poświaty + transparent scaffold |
+| `AuroraBackground` | Tło aplikacji (gradient + poświaty), montowane RAZ w `MaterialApp.builder` pod Navigatorem; ekrany mają transparent Scaffold. NIE owijać ekranów — podwójne tło psuje animacje przejść. Przejścia tras: fade-through (`animations`, fillColor transparent) — domyślny zoom nakłada oba ekrany naraz i przy przezroczystych Scaffoldach treść prześwituje jak duch |
 | `FrostCard` | Standardowa karta (przezroczystość, border) — bez blur |
 | `GlassNavBar` | Pływająca pigułka nawigacji — **jedyny** `BackdropFilter` |
 | `MetricTile` | Ikona + kwota + delta-pill |
@@ -268,7 +268,7 @@ Lucide Icons (`lucide_icons_flutter`) — **bez zmian** względem Ledger Glass. 
 | `lib/theme/app_theme.dart` | Jeden ciemny `ThemeData`; nowe tokeny (gradient, frost, akcenty); usunięcie wariantu light |
 | `lib/services/theme_provider.dart` | Usunięcie przełącznika Dark/Light/System (stała ciemna lub usunięcie providera) |
 | `lib/screens/settings_screen.dart` | Usunięcie sekcji „Motyw" |
-| Scaffoldy ekranów | Owinięcie w `AuroraBackground` |
+| Scaffoldy ekranów | Transparent Scaffold (tło daje globalny `AuroraBackground` z `MaterialApp.builder`) |
 | Karty (`Card`, kontenery) | Zamiana na `FrostCard` |
 | Pasek nawigacji (`NavigationBar`) | Zamiana na `GlassNavBar` (pływająca pigułka) |
 | Dashboard | Siatka `MetricTile` + `GradientAmount` + wykres z podświetleniem |
@@ -360,7 +360,7 @@ class AppColors {
 |---------|-------------------|
 | Karta „Saldo: zostaje miesiecznie" | jedna karta: `GradientAmount` + linia wplywy/koszty (trending-up/down) zawsze widoczna; tap rozwija/zwija opis „jak liczone jest saldo" + przypis subskrypcji |
 | Karta Subskrypcje | `FrostCard`: header + „N aktywne"; Miesiecznie / Rocznie |
-| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol. Przytrzymanie kwoty bilansu → bottom sheet z rozbiciem roznicy „bilans − saldo" (jednorazowe, korekty kwot, korekty rat) |
+| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol. Przytrzymanie kwoty bilansu → bottom sheet z rozbiciem roznicy „bilans − saldo" (jednorazowe, korekty kwot, korekty rat). Ikona listy przy etykiecie bilansu → bottom sheet „Podsumowanie miesiaca": pelne listy wplywow i wydatkow z kalendarza (sortowane wg dnia, sumy sekcji; realne platnosci po korektach) |
 | Kropki w kalendarzu | wplyw `--positive`, wydatek `--negative` |
 | Dzis / wybrany dzien | dzis = border `--accent-violet`; wybrany = tlo `--frost-2` |
 | Szczegoly dnia | lista pod kalendarzem (ikona kierunku + nazwa + kwota semantic) |

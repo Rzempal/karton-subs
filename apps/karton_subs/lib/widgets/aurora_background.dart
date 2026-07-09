@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Tło Aurora: statyczny gradient + dwie statyczne poświaty (radial).
-/// Owija Scaffold ekranu — wewnętrzny Scaffold ma mieć `backgroundColor:
-/// Colors.transparent`, by gradient był widoczny.
+/// Montowane RAZ w `MaterialApp.builder` (pod Navigatorem) — ekrany mają mieć
+/// `backgroundColor: Colors.transparent`, by gradient był widoczny. Dzięki temu
+/// przejścia ekranów animują tylko treść, a tło stoi nieruchomo (nie owijać
+/// ekranów ponownie — podwójne tło psuje animacje przejść).
 ///
 /// TWARDA REGUŁA WYDAJNOŚCI (docs/design.md): zero animacji, zero
 /// `BackdropFilter`. Gradient i poświaty są malowane raz.

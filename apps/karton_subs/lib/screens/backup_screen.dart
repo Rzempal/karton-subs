@@ -5,7 +5,6 @@ import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/backup_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Ekran backupu — eksport (klucz urzadzenia / haslo) i import .zostaje.
@@ -21,24 +20,26 @@ class _BackupScreenState extends State<BackupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Backup')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            SettingsGroup(children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Backup')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          SettingsGroup(
+            children: [
               ListTile(
                 leading: const Icon(LucideIcons.upload),
                 title: const Text('Eksportuj backup'),
-                subtitle:
-                    const Text('Zaszyfrowany plik .zostaje (klucz urządzenia)'),
+                subtitle: const Text(
+                  'Zaszyfrowany plik .zostaje (klucz urządzenia)',
+                ),
                 trailing: _isBusy
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(LucideIcons.chevronRight),
                 onTap: _isBusy ? null : _export,
               ),
@@ -46,22 +47,21 @@ class _BackupScreenState extends State<BackupScreen> {
                 leading: const Icon(LucideIcons.uploadCloud),
                 title: const Text('Eksportuj z hasłem'),
                 subtitle: const Text('Do przenoszenia między urządzeniami'),
-                trailing:
-                    _isBusy ? null : const Icon(LucideIcons.chevronRight),
+                trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
                 onTap: _isBusy ? null : _exportWithPassword,
               ),
               ListTile(
                 leading: const Icon(LucideIcons.download),
                 title: const Text('Importuj backup'),
                 subtitle: const Text(
-                    'Przywróć z pliku .zostaje (lub starego .subkarton)'),
-                trailing:
-                    _isBusy ? null : const Icon(LucideIcons.chevronRight),
+                  'Przywróć z pliku .zostaje (lub starego .subkarton)',
+                ),
+                trailing: _isBusy ? null : const Icon(LucideIcons.chevronRight),
                 onTap: _isBusy ? null : _import,
               ),
-            ]),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -119,9 +119,9 @@ class _BackupScreenState extends State<BackupScreen> {
           if (result.budgetEntriesImported > 0)
             '${result.budgetEntriesImported} pozycji budżetu',
         ];
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Import zakończony: ${parts.join(', ')}'),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Import zakończony: ${parts.join(', ')}')),
+        );
       }
     } on FormatException catch (e) {
       if (mounted) _showError(e.message);
@@ -146,11 +146,13 @@ class _BackupScreenState extends State<BackupScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Anuluj')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Anuluj'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text),
-              child: const Text('OK')),
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+// Ikona cloudSync — tylko w nowszym pakiecie (alias, bo oba definiują LucideIcons).
+import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -7,6 +9,7 @@ import '../controllers/budget_controller.dart';
 import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/frost_card.dart';
+import '../widgets/sync_now_button.dart';
 
 /// Ekran synchronizacji budżetu domowego (ADR-009): parowanie QR + hasło,
 /// ręczny sync, rozłączenie. Synchronizuje wyłącznie budżet domowy.
@@ -158,9 +161,9 @@ class _UnpairedView extends StatelessWidget {
       if (result.changedLocal) {
         context.read<BudgetController>().refresh();
       }
-      _showResult(context, result, joined: true);
+      showSyncResultSnack(context, result, joined: true);
     } on FormatException catch (e) {
-      if (context.mounted) _snack(context, e.message, isError: true);
+      if (context.mounted) showAppSnack(context, e.message, isError: true);
     }
   }
 }
@@ -192,7 +195,7 @@ class _PairedView extends StatelessWidget {
         FrostCard(
           onTap: sync.isSyncing ? null : () => _syncNow(context),
           child: _ActionRow(
-            icon: LucideIcons.refreshCw,
+            icon: lucide.LucideIcons.cloudSync,
             title: 'Synchronizuj teraz',
             subtitle: 'Pobierz i wyślij zmiany budżetu domowego',
             trailing: sync.isSyncing
@@ -222,7 +225,7 @@ class _PairedView extends StatelessWidget {
     if (result.changedLocal) {
       context.read<BudgetController>().refresh();
     }
-    _showResult(context, result);
+    showSyncResultSnack(context, result);
   }
 
   Future<void> _unpair(BuildContext context) async {
@@ -413,24 +416,3 @@ Future<String?> _askPassword(BuildContext context, {required bool confirm}) {
   );
 }
 
-void _showResult(BuildContext context, SyncResult result, {bool joined = false}) {
-  switch (result.outcome) {
-    case SyncOutcome.ok:
-      _snack(context, joined ? 'Połączono i zsynchronizowano' : 'Zsynchronizowano');
-    case SyncOutcome.offline:
-      _snack(context, 'Brak połączenia — zmiany wyślą się przy następnym razem',
-          isError: true);
-    case SyncOutcome.error:
-      _snack(context, result.message ?? 'Nie udało się zsynchronizować',
-          isError: true);
-    case SyncOutcome.notPaired:
-      break;
-  }
-}
-
-void _snack(BuildContext context, String msg, {bool isError = false}) {
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text(msg),
-    backgroundColor: isError ? context.semanticColors.negative : null,
-  ));
-}

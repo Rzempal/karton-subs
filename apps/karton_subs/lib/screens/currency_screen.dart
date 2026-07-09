@@ -5,7 +5,6 @@ import '../models/subscription.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 import '../widgets/settings_widgets.dart';
 
 /// Ekran ustawien waluty domyslnej + limitu budzetowego.
@@ -18,27 +17,29 @@ class CurrencyScreen extends StatelessWidget {
     final storage = context.read<StorageService>();
     final currency = storage.getCurrency();
 
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('Waluta i limit')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-          children: [
-            const SettingsSectionLabel('Waluta domyślna'),
-            RadioGroup<String>(
-              groupValue: currency,
-              onChanged: (v) {
-                if (v != null) {
-                  storage.setCurrency(v);
-                  ctrl.refresh();
-                }
-              },
-              child: SettingsGroup(children: [
-                ...Currency.values.map((c) => RadioListTile<String>(
-                      value: c.label,
-                      title: Text('${c.label} (${c.symbol})'),
-                    )),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Waluta i limit')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+        children: [
+          const SettingsSectionLabel('Waluta domyślna'),
+          RadioGroup<String>(
+            groupValue: currency,
+            onChanged: (v) {
+              if (v != null) {
+                storage.setCurrency(v);
+                ctrl.refresh();
+              }
+            },
+            child: SettingsGroup(
+              children: [
+                ...Currency.values.map(
+                  (c) => RadioListTile<String>(
+                    value: c.label,
+                    title: Text('${c.label} (${c.symbol})'),
+                  ),
+                ),
                 ListTile(
                   leading: const Icon(LucideIcons.target),
                   title: const Text('Limit budżetowy'),
@@ -51,19 +52,19 @@ class CurrencyScreen extends StatelessWidget {
                   onTap: () =>
                       _showBudgetLimitDialog(context, storage, currency, ctrl),
                 ),
-              ]),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-              child: Text(
-                'Kursy walut: 1 EUR = 4,28 PLN · 1 USD = 3,95 PLN · 1 GBP = 5,02 PLN',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: context.semanticColors.textMuted,
-                    ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            child: Text(
+              'Kursy walut: 1 EUR = 4,28 PLN · 1 USD = 3,95 PLN · 1 GBP = 5,02 PLN',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: context.semanticColors.textMuted,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

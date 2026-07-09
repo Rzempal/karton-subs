@@ -154,6 +154,11 @@ class KartonApp extends StatelessWidget {
       theme: tp.lightTheme,
       darkTheme: tp.darkTheme,
       themeMode: tp.effectiveThemeMode,
+      // Tło Aurora renderowane RAZ, pod Navigatorem: przejścia ekranów animują
+      // wyłącznie treść (tło stoi nieruchomo), a ekrany mają przezroczyste
+      // Scaffoldy. Wcześniej każdy ekran niósł własną kopię tła, przez co
+      // animacja powrotu „pompowała" gradientem i poświatami.
+      builder: (context, child) => AuroraBackground(child: child!),
       home: const _MainShell(),
     );
   }
@@ -222,29 +227,28 @@ class _MainShellState extends State<_MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    // Zaleznosc od motywu: zmiana palety przebudowuje shell (tlo + nawigacja),
+    // Zaleznosc od motywu: zmiana palety przebudowuje shell (nawigacja),
     // a KeyedSubtree z kluczem motywu wymusza rebuild zawartosci zakladek —
     // AppColors to globalne gettery (nie InheritedWidget), wiec same nie reaguja.
+    // Tlo Aurora maluje MaterialApp.builder (raz, pod Navigatorem).
     final tp = context.watch<ThemeProvider>();
     final themeId = tp.effectivePalette(MediaQuery.platformBrightnessOf(context)).id;
-    return AuroraBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        // Treść przewija się za pływającym paskiem nawigacji.
-        extendBody: true,
-        body: KeyedSubtree(
-          key: ValueKey(themeId),
-          child: IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      // Treść przewija się za pływającym paskiem nawigacji.
+      extendBody: true,
+      body: KeyedSubtree(
+        key: ValueKey(themeId),
+        child: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
         ),
-        bottomNavigationBar: GlassNavBar(
-          currentIndex: _currentIndex,
-          onTap: (i) => setState(() => _currentIndex = i),
-          items: _navItems,
-          isDev: AppConfig.isInternal,
-        ),
+      ),
+      bottomNavigationBar: GlassNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: _navItems,
+        isDev: AppConfig.isInternal,
       ),
     );
   }

@@ -8,8 +8,8 @@ import '../models/category.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
-import '../widgets/subscription_card.dart' show categoryIcon, availableIconNames;
+import '../widgets/subscription_card.dart'
+    show categoryIcon, availableIconNames;
 
 class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
@@ -28,8 +28,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     final categories = storage.getCategories();
     final theme = Theme.of(context);
 
-    return AuroraBackground(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Kategorie'),
@@ -43,8 +42,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
       ),
       body: categories.isEmpty
           ? Center(
-              child: Text('Brak kategorii',
-                  style: theme.textTheme.bodyMedium),
+              child: Text('Brak kategorii', style: theme.textTheme.bodyMedium),
             )
           : ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
@@ -83,12 +81,14 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       children: [
                         IconButton(
                           icon: const Icon(LucideIcons.edit3, size: 18),
-                          onPressed: () =>
-                              _showEditor(context, storage, cat),
+                          onPressed: () => _showEditor(context, storage, cat),
                         ),
                         IconButton(
-                          icon: Icon(LucideIcons.trash2,
-                              size: 18, color: AppColors.negative),
+                          icon: Icon(
+                            LucideIcons.trash2,
+                            size: 18,
+                            color: AppColors.negative,
+                          ),
                           onPressed: () =>
                               _confirmDelete(context, storage, cat, subsCount),
                         ),
@@ -99,7 +99,6 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                 );
               },
             ),
-      ),
     );
   }
 
@@ -131,7 +130,8 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
         title: Text('Usuń "${cat.name}"?'),
         content: subsCount > 0
             ? Text(
-                '$subsCount subskrypcji zostanie przeniesionych do kategorii "Inne".')
+                '$subsCount subskrypcji zostanie przeniesionych do kategorii "Inne".',
+              )
             : null,
         actions: [
           TextButton(
@@ -202,10 +202,22 @@ class _CategoryEditorState extends State<_CategoryEditor> {
   late bool _excludeFromGhost;
 
   static const _palette = [
-    '#2563EB', '#7C3AED', '#0891B2', '#EA580C',
-    '#16A34A', '#DB2777', '#D97706', '#64748B',
-    '#DC2626', '#059669', '#4F46E5', '#0D9488',
-    '#CA8A04', '#9333EA', '#E11D48', '#1D4ED8',
+    '#2563EB',
+    '#7C3AED',
+    '#0891B2',
+    '#EA580C',
+    '#16A34A',
+    '#DB2777',
+    '#D97706',
+    '#64748B',
+    '#DC2626',
+    '#059669',
+    '#4F46E5',
+    '#0D9488',
+    '#CA8A04',
+    '#9333EA',
+    '#E11D48',
+    '#1D4ED8',
   ];
 
   @override
@@ -228,7 +240,9 @@ class _CategoryEditorState extends State<_CategoryEditor> {
     final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16, 16, 16,
+        16,
+        16,
+        16,
         MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       child: Column(
@@ -257,7 +271,9 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             spacing: 8,
             runSpacing: 8,
             children: _palette.map((hex) {
-              final color = Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+              final color = Color(
+                int.parse('FF${hex.replaceFirst('#', '')}', radix: 16),
+              );
               final isSelected = _colorHex == hex;
               return GestureDetector(
                 onTap: () => setState(() => _colorHex = hex),
@@ -293,8 +309,9 @@ class _CategoryEditorState extends State<_CategoryEditor> {
               itemBuilder: (context, index) {
                 final name = availableIconNames[index];
                 final isSelected = _iconName == name;
-                final color = Color(int.parse(
-                    'FF${_colorHex.replaceFirst('#', '')}', radix: 16));
+                final color = Color(
+                  int.parse('FF${_colorHex.replaceFirst('#', '')}', radix: 16),
+                );
                 return GestureDetector(
                   onTap: () => setState(() => _iconName = name),
                   child: Container(
@@ -337,7 +354,8 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             child: FilledButton(
               onPressed: _save,
               child: Text(
-                  widget.existing != null ? 'Zapisz zmiany' : 'Dodaj kategorię'),
+                widget.existing != null ? 'Zapisz zmiany' : 'Dodaj kategorię',
+              ),
             ),
           ),
         ],

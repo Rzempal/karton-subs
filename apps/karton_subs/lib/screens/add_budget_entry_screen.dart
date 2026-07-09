@@ -7,7 +7,6 @@ import '../models/subscription.dart';
 import '../controllers/budget_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/aurora_background.dart';
 
 class AddBudgetEntryScreen extends StatefulWidget {
   final BudgetEntry? existing;
@@ -83,34 +82,38 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   List<BudgetEntryType> get _availableTypes => [
-        BudgetEntryType.income,
-        BudgetEntryType.bill,
-        BudgetEntryType.recurringCost,
-        BudgetEntryType.installment,
-        BudgetEntryType.oneTimeExpense,
-        BudgetEntryType.oneTimeIncome,
-        if (widget.scope == BudgetScope.personal)
-          BudgetEntryType.householdTransfer,
-      ];
+    BudgetEntryType.income,
+    BudgetEntryType.bill,
+    BudgetEntryType.recurringCost,
+    BudgetEntryType.installment,
+    BudgetEntryType.oneTimeExpense,
+    BudgetEntryType.oneTimeIncome,
+    if (widget.scope == BudgetScope.personal) BudgetEntryType.householdTransfer,
+  ];
 
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
     final now = Subscription.devDateOverride ?? DateTime.now();
-    _nameCtrl = TextEditingController(text: e?.name ?? widget.initialName ?? '');
+    _nameCtrl = TextEditingController(
+      text: e?.name ?? widget.initialName ?? '',
+    );
     _amountCtrl = TextEditingController(
-        text: e != null ? e.amount.toStringAsFixed(2) : '');
+      text: e != null ? e.amount.toStringAsFixed(2) : '',
+    );
     _noteCtrl = TextEditingController(text: e?.note ?? '');
     _customDaysCtrl = TextEditingController(
-        text: e?.customCycleDays != null ? '${e!.customCycleDays}' : '');
+      text: e?.customCycleDays != null ? '${e!.customCycleDays}' : '',
+    );
 
     _type = e?.type ?? widget.initialType ?? BudgetEntryType.bill;
     _categoryId = e?.categoryId;
     _paymentMethod = e?.paymentMethod;
     _overrides = {...?e?.monthOverrides};
     _installmentCountCtrl = TextEditingController(
-        text: e?.installmentCount != null ? '${e!.installmentCount}' : '');
+      text: e?.installmentCount != null ? '${e!.installmentCount}' : '',
+    );
     if (e != null && e.isInstallment) {
       _installmentStart = e.startDate;
       _installmentLastDate = e.lastInstallmentDate;
@@ -120,9 +123,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _cycle = e.cycle;
     }
     // Data jednorazowego: startDate -> (fallback) 1. dzień z month -> dziś.
-    final fallbackMonth =
-        e?.month != null ? DateTime.tryParse('${e!.month}-01') : null;
-    _oneTimeDate = e?.startDate ?? fallbackMonth ?? DateTime(now.year, now.month, now.day);
+    final fallbackMonth = e?.month != null
+        ? DateTime.tryParse('${e!.month}-01')
+        : null;
+    _oneTimeDate =
+        e?.startDate ?? fallbackMonth ?? DateTime(now.year, now.month, now.day);
     // Kotwica cykliczna: startDate (gdy edytujemy pozycję cykliczną).
     _anchorDate = (e != null && !e.isOneTime) ? e.startDate : null;
   }
@@ -148,8 +153,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       );
     }
 
-    return AuroraBackground(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj pozycję' : 'Dodaj pozycję budżetu'),
@@ -184,8 +188,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               Text(
                 _typeHint()!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             const SizedBox(height: 24),
@@ -210,8 +214,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                   child: TextFormField(
                     controller: _amountCtrl,
                     decoration: const InputDecoration(labelText: 'Kwota *'),
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Wymagane';
                       final parsed = double.tryParse(v.replaceAll(',', '.'));
@@ -229,8 +234,10 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     initialValue: _currency,
                     decoration: const InputDecoration(labelText: 'Waluta'),
                     items: Currency.values
-                        .map((c) =>
-                            DropdownMenuItem(value: c, child: Text(c.label)))
+                        .map(
+                          (c) =>
+                              DropdownMenuItem(value: c, child: Text(c.label)),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _currency = v!),
                   ),
@@ -256,9 +263,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(LucideIcons.calendar),
-                title: Text(_installmentStart != null
-                    ? _dateLabel(_installmentStart!)
-                    : 'Wybierz datę pierwszej raty'),
+                title: Text(
+                  _installmentStart != null
+                      ? _dateLabel(_installmentStart!)
+                      : 'Wybierz datę pierwszej raty',
+                ),
                 trailing: const Icon(LucideIcons.chevronRight),
                 onTap: _pickInstallmentStart,
               ),
@@ -297,9 +306,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(LucideIcons.calendarClock),
-                  title: Text(_installmentLastDate != null
-                      ? _dateLabel(_installmentLastDate!)
-                      : 'Wybierz datę ostatniej raty'),
+                  title: Text(
+                    _installmentLastDate != null
+                        ? _dateLabel(_installmentLastDate!)
+                        : 'Wybierz datę ostatniej raty',
+                  ),
                   trailing: const Icon(LucideIcons.chevronRight),
                   onTap: _pickInstallmentLastDate,
                 ),
@@ -308,8 +319,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 Text(
                   _installmentSummary()!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ] else ...[
@@ -319,8 +330,12 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 initialValue: _cycle,
                 decoration: const InputDecoration(labelText: 'Cykl'),
                 items: BillingCycle.values
-                    .map((c) =>
-                        DropdownMenuItem(value: c, child: Text(_cycleLabel(c))))
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(_cycleLabel(c)),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() => _cycle = v!),
               ),
@@ -347,12 +362,16 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(LucideIcons.calendarClock),
-                title: Text(_anchorDate != null
-                    ? _dateLabel(_anchorDate!)
-                    : 'Data / dzień (opcjonalnie)'),
-                subtitle: Text(_anchorDate != null
-                    ? 'Wystąpienia liczone od tej daty (kalendarz)'
-                    : 'Bez daty pozycja nie pojawi się na kalendarzu'),
+                title: Text(
+                  _anchorDate != null
+                      ? _dateLabel(_anchorDate!)
+                      : 'Data / dzień (opcjonalnie)',
+                ),
+                subtitle: Text(
+                  _anchorDate != null
+                      ? 'Wystąpienia liczone od tej daty (kalendarz)'
+                      : 'Bez daty pozycja nie pojawi się na kalendarzu',
+                ),
                 trailing: _anchorDate != null
                     ? IconButton(
                         icon: const Icon(LucideIcons.x, size: 18),
@@ -371,14 +390,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               Text(
                 _isTransfer
                     ? 'Przelew zmienny: w wybranym miesiącu możesz ustawić inną datę '
-                        'i kwotę. Korekta wpływa też na budżet domowy. '
-                        'Nie zmienia „zostaje/mies", tylko bilans miesiąca i kalendarz.'
+                          'i kwotę. Korekta wpływa też na budżet domowy. '
+                          'Nie zmienia „zostaje/mies", tylko bilans miesiąca i kalendarz.'
                     : 'Rachunek zmienny: w wybranym miesiącu możesz ustawić inną datę '
-                        'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
-                        'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
+                          'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
+                          'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               ..._sortedOverrideKeys().map((mk) {
@@ -419,14 +438,13 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     onSelected: (_) => setState(() => _categoryId = null),
                   ),
                   ...context.read<StorageService>().getCategories().map(
-                        (cat) => FilterChip(
-                          label: Text(cat.name),
-                          selected: _categoryId == cat.id,
-                          selectedColor: cat.color.withValues(alpha: 0.2),
-                          onSelected: (_) =>
-                              setState(() => _categoryId = cat.id),
-                        ),
-                      ),
+                    (cat) => FilterChip(
+                      label: Text(cat.name),
+                      selected: _categoryId == cat.id,
+                      selectedColor: cat.color.withValues(alpha: 0.2),
+                      onSelected: (_) => setState(() => _categoryId = cat.id),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -445,24 +463,22 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     onSelected: (_) => setState(() => _paymentMethod = null),
                   ),
                   ...context.read<StorageService>().getPaymentMethods().map(
-                        (pm) => FilterChip(
-                          avatar: Icon(
-                            pm.isAutomatic
-                                ? LucideIcons.zap
-                                : LucideIcons.hand,
-                            size: 16,
-                            // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
-                            // byc kontrastowa (onAccent), tak jak tekst.
-                            color: _paymentMethod == pm.name
-                                ? AppColors.onAccent
-                                : null,
-                          ),
-                          label: Text(pm.name),
-                          selected: _paymentMethod == pm.name,
-                          onSelected: (_) =>
-                              setState(() => _paymentMethod = pm.name),
-                        ),
+                    (pm) => FilterChip(
+                      avatar: Icon(
+                        pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                        size: 16,
+                        // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
+                        // byc kontrastowa (onAccent), tak jak tekst.
+                        color: _paymentMethod == pm.name
+                            ? AppColors.onAccent
+                            : null,
                       ),
+                      label: Text(pm.name),
+                      selected: _paymentMethod == pm.name,
+                      onSelected: (_) =>
+                          setState(() => _paymentMethod = pm.name),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -470,8 +486,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 'Metoda automatyczna: wydatek na żółto na kalendarzu. '
                 'Manualna (lub brak): czerwony i trafia na listę „Płatności".',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -480,8 +496,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _noteCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Notatka (opcjonalnie)'),
+              decoration: const InputDecoration(
+                labelText: 'Notatka (opcjonalnie)',
+              ),
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 32),
@@ -515,8 +532,10 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               OutlinedButton.icon(
                 onPressed: () => _confirmDelete(context),
                 icon: Icon(LucideIcons.trash2, color: AppColors.negative),
-                label: Text('Usuń pozycję',
-                    style: TextStyle(color: AppColors.negative)),
+                label: Text(
+                  'Usuń pozycję',
+                  style: TextStyle(color: AppColors.negative),
+                ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: AppColors.negative),
                 ),
@@ -525,7 +544,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             const SizedBox(height: 16),
           ],
         ),
-      ),
       ),
     );
   }
@@ -540,7 +558,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       helpText: 'Wybierz datę wydatku',
     );
     if (picked != null) {
-      setState(() => _oneTimeDate = DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () => _oneTimeDate = DateTime(picked.year, picked.month, picked.day),
+      );
     }
   }
 
@@ -554,7 +574,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       helpText: 'Data / pierwsze wystąpienie',
     );
     if (picked != null) {
-      setState(() => _anchorDate = DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () => _anchorDate = DateTime(picked.year, picked.month, picked.day),
+      );
     }
   }
 
@@ -568,14 +590,17 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       helpText: 'Data pierwszej raty',
     );
     if (picked != null) {
-      setState(() =>
-          _installmentStart = DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () =>
+            _installmentStart = DateTime(picked.year, picked.month, picked.day),
+      );
     }
   }
 
   Future<void> _pickInstallmentLastDate() async {
     final now = Subscription.devDateOverride ?? DateTime.now();
-    final base = _installmentLastDate ??
+    final base =
+        _installmentLastDate ??
         _installmentStart ??
         DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
@@ -586,8 +611,13 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       helpText: 'Data ostatniej raty',
     );
     if (picked != null) {
-      setState(() => _installmentLastDate =
-          DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () => _installmentLastDate = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+        ),
+      );
     }
   }
 
@@ -631,7 +661,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             onPressed: () async {
               final nav = Navigator.of(context);
               Navigator.pop(ctx);
-              await context.read<BudgetController>().delete(widget.existing!.id);
+              await context.read<BudgetController>().delete(
+                widget.existing!.id,
+              );
               if (mounted) nav.pop(true);
             },
             style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
@@ -682,9 +714,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
         return;
       }
       if (count == null) {
-        _snack(_installmentByCount
-            ? 'Podaj liczbę rat'
-            : 'Data ostatniej raty musi być po pierwszej');
+        _snack(
+          _installmentByCount
+              ? 'Podaj liczbę rat'
+              : 'Data ostatniej raty musi być po pierwszej',
+        );
         setState(() => _isSubmitting = false);
         return;
       }
@@ -696,29 +730,31 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
     try {
       if (_isEditing) {
-        await ctrl.update(widget.existing!.copyWith(
-          name: _nameCtrl.text.trim(),
-          type: _type,
-          amount: amount,
-          currency: _currency,
-          cycle: effCycle,
-          customCycleDays: effCustomDays,
-          clearCustomCycleDays: effCustomDays == null,
-          month: monthKey,
-          clearMonth: monthKey == null,
-          startDate: effStartDate,
-          clearStartDate: effStartDate == null,
-          categoryId: categoryId,
-          clearCategoryId: categoryId == null,
-          paymentMethod: paymentMethod,
-          clearPaymentMethod: paymentMethod == null,
-          monthOverrides: overrides,
-          clearMonthOverrides: overrides == null,
-          installmentCount: installmentCount,
-          clearInstallmentCount: installmentCount == null,
-          note: note,
-          clearNote: note == null,
-        ));
+        await ctrl.update(
+          widget.existing!.copyWith(
+            name: _nameCtrl.text.trim(),
+            type: _type,
+            amount: amount,
+            currency: _currency,
+            cycle: effCycle,
+            customCycleDays: effCustomDays,
+            clearCustomCycleDays: effCustomDays == null,
+            month: monthKey,
+            clearMonth: monthKey == null,
+            startDate: effStartDate,
+            clearStartDate: effStartDate == null,
+            categoryId: categoryId,
+            clearCategoryId: categoryId == null,
+            paymentMethod: paymentMethod,
+            clearPaymentMethod: paymentMethod == null,
+            monthOverrides: overrides,
+            clearMonthOverrides: overrides == null,
+            installmentCount: installmentCount,
+            clearInstallmentCount: installmentCount == null,
+            note: note,
+            clearNote: note == null,
+          ),
+        );
       } else {
         await ctrl.create(
           name: _nameCtrl.text.trim(),
@@ -743,50 +779,49 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   }
 
   void _snack(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   String _nameLabel() => switch (_type) {
-        BudgetEntryType.income => 'Nazwa wpływu *',
-        BudgetEntryType.bill => 'Nazwa rachunku *',
-        BudgetEntryType.recurringCost => 'Nazwa kosztu *',
-        BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
-        BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
-        BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
-        BudgetEntryType.installment => 'Nazwa raty *',
-      };
+    BudgetEntryType.income => 'Nazwa wpływu *',
+    BudgetEntryType.bill => 'Nazwa rachunku *',
+    BudgetEntryType.recurringCost => 'Nazwa kosztu *',
+    BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
+    BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
+    BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
+    BudgetEntryType.installment => 'Nazwa raty *',
+  };
 
   /// Krótkie wyjaśnienie różnicy między rachunkiem (zmienny) a kosztem cyklicznym (stały).
   String? _typeHint() => switch (_type) {
-        BudgetEntryType.bill =>
-          'Rachunek: kwota bazowa i cykl, ale w każdym miesiącu możesz ustawić '
-              'inną datę i kwotę (zmienny — np. fryzjer).',
-        BudgetEntryType.recurringCost =>
-          'Koszt cykliczny: stała kwota w każdym interwale (np. ubezpieczenie).',
-        BudgetEntryType.installment =>
-          'Rata: kwota miesięczna z określonym końcem (start + liczba rat lub data '
-              'ostatniej raty). Liczy się do „zostaje/mies" tylko w trakcie spłaty.',
-        _ => null,
-      };
+    BudgetEntryType.bill =>
+      'Rachunek: kwota bazowa i cykl, ale w każdym miesiącu możesz ustawić '
+          'inną datę i kwotę (zmienny — np. fryzjer).',
+    BudgetEntryType.recurringCost =>
+      'Koszt cykliczny: stała kwota w każdym interwale (np. ubezpieczenie).',
+    BudgetEntryType.installment =>
+      'Rata: kwota miesięczna z określonym końcem (start + liczba rat lub data '
+          'ostatniej raty). Liczy się do „zostaje/mies" tylko w trakcie spłaty.',
+    _ => null,
+  };
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
-        BudgetEntryType.income => 'Wpływ',
-        BudgetEntryType.bill => 'Rachunek',
-        BudgetEntryType.recurringCost => 'Koszt cykliczny',
-        BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
-        BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
-        BudgetEntryType.householdTransfer => 'Przelew do domowego',
-        BudgetEntryType.installment => 'Rata',
-      };
+    BudgetEntryType.income => 'Wpływ',
+    BudgetEntryType.bill => 'Rachunek',
+    BudgetEntryType.recurringCost => 'Koszt cykliczny',
+    BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
+    BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
+    BudgetEntryType.householdTransfer => 'Przelew do domowego',
+    BudgetEntryType.installment => 'Rata',
+  };
 
   String _cycleLabel(BillingCycle cycle) => switch (cycle) {
-        BillingCycle.weekly => 'Tygodniowo',
-        BillingCycle.monthly => 'Miesięcznie',
-        BillingCycle.quarterly => 'Kwartalnie',
-        BillingCycle.yearly => 'Rocznie',
-        BillingCycle.custom => 'Własny cykl',
-      };
+    BillingCycle.weekly => 'Tygodniowo',
+    BillingCycle.monthly => 'Miesięcznie',
+    BillingCycle.quarterly => 'Kwartalnie',
+    BillingCycle.yearly => 'Rocznie',
+    BillingCycle.custom => 'Własny cykl',
+  };
 
   String _dateLabel(DateTime d) => DateFormat('d MMMM yyyy', 'pl').format(d);
 
@@ -796,8 +831,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _overrideTitle(String monthKey, BillMonthOverride ov) {
     final base = DateTime.tryParse('$monthKey-01');
-    final label =
-        base != null ? DateFormat('LLLL yyyy', 'pl').format(base) : monthKey;
+    final label = base != null
+        ? DateFormat('LLLL yyyy', 'pl').format(base)
+        : monthKey;
     return label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
   }
 
@@ -815,12 +851,16 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   Future<void> _editOverride({String? existingKey}) async {
     final now = Subscription.devDateOverride ?? DateTime.now();
     final existing = existingKey != null ? _overrides[existingKey] : null;
-    var date = existing?.date ??
+    var date =
+        existing?.date ??
         (existingKey != null
             ? (DateTime.tryParse('$existingKey-01') ?? now)
             : DateTime(now.year, now.month, now.day));
     final amountCtrl = TextEditingController(
-        text: existing?.amount != null ? existing!.amount!.toStringAsFixed(2) : '');
+      text: existing?.amount != null
+          ? existing!.amount!.toStringAsFixed(2)
+          : '',
+    );
 
     final result = await showDialog<BillMonthOverride>(
       context: context,
@@ -844,25 +884,33 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     helpText: 'Data wystąpienia w danym miesiącu',
                   );
                   if (picked != null) {
-                    setLocal(() =>
-                        date = DateTime(picked.year, picked.month, picked.day));
+                    setLocal(
+                      () => date = DateTime(
+                        picked.year,
+                        picked.month,
+                        picked.day,
+                      ),
+                    );
                   }
                 },
               ),
               TextField(
                 controller: amountCtrl,
                 decoration: InputDecoration(
-                    labelText: 'Kwota — opcjonalnie (${_currency.label})',
-                    hintText: 'puste = kwota bazowa'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                  labelText: 'Kwota — opcjonalnie (${_currency.label})',
+                  hintText: 'puste = kwota bazowa',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Anuluj')),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Anuluj'),
+            ),
             FilledButton(
               onPressed: () {
                 final txt = amountCtrl.text.trim();
@@ -870,8 +918,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 if (txt.isNotEmpty) {
                   amt = double.tryParse(txt.replaceAll(',', '.'));
                   if (amt == null || amt <= 0) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-                        content: Text('Nieprawidłowa kwota')));
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Nieprawidłowa kwota')),
+                    );
                     return;
                   }
                 }
@@ -906,9 +955,9 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text.toUpperCase(),
       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            letterSpacing: 0.8,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        letterSpacing: 0.8,
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
