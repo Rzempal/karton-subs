@@ -368,7 +368,7 @@ class ExcelService {
 
   static String _budgetTypeLabel(BudgetEntryType type) => switch (type) {
         BudgetEntryType.income => 'Wpływ',
-        BudgetEntryType.bill => 'Rachunek',
+        BudgetEntryType.billPayment => 'Rachunek',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
         BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
@@ -883,17 +883,18 @@ BudgetExcelImportResult _parseBudgetWorkbook(
         : rawName;
     final type = _parseBudgetType(cell(_BudgetHeaderField.type));
     final isOneTime = type == BudgetEntryType.oneTimeExpense ||
-        type == BudgetEntryType.oneTimeIncome;
+        type == BudgetEntryType.oneTimeIncome ||
+        type == BudgetEntryType.billPayment;
     final (cycle, customDays) = _parseCycle(cell(_BudgetHeaderField.cycle));
     final month = isOneTime
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
             BudgetEntry.monthKeyOf(now))
         : null;
     // Kategoria/metoda tylko dla wydatków — wpływy ignorują kolumny.
-    final isExpenseType = type == BudgetEntryType.bill ||
-        type == BudgetEntryType.recurringCost ||
+    final isExpenseType = type == BudgetEntryType.recurringCost ||
         type == BudgetEntryType.oneTimeExpense ||
-        type == BudgetEntryType.installment;
+        type == BudgetEntryType.installment ||
+        type == BudgetEntryType.billPayment;
     final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
     final categoryId = isExpenseType &&
             rawCategory != null &&
@@ -909,7 +910,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
     final installmentCount = type == BudgetEntryType.installment
         ? int.tryParse(cell(_BudgetHeaderField.installmentCount)?.trim() ?? '')
         : null;
-    final overrides = (type == BudgetEntryType.bill ||
+    final overrides = (type == BudgetEntryType.recurringCost ||
             type == BudgetEntryType.householdTransfer)
         ? _decodeOverrides(cell(_BudgetHeaderField.overrides))
         : null;
@@ -1033,13 +1034,13 @@ BudgetEntryType _parseBudgetType(String? raw) {
   if (t.contains('przelew') || t.contains('transfer')) {
     return BudgetEntryType.householdTransfer;
   }
-  if (t.contains('rachunek') ||
-      t.contains('stał') ||
-      t.contains('stal') ||
-      t.contains('bill')) {
-    return BudgetEntryType.bill;
+  if (t.contains('rachunek') || t.contains('bill')) {
+    return BudgetEntryType.billPayment;
   }
-  if (t.contains('cykl') || t.contains('recurring')) {
+  if (t.contains('cykl') ||
+      t.contains('recurring') ||
+      t.contains('stał') ||
+      t.contains('stal')) {
     return BudgetEntryType.recurringCost;
   }
   return BudgetEntryType.recurringCost;

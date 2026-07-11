@@ -75,7 +75,7 @@ lib/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
-│   └── budget_entry.dart        # Pozycja budzetu (wplyw/rachunek/cykliczny/jednorazowy)
+│   └── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek-log/rata/jednorazowy)
 ├── utils/
 │   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies
 ├── services/
@@ -94,11 +94,13 @@ lib/
 ├── theme/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
-│   ├── dashboard_screen.dart    # Dashboard: pelny przeglad budzet + subskrypcje
+│   ├── dashboard_screen.dart    # Dashboard: pod-zakladki Plan / Bilans miesiaca (ADR-011)
+│   ├── rachunki_screen.dart     # Rachunki: realny log oplat + koperta „Na rachunki" (ADR-011)
+│   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
 │   ├── add_subscription_screen.dart # Formularz subskrypcji
 │   ├── budget_dashboard_screen.dart  # Budzet: zarzadzanie pozycjami + Excel
-│   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (4 typy)
+│   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
 │   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
 ├── widgets/
@@ -155,14 +157,18 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-## Nawigacja (4 zakladki)
+## Nawigacja (5 zakladek)
+
+Kolejnosc: Dashboard | Rachunki | Subskrypcje | Budzet | ⋮ Ustawienia (separator
+oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Dashboard** | Pelny przeglad: surplus „zostaje/mies", wplywy/koszty (z subskrypcjami), bilans miesiaca |
-| **Subskrypcje** | Pod-zakladki Lista / Statystyki (hero koszt mies./rok, trend, kategorie, limit, triale); CTA Excel + PDF; import pod „Dodaj" |
-| **Budzet** | Zarzadzanie pozycjami (wplywy/koszty/jednorazowe); CTA Excel; import pod „Dodaj" |
-| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, OTA (karty frost; bez przelacznika motywu) |
+| **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
+| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek" (ADR-011) |
+| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); CTA Excel + PDF; import pod „Dodaj" |
+| **Budzet** | Zarzadzanie pozycjami planowalnymi; widok szczegolowy vs scalony (Wplywy/Wydatki); pozycja „Na rachunki" przypieta na gorze wydatkow; CTA Excel |
+| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
 
 ---
 
@@ -170,6 +176,7 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 > **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
 > | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
+> | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
 
 Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
 dodatkowo czyta subskrypcje jako strumien kosztow.

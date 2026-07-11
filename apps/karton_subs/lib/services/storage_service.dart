@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
+import '../utils/money_format.dart';
 import 'app_logger.dart';
 
 /// Hive-based storage — wzorzec z APPteczka, zaadaptowany na modele karton-subs.
@@ -42,6 +43,7 @@ class StorageService {
         await Hive.openBox<String>('household_budget_entries');
     _paymentDoneBox = await Hive.openBox<bool>('payment_done');
     _settingsBox = await Hive.openBox('settings');
+    setAppDefaultCurrency(getCurrency()); // globalna waluta domyślna (ukrywanie w UI)
     _loadSubscriptionsCache();
     _loadCategoriesCache();
     _loadPaymentMethodsCache();
@@ -273,6 +275,7 @@ class StorageService {
 
   Future<void> setCurrency(String currencyCode) async {
     await _settingsBox.put('currency', currencyCode);
+    setAppDefaultCurrency(currencyCode);
   }
 
   /// Tryb motywu: 'light' | 'dark' | 'system'. Default = 'dark' (obecny wyglad).
@@ -314,6 +317,23 @@ class StorageService {
       await _settingsBox.delete('budgetLimit');
     } else {
       await _settingsBox.put('budgetLimit', limit);
+    }
+  }
+
+  /// Kwota „Na rachunki" (koperta/plan przydzielony na rachunki) — per zakres,
+  /// bo osobisty i domowy to osobne budżety. `null` = nie ustawiono. Lokalne
+  /// (jak `budgetLimit`) — nie wchodzi do synchronizacji domowego.
+  double? getBillsAllocation(BudgetScope scope) {
+    final v = _settingsBox.get('billsAllocation|${scope.name}');
+    return v != null ? (v as num).toDouble() : null;
+  }
+
+  Future<void> setBillsAllocation(BudgetScope scope, double? amount) async {
+    final key = 'billsAllocation|${scope.name}';
+    if (amount == null) {
+      await _settingsBox.delete(key);
+    } else {
+      await _settingsBox.put(key, amount);
     }
   }
 

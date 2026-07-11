@@ -51,7 +51,7 @@ void main() {
       final byName = {for (final e in r.entries) e.name: e};
       expect(byName['Pensja']!.type, BudgetEntryType.income);
       expect(byName['Pensja']!.amount, 5000.0);
-      expect(byName['Prąd']!.type, BudgetEntryType.bill);
+      expect(byName['Prąd']!.type, BudgetEntryType.billPayment);
       expect(byName['Ubezpieczenie']!.type, BudgetEntryType.recurringCost);
       expect(byName['Ubezpieczenie']!.cycle, BillingCycle.yearly);
       expect(byName['Pralka']!.type, BudgetEntryType.oneTimeExpense);
@@ -158,7 +158,7 @@ void main() {
         BudgetEntry(
           id: 'a',
           name: 'Prąd',
-          type: BudgetEntryType.bill,
+          type: BudgetEntryType.recurringCost,
           amount: 200,
           currency: Currency.PLN,
           categoryId: 'cat_cloud',
@@ -185,7 +185,7 @@ void main() {
         BudgetEntry(
           id: 'bill',
           name: 'Fryzjer',
-          type: BudgetEntryType.bill,
+          type: BudgetEntryType.recurringCost,
           amount: 80,
           currency: Currency.PLN,
           startDate: DateTime(2026, 1, 10),
@@ -214,7 +214,7 @@ void main() {
       final byName = {for (final e in r.entries) e.name: e};
 
       final bill = byName['Fryzjer']!;
-      expect(bill.type, BudgetEntryType.bill);
+      expect(bill.type, BudgetEntryType.recurringCost);
       expect(bill.paymentMethod, 'Karta');
       expect(bill.startDate, DateTime(2026, 1, 10));
       expect(bill.overrideForMonth('2026-07')!.amount, 120);
@@ -226,6 +226,29 @@ void main() {
       expect(rata.startDate, DateTime(2026, 2, 5));
       expect(rata.lastInstallmentDate, DateTime(2027, 1, 5));
       expect(rata.paymentMethod, 'Przelew');
+    });
+
+    test('rachunek (billPayment) przeżywa eksport→import z datą i miesiącem', () {
+      final entries = [
+        BudgetEntry(
+          id: 'r1',
+          name: 'Apteka',
+          type: BudgetEntryType.billPayment,
+          amount: 63.50,
+          currency: Currency.PLN,
+          month: '2026-07',
+          startDate: DateTime(2026, 7, 12),
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+      ];
+      final bytes = ExcelService.buildBudgetWorkbookForTest(entries);
+      final r = ExcelService.parseBudgetBytesForTest(bytes);
+      final e = r.entries.single;
+      expect(e.type, BudgetEntryType.billPayment);
+      expect(e.name, 'Apteka');
+      expect(e.amount, closeTo(63.50, 0.001));
+      expect(e.month, '2026-07');
+      expect(e.startDate, DateTime(2026, 7, 12));
     });
   });
 }

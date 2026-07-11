@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
@@ -7,6 +8,7 @@ import '../models/category.dart';
 import '../services/excel_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
@@ -18,8 +20,9 @@ import 'add_budget_entry_screen.dart';
 /// Sortowanie listy budżetu.
 enum _BudgetSort { alpha, amountDesc }
 
-/// Grupowanie wewnątrz kubełków (Wpływy/Przelew/Koszty/Jednorazowe).
-enum _BudgetGroup { none, byType }
+/// Widok listy: szczegółowy (Wpływy/Przelew/Koszty/Jednorazowe) lub scalony
+/// (tylko Wpływy/Wypływy).
+enum _BudgetView { detailed, merged }
 
 /// Ekran Budżet — zarządzanie pozycjami (wpływy, koszty cykliczne, jednorazowe).
 /// Przegląd liczbowy (surplus, bilans miesiąca) jest na Dashboardzie.
@@ -44,9 +47,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   int? _filterYear;
   int? _filterMonth;
 
-  /// Sortowanie i grupowanie listy.
+  /// Sortowanie i widok listy.
   _BudgetSort _sort = _BudgetSort.alpha;
-  _BudgetGroup _group = _BudgetGroup.none;
+  _BudgetView _view = _BudgetView.detailed;
 
   /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i
   /// okien spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wchodzą.
@@ -87,13 +90,22 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
 
-    // Surowe kubełki: przelew wewnętrzny ma własną sekcję (recurringExpenses go nie zawiera).
-    final rawBuckets = <(String, List<BudgetEntry>)>[
-      ('Wpływy', ctrl.incomes),
-      ('Przelew wewnętrzny', ctrl.internalTransfers),
-      ('Koszty cykliczne', ctrl.recurringExpenses),
-      ('Wydatki jednorazowe', ctrl.oneTimeExpenses),
-    ];
+    // Widok: szczegółowy = 4 kubełki; scalony = tylko Wpływy/Wypływy.
+    final incomes = ctrl.incomes;
+    final transfers = ctrl.internalTransfers;
+    final recurring = ctrl.recurringExpenses;
+    final oneTime = ctrl.oneTimeExpenses;
+    final rawBuckets = _view == _BudgetView.merged
+        ? <(String, List<BudgetEntry>)>[
+            ('Wpływy', incomes),
+            ('Wydatki', [...transfers, ...recurring, ...oneTime]),
+          ]
+        : <(String, List<BudgetEntry>)>[
+            ('Wpływy', incomes),
+            ('Przelew wewnętrzny', transfers),
+            ('Koszty cykliczne', recurring),
+            ('Wydatki jednorazowe', oneTime),
+          ];
     final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
 
     // Kategorie użyte w wydatkach (pasek filtra kategorii).
@@ -172,6 +184,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         .toList();
     final filteredEmpty = buckets.isEmpty;
 
+    // „Na rachunki" (koperta) przypięta na górze listy wydatków — tylko bez
+    // aktywnych filtrów (nie ma kategorii/typu, więc filtr by ją mylił).
+    final noFilter =
+        activeType == null && activeCat == null && activeYear == null;
+    final expensesTitle =
+        _view == _BudgetView.merged ? 'Wydatki' : 'Koszty cykliczne';
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -192,19 +211,19 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                   : _BudgetSort.alpha),
             ),
             IconButton(
-              tooltip: _group == _BudgetGroup.byType
-                  ? 'Grupowanie wg typu (włączone)'
-                  : 'Grupowanie wg typu (wyłączone)',
+              tooltip: _view == _BudgetView.merged
+                  ? 'Widok scalony: Wpływy/Wydatki (włączony)'
+                  : 'Widok scalony: Wpływy/Wydatki (wyłączony)',
               icon: Icon(
                 LucideIcons.layers,
-                color: _group == _BudgetGroup.byType
+                color: _view == _BudgetView.merged
                     ? context.semanticColors.primary
                     : null,
               ),
-              onPressed: () => setState(() =>
-                  _group = _group == _BudgetGroup.byType
-                      ? _BudgetGroup.none
-                      : _BudgetGroup.byType),
+              onPressed: () => setState(() => _view =
+                  _view == _BudgetView.merged
+                      ? _BudgetView.detailed
+                      : _BudgetView.merged),
             ),
           ],
           LabeledIconButton(
@@ -274,28 +293,72 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               onSelectMonth: (m) => setState(() => _filterMonth = m),
             ),
           Expanded(
-            child: isEmpty
-                ? _EmptyBudget(isHousehold: ctrl.isHousehold)
-                : filteredEmpty
-                    ? const _FilteredEmpty()
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-                        children: [
-                          for (final b in buckets)
-                            _Section(
-                              title: b.$1,
-                              entries: b.$2,
-                              total: ctrl.sumAmounts(b.$2),
-                              currency: ctrl.targetCurrencyLabel,
-                              grouped: _group == _BudgetGroup.byType,
-                              onTap: _openEdit,
-                            ),
-                        ],
-                      ),
+            child: (filteredEmpty && !isEmpty)
+                ? const _FilteredEmpty()
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                    children: _sections(ctrl, buckets, expensesTitle,
+                        showAlloc: noFilter, isEmpty: isEmpty),
+                  ),
           ),
         ],
       ),
     );
+  }
+
+  /// Buduje sekcje listy budżetu. „Na rachunki" (koperta) jest przypięta na
+  /// górze sekcji wydatków (`expensesTitle`) i wliczona do jej sumy — pokazywana
+  /// tylko gdy [showAlloc] (brak aktywnych filtrów).
+  List<Widget> _sections(
+    BudgetController ctrl,
+    List<(String, List<BudgetEntry>)> buckets,
+    String expensesTitle, {
+    required bool showAlloc,
+    required bool isEmpty,
+  }) {
+    final cur = ctrl.targetCurrencyLabel;
+    final alloc = ctrl.billsAllocation;
+    Widget allocCard() => _BillsAllocationCard(
+          allocation: alloc,
+          currency: cur,
+          onEdit: () => _editAllocation(ctrl),
+        );
+
+    if (isEmpty) {
+      return [
+        if (showAlloc)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12), child: allocCard()),
+        _EmptyBudget(isHousehold: ctrl.isHousehold),
+      ];
+    }
+
+    final out = <Widget>[];
+    var pinned = false;
+    for (final b in buckets) {
+      final isExp = showAlloc && b.$1 == expensesTitle;
+      out.add(_Section(
+        title: b.$1,
+        entries: b.$2,
+        total: ctrl.sumAmounts(b.$2) + (isExp ? (alloc ?? 0) : 0),
+        currency: cur,
+        onTap: _openEdit,
+        pinnedTop: isExp ? allocCard() : null,
+      ));
+      if (isExp) pinned = true;
+    }
+    // Brak sekcji wydatków (sam wpływ) — pokaż „Na rachunki" w osobnej sekcji.
+    if (showAlloc && !pinned) {
+      out.add(_Section(
+        title: expensesTitle,
+        entries: const [],
+        total: alloc ?? 0,
+        currency: cur,
+        onTap: _openEdit,
+        pinnedTop: allocCard(),
+      ));
+    }
+    return out;
   }
 
   Future<void> _openAdd({BudgetEntryType? initialType, String? initialName}) {
@@ -388,6 +451,62 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ),
     );
   }
+
+  /// Edycja koperty „Na rachunki" (per zakres). Pomniejsza „zostaje/mies";
+  /// realne rachunki liczy ekran Rachunki i bilans miesiąca.
+  Future<void> _editAllocation(BudgetController ctrl) async {
+    final tc = TextEditingController(
+        text: ctrl.billsAllocation?.toStringAsFixed(2) ?? '');
+    await showDialog<void>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: const Text('Na rachunki — plan miesięczny'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ile miesięcznie rezerwujesz na rachunki (zgadywanka). Pomniejsza '
+              '„zostaje/mies"; bilans miesiąca liczy realne rachunki.',
+              style: Theme.of(dctx).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: tc,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Kwota (${ctrl.targetCurrencyLabel})',
+                hintText: 'np. 500',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dctx), child: const Text('Anuluj')),
+          if (ctrl.billsAllocation != null)
+            TextButton(
+              onPressed: () {
+                ctrl.setBillsAllocation(null);
+                Navigator.pop(dctx);
+              },
+              child: const Text('Wyczyść'),
+            ),
+          FilledButton(
+            onPressed: () {
+              final v = double.tryParse(
+                  tc.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
+              ctrl.setBillsAllocation(v != null && v > 0 ? v : null);
+              Navigator.pop(dctx);
+            },
+            child: const Text('Zapisz'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Section extends StatelessWidget {
@@ -395,8 +514,10 @@ class _Section extends StatelessWidget {
   final List<BudgetEntry> entries;
   final double total;
   final String currency;
-  final bool grouped;
   final void Function(BudgetEntry) onTap;
+
+  /// Widget przypięty na górze sekcji (np. „Na rachunki"), przed pozycjami.
+  final Widget? pinnedTop;
 
   const _Section({
     required this.title,
@@ -404,7 +525,7 @@ class _Section extends StatelessWidget {
     required this.total,
     required this.currency,
     required this.onTap,
-    this.grouped = false,
+    this.pinnedTop,
   });
 
   Widget _card(BudgetEntry e) => Padding(
@@ -414,7 +535,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (entries.isEmpty && pinnedTop == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final c = context.semanticColors;
 
@@ -426,7 +547,7 @@ class _Section extends StatelessWidget {
           children: [
             Text(title, style: theme.textTheme.titleMedium),
             Text(
-              '${budgetNf.format(total)} $currency',
+              '${budgetNf.format(total)}${curLabelSuffix(currency)}',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: c.textSecondary,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -437,23 +558,13 @@ class _Section extends StatelessWidget {
       ),
     ];
 
-    // Pod-grupy wg typu — tylko gdy kubełek ma >1 typ (inaczej nagłówek to zbędny szum).
-    final byType = <BudgetEntryType, List<BudgetEntry>>{};
-    for (final e in entries) {
-      (byType[e.type] ??= []).add(e);
+    if (pinnedTop != null) {
+      children.add(Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: pinnedTop,
+      ));
     }
-    if (!grouped || byType.length <= 1) {
-      children.addAll(entries.map(_card));
-    } else {
-      for (final entry in byType.entries) {
-        children.add(Padding(
-          padding: const EdgeInsets.only(bottom: 4, top: 2),
-          child: Text(budgetTypeLabel(entry.key),
-              style: theme.textTheme.labelMedium?.copyWith(color: c.textMuted)),
-        ));
-        children.addAll(entry.value.map(_card));
-      }
-    }
+    children.addAll(entries.map(_card));
     children.add(const SizedBox(height: 16));
 
     return Column(
@@ -675,6 +786,69 @@ class _EmptyBudget extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
                 textAlign: TextAlign.center),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Pozycja „Na rachunki" (koperta planu) w Budżecie — edytowalna. Pomniejsza
+/// „zostaje/mies"; realne rachunki liczy ekran Rachunki i bilans miesiąca.
+class _BillsAllocationCard extends StatelessWidget {
+  final double? allocation;
+  final String currency;
+  final VoidCallback onEdit;
+  const _BillsAllocationCard({
+    required this.allocation,
+    required this.currency,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        side: BorderSide(color: c.border),
+      ),
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(AppRadii.tile),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(lucide.LucideIcons.receiptText, size: 20, color: c.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Na rachunki', style: theme.textTheme.bodyMedium),
+                    Text(
+                      allocation == null
+                          ? 'Rezerwa na rachunki — dotknij, aby ustawić'
+                          : 'Rezerwa planu (pomniejsza „zostaje/mies")',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: c.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                allocation == null
+                    ? 'Ustaw'
+                    : '−${budgetNf.format(allocation!)}${curLabelSuffix(currency)}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: allocation == null ? c.primary : c.negative,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

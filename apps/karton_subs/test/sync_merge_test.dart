@@ -16,7 +16,7 @@ void main() {
       BudgetEntry(
         id: id,
         name: name,
-        type: BudgetEntryType.bill,
+        type: BudgetEntryType.recurringCost,
         amount: amount,
         currency: Currency.PLN,
         dataDodania: DateTime(2026, 1, 1),

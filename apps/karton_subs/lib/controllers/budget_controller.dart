@@ -4,6 +4,7 @@ import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../services/budget_service.dart';
+import '../services/analytics_service.dart' show MonthlyDataPoint;
 import '../services/currency_service.dart';
 import '../services/app_logger.dart';
 import 'subscription_controller.dart';
@@ -113,9 +114,26 @@ class BudgetController extends ChangeNotifier {
   /// Waluta docelowa (kod) — do formatowania w UI.
   String get targetCurrencyLabel => _target.label;
 
+  /// Wydatki jednorazowe (Budżet) — BEZ rachunków ([billPayment]), które mają
+  /// własny ekran „Rachunki" mimo tej samej semantyki czasu (jednorazowy wydatek).
   List<BudgetEntry> get oneTimeExpenses {
-    final list = all.where((e) => e.isOneTime && e.isExpense).toList();
+    final list = all
+        .where((e) =>
+            e.isOneTime &&
+            e.isExpense &&
+            e.type != BudgetEntryType.billPayment)
+        .toList();
     list.sort((a, b) => (a.month ?? '').compareTo(b.month ?? ''));
+    return list;
+  }
+
+  /// Rachunki (realny log opłaconych pozycji, [BudgetEntryType.billPayment])
+  /// aktywnego zakresu — najnowsze u góry (ekran „Rachunki").
+  List<BudgetEntry> get billPayments {
+    final list =
+        all.where((e) => e.type == BudgetEntryType.billPayment).toList();
+    list.sort((a, b) =>
+        (b.startDate ?? b.dataDodania).compareTo(a.startDate ?? a.dataDodania));
     return list;
   }
 
@@ -129,19 +147,55 @@ class BudgetController extends ChangeNotifier {
   double get monthlySubscriptionsExpense =>
       _budget.monthlySubscriptionsExpense(_subsForScope, target: _target);
 
+  /// Koszty/mies w planie: cykliczne + subskrypcje + rezerwa „Na rachunki".
+  /// (Dzięki temu wpływy − koszty = „zostaje/mies".)
   double get monthlyExpenses =>
-      _budget.monthlyRecurringExpenses(all, _subsForScope, target: _target);
+      _budget.monthlyRecurringExpenses(all, _subsForScope, target: _target) +
+      _alloc;
 
-  double get monthlySurplus =>
-      _budget.monthlySurplus(all, _subsForScope, target: _target);
+  double get monthlySurplus => _budget.monthlySurplus(all, _subsForScope,
+      target: _target, billsAllocation: _alloc);
 
-  double balanceForMonth(String monthKey) =>
-      _budget.balanceForMonth(all, _subsForScope, monthKey, target: _target);
+  double balanceForMonth(String monthKey) => _budget.balanceForMonth(
+      all, _subsForScope, monthKey,
+      target: _target, billsAllocation: _alloc);
 
   /// Pozycje, które sprawiają, że bilans miesiąca różni się od salda planu
-  /// (jednorazowe, korekty kwot i rat). Do bottom sheeta „dlaczego inny bilans".
+  /// (jednorazowe, korekty kwot i rat, rezerwa „Na rachunki"). Do bottom sheeta.
   List<BalanceContribution> balanceBreakdownForMonth(String monthKey) =>
-      _budget.balanceBreakdownForMonth(all, monthKey, target: _target);
+      _budget.balanceBreakdownForMonth(all, monthKey,
+          target: _target, billsAllocation: _alloc);
+
+  // ── Rachunki: koperta „Na rachunki" (plan) vs realne rachunki ──────────────
+
+  /// Kwota „Na rachunki" (plan/koperta) aktywnego zakresu. `null` = nie ustawiono.
+  double? get billsAllocation => _storage.getBillsAllocation(_scope);
+
+  /// Wartość koperty do obliczeń (0 gdy nieustawiona).
+  double get _alloc => billsAllocation ?? 0;
+
+  Future<void> setBillsAllocation(double? amount) async {
+    await _storage.setBillsAllocation(_scope, amount);
+    notifyListeners();
+  }
+
+  /// Suma realnych rachunków ([billPayment]) danego miesiąca w walucie docelowej.
+  double billsActualForMonth(String monthKey) =>
+      _budget.billsActualForMonth(all, monthKey, target: _target);
+
+  // ── Statystyki (Plan): trendy i podział na kategorie ────────────────────────
+
+  List<MonthlyDataPoint> get budgetExpenseTrend =>
+      _budget.expenseTrend(all, _subsForScope, target: _target);
+
+  List<MonthlyDataPoint> get billsTrend =>
+      _budget.billsTrend(all, target: _target);
+
+  Map<String, double> get expenseByCategory =>
+      _budget.expenseBreakdownByCategory(all, target: _target);
+
+  Map<String, double> billsByCategory(String monthKey) =>
+      _budget.billsBreakdownByCategory(all, monthKey, target: _target);
 
   /// Mapa „nazwa metody platnosci → automatyczna?" (do koloru/listy Platnosci).
   Map<String, bool> get _autoByPayment => {
@@ -167,6 +221,16 @@ class BudgetController extends ChangeNotifier {
   Future<void> togglePaymentDone(String sourceId, DateTime date) async {
     final key = _paymentKey(sourceId, date);
     await _storage.setPaymentDone(key, !_storage.isPaymentDone(key));
+    notifyListeners();
+  }
+
+  /// Ustawia stan „wykonane" dla wielu płatności naraz (przycisk „odhacz
+  /// wszystkie" w grupie płatności miesiąca). Jedno powiadomienie na koniec.
+  Future<void> setPaymentsDone(
+      Iterable<({String sourceId, DateTime date})> items, bool done) async {
+    for (final it in items) {
+      await _storage.setPaymentDone(_paymentKey(it.sourceId, it.date), done);
+    }
     notifyListeners();
   }
 

@@ -7,6 +7,7 @@ import '../models/category.dart';
 import '../services/storage_service.dart';
 import '../services/currency_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 
 class SubscriptionCard extends StatelessWidget {
   final Subscription subscription;
@@ -44,7 +45,7 @@ class SubscriptionCard extends StatelessWidget {
 
     // ── Right column: amount + contextual subtitle ──
     final nf = NumberFormat('#,##0.00', 'pl_PL');
-    final amountStr = '${nf.format(subscription.amount)} ${subscription.currency.symbol}';
+    final amountStr = '${nf.format(subscription.amount)}${curSymbolSuffix(subscription.currency)}';
     final cycleSuffix = _cycleSuffix(subscription.billingCycle);
 
     // Determine contextual subtitle (or null if redundant)
@@ -150,7 +151,7 @@ class SubscriptionCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '→ ${nf.format(subscription.postTrialAmount ?? subscription.amount)} ${subscription.currency.symbol}/$cycleSuffix',
+                        '→ ${nf.format(subscription.postTrialAmount ?? subscription.amount)}${curSymbolSuffix(subscription.currency)}/$cycleSuffix',
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: c.textMuted,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -196,17 +197,17 @@ class SubscriptionCard extends StatelessWidget {
 
     // Foreign currency → show converted monthly in default currency
     if (isForeignCurrency) {
-      return '${nf.format(convertedMonthly)} ${defaultCurrency.symbol}/mies.';
+      return '${nf.format(convertedMonthly)}${curSymbolSuffix(defaultCurrency)}/mies.';
     }
 
     // Shared → show per-person amount
     if (isShared) {
-      return '${nf.format(subscription.monthlyAmount)} ${subscription.currency.symbol}/os.';
+      return '${nf.format(subscription.monthlyAmount)}${curSymbolSuffix(subscription.currency)}/os.';
     }
 
     // Non-monthly → show monthly equivalent
     if (isNonMonthly) {
-      return '${nf.format(subscription.monthlyAmountFull)} ${subscription.currency.symbol}/mies.';
+      return '${nf.format(subscription.monthlyAmountFull)}${curSymbolSuffix(subscription.currency)}/mies.';
     }
 
     // Monthly, same currency, not shared → subtitle is redundant

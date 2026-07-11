@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-07-11: Nowe ikony Lucide tylko w `lucide_icons_flutter`
+
+### Problem
+Dwie paczki ikon: stara `lucide_icons` (0.257, uzywana wszedzie jako `LucideIcons`)
+i nowsza `lucide_icons_flutter` (alias `lucide`). Stara nie ma nowszych glifow —
+zabraklo `cloudSync` (wczesniej) i `receiptText` (ta sesja). Blad wychodzi dopiero
+przy `flutter analyze` jako `undefined_getter`.
+
+### Rozwiazanie
+Nowszy glif brac z `lucide_icons_flutter` przez alias:
+`import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;` →
+`lucide.LucideIcons.receiptText`. Przed uzyciem nowej ikony sprawdz, czy jest w
+starej paczce (np. `Select-String` po pliku glifow w pub cache); jesli nie — uzyj
+aliasu. NIE podbijac `lucide_icons` (zmienia kody wielu glifow).
+
+---
+
 ## 2026-01-19: Audyty AI (Read-Only)
 
 ### Problem

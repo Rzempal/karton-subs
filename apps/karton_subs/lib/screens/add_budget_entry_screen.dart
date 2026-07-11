@@ -7,6 +7,7 @@ import '../models/subscription.dart';
 import '../controllers/budget_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 
 class AddBudgetEntryScreen extends StatefulWidget {
   final BudgetEntry? existing;
@@ -63,19 +64,18 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   /// Kategoria dotyczy tylko wydatków (rachunek / koszt cykliczny / jednorazowy).
   /// Wpływy i przelew do domowego nie mają kategorii.
   bool get _typeHasCategory =>
-      _type == BudgetEntryType.bill ||
       _type == BudgetEntryType.recurringCost ||
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.installment;
 
-  /// Rachunek zmienny — typ z korektami miesięcznymi (ADR-008).
-  bool get _isBill => _type == BudgetEntryType.bill;
+  /// Koszt cykliczny — typ z opcjonalnymi korektami miesięcznymi (ADR-008).
+  bool get _isRecurring => _type == BudgetEntryType.recurringCost;
 
-  /// Przelew do domowego — też obsługuje korekty kwoty (analogicznie do rachunku).
+  /// Przelew do domowego — też obsługuje korekty kwoty (analogicznie do kosztu).
   bool get _isTransfer => _type == BudgetEntryType.householdTransfer;
 
   /// Czy pokazać sekcję korekt miesięcznych.
-  bool get _hasOverrides => _isBill || _isTransfer;
+  bool get _hasOverrides => _isRecurring || _isTransfer;
 
   /// Rata — typ z datą startu i liczbą rat (koszt miesięczny z końcem).
   bool get _isInstallment => _type == BudgetEntryType.installment;
@@ -83,7 +83,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   List<BudgetEntryType> get _availableTypes => [
     BudgetEntryType.income,
-    BudgetEntryType.bill,
     BudgetEntryType.recurringCost,
     BudgetEntryType.installment,
     BudgetEntryType.oneTimeExpense,
@@ -107,7 +106,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       text: e?.customCycleDays != null ? '${e!.customCycleDays}' : '',
     );
 
-    _type = e?.type ?? widget.initialType ?? BudgetEntryType.bill;
+    _type = e?.type ?? widget.initialType ?? BudgetEntryType.recurringCost;
     _categoryId = e?.categoryId;
     _paymentMethod = e?.paymentMethod;
     _overrides = {...?e?.monthOverrides};
@@ -392,8 +391,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     ? 'Przelew zmienny: w wybranym miesiącu możesz ustawić inną datę '
                           'i kwotę. Korekta wpływa też na budżet domowy. '
                           'Nie zmienia „zostaje/mies", tylko bilans miesiąca i kalendarz.'
-                    : 'Rachunek zmienny: w wybranym miesiącu możesz ustawić inną datę '
-                          'i kwotę (np. wizyta u fryzjera). Bez korekty liczy się kwota bazowa. '
+                    : 'Koszt cykliczny: w wybranym miesiącu możesz ustawić inną datę '
+                          'i kwotę (korekta, np. wyższy prąd). Bez korekty liczy się kwota bazowa. '
                           'Korekty nie zmieniają „zostaje/mies", tylko bilans miesiąca i kalendarz.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -784,7 +783,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _nameLabel() => switch (_type) {
     BudgetEntryType.income => 'Nazwa wpływu *',
-    BudgetEntryType.bill => 'Nazwa rachunku *',
+    BudgetEntryType.billPayment => 'Nazwa rachunku *',
     BudgetEntryType.recurringCost => 'Nazwa kosztu *',
     BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
     BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
@@ -794,11 +793,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   /// Krótkie wyjaśnienie różnicy między rachunkiem (zmienny) a kosztem cyklicznym (stały).
   String? _typeHint() => switch (_type) {
-    BudgetEntryType.bill =>
-      'Rachunek: kwota bazowa i cykl, ale w każdym miesiącu możesz ustawić '
-          'inną datę i kwotę (zmienny — np. fryzjer).',
     BudgetEntryType.recurringCost =>
-      'Koszt cykliczny: stała kwota w każdym interwale (np. ubezpieczenie).',
+      'Koszt cykliczny: stała kwota w interwale (np. czynsz, prąd, ubezpieczenie). '
+          'Opcjonalnie w wybranym miesiącu możesz nadpisać kwotę/datę (korekta).',
     BudgetEntryType.installment =>
       'Rata: kwota miesięczna z określonym końcem (start + liczba rat lub data '
           'ostatniej raty). Liczy się do „zostaje/mies" tylko w trakcie spłaty.',
@@ -807,7 +804,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
     BudgetEntryType.income => 'Wpływ',
-    BudgetEntryType.bill => 'Rachunek',
+    BudgetEntryType.billPayment => 'Rachunek',
     BudgetEntryType.recurringCost => 'Koszt cykliczny',
     BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
     BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
@@ -843,7 +840,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       parts.add('dzień ${DateFormat('d MMM', 'pl').format(ov.date!)}');
     }
     if (ov.amount != null) {
-      parts.add('${ov.amount!.toStringAsFixed(2)} ${_currency.label}');
+      parts.add('${ov.amount!.toStringAsFixed(2)}${curLabelSuffix(_currency.label)}');
     }
     return parts.isEmpty ? 'bez zmian' : parts.join(' · ');
   }
@@ -897,7 +894,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               TextField(
                 controller: amountCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Kwota — opcjonalnie (${_currency.label})',
+                  labelText:
+                    'Kwota — opcjonalnie${_currency == appDefaultCurrency ? '' : ' (${_currency.label})'}',
                   hintText: 'puste = kwota bazowa',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(

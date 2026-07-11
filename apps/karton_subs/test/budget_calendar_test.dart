@@ -89,7 +89,7 @@ void main() {
             amount: 5000,
             startDate: DateTime(2026, 1, 25)),
         _entry(
-            type: BudgetEntryType.bill,
+            type: BudgetEntryType.recurringCost,
             amount: 200,
             startDate: DateTime(2026, 1, 10)),
         _entry(
@@ -137,7 +137,7 @@ void main() {
 
     test('pozycja cykliczna bez startDate nie trafia na kalendarz', () {
       final entries = [
-        _entry(type: BudgetEntryType.bill, amount: 100), // brak startDate
+        _entry(type: BudgetEntryType.recurringCost, amount: 100), // brak startDate
       ];
       final cal = _svc.calendarForMonth(entries, const [], monthStart);
       expect(cal, isEmpty);

@@ -112,7 +112,7 @@ void main() {
     BudgetEntry bill(String name, String pm) => BudgetEntry(
           id: name,
           name: name,
-          type: BudgetEntryType.bill,
+          type: BudgetEntryType.recurringCost,
           amount: 100,
           currency: t,
           startDate: DateTime(2026, 1, 10),

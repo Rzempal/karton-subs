@@ -93,7 +93,7 @@ void main() {
     test('surplus = wpływy − (koszty cykliczne budżetu + subskrypcje)', () {
       final entries = [
         _entry(type: BudgetEntryType.income, amount: 5000),
-        _entry(type: BudgetEntryType.bill, amount: 1500),
+        _entry(type: BudgetEntryType.recurringCost, amount: 1500),
         _entry(type: BudgetEntryType.recurringCost, amount: 200),
       ];
       final subs = [_sub(50)];
@@ -120,7 +120,7 @@ void main() {
     test('pozycje wstrzymane (isActive=false) są pomijane', () {
       final entries = [
         _entry(type: BudgetEntryType.income, amount: 5000),
-        _entry(type: BudgetEntryType.bill, amount: 1000, isActive: false),
+        _entry(type: BudgetEntryType.recurringCost, amount: 1000, isActive: false),
       ];
       expect(_svc.monthlyBudgetExpenses(entries), closeTo(0, 0.001));
       expect(_svc.monthlySurplus(entries, const []), closeTo(5000, 0.001));
@@ -135,7 +135,7 @@ void main() {
   group('BudgetService — bilans miesiąca (hybryda)', () {
     final entries = [
       _entry(type: BudgetEntryType.income, amount: 5000),
-      _entry(type: BudgetEntryType.bill, amount: 1500),
+      _entry(type: BudgetEntryType.recurringCost, amount: 1500),
       _entry(
           type: BudgetEntryType.oneTimeExpense, amount: 3000, month: '2026-07'),
     ];
@@ -178,7 +178,7 @@ void main() {
   group('BudgetService — rozbicie bilansu (balanceBreakdownForMonth)', () {
     final entries = [
       _entry(type: BudgetEntryType.income, amount: 5000),
-      _entry(type: BudgetEntryType.bill, amount: 1500),
+      _entry(type: BudgetEntryType.recurringCost, amount: 1500),
       _entry(
           type: BudgetEntryType.oneTimeExpense, amount: 3000, month: '2026-07'),
       _entry(

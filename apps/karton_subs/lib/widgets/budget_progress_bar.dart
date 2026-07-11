@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/analytics_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 
 class BudgetProgressBar extends StatelessWidget {
   final BudgetStatus status;
@@ -69,14 +70,14 @@ class BudgetProgressBar extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${nf.format(status.spent)} $currencySymbol',
+                  '${nf.format(status.spent)}${curLabelSuffix(currencySymbol)}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: barColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
                 Text(
-                  'z ${nf.format(status.limit)} $currencySymbol',
+                  'z ${nf.format(status.limit)}${curLabelSuffix(currencySymbol)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: c.textSecondary,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -87,7 +88,7 @@ class BudgetProgressBar extends StatelessWidget {
             if (status.isOverBudget) ...[
               const SizedBox(height: 4),
               Text(
-                'Przekroczenie: ${nf.format(status.spent - status.limit)} $currencySymbol',
+                'Przekroczenie: ${nf.format(status.spent - status.limit)}${curLabelSuffix(currencySymbol)}',
                 style: theme.textTheme.labelMedium?.copyWith(color: c.negative),
               ),
             ],

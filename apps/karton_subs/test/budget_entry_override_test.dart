@@ -7,7 +7,7 @@ void main() {
     BudgetEntry bill({Map<String, BillMonthOverride>? overrides}) => BudgetEntry(
           id: 'b1',
           name: 'Fryzjer',
-          type: BudgetEntryType.bill,
+          type: BudgetEntryType.recurringCost,
           amount: 80,
           currency: Currency.PLN,
           monthOverrides: overrides,
@@ -45,10 +45,20 @@ void main() {
       expect(BudgetEntry.fromJson(json).monthOverrides, isNull);
     });
 
-    test('supportsMonthOverrides tylko dla rachunku', () {
-      expect(bill().supportsMonthOverrides, isTrue);
-      final recurring = bill().copyWith(type: BudgetEntryType.recurringCost);
-      expect(recurring.supportsMonthOverrides, isFalse);
+    test('supportsMonthOverrides: koszt cykliczny + przelew tak, inne nie', () {
+      // Po scaleniu bill→recurringCost korekty obsługuje koszt cykliczny.
+      expect(bill().supportsMonthOverrides, isTrue); // recurringCost
+      expect(
+          bill()
+              .copyWith(type: BudgetEntryType.householdTransfer)
+              .supportsMonthOverrides,
+          isTrue);
+      // Rachunek (billPayment) to realny log — bez korekt; wpływ też nie.
+      expect(
+          bill().copyWith(type: BudgetEntryType.billPayment).supportsMonthOverrides,
+          isFalse);
+      expect(bill().copyWith(type: BudgetEntryType.income).supportsMonthOverrides,
+          isFalse);
     });
 
     test('copyWith: clearMonthOverrides czyści korekty', () {

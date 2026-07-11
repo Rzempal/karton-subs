@@ -9,7 +9,7 @@ void main() {
     BudgetEntry entry({DateTime? updatedAt, bool deleted = false}) => BudgetEntry(
           id: 'h1',
           name: 'Prąd',
-          type: BudgetEntryType.bill,
+          type: BudgetEntryType.recurringCost,
           amount: 280,
           currency: Currency.PLN,
           dataDodania: DateTime(2026, 1, 1),

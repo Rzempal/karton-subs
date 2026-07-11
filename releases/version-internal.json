@@ -1,49 +1,49 @@
 {
-  "versionCode": 1026070900,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026070900",
+  "version": "0.10.26071102",
+  "releaseNotes": "- Ustawienia: Sprawdz aktualizacje inline (wersja + status + przycisk Sprawdz teraz + instalacja) bez wchodzenia w osobny ekran; usuniety osobny ekran Aktualizacje",
   "changelog": [
     {
-      "version": "0.10.26070900",
-      "notes": "- Platnosci i Platnosci automatyczne: dynamiczna suma pozostala do rozliczenia (maleje przy odhaczaniu)"
+      "version": "0.10.26071102",
+      "notes": "- Ustawienia: Sprawdz aktualizacje inline (wersja + status + przycisk Sprawdz teraz + instalacja) bez wchodzenia w osobny ekran; usuniety osobny ekran Aktualizacje"
     },
     {
-      "version": "0.10.26070701",
-      "notes": "- Przejscia ekranow fade-through: stary ekran znika w calosci zanim pojawi sie nowy (fix ducha tresci przy powrocie z opcji Ustawien)"
+      "version": "0.10.26071101",
+      "notes": "- Ukrycie waluty domyslnej na ekranach: kwoty bez PLN/zl; etykieta waluty pojawia sie tylko gdy inna niz domyslna (np. subskrypcja w EUR). Piker waluty, eksporty i powiadomienia bez zmian"
     },
     {
-      "version": "0.10.26070700",
-      "notes": "- Ikona synchronizacji cloud-sync zamiast strzalek (odroznienie od Aktualizacji)\n- Fix animacji powrotu z opcji Ustawien: tlo Aurora renderowane raz pod nawigacja\n- Fix czarnego tla ekranu Synchronizacja domowego"
+      "version": "0.10.26071100",
+      "notes": "- Platnosci kompaktowe: bez naglowkow grup; jedna linia opis: kwota (Do zrealizowania recznie / Pobrane automatycznie); przycisk Odhacz tylko w wersji rozwinietej"
     },
     {
-      "version": "0.10.26070603",
-      "notes": "- Przycisk synchronizacji budzetu domowego w AppBarze Dashboardu i Budzetu (widoczny po sparowaniu)"
+      "version": "0.10.26071002",
+      "notes": "- Plan: statystyki jako hub - przelacznik segmentowy Budzet / Subskrypcje / Rachunki (hero + trend + podzial na kategorie dla kazdej domeny)\n- Statystyki subskrypcji przeniesione z ekranu Subskrypcje do Planu; Subskrypcje = sama lista\n- Nowe trendy i podzial na kategorie dla budzetu i rachunkow"
     },
     {
-      "version": "0.10.26070602",
-      "notes": "- Sync: czytelniejszy komunikat gdy serwer synchronizacji nie odpowiada"
+      "version": "0.10.26071001",
+      "notes": "- Dashboard: Bilans miesiaca teraz pierwsza (domyslna) zakladka, Plan druga\n- Platnosci + Platnosci automatyczne scalone w jedna sekcje: dwie grupy rozdzielone separatorem, przycisk odhacz wszystkie w kazdej grupie"
     },
     {
-      "version": "0.10.26070601",
-      "notes": "- Dashboard: sekcja Platnosci automatyczne (odhaczanie jak w Platnosciach)\n- Kalendarz: podsumowanie miesiaca - listy wplywow i wydatkow z sumami"
+      "version": "0.10.26071000",
+      "notes": "- Ikona Rachunkow zmieniona na receipt-text (navbar, karty Na rachunki, rachunki miesiaca, pusty stan)"
     },
     {
-      "version": "0.10.26070600",
-      "notes": "- Kalendarz: podsumowanie miesiaca - pelne listy wplywow i wydatkow z sumami (ikona listy przy bilansie)"
+      "version": "0.10.26070904",
+      "notes": "- Budzet: Wyplywy przemianowane na Wydatki\n- Na rachunki przypiete na gorze listy wydatkow (wliczone w sume sekcji)"
     },
     {
-      "version": "0.10.26062700",
-      "notes": "- Nowy wyglad paska nawigacji: animowana pigulka aktywnej zakladki + separator Ustawien"
+      "version": "0.10.26070903",
+      "notes": "- Predykcja vs rzeczywistosc: przelacznik miesiecy (wspolny z kalendarzem Bilansu miesiaca), domyslnie biezacy miesiac - statystyka retrospektywna"
     },
     {
-      "version": "0.9.26062503",
-      "notes": "- Budzet: filtr czasu (snapshot) rok i miesiac obok kategorii i typow"
+      "version": "0.10.26070902",
+      "notes": "- Na rachunki jako pozycja w Budzecie (pomniejsza zostaje/mies; bilans liczy realne rachunki)\n- Fix grupowania Budzetu: przelacznik widok szczegolowy / scalony (Wplywy/Wyplywy)\n- Edycja koperty Na rachunki przeniesiona z Rachunkow do Budzetu"
     },
     {
-      "version": "0.9.26062502",
-      "notes": "- Lepszy opis bilansu (wspomina korekty)\n- Przytrzymanie kwoty bilansu otwiera rozbicie roznicy wzgledem salda"
+      "version": "0.10.26070901",
+      "notes": "- Ekran Rachunki (realny log oplat) + koperta Na rachunki\n- Dashboard: podzakladki Plan / Bilans miesiaca + predykcja vs rzeczywisty\n- Scalenie typow cyklicznych (rachunek+koszt w jeden z korekta), nowy typ rachunku"
     }
   ],
-  "releaseNotes": "- Platnosci i Platnosci automatyczne: dynamiczna suma pozostala do rozliczenia (maleje przy odhaczaniu)",
-  "version": "0.10.26070900",
-  "releaseDate": "2026-07-09T14:51:50Z"
+  "releaseDate": "2026-07-11T09:12:31Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071102",
+  "versionCode": 1026071102
 }

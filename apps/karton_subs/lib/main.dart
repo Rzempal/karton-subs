@@ -3,10 +3,13 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+// Ikona receiptText (receipt-text) jest tylko w nowszym pakiecie (alias).
+import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import 'controllers/subscription_controller.dart';
 import 'controllers/budget_controller.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/rachunki_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
 import 'screens/budget_dashboard_screen.dart';
@@ -213,6 +216,7 @@ class _MainShellState extends State<_MainShell> {
 
   static const _screens = [
     DashboardScreen(),
+    RachunkiScreen(),
     SubscriptionListScreen(),
     BudgetDashboardScreen(),
     SettingsScreen(),
@@ -220,6 +224,7 @@ class _MainShellState extends State<_MainShell> {
 
   static const _navItems = [
     GlassNavItem(icon: LucideIcons.layoutDashboard, label: 'Dashboard'),
+    GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Rachunki'),
     GlassNavItem(icon: LucideIcons.repeat, label: 'Subskrypcje'),
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),

@@ -20,7 +20,7 @@ void main() {
   BudgetEntry bill({Map<String, BillMonthOverride>? ov}) => BudgetEntry(
         id: 'b',
         name: 'Fryzjer',
-        type: BudgetEntryType.bill,
+        type: BudgetEntryType.recurringCost,
         amount: 80,
         currency: t,
         startDate: DateTime(2026, 1, 10),

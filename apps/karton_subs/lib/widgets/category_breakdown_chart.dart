@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/category.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 
 class CategoryBreakdownChart extends StatelessWidget {
   final Map<String, double> categoryTotals;
@@ -93,7 +94,7 @@ class CategoryBreakdownChart extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '${nf.format(e.value.value)} $currencySymbol',
+                                '${nf.format(e.value.value)}${curLabelSuffix(currencySymbol)}',
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                   color: c.textSecondary,

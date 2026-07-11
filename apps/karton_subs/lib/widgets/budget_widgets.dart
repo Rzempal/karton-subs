@@ -7,6 +7,7 @@ import '../models/subscription.dart';
 import '../services/budget_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
 import 'gradient_amount.dart';
@@ -43,7 +44,7 @@ class BudgetScopeToggle extends StatelessWidget {
 
 String budgetTypeLabel(BudgetEntryType t) => switch (t) {
       BudgetEntryType.income => 'Wpływ',
-      BudgetEntryType.bill => 'Rachunek',
+      BudgetEntryType.billPayment => 'Rachunek',
       BudgetEntryType.recurringCost => 'Koszt cykliczny',
       BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
       BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
@@ -88,7 +89,7 @@ class BudgetSummarySection extends StatelessWidget {
     final c = context.semanticColors;
     final positive = surplus >= 0;
     final sign = positive ? '' : '−';
-    final amountText = '$sign${budgetNf.format(surplus.abs())} $currency';
+    final amountText = '$sign${budgetNf.format(surplus.abs())}${curLabelSuffix(currency)}';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -147,16 +148,16 @@ class BudgetSummarySection extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'w tym subskrypcje: '
-                        '${budgetNf.format(subscriptionsExpense)} $currency',
+                        '${budgetNf.format(subscriptionsExpense)}${curLabelSuffix(currency)}',
                         style: theme.textTheme.bodySmall
                             ?.copyWith(color: c.textMuted),
                       ),
                     ],
                     const SizedBox(height: 12),
                     Text(
-                      'Plan: wpływy minus koszty stałe (cykliczne, rachunki, '
-                      'subskrypcje). Bez pozycji jednorazowych i korekt — te '
-                      'liczy bilans miesiąca.',
+                      'Plan: wpływy minus koszty stałe (cykliczne, subskrypcje) '
+                      'i rezerwa „Na rachunki". Bez pozycji jednorazowych, korekt '
+                      'i realnych rachunków — te liczy bilans miesiąca.',
                       style: theme.textTheme.bodySmall
                           ?.copyWith(color: c.textSecondary),
                     ),
@@ -192,7 +193,7 @@ class _InlineTrends extends StatelessWidget {
             Icon(icon, size: 16, color: color),
             const SizedBox(width: 6),
             Text(
-              '${budgetNf.format(amount)} $currency',
+              '${budgetNf.format(amount)}${curLabelSuffix(currency)}',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -314,7 +315,7 @@ class BudgetMonthSection extends StatelessWidget {
                 GestureDetector(
                   onLongPress: () => _showBalanceBreakdown(context),
                   child: Text(
-                    '$sign${budgetNf.format(balance.abs())} $currency',
+                    '$sign${budgetNf.format(balance.abs())}${curLabelSuffix(currency)}',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: balanceColor,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -398,6 +399,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   });
 
   static const _order = [
+    BalanceContributionKind.billsAllocation,
     BalanceContributionKind.oneTimeIncome,
     BalanceContributionKind.oneTimeExpense,
     BalanceContributionKind.amountOverride,
@@ -405,6 +407,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   ];
 
   String _groupLabel(BalanceContributionKind k) => switch (k) {
+        BalanceContributionKind.billsAllocation => 'Na rachunki (rezerwa)',
         BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
         BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
         BalanceContributionKind.amountOverride => 'Korekty kwot',
@@ -412,7 +415,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
       };
 
   String _signed(double v) =>
-      '${v >= 0 ? '+' : '−'}${budgetNf.format(v.abs())} $currency';
+      '${v >= 0 ? '+' : '−'}${budgetNf.format(v.abs())}${curLabelSuffix(currency)}';
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +479,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
             style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
                 ?.copyWith(color: bold ? null : c.textSecondary)),
         Text(
-          '$sign${budgetNf.format(value.abs())} $currency',
+          '$sign${budgetNf.format(value.abs())}${curLabelSuffix(currency)}',
           style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
               ?.copyWith(
             color: color,
@@ -614,7 +617,7 @@ class _MonthSummarySheet extends StatelessWidget {
               style: theme.textTheme.labelMedium
                   ?.copyWith(color: c.textSecondary)),
           Text(
-            '$sign${budgetNf.format(total)} $currency',
+            '$sign${budgetNf.format(total)}${curLabelSuffix(currency)}',
             style: theme.textTheme.titleSmall?.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -652,7 +655,7 @@ class _MonthSummarySheet extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$sign${budgetNf.format(it.amount)} $currency',
+            '$sign${budgetNf.format(it.amount)}${curLabelSuffix(currency)}',
             style: theme.textTheme.labelMedium?.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -668,65 +671,63 @@ class _MonthSummarySheet extends StatelessWidget {
 /// (manualne przelewy do zrealizowania); true → „Płatności automatyczne"
 /// (pobierane same — odhaczanie po zaksięgowaniu). Checkbox oznacza „wykonane"
 /// (przekreślenie). Stan trzymany lokalnie per pozycja i data.
-class PaymentsSection extends StatelessWidget {
+/// Płatności miesiąca — jedna sekcja, dwie grupy (Manualne / Automatyczne)
+/// rozdzielone separatorem. Każda grupa ma przycisk „odhacz wszystkie".
+class MonthPaymentsSection extends StatelessWidget {
   final DateTime month;
   final Map<int, DayCashflow> calendar;
   final String currency;
-  final bool automatic;
   final bool compact;
   final VoidCallback onToggleCompact;
   final bool Function(String sourceId, DateTime date) isDone;
   final void Function(String sourceId, DateTime date) onToggle;
 
-  const PaymentsSection({
+  /// Ustawia stan „wykonane" dla wielu płatności naraz (przycisk grupy).
+  final void Function(
+      List<({String sourceId, DateTime date})> items, bool done) onSetAll;
+
+  const MonthPaymentsSection({
     super.key,
     required this.month,
     required this.calendar,
     required this.currency,
-    this.automatic = false,
     required this.compact,
     required this.onToggleCompact,
     required this.isDone,
     required this.onToggle,
+    required this.onSetAll,
   });
 
-  /// Czy miesiąc ma jakiekolwiek pozycje danego trybu — do warunkowego
-  /// renderowania sekcji (wraz z odstępem) na Dashboardzie.
-  static bool hasAny(Map<int, DayCashflow> calendar,
-          {required bool automatic}) =>
-      calendar.values.any((f) => f.items.any((it) =>
-          !it.isIncome && it.isAutomatic == automatic && it.sourceId != null));
+  /// Czy miesiąc ma jakiekolwiek płatności (manualne lub automatyczne).
+  static bool hasAny(Map<int, DayCashflow> calendar) => calendar.values.any(
+      (f) => f.items.any((it) => !it.isIncome && it.sourceId != null));
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-
-    // Zbierz wydatki miesiąca danego trybu (manual/auto), posortowane wg dnia.
-    final rows = <({String name, double amount, DateTime date, String sourceId})>[];
+  List<_PayRow> _rows(bool automatic) {
+    final out = <_PayRow>[];
     final days = calendar.keys.toList()..sort();
     for (final day in days) {
       for (final it in calendar[day]!.items) {
         if (it.isIncome || it.isAutomatic != automatic || it.sourceId == null) {
           continue;
         }
-        rows.add((
-          name: it.name,
-          amount: it.amount,
-          date: DateTime(month.year, month.month, day),
-          sourceId: it.sourceId!,
-        ));
+        out.add(_PayRow(it.name, it.amount,
+            DateTime(month.year, month.month, day), it.sourceId!));
       }
     }
-    if (rows.isEmpty) return const SizedBox.shrink();
+    return out;
+  }
 
-    final doneCount = rows.where((r) => isDone(r.sourceId, r.date)).length;
-    // Suma nieodhaczonych — aktualizuje się na żywo przy każdym odhaczeniu
-    // (toggle w kontrolerze → notifyListeners → rebuild sekcji).
-    final remaining = rows
-        .where((r) => !isDone(r.sourceId, r.date))
-        .fold(0.0, (s, r) => s + r.amount);
-    final allPaid = remaining < 0.005;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final manual = _rows(false);
+    final auto = _rows(true);
+    if (manual.isEmpty && auto.isEmpty) return const SizedBox.shrink();
+
+    final total = manual.length + auto.length;
+    final done =
+        [...manual, ...auto].where((r) => isDone(r.sourceId, r.date)).length;
 
     return Card(
       child: Padding(
@@ -737,12 +738,11 @@ class PaymentsSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(automatic ? 'Płatności automatyczne' : 'Płatności',
-                    style: theme.textTheme.titleMedium),
+                Text('Płatności', style: theme.textTheme.titleMedium),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('$doneCount/${rows.length}',
+                    Text('$done/$total',
                         style: theme.textTheme.labelMedium
                             ?.copyWith(color: c.textMuted)),
                     IconButton(
@@ -757,86 +757,122 @@ class PaymentsSection extends StatelessWidget {
                 ),
               ],
             ),
-            Text(
-              automatic
-                  ? 'Pobierane automatycznie w tym miesiącu.'
-                  : 'Manualne przelewy do zrealizowania w tym miesiącu.',
-              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
-            ),
-            const SizedBox(height: 10),
-            // Pozostała suma — zawsze widoczna (też po zwinięciu listy). Maleje
-            // przy każdym odhaczeniu, więc na bieżąco widać, ile zostało.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  allPaid ? 'Wszystko rozliczone' : 'Pozostało do rozliczenia',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: allPaid ? c.positive : c.textSecondary,
-                  ),
-                ),
-                Text(
-                  allPaid
-                      ? '${budgetNf.format(0)} $currency'
-                      : '−${budgetNf.format(remaining)} $currency',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: allPaid ? c.positive : c.negative,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-            if (!compact) ...[
-              const SizedBox(height: 8),
-              ...rows.map((r) {
-              final done = isDone(r.sourceId, r.date);
-              return InkWell(
-                onTap: () => onToggle(r.sourceId, r.date),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        done
-                            ? LucideIcons.checkSquare
-                            : LucideIcons.square,
-                        size: 20,
-                        color: done ? c.positive : c.textMuted,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          '${r.name} · ${DateFormat('d MMM', 'pl').format(r.date)}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            decoration:
-                                done ? TextDecoration.lineThrough : null,
-                            color: done ? c.textMuted : null,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '−${budgetNf.format(r.amount)} $currency',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: done ? c.textMuted : c.negative,
-                          decoration:
-                              done ? TextDecoration.lineThrough : null,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            ],
+            const SizedBox(height: 4),
+            if (manual.isNotEmpty)
+              _group(context, 'Do zrealizowania ręcznie w tym miesiącu', manual),
+            if (manual.isNotEmpty && auto.isNotEmpty) const Divider(height: 20),
+            if (auto.isNotEmpty)
+              _group(context, 'Pobrane automatycznie w tym miesiącu', auto),
           ],
         ),
       ),
     );
   }
+
+  Widget _group(BuildContext context, String opis, List<_PayRow> rows) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final remaining = rows
+        .where((r) => !isDone(r.sourceId, r.date))
+        .fold(0.0, (s, r) => s + r.amount);
+    final allPaid = remaining < 0.005;
+    final items = [for (final r in rows) (sourceId: r.sourceId, date: r.date)];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            // „opis: kwota" w jednej linii (zamiast osobnego podpisu i sumy).
+            Expanded(
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                      text: '$opis: ',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: c.textSecondary)),
+                  TextSpan(
+                    text: allPaid
+                        ? 'rozliczone'
+                        : '−${budgetNf.format(remaining)}${curLabelSuffix(currency)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: allPaid ? c.positive : c.negative,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            // Przycisk „Odhacz" tylko w wersji rozwiniętej.
+            if (!compact)
+              TextButton.icon(
+                onPressed: () => onSetAll(items, !allPaid),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                icon: Icon(
+                    allPaid ? LucideIcons.square : LucideIcons.checkSquare,
+                    size: 16),
+                label: Text(allPaid ? 'Odznacz' : 'Odhacz'),
+              ),
+          ],
+        ),
+        if (!compact) ...[
+          const SizedBox(height: 4),
+          ...rows.map((r) => _item(context, r)),
+        ],
+      ],
+    );
+  }
+
+  Widget _item(BuildContext context, _PayRow r) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final done = isDone(r.sourceId, r.date);
+    return InkWell(
+      onTap: () => onToggle(r.sourceId, r.date),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(done ? LucideIcons.checkSquare : LucideIcons.square,
+                size: 20, color: done ? c.positive : c.textMuted),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${r.name} · ${DateFormat('d MMM', 'pl').format(r.date)}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  decoration: done ? TextDecoration.lineThrough : null,
+                  color: done ? c.textMuted : null,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '−${budgetNf.format(r.amount)}${curLabelSuffix(currency)}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: done ? c.textMuted : c.negative,
+                decoration: done ? TextDecoration.lineThrough : null,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PayRow {
+  final String name;
+  final double amount;
+  final DateTime date;
+  final String sourceId;
+  const _PayRow(this.name, this.amount, this.date, this.sourceId);
 }
 
 class _DayDetail extends StatelessWidget {
@@ -897,7 +933,7 @@ class _DayDetail extends StatelessWidget {
                         overflow: TextOverflow.ellipsis),
                   ),
                   Text(
-                    '$sign${budgetNf.format(it.amount)} $currency',
+                    '$sign${budgetNf.format(it.amount)}${curLabelSuffix(currency)}',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: color,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -929,8 +965,8 @@ class BudgetEntryCard extends StatelessWidget {
     final cur = entry.currency.label;
 
     final amountLine = entry.isOneTime
-        ? '$sign${budgetNf.format(entry.amount)} $cur'
-        : '$sign${budgetNf.format(entry.amount)} $cur/${budgetCycleSuffix(entry.cycle)}';
+        ? '$sign${budgetNf.format(entry.amount)}${curLabelSuffix(cur)}'
+        : '$sign${budgetNf.format(entry.amount)}${curLabelSuffix(cur)}/${budgetCycleSuffix(entry.cycle)}';
 
     final overrideCount = entry.monthOverrides?.length ?? 0;
     final overrideSuffix = overrideCount > 0 ? ' · korekt: $overrideCount' : '';

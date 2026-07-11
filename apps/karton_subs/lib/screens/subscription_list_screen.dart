@@ -10,6 +10,7 @@ import '../services/excel_service.dart';
 import '../services/pdf_export_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/aurora_segmented.dart';
@@ -29,28 +30,14 @@ class SubscriptionListScreen extends StatefulWidget {
   State<SubscriptionListScreen> createState() => _SubscriptionListScreenState();
 }
 
-class _SubscriptionListScreenState extends State<SubscriptionListScreen>
-    with SingleTickerProviderStateMixin {
+class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   static const _pdfService = PdfExportService();
 
-  late final TabController _tabController;
   String? _filterCategoryId;
   // Spojnie z Dashboard/Budzet: tylko Osobiste/Domowe (bez „Wszystkie").
   SubscriptionScope _scopeFilter = SubscriptionScope.personal;
   bool _showInactive = false;
   bool _isBusy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,29 +99,15 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen>
               ],
             ),
           ),
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'Lista'),
-              Tab(text: 'Statystyki'),
-            ],
-          ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _ListTab(
-                  filterCategoryId: _filterCategoryId,
-                  scopeFilter: _scopeFilter,
-                  showInactive: _showInactive,
-                  onSelectCategory: (id) =>
-                      setState(() => _filterCategoryId = id),
-                  onToggleInactive: () =>
-                      setState(() => _showInactive = !_showInactive),
-                  onTapEdit: _openEdit,
-                ),
-                _StatsTab(scopeFilter: _scopeFilter),
-              ],
+            child: _ListTab(
+              filterCategoryId: _filterCategoryId,
+              scopeFilter: _scopeFilter,
+              showInactive: _showInactive,
+              onSelectCategory: (id) => setState(() => _filterCategoryId = id),
+              onToggleInactive: () =>
+                  setState(() => _showInactive = !_showInactive),
+              onTapEdit: _openEdit,
             ),
           ),
         ],
@@ -380,9 +353,12 @@ class _Card extends StatelessWidget {
 
 // ── Zakładka: Statystyki ──────────────────────────────────────────────────────
 
-class _StatsTab extends StatelessWidget {
+/// Statystyki subskrypcji — używane na zakładce „Plan" Dashboardu (segment
+/// Subskrypcje). Hero mies./rok, pasek limitu, trend, podział na kategorie, triale.
+/// Zwraca [Column] (osadzane w przewijanej liście Planu).
+class SubscriptionStatsView extends StatelessWidget {
   final SubscriptionScope scopeFilter;
-  const _StatsTab({required this.scopeFilter});
+  const SubscriptionStatsView({super.key, required this.scopeFilter});
 
   static const _analytics = AnalyticsService();
 
@@ -415,8 +391,7 @@ class _StatsTab extends StatelessWidget {
       ..sort((a, b) => (a.trialDaysRemaining ?? 99)
           .compareTo(b.trialDaysRemaining ?? 99));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 112),
+    return Column(
       children: [
         _SummaryHero(
           monthly: monthlyTotal,
@@ -466,7 +441,7 @@ class _SummaryHero extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final nf = NumberFormat('#,##0.00', 'pl_PL');
-    final amountText = '${nf.format(monthly)} $currency';
+    final amountText = '${nf.format(monthly)}${curLabelSuffix(currency)}';
 
     return Card(
       color: c.heroCardBg,
@@ -483,7 +458,7 @@ class _SummaryHero extends StatelessWidget {
             GradientAmount(amountText,
                 semanticsLabel: 'Łączny koszt miesięczny $amountText'),
             const SizedBox(height: 4),
-            Text('${nf.format(yearly)} $currency / rok',
+            Text('${nf.format(yearly)}${curLabelSuffix(currency)} / rok',
                 style: theme.textTheme.bodyMedium
                     ?.copyWith(color: c.heroCardTextSecondary)),
             const SizedBox(height: 4),
@@ -546,7 +521,7 @@ class _TrialCostsCard extends StatelessWidget {
                         )),
                     const SizedBox(width: 12),
                     Text(
-                      '${nf.format(s.postTrialAmount ?? s.amount)} $currencySymbol/${_cycleSuffix(s.billingCycle)}',
+                      '${nf.format(s.postTrialAmount ?? s.amount)}${curLabelSuffix(currencySymbol)}/${_cycleSuffix(s.billingCycle)}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         fontFeatures: const [FontFeature.tabularFigures()],

@@ -123,13 +123,13 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 |------|-----|----------|------|
 | `id` | UUID | tak | Unikalny identyfikator |
 | `name` | string | tak | Nazwa pozycji |
-| `type` | BudgetEntryType | tak | income / bill / recurringCost / installment / oneTimeExpense / oneTimeIncome / householdTransfer |
+| `type` | BudgetEntryType | tak | income / recurringCost / billPayment / installment / oneTimeExpense / oneTimeIncome / householdTransfer |
 | `amount` | double | tak | Kwota (>0) w walucie `currency` |
 | `currency` | Currency | tak | PLN, EUR, USD, GBP |
 | `cycle` | BillingCycle | tak* | Cykl dla typow cyklicznych (default monthly) |
 | `customCycleDays` | int | nie | Liczba dni (gdy cycle == custom) |
 | `month` | string "YYYY-MM" | tak* | Miesiac przypisania (typy jednorazowe) |
-| `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — `bill` i `householdTransfer`**: inna data/kwota w danym miesiacu. Dla przelewu kaskaduje do lustra w domowym. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) |
+| `monthOverrides` | Map<"YYYY-MM", BillMonthOverride> | nie | **Korekty miesieczne — `recurringCost` i `householdTransfer`**: inna data/kwota w danym miesiacu. Dla przelewu kaskaduje do lustra w domowym. Patrz [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md) / [ADR-011](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md) |
 | `categoryId` | UUID | nie | Kategoria pozycji (subskrypcje + wydatki budzetu) |
 | `paymentMethod` | string | nie | Nazwa metody platnosci (jak w `Subscription`). Tryb auto/manual z [`PaymentMethod.isAutomatic`] — kolor na kalendarzu i lista „Platnosci". Brak = manualna |
 | `installmentCount` | int | tak* | Liczba rat — tylko `installment`. Start = `startDate` |
@@ -145,7 +145,7 @@ Jeden model dla wszystkich pozycji budzetu. Typ okresla zachowanie
 
 ```dart
 enum BudgetEntryType {
-  income, bill, recurringCost, installment,
+  income, recurringCost, billPayment, installment,
   oneTimeExpense, oneTimeIncome, householdTransfer
 }
 enum BudgetScope { personal, household } // wybiera box (osobny zbior dla domowego)
@@ -156,15 +156,22 @@ class BillMonthOverride {       // korekta rachunku dla jednego miesiaca
 }
 ```
 
-**`bill` vs `recurringCost` (ADR-008):** oba to koszty cykliczne, ale rozne:
-- **`bill` (rachunek) = zmienny** — kwota bazowa + cykl jako domyslne; w kazdym
-  miesiacu mozna nadpisac date i kwote (`monthOverrides`). Przyklad: fryzjer co
-  miesiac, inny dzien, czasem inna cena.
-- **`recurringCost` (koszt cykliczny) = staly** — stala kwota w interwale, bez korekt.
+**`recurringCost` (koszt cykliczny, ADR-011):** jeden typ cykliczny z **opcjonalna
+korekta miesieczna** (`monthOverrides`). Bez korekty = staly (czynsz); z korekta =
+zmienny w danym miesiacu (prad — inna kwota/data). Scalony z dawnym `bill`
+(usunietym z enuma; stare dane `bill` deserializuja sie do `recurringCost`).
 
 **Korekty NIE zmieniaja „zostaje/mies" (surplus = plan, liczony z kwoty bazowej)** —
 wplywaja tylko na **bilans danego miesiaca** i **kalendarz**. Patrz
 [ADR-008](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md).
+
+**`billPayment` (rachunek — realny log, ADR-011):** datowana, faktycznie oplacona
+pozycja (trudna do zaplanowania; docelowo z OCR). Traktowana jak wydatek jednorazowy
+(`isOneTime`): zasila **bilans miesiaca**, NIE plan „zostaje/mies". Ma wlasny ekran
+„Rachunki". Zgadywanke planu dla tej puli pelni koperta **„Na rachunki"**
+(`billsAllocation` w `settings`, per zakres) — osobna statystyka, nie zmienia
+surplus ani bilansu. Patrz
+[ADR-011](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md).
 
 **`installment` (rata):** koszt miesieczny z okreslonym koncem — `startDate` (pierwsza
 rata) + `installmentCount`; data ostatniej raty = start + (count−1) miesiecy. Liczy sie
@@ -193,8 +200,10 @@ w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zb
 |------------|------|
 | Wplywy/mies | suma `monthlyAmount` aktywnych wplywow cyklicznych |
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
-| Zostaje/mies (surplus) | wplywy - koszty/mies (rachunki z **kwoty bazowej**; raty tylko **aktywne teraz**) |
-| Bilans miesiaca | surplus **+** jednorazowe wplywy - jednorazowe wydatki **+** korekty kwot (wplyw `+`, wydatek `−`) - **korekta rat** danego miesiaca |
+| Zostaje/mies (surplus) | wplywy - koszty cykliczne - subskrypcje - **rezerwa „Na rachunki"** (koszty z **kwoty bazowej**; raty tylko **aktywne teraz**; `billPayment` NIE wchodzi) |
+| Bilans miesiaca | surplus **+ rezerwa „Na rachunki" (oddana)** **+** jednorazowe wplywy - jednorazowe wydatki (w tym `billPayment`) **+** korekty kwot - **korekta rat** (koperta skraca sie => bilans liczy realne rachunki; ADR-011) |
+| Rachunki realne (mies.) | suma `billPayment` danego miesiaca (`billsActualForMonth`) — porownanie z koperta „Na rachunki" (`billsAllocation`) |
+| Trendy/kategorie (Plan) | `expenseTrend`/`billsTrend` (6 mies.) + `expenseBreakdownByCategory`/`billsBreakdownByCategory` — do wykresow statystyk |
 | Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`); rachunek z korekta bierze jej date/kwote |
 
 Normalizacja cyklu i rzutowanie wystapien: `lib/utils/cycle_math.dart`
@@ -339,7 +348,7 @@ class PaymentMethod {
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
 | Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** — synchronizowany E2E (ADR-009); pozycje niosa `updatedAt`/`deleted` (nagrobki) |
 | Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
-| Hive Box: `settings` | Key-value: waluta domyslna, budzet, preferencje |
+| Hive Box: `settings` | Key-value: waluta domyslna, limit budzetu subskrypcji, koperta „Na rachunki" (`billsAllocation\|scope`, per zakres), preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).
 Referencja: `reference-code/services/storage_service.dart`

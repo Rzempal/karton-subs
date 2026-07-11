@@ -3,43 +3,13 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/settings_widgets.dart';
 
-/// Ekran aktualizacji (OTA) + wersja aplikacji.
-class UpdatesScreen extends StatelessWidget {
-  const UpdatesScreen({super.key});
+/// Inline sekcja aktualizacji (OTA) — do wstawienia wprost w Ustawieniach.
+/// Sprawdzanie i instalacja bez wchodzenia w osobny ekran (wzorzec z APPteczka):
+/// wersja + status + „Sprawdź teraz"; gdy dostępna aktualizacja — instalacja.
+class UpdateInlineSection extends StatelessWidget {
+  const UpdateInlineSection({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Aktualizacje')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-        children: [
-          SettingsGroup(children: [_OtaSection()]),
-          const SettingsSectionLabel('Informacje'),
-          SettingsGroup(
-            children: [
-              Consumer<UpdateService>(
-                builder: (_, svc, _) => ListTile(
-                  leading: const Icon(LucideIcons.info),
-                  title: const Text('Wersja aplikacji'),
-                  trailing: Text(
-                    svc.currentVersionName ?? '1.0.0',
-                    style: TextStyle(color: context.semanticColors.textMuted),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OtaSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<UpdateService>(
@@ -70,10 +40,8 @@ class _OtaSection extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Uruchamianie instalatora…',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          const Text('Uruchamianie instalatora…',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
                           const SizedBox(height: 2),
                           Text(
                             svc.showInstallerHint
@@ -95,50 +63,81 @@ class _OtaSection extends StatelessWidget {
         if (svc.updateAvailable) {
           return _UpdateAvailableTile(svc: svc);
         }
-        if (svc.isUpToDate) {
-          return ListTile(
-            leading: Icon(
-              LucideIcons.checkCircle,
-              color: context.semanticColors.positive,
-            ),
-            title: const Text('Aplikacja jest aktualna'),
-            subtitle: Text('Sprawdzono: ${_formatTime(svc.lastCheckTime)}'),
-            trailing: IconButton(
-              icon: const Icon(LucideIcons.refreshCw),
-              onPressed: () => svc.checkForUpdate(),
-              tooltip: 'Sprawdź ponownie',
-            ),
-          );
-        }
+
+        // Stan spoczynku (aktualna / do sprawdzenia / błąd) — jeden kafel:
+        // wersja + status + przycisk „Sprawdź teraz". Bez osobnego ekranu.
+        final c = context.semanticColors;
+        final checking = svc.status == UpdateStatus.checking;
+        final error =
+            svc.status == UpdateStatus.error && svc.errorMessage != null;
         return ListTile(
-          leading: const Icon(LucideIcons.download),
-          title: const Text('Sprawdź aktualizacje'),
-          subtitle: svc.status == UpdateStatus.checking
-              ? const Text('Sprawdzanie…')
-              : svc.errorMessage != null
-              ? Text(
-                  svc.errorMessage!,
-                  style: TextStyle(color: context.semanticColors.negative),
-                )
-              : null,
-          trailing: svc.status == UpdateStatus.checking
+          isThreeLine: true,
+          leading: Icon(
+            svc.isUpToDate ? LucideIcons.checkCircle : LucideIcons.download,
+            color: svc.isUpToDate ? c.positive : null,
+          ),
+          title: Row(
+            children: [
+              const Flexible(child: Text('Sprawdź aktualizacje')),
+              const SizedBox(width: 8),
+              if (checking)
+                _Badge('Sprawdzanie…', c.textMuted)
+              else if (error)
+                _Badge('Błąd', c.negative)
+              else if (svc.isUpToDate)
+                _Badge('Aktualna', c.positive),
+            ],
+          ),
+          subtitle: Text(
+            error
+                ? svc.errorMessage!
+                : 'Wersja: v${svc.currentVersionName ?? '—'}\n'
+                    'Sprawdzono: ${_formatDateTime(svc.lastCheckTime)}',
+            style: error ? TextStyle(color: c.negative) : null,
+          ),
+          trailing: checking
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(LucideIcons.chevronRight),
-          onTap: svc.status == UpdateStatus.checking
-              ? null
-              : () => svc.checkForUpdate(),
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : IconButton(
+                  icon: const Icon(LucideIcons.refreshCw),
+                  tooltip: 'Sprawdź teraz',
+                  onPressed: () => svc.checkForUpdate(),
+                ),
         );
       },
     );
   }
 
-  String _formatTime(DateTime? t) {
+  String _formatDateTime(DateTime? t) {
     if (t == null) return 'nigdy';
-    return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(t.day)}.${two(t.month)} ${two(t.hour)}:${two(t.minute)}';
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _Badge(this.text, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context)
+            .textTheme
+            .labelSmall
+            ?.copyWith(color: color, fontWeight: FontWeight.w600),
+      ),
+    );
   }
 }
 
@@ -164,24 +163,20 @@ class _UpdateAvailableTile extends StatelessWidget {
             children: [
               Icon(LucideIcons.download, color: c.positive),
               const SizedBox(width: 8),
-              Text(
-                'Dostępna aktualizacja ${svc.latestVersion}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: c.positive,
+              Expanded(
+                child: Text(
+                  'Dostępna aktualizacja ${svc.latestVersion}',
+                  style:
+                      TextStyle(fontWeight: FontWeight.w600, color: c.positive),
                 ),
               ),
             ],
           ),
           if (svc.changelog.isNotEmpty) ...[
             const SizedBox(height: 8),
-            ...svc.changelog
-                .take(3)
-                .map(
-                  (e) => Text(
-                    '• ${e['notes'] ?? ''}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
+            ...svc.changelog.take(3).map(
+                  (e) => Text('• ${e['notes'] ?? ''}',
+                      style: const TextStyle(fontSize: 13)),
                 ),
           ],
           const SizedBox(height: 12),
@@ -218,10 +213,8 @@ class _DownloadProgress extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Pobieranie aktualizacji… ${progress.toInt()}%',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text('Pobieranie aktualizacji… ${progress.toInt()}%',
+              style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: progress / 100,

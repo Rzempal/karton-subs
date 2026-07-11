@@ -5,15 +5,18 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/analytics_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/money_format.dart';
 
 class SpendingChart extends StatelessWidget {
   final List<MonthlyDataPoint> data;
   final String currencySymbol;
+  final String title;
 
   const SpendingChart({
     super.key,
     required this.data,
     required this.currencySymbol,
+    this.title = 'Trend wydatków',
   });
 
   @override
@@ -35,7 +38,7 @@ class SpendingChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Trend wydatków', style: theme.textTheme.titleMedium),
+            Text(title, style: theme.textTheme.titleMedium),
             const SizedBox(height: 20),
             SizedBox(
               height: 200,
@@ -113,7 +116,7 @@ class SpendingChart extends StatelessWidget {
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipItems: (spots) => spots
                           .map((s) => LineTooltipItem(
-                                '${s.y.toStringAsFixed(0)} $currencySymbol',
+                                '${s.y.toStringAsFixed(0)}${curLabelSuffix(currencySymbol)}',
                                 TextStyle(
                                   color: c.textPrimary,
                                   fontWeight: FontWeight.w600,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../services/sync_service.dart';
 import '../widgets/settings_widgets.dart';
+import '../widgets/update_inline_section.dart';
 import 'appearance_screen.dart';
 import 'backup_screen.dart';
 import 'category_management_screen.dart';
@@ -12,7 +13,6 @@ import 'dev_tools_screen.dart';
 import 'household_sync_screen.dart';
 import 'notifications_screen.dart';
 import 'payment_method_management_screen.dart';
-import 'updates_screen.dart';
 
 /// Ekran Ustawien — lista nawigacyjna do osobnych ekranow (kazda sekcja = ekran).
 class SettingsScreen extends StatelessWidget {
@@ -78,11 +78,7 @@ class SettingsScreen extends StatelessWidget {
 
           const SettingsSectionLabel('Aplikacja'),
           SettingsGroup(children: [
-            _navTile(context,
-                icon: LucideIcons.refreshCw,
-                title: 'Aktualizacje',
-                subtitle: 'Wersja i sprawdzanie aktualizacji',
-                screen: const UpdatesScreen()),
+            const UpdateInlineSection(),
             if (AppConfig.isInternal)
               _navTile(context,
                   icon: LucideIcons.wrench,

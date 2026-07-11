@@ -6,11 +6,16 @@ enum BudgetEntryType {
   /// Wpływ cykliczny (np. pensja).
   income,
 
-  /// Koszt stały / rachunek (cykliczny, np. czynsz, prąd).
-  bill,
-
-  /// Koszt cykliczny (mies./rocz., np. ubezpieczenie, karnet).
+  /// Koszt cykliczny (np. czynsz, prąd, internet, ubezpieczenie, karnet).
+  /// Obsługuje opcjonalne korekty miesięczne ([monthOverrides]): kwota bazowa =
+  /// plan (wchodzi w „zostaje/mies"), korekta = realna kwota danego miesiąca
+  /// (bilans + kalendarz). Patrz [ADR-008]. Scalony z dawnym `bill`.
   recurringCost,
+
+  /// Rachunek — realny log już opłaconej, trudnej do zaplanowania pozycji.
+  /// Datowany (jak wydatek jednorazowy): zasila **bilans miesiąca**, a NIE plan
+  /// („zostaje/mies"). Zgadywankę planu dla tej puli pełni koperta „Na rachunki".
+  billPayment,
 
   /// Większy wydatek jednorazowy — przypięty do konkretnej daty.
   oneTimeExpense,
@@ -30,9 +35,10 @@ enum BudgetEntryType {
 /// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
 enum BudgetScope { personal, household }
 
-/// Korekta rachunku ([BudgetEntryType.bill]) dla konkretnego miesiąca.
+/// Korekta pozycji cyklicznej ([BudgetEntryType.recurringCost]) lub przelewu do
+/// domowego dla konkretnego miesiąca.
 ///
-/// Rachunek ma kwotę bazową i cykl jako domyślne; korekta nadpisuje je dla
+/// Pozycja ma kwotę bazową i cykl jako domyślne; korekta nadpisuje je dla
 /// danego miesiąca: [amount] zmienia kwotę (bilans + kalendarz), [date] zmienia
 /// dzień wystąpienia (kalendarz). Pola opcjonalne — `null` = użyj wartości bazowej.
 /// Patrz [ADR-008]. Korekty NIE wpływają na „zostaje miesięcznie" (surplus).
@@ -72,9 +78,9 @@ class BillMonthOverride {
 
 /// Pozycja budżetu domowego.
 ///
-/// Jeden model dla wpływów i wydatków. Typy cykliczne (income/bill/recurringCost)
-/// są normalizowane do kwoty miesięcznej; [oneTimeExpense] nie wchodzi do średniej
-/// miesięcznej, tylko obciąża bilans wskazanego [month].
+/// Jeden model dla wpływów i wydatków. Typy cykliczne (income/recurringCost)
+/// są normalizowane do kwoty miesięcznej; [oneTimeExpense] i [billPayment] nie
+/// wchodzą do średniej miesięcznej, tylko obciążają bilans wskazanego miesiąca.
 ///
 /// Subskrypcje są osobnym modułem ([Subscription]) — budżet czyta je dodatkowo
 /// jako strumień kosztów (patrz `BudgetService`).
@@ -90,10 +96,10 @@ class BudgetEntry {
   final BillingCycle cycle;
   final int? customCycleDays;
 
-  /// Miesiąc przypisania w formacie "YYYY-MM" — tylko dla [oneTimeExpense].
+  /// Miesiąc przypisania w formacie "YYYY-MM" — dla [oneTimeExpense] i [billPayment].
   final String? month;
 
-  /// Korekty miesięczne — tylko dla [BudgetEntryType.bill] (rachunek zmienny).
+  /// Korekty miesięczne — dla [BudgetEntryType.recurringCost] i [householdTransfer].
   /// Klucz = "YYYY-MM". Nadpisują kwotę/datę danego miesiąca; nie ruszają surplus.
   /// Patrz [ADR-008].
   final Map<String, BillMonthOverride>? monthOverrides;
@@ -161,9 +167,9 @@ class BudgetEntry {
   /// [updatedAt] traktujemy jak zmienione w chwili dodania ([dataDodania]).
   DateTime get effectiveUpdatedAt => updatedAt ?? dataDodania;
 
-  /// Czy typ obsługuje korekty miesięczne (rachunek + przelew do domowego).
+  /// Czy typ obsługuje korekty miesięczne (koszt cykliczny + przelew do domowego).
   bool get supportsMonthOverrides =>
-      type == BudgetEntryType.bill ||
+      type == BudgetEntryType.recurringCost ||
       type == BudgetEntryType.householdTransfer;
 
   /// Korekta wskazanego miesiąca ("YYYY-MM") lub `null`.
@@ -215,7 +221,8 @@ class BudgetEntry {
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
   bool get isOneTime =>
       type == BudgetEntryType.oneTimeExpense ||
-      type == BudgetEntryType.oneTimeIncome;
+      type == BudgetEntryType.oneTimeIncome ||
+      type == BudgetEntryType.billPayment;
   bool get isExpense => !isIncome;
 
   /// Kwota znormalizowana do miesięcznej (bez znaku).

@@ -59,6 +59,7 @@ enum BalanceContributionKind {
   oneTimeExpense, // jednorazowy wydatek (−)
   amountOverride, // korekta kwoty (rachunek/przelew/wpływ, ze znakiem)
   installment, // korekta raty (rata w tym miesiącu vs teraz)
+  billsAllocation, // rezerwa „Na rachunki" oddana z planu (+) — real liczy faktyczne rachunki
 }
 
 /// Pojedyncza pozycja, która sprawia, że bilans miesiąca różni się od salda.
@@ -121,14 +122,19 @@ class BudgetService {
       monthlyBudgetExpenses(entries, target: target) +
       monthlySubscriptionsExpense(subs, target: target);
 
-  /// „Zostaje miesięcznie" = wpływy − (koszty cykliczne + subskrypcje).
+  /// „Zostaje miesięcznie" = wpływy − (koszty cykliczne + subskrypcje) − rezerwa
+  /// „Na rachunki". [billsAllocation] to koperta planu (zgadywanka na rachunki),
+  /// która pomniejsza plan; w bilansie miesiąca jest oddawana i podmieniana na
+  /// realne rachunki (`billPayment`) — bez podwójnego liczenia (ADR-011).
   double monthlySurplus(
     List<BudgetEntry> entries,
     List<Subscription> subs, {
     Currency? target,
+    double billsAllocation = 0,
   }) =>
       monthlyIncome(entries, target: target) -
-      monthlyRecurringExpenses(entries, subs, target: target);
+      monthlyRecurringExpenses(entries, subs, target: target) -
+      billsAllocation;
 
   // ── Wydatki jednorazowe (per miesiąc) ───────────────────────────────────────
 
@@ -174,6 +180,96 @@ class BudgetService {
   }) =>
       _sumAmount(
           oneTimeIncomesForMonth(entries, monthKey), target ?? Currency.PLN);
+
+  // ── Rachunki: realny log ([BudgetEntryType.billPayment]) ────────────────────
+
+  /// Rachunki (realny log opłaconych, trudnych do zaplanowania pozycji)
+  /// przypisane do danego miesiąca ("YYYY-MM"). Datowane wydatki — zasilają
+  /// bilans miesiąca (jak jednorazowe), NIE plan („zostaje/mies").
+  List<BudgetEntry> billPaymentsForMonth(
+    List<BudgetEntry> entries,
+    String monthKey,
+  ) =>
+      entries
+          .where((e) =>
+              e.isActive &&
+              e.type == BudgetEntryType.billPayment &&
+              e.month == monthKey)
+          .toList();
+
+  /// Suma realnych rachunków danego miesiąca (waluta docelowa) — „rzeczywiste"
+  /// w porównaniu z kopertą „Na rachunki" (plan).
+  double billsActualForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) =>
+      _sumAmount(
+          billPaymentsForMonth(entries, monthKey), target ?? Currency.PLN);
+
+  // ── Statystyki: trendy i podział na kategorie (do wykresów w Planie) ────────
+
+  /// Trend miesięcznych wydatków (ostatnie [months] mies.): koszty cykliczne +
+  /// subskrypcje (bieżące) + jednorazowe i rachunki danego miesiąca.
+  List<MonthlyDataPoint> expenseTrend(
+    List<BudgetEntry> entries,
+    List<Subscription> subs, {
+    int months = 6,
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final base = monthlyBudgetExpenses(entries, target: t) +
+        monthlySubscriptionsExpense(subs, target: t);
+    final now = _now;
+    return [
+      for (var i = months - 1; i >= 0; i--)
+        () {
+          final m = DateTime(now.year, now.month - i, 1);
+          return MonthlyDataPoint(
+            month: m,
+            amount: base +
+                oneTimeTotalForMonth(entries, BudgetEntry.monthKeyOf(m),
+                    target: t),
+          );
+        }()
+    ];
+  }
+
+  /// Trend realnych rachunków (`billPayment`) per miesiąc — ostatnie [months].
+  List<MonthlyDataPoint> billsTrend(
+    List<BudgetEntry> entries, {
+    int months = 6,
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final now = _now;
+    return [
+      for (var i = months - 1; i >= 0; i--)
+        () {
+          final m = DateTime(now.year, now.month - i, 1);
+          return MonthlyDataPoint(
+            month: m,
+            amount:
+                billsActualForMonth(entries, BudgetEntry.monthKeyOf(m), target: t),
+          );
+        }()
+    ];
+  }
+
+  /// Podział realnych rachunków danego miesiąca wg kategorii (wykres kołowy).
+  Map<String, double> billsBreakdownByCategory(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final out = <String, double>{};
+    for (final e in billPaymentsForMonth(entries, monthKey)) {
+      final key = e.categoryId ?? 'budget_other';
+      out[key] = (out[key] ?? 0) + _currency.convert(e.amount, e.currency, t);
+    }
+    return out;
+  }
 
   /// Wpływ korekt kwoty na bilans miesiąca, ze znakiem (ADR-008). Dla każdej
   /// aktywnej pozycji z nadpisaną kwotą w tym miesiącu: wpływ `+ (korekta−baza)`,
@@ -225,8 +321,13 @@ class BudgetService {
     List<Subscription> subs,
     String monthKey, {
     Currency? target,
+    double billsAllocation = 0,
   }) =>
-      monthlySurplus(entries, subs, target: target) +
+      // Rezerwa „Na rachunki" jest oddawana (+billsAllocation) — plan ją rezerwuje,
+      // ale realny miesiąc liczy faktyczne rachunki (w oneTimeTotalForMonth).
+      monthlySurplus(entries, subs,
+              target: target, billsAllocation: billsAllocation) +
+      billsAllocation +
       oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
       oneTimeTotalForMonth(entries, monthKey, target: target) +
       overrideDeltaForMonth(entries, monthKey, target: target) -
@@ -240,9 +341,21 @@ class BudgetService {
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
+    double billsAllocation = 0,
   }) {
     final t = target ?? Currency.PLN;
     final out = <BalanceContribution>[];
+
+    // Rezerwa „Na rachunki" oddana z planu (+): plan ją rezerwował, real liczy
+    // faktyczne rachunki (poniżej jako jednorazowe wydatki). Utrzymuje inwariant
+    // suma delt == bilans − surplus (ADR-008/011).
+    if (billsAllocation != 0) {
+      out.add(BalanceContribution(
+        name: 'Na rachunki (rezerwa planu)',
+        delta: billsAllocation,
+        kind: BalanceContributionKind.billsAllocation,
+      ));
+    }
 
     for (final e in oneTimeIncomesForMonth(entries, monthKey)) {
       out.add(BalanceContribution(

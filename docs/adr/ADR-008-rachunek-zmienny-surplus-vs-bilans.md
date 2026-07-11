@@ -1,7 +1,13 @@
 # ADR-008: Rozdzial rol — „zostaje miesiecznie" (plan) vs „bilans miesiaca" (realny); rachunek zmienny
 
 Data: 2026-06-17
-Status: zaakceptowany
+Status: zaakceptowany (podzial typow czesciowo wycofany — patrz [ADR-011](ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md))
+
+> **Aktualizacja 2026-07-09 (ADR-011):** typy `bill` i `recurringCost` zostaly **scalone**
+> w jeden cykliczny (`recurringCost`) z opcjonalna korekta — `bill` usuniety z enuma.
+> Sama figura „rachunek" (realny log oplat) przeniesiona do nowego typu `billPayment`
+> (datowany wydatek, zasila bilans, nie plan). **Inwariant tego ADR pozostaje w mocy:**
+> korekty i pozycje jednorazowe (w tym `billPayment`) zmieniaja bilans miesiaca, nie surplus.
 
 ## Kontekst
 
