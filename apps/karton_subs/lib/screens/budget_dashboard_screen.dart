@@ -3,6 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
+import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../services/excel_service.dart';
@@ -14,15 +15,16 @@ import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
+import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_now_button.dart';
 import 'add_budget_entry_screen.dart';
 
 /// Sortowanie listy budżetu.
 enum _BudgetSort { alpha, amountDesc }
 
-/// Widok listy: szczegółowy (Wpływy/Przelew/Koszty/Jednorazowe) lub scalony
-/// (tylko Wpływy/Wypływy).
-enum _BudgetView { detailed, merged }
+/// Grupowanie: zawsze po typach (Wpływy/Przelew/Wydatki stałe/jednorazowe);
+/// `byCategory` dodatkowo grupuje pozycje wydatków po kategoriach (etykietach).
+enum _BudgetGrouping { byType, byCategory }
 
 /// Ekran Budżet — zarządzanie pozycjami (wpływy, koszty cykliczne, jednorazowe).
 /// Przegląd liczbowy (surplus, bilans miesiąca) jest na Dashboardzie.
@@ -47,9 +49,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   int? _filterYear;
   int? _filterMonth;
 
-  /// Sortowanie i widok listy.
+  /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
-  _BudgetView _view = _BudgetView.detailed;
+  _BudgetGrouping _grouping = _BudgetGrouping.byType;
 
   /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i
   /// okien spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wchodzą.
@@ -95,17 +97,14 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final transfers = ctrl.internalTransfers;
     final recurring = ctrl.recurringExpenses;
     final oneTime = ctrl.oneTimeExpenses;
-    final rawBuckets = _view == _BudgetView.merged
-        ? <(String, List<BudgetEntry>)>[
-            ('Wpływy', incomes),
-            ('Wydatki', [...transfers, ...recurring, ...oneTime]),
-          ]
-        : <(String, List<BudgetEntry>)>[
-            ('Wpływy', incomes),
-            ('Przelew wewnętrzny', transfers),
-            ('Koszty cykliczne', recurring),
-            ('Wydatki jednorazowe', oneTime),
-          ];
+    // Zawsze grupowanie po typach; flaga `true` = kubełek kategoryzowalny
+    // (wydatki), w którym przycisk grupowania włącza podgrupy po kategoriach.
+    final rawBuckets = <(String, List<BudgetEntry>, bool)>[
+      ('Wpływy', incomes, false),
+      ('Przelew wewnętrzny', transfers, false),
+      ('Wydatki stałe', recurring, true),
+      ('Wydatki jednorazowe', oneTime, true),
+    ];
     final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
 
     // Kategorie użyte w wydatkach (pasek filtra kategorii).
@@ -122,50 +121,47 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         .toList();
     final activeCat =
         (_filterCategoryId != null && usedCatIds.contains(_filterCategoryId))
-            ? _filterCategoryId
-            : null;
+        ? _filterCategoryId
+        : null;
 
     // Typy obecne (filtr typu).
     final presentTypes = <BudgetEntryType>{
       for (final b in rawBuckets)
-        for (final e in b.$2) e.type
+        for (final e in b.$2) e.type,
     };
     final activeType =
         (_filterType != null && presentTypes.contains(_filterType))
-            ? _filterType
-            : null;
+        ? _filterType
+        : null;
     final filterTypes = presentTypes.toList()
       ..sort((a, b) => a.index.compareTo(b.index));
 
     // Filtr czasu (snapshot) — lata/miesiące obecne w danych zmiennych.
     final variableMonths = _variableMonths(ctrl.all);
-    final availableYears = variableMonths
-        .map((m) => int.parse(m.substring(0, 4)))
-        .toSet()
-        .toList()
-      ..sort();
+    final availableYears =
+        variableMonths.map((m) => int.parse(m.substring(0, 4))).toSet().toList()
+          ..sort();
     final activeYear =
         (_filterYear != null && availableYears.contains(_filterYear))
-            ? _filterYear
-            : null;
+        ? _filterYear
+        : null;
     final monthsOfYear = activeYear == null
         ? <int>[]
         : (variableMonths
-            .where((m) => m.startsWith('$activeYear-'))
-            .map((m) => int.parse(m.substring(5, 7)))
-            .toSet()
-            .toList()
-          ..sort());
+              .where((m) => m.startsWith('$activeYear-'))
+              .map((m) => int.parse(m.substring(5, 7)))
+              .toSet()
+              .toList()
+            ..sort());
     final activeMonth =
         (_filterMonth != null && monthsOfYear.contains(_filterMonth))
-            ? _filterMonth
-            : null;
+        ? _filterMonth
+        : null;
 
     int cmp(BudgetEntry a, BudgetEntry b) => switch (_sort) {
-          _BudgetSort.alpha =>
-            a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
-        };
+      _BudgetSort.alpha => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
+    };
     bool keepTime(BudgetEntry e) {
       if (activeYear == null) return true;
       if (activeMonth == null) return _appliesToYear(e, activeYear);
@@ -179,7 +175,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         keepTime(e);
 
     final buckets = rawBuckets
-        .map((b) => (b.$1, b.$2.where(keep).toList()..sort(cmp)))
+        .map((b) => (b.$1, b.$2.where(keep).toList()..sort(cmp), b.$3))
         .where((b) => b.$2.isNotEmpty)
         .toList();
     final filteredEmpty = buckets.isEmpty;
@@ -188,8 +184,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     // aktywnych filtrów (nie ma kategorii/typu, więc filtr by ją mylił).
     final noFilter =
         activeType == null && activeCat == null && activeYear == null;
-    final expensesTitle =
-        _view == _BudgetView.merged ? 'Wydatki' : 'Koszty cykliczne';
+    const expensesTitle = 'Wydatki stałe';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -203,27 +198,37 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               tooltip: _sort == _BudgetSort.alpha
                   ? 'Sortuj: A→Z'
                   : 'Sortuj: kwota malejąco',
-              icon: Icon(_sort == _BudgetSort.alpha
-                  ? LucideIcons.arrowDownAZ
-                  : LucideIcons.arrowDown10),
-              onPressed: () => setState(() => _sort = _sort == _BudgetSort.alpha
-                  ? _BudgetSort.amountDesc
-                  : _BudgetSort.alpha),
+              icon: Icon(
+                _sort == _BudgetSort.alpha
+                    ? LucideIcons.arrowDownAZ
+                    : LucideIcons.arrowDown10,
+              ),
+              onPressed: () => setState(
+                () => _sort = _sort == _BudgetSort.alpha
+                    ? _BudgetSort.amountDesc
+                    : _BudgetSort.alpha,
+              ),
             ),
             IconButton(
-              tooltip: _view == _BudgetView.merged
-                  ? 'Widok scalony: Wpływy/Wydatki (włączony)'
-                  : 'Widok scalony: Wpływy/Wydatki (wyłączony)',
-              icon: Icon(
-                LucideIcons.layers,
-                color: _view == _BudgetView.merged
-                    ? context.semanticColors.primary
-                    : null,
+              isSelected: _grouping == _BudgetGrouping.byCategory,
+              tooltip: _grouping == _BudgetGrouping.byCategory
+                  ? 'Grupowanie wydatków po kategoriach (włączone)'
+                  : 'Grupuj wydatki po kategoriach',
+              // Aktywny stan = wypełniona pigułka (widoczna też w motywie mono,
+              // gdzie akcent jest bezbarwny) + ikona w kolorze akcentu.
+              style: _grouping == _BudgetGrouping.byCategory
+                  ? IconButton.styleFrom(
+                      backgroundColor: context.semanticColors.primary
+                          .withValues(alpha: 0.25),
+                      foregroundColor: context.semanticColors.primary,
+                    )
+                  : null,
+              icon: const Icon(LucideIcons.layers),
+              onPressed: () => setState(
+                () => _grouping = _grouping == _BudgetGrouping.byCategory
+                    ? _BudgetGrouping.byType
+                    : _BudgetGrouping.byCategory,
               ),
-              onPressed: () => setState(() => _view =
-                  _view == _BudgetView.merged
-                      ? _BudgetView.detailed
-                      : _BudgetView.merged),
             ),
           ],
           LabeledIconButton(
@@ -266,7 +271,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: BudgetScopeToggle(
-                scope: ctrl.scope, onChanged: ctrl.setScope),
+              scope: ctrl.scope,
+              onChanged: ctrl.setScope,
+            ),
           ),
           if (!isEmpty && filterCategories.isNotEmpty)
             _CategoryFilter(
@@ -293,13 +300,21 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               onSelectMonth: (m) => setState(() => _filterMonth = m),
             ),
           Expanded(
-            child: (filteredEmpty && !isEmpty)
-                ? const _FilteredEmpty()
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-                    children: _sections(ctrl, buckets, expensesTitle,
-                        showAlloc: noFilter, isEmpty: isEmpty),
-                  ),
+            child: ScopeSwipeArea(
+              child: (filteredEmpty && !isEmpty)
+                  ? const _FilteredEmpty()
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                      children: _sections(
+                        ctrl,
+                        buckets,
+                        expensesTitle,
+                        showAlloc: noFilter,
+                        isEmpty: isEmpty,
+                        byCategory: _grouping == _BudgetGrouping.byCategory,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -311,24 +326,39 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// tylko gdy [showAlloc] (brak aktywnych filtrów).
   List<Widget> _sections(
     BudgetController ctrl,
-    List<(String, List<BudgetEntry>)> buckets,
+    List<(String, List<BudgetEntry>, bool)> buckets,
     String expensesTitle, {
     required bool showAlloc,
     required bool isEmpty,
+    required bool byCategory,
   }) {
     final cur = ctrl.targetCurrencyLabel;
     final alloc = ctrl.billsAllocation;
+    // Pozycje „Na rachunki" słuchają tego samego przełącznika sortowania co reszta
+    // listy (A→Z / kwota malejąco); kolejność w magazynie bez zmian.
+    final allocItems = ctrl.billsAllocationItems.toList()
+      ..sort(
+        (a, b) => switch (_sort) {
+          _BudgetSort.alpha => a.name.toLowerCase().compareTo(
+            b.name.toLowerCase(),
+          ),
+          _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
+        },
+      );
     Widget allocCard() => _BillsAllocationCard(
-          allocation: alloc,
-          currency: cur,
-          onEdit: () => _editAllocation(ctrl),
-        );
+      items: allocItems,
+      currency: cur,
+      onAdd: () => _openAllocItemEditor(ctrl),
+      onEdit: (it) => _openAllocItemEditor(ctrl, existing: it),
+    );
 
     if (isEmpty) {
       return [
         if (showAlloc)
           Padding(
-              padding: const EdgeInsets.only(bottom: 12), child: allocCard()),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: allocCard(),
+          ),
         _EmptyBudget(isHousehold: ctrl.isHousehold),
       ];
     }
@@ -337,26 +367,31 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     var pinned = false;
     for (final b in buckets) {
       final isExp = showAlloc && b.$1 == expensesTitle;
-      out.add(_Section(
-        title: b.$1,
-        entries: b.$2,
-        total: ctrl.sumAmounts(b.$2) + (isExp ? (alloc ?? 0) : 0),
-        currency: cur,
-        onTap: _openEdit,
-        pinnedTop: isExp ? allocCard() : null,
-      ));
+      out.add(
+        _Section(
+          title: b.$1,
+          entries: b.$2,
+          total: ctrl.sumAmounts(b.$2) + (isExp ? (alloc ?? 0) : 0),
+          currency: cur,
+          onTap: _openEdit,
+          pinnedTop: isExp ? allocCard() : null,
+          groupByCategory: byCategory && b.$3,
+        ),
+      );
       if (isExp) pinned = true;
     }
     // Brak sekcji wydatków (sam wpływ) — pokaż „Na rachunki" w osobnej sekcji.
     if (showAlloc && !pinned) {
-      out.add(_Section(
-        title: expensesTitle,
-        entries: const [],
-        total: alloc ?? 0,
-        currency: cur,
-        onTap: _openEdit,
-        pinnedTop: allocCard(),
-      ));
+      out.add(
+        _Section(
+          title: expensesTitle,
+          entries: const [],
+          total: alloc ?? 0,
+          currency: cur,
+          onTap: _openEdit,
+          pinnedTop: allocCard(),
+        ),
+      );
     }
     return out;
   }
@@ -452,58 +487,129 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     );
   }
 
-  /// Edycja koperty „Na rachunki" (per zakres). Pomniejsza „zostaje/mies";
+  /// Dodanie/edycja pojedynczej pozycji koperty „Na rachunki" (nazwa, kwota,
+  /// metoda płatności). Suma pozycji = rezerwa planu (pomniejsza „zostaje/mies");
   /// realne rachunki liczy ekran Rachunki i bilans miesiąca.
-  Future<void> _editAllocation(BudgetController ctrl) async {
-    final tc = TextEditingController(
-        text: ctrl.billsAllocation?.toStringAsFixed(2) ?? '');
+  Future<void> _openAllocItemEditor(
+    BudgetController ctrl, {
+    BillsAllocationItem? existing,
+  }) async {
+    final nameC = TextEditingController(text: existing?.name ?? '');
+    final amountC = TextEditingController(
+      text: existing != null ? existing.amount.toStringAsFixed(2) : '',
+    );
+    String? method = existing?.paymentMethod;
+    final methods = context.read<StorageService>().getPaymentMethods();
+
     await showDialog<void>(
       context: context,
-      builder: (dctx) => AlertDialog(
-        title: const Text('Na rachunki — plan miesięczny'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Ile miesięcznie rezerwujesz na rachunki (zgadywanka). Pomniejsza '
-              '„zostaje/mies"; bilans miesiąca liczy realne rachunki.',
-              style: Theme.of(dctx).textTheme.bodySmall,
+      builder: (dctx) => StatefulBuilder(
+        builder: (dctx, setLocal) => AlertDialog(
+          title: Text(
+            existing == null ? 'Nowa pozycja „Na rachunki"' : 'Edytuj pozycję',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameC,
+                  autofocus: existing == null,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Nazwa',
+                    hintText: 'np. Paliwo',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: amountC,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Kwota (${ctrl.targetCurrencyLabel})',
+                    hintText: 'np. 300',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Metoda płatności',
+                  style: Theme.of(dctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      label: const Text('Brak'),
+                      selected: method == null,
+                      onSelected: (_) => setLocal(() => method = null),
+                    ),
+                    ...methods.map(
+                      (pm) => FilterChip(
+                        avatar: Icon(
+                          pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                          size: 16,
+                          color: method == pm.name ? AppColors.onAccent : null,
+                        ),
+                        label: Text(pm.name),
+                        selected: method == pm.name,
+                        onSelected: (_) => setLocal(() => method = pm.name),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: tc,
-              autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: 'Kwota (${ctrl.targetCurrencyLabel})',
-                hintText: 'np. 500',
+          ),
+          actions: [
+            if (existing != null)
+              TextButton(
+                onPressed: () {
+                  ctrl.removeBillsAllocationItem(existing.id);
+                  Navigator.pop(dctx);
+                },
+                child: const Text('Usuń'),
               ),
+            TextButton(
+              onPressed: () => Navigator.pop(dctx),
+              child: const Text('Anuluj'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameC.text.trim();
+                final amount = double.tryParse(
+                  amountC.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
+                );
+                if (name.isEmpty || amount == null || amount <= 0) {
+                  Navigator.pop(dctx);
+                  return;
+                }
+                if (existing == null) {
+                  ctrl.addBillsAllocationItem(
+                    name: name,
+                    amount: amount,
+                    paymentMethod: method,
+                  );
+                } else {
+                  ctrl.updateBillsAllocationItem(
+                    existing.copyWith(
+                      name: name,
+                      amount: amount,
+                      paymentMethod: method,
+                      clearPaymentMethod: method == null,
+                    ),
+                  );
+                }
+                Navigator.pop(dctx);
+              },
+              child: const Text('Zapisz'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dctx), child: const Text('Anuluj')),
-          if (ctrl.billsAllocation != null)
-            TextButton(
-              onPressed: () {
-                ctrl.setBillsAllocation(null);
-                Navigator.pop(dctx);
-              },
-              child: const Text('Wyczyść'),
-            ),
-          FilledButton(
-            onPressed: () {
-              final v = double.tryParse(
-                  tc.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
-              ctrl.setBillsAllocation(v != null && v > 0 ? v : null);
-              Navigator.pop(dctx);
-            },
-            child: const Text('Zapisz'),
-          ),
-        ],
       ),
     );
   }
@@ -519,6 +625,10 @@ class _Section extends StatelessWidget {
   /// Widget przypięty na górze sekcji (np. „Na rachunki"), przed pozycjami.
   final Widget? pinnedTop;
 
+  /// Gdy `true`, pozycje są grupowane po kategoriach (etykietach) z podnagłówkami;
+  /// „Bez kategorii" na końcu. Dotyczy tylko sekcji wydatków.
+  final bool groupByCategory;
+
   const _Section({
     required this.title,
     required this.entries,
@@ -526,12 +636,13 @@ class _Section extends StatelessWidget {
     required this.currency,
     required this.onTap,
     this.pinnedTop,
+    this.groupByCategory = false,
   });
 
   Widget _card(BudgetEntry e) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: BudgetEntryCard(entry: e, onTap: () => onTap(e)),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: BudgetEntryCard(entry: e, onTap: () => onTap(e)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -559,12 +670,61 @@ class _Section extends StatelessWidget {
     ];
 
     if (pinnedTop != null) {
-      children.add(Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: pinnedTop,
-      ));
+      children.add(
+        Padding(padding: const EdgeInsets.only(bottom: 8), child: pinnedTop),
+      );
     }
-    children.addAll(entries.map(_card));
+
+    if (groupByCategory && entries.isNotEmpty) {
+      final byId = {
+        for (final cat in context.read<StorageService>().getCategories())
+          cat.id: cat,
+      };
+      final groups = <String?, List<BudgetEntry>>{};
+      for (final e in entries) {
+        (groups[e.categoryId] ??= <BudgetEntry>[]).add(e);
+      }
+      final keys = groups.keys.toList()
+        ..sort((a, b) {
+          if (a == null) return 1; // „Bez kategorii" na końcu
+          if (b == null) return -1;
+          return (byId[a]?.order ?? 999).compareTo(byId[b]?.order ?? 999);
+        });
+      for (final k in keys) {
+        final cat = k == null ? null : byId[k];
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8, left: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (cat != null) ...[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: cat.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  cat?.name ?? 'Bez kategorii',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: cat?.color ?? c.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+        children.addAll(groups[k]!.map(_card));
+      }
+    } else {
+      children.addAll(entries.map(_card));
+    }
     children.add(const SizedBox(height: 16));
 
     return Column(
@@ -603,17 +763,19 @@ class _CategoryFilter extends StatelessWidget {
               ),
             ),
           ),
-          ...categories.map((cat) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: AuroraChip(
-                    label: cat.name,
-                    selected: selected == cat.id,
-                    accent: cat.color,
-                    onTap: () => onSelect(selected == cat.id ? null : cat.id),
-                  ),
+          ...categories.map(
+            (cat) => Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: AuroraChip(
+                  label: cat.name,
+                  selected: selected == cat.id,
+                  accent: cat.color,
+                  onTap: () => onSelect(selected == cat.id ? null : cat.id),
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -649,16 +811,18 @@ class _TypeFilter extends StatelessWidget {
               ),
             ),
           ),
-          ...types.map((tp) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: AuroraChip(
-                    label: budgetTypeLabel(tp),
-                    selected: selected == tp,
-                    onTap: () => onSelect(selected == tp ? null : tp),
-                  ),
+          ...types.map(
+            (tp) => Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: AuroraChip(
+                  label: budgetTypeLabel(tp),
+                  selected: selected == tp,
+                  onTap: () => onSelect(selected == tp ? null : tp),
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -667,8 +831,18 @@ class _TypeFilter extends StatelessWidget {
 
 /// Krótkie polskie nazwy miesięcy (bez zależności od inicjalizacji locale).
 const _plMonthsShort = [
-  'sty', 'lut', 'mar', 'kwi', 'maj', 'cze',
-  'lip', 'sie', 'wrz', 'paź', 'lis', 'gru',
+  'sty',
+  'lut',
+  'mar',
+  'kwi',
+  'maj',
+  'cze',
+  'lip',
+  'sie',
+  'wrz',
+  'paź',
+  'lis',
+  'gru',
 ];
 
 /// Filtr czasu (snapshot): pasek lat, a po wybraniu roku — pasek jego miesięcy.
@@ -692,11 +866,11 @@ class _TimeFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget chip(String label, bool selected, VoidCallback onTap) => Center(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: AuroraChip(label: label, selected: selected, onTap: onTap),
-          ),
-        );
+      child: Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: AuroraChip(label: label, selected: selected, onTap: onTap),
+      ),
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -707,10 +881,18 @@ class _TimeFilter extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
             children: [
-              chip('Wszystkie lata', activeYear == null,
-                  () => onSelectYear(null)),
-              ...years.map((y) => chip('$y', activeYear == y,
-                  () => onSelectYear(activeYear == y ? null : y))),
+              chip(
+                'Wszystkie lata',
+                activeYear == null,
+                () => onSelectYear(null),
+              ),
+              ...years.map(
+                (y) => chip(
+                  '$y',
+                  activeYear == y,
+                  () => onSelectYear(activeYear == y ? null : y),
+                ),
+              ),
             ],
           ),
         ),
@@ -721,11 +903,18 @@ class _TimeFilter extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               children: [
-                chip('Cały rok', activeMonth == null,
-                    () => onSelectMonth(null)),
-                ...monthsOfYear.map((m) => chip(
-                    _plMonthsShort[m - 1], activeMonth == m,
-                    () => onSelectMonth(activeMonth == m ? null : m))),
+                chip(
+                  'Cały rok',
+                  activeMonth == null,
+                  () => onSelectMonth(null),
+                ),
+                ...monthsOfYear.map(
+                  (m) => chip(
+                    _plMonthsShort[m - 1],
+                    activeMonth == m,
+                    () => onSelectMonth(activeMonth == m ? null : m),
+                  ),
+                ),
               ],
             ),
           ),
@@ -747,8 +936,10 @@ class _FilteredEmpty extends StatelessWidget {
         children: [
           Icon(LucideIcons.inbox, size: 48, color: c.textMuted),
           const SizedBox(height: 12),
-          Text('Brak pozycji dla wybranych filtrów',
-              style: theme.textTheme.bodyMedium),
+          Text(
+            'Brak pozycji dla wybranych filtrów',
+            style: theme.textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -769,22 +960,27 @@ class _EmptyBudget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isHousehold ? LucideIcons.home : LucideIcons.wallet,
-                size: 48, color: c.textMuted),
+            Icon(
+              isHousehold ? LucideIcons.home : LucideIcons.wallet,
+              size: 48,
+              color: c.textMuted,
+            ),
             const SizedBox(height: 12),
             Text(
-                isHousehold
-                    ? 'Wspólna kasa domowa — dodaj wkłady i koszty'
-                    : 'Zacznij od dodania wpływu i rachunków',
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center),
+              isHousehold
+                  ? 'Wspólna kasa domowa — dodaj wkłady i koszty'
+                  : 'Zacznij od dodania wpływu i rachunków',
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 4),
             Text(
-                isHousehold
-                    ? 'Przelew z osobistego pojawi się tu jako wpływ.'
-                    : 'Podgląd „ile zostaje miesięcznie" znajdziesz na Dashboardzie.',
-                style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
-                textAlign: TextAlign.center),
+              isHousehold
+                  ? 'Przelew z osobistego pojawi się tu jako wpływ.'
+                  : 'Podgląd „ile zostaje miesięcznie" znajdziesz na Dashboardzie.',
+              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -794,13 +990,17 @@ class _EmptyBudget extends StatelessWidget {
 
 /// Pozycja „Na rachunki" (koperta planu) w Budżecie — edytowalna. Pomniejsza
 /// „zostaje/mies"; realne rachunki liczy ekran Rachunki i bilans miesiąca.
+/// Karta „Na rachunki" (koperta planu) na ekranie Budżet — nagłówek z sumą,
+/// rozbicie na pozycje (nazwa · metoda | −kwota) i przycisk „Dodaj pozycję".
 class _BillsAllocationCard extends StatelessWidget {
-  final double? allocation;
+  final List<BillsAllocationItem> items;
   final String currency;
-  final VoidCallback onEdit;
+  final VoidCallback onAdd;
+  final ValueChanged<BillsAllocationItem> onEdit;
   const _BillsAllocationCard({
-    required this.allocation,
+    required this.items,
     required this.currency,
+    required this.onAdd,
     required this.onEdit,
   });
 
@@ -808,47 +1008,155 @@ class _BillsAllocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
+    final total = items.fold<double>(0, (a, b) => a + b.amount);
+    final autoByMethod = {
+      for (final pm in context.read<StorageService>().getPaymentMethods())
+        pm.name: pm.isAutomatic,
+    };
+
     return Card(
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.tile),
         side: BorderSide(color: c.border),
       ),
-      child: InkWell(
-        onTap: onEdit,
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(lucide.LucideIcons.receiptText, size: 20, color: c.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Na rachunki', style: theme.textTheme.bodyMedium),
-                    Text(
-                      allocation == null
-                          ? 'Rezerwa na rachunki — dotknij, aby ustawić'
-                          : 'Rezerwa planu (pomniejsza „zostaje/mies")',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: c.textMuted),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  lucide.LucideIcons.receiptText,
+                  size: 20,
+                  color: c.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Na rachunki', style: theme.textTheme.bodyMedium),
+                      Text(
+                        items.isEmpty
+                            ? 'Rezerwa na rachunki — dodaj pozycje'
+                            : 'Rezerwa planu (pomniejsza „zostaje/mies")',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: c.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  items.isEmpty
+                      ? 'Ustaw'
+                      : '−${budgetNf.format(total)}${curLabelSuffix(currency)}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: items.isEmpty ? c.primary : c.negative,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+            if (items.isNotEmpty) ...[
+              const Divider(height: 20),
+              for (final it in items)
+                _AllocItemRow(
+                  item: it,
+                  currency: currency,
+                  isAuto: it.paymentMethod != null
+                      ? (autoByMethod[it.paymentMethod] ?? false)
+                      : null,
+                  onTap: () => onEdit(it),
+                ),
+            ],
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(LucideIcons.plus, size: 16),
+                label: const Text('Dodaj pozycję'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Wiersz pojedynczej pozycji koperty „Na rachunki": „• nazwa · metoda | −kwota".
+/// [isAuto] `null` = brak metody; `true/false` = automatyczna/manualna (ikona).
+class _AllocItemRow extends StatelessWidget {
+  final BillsAllocationItem item;
+  final String currency;
+  final bool? isAuto;
+  final VoidCallback onTap;
+  const _AllocItemRow({
+    required this.item,
+    required this.currency,
+    required this.isAuto,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          children: [
+            Text('•  ', style: TextStyle(color: c.textMuted)),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      item.name,
+                      style: theme.textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.paymentMethod != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      isAuto == true ? LucideIcons.zap : LucideIcons.hand,
+                      size: 13,
+                      color: c.textMuted,
+                    ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        item.paymentMethod!,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: c.textMuted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
-                ),
+                ],
               ),
-              Text(
-                allocation == null
-                    ? 'Ustaw'
-                    : '−${budgetNf.format(allocation!)}${curLabelSuffix(currency)}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: allocation == null ? c.primary : c.negative,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '−${budgetNf.format(item.amount)}${curLabelSuffix(currency)}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: c.negative,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subscription.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -22,8 +23,10 @@ class _PaymentMethodManagementScreenState
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    // Watch controller to rebuild after rename/clear bulk ops
+    // Watch controllers to rebuild after rename/clear bulk ops — metody są
+    // używane przez subskrypcje i budżet (pozycje + „Na rachunki").
     context.watch<SubscriptionController>();
+    context.watch<BudgetController>();
     final methods = storage.getPaymentMethods();
     final theme = Theme.of(context);
 
@@ -60,13 +63,16 @@ class _PaymentMethodManagementScreenState
                 final subsCount = context
                     .read<SubscriptionController>()
                     .countSubscriptionsUsingPaymentMethod(pm.name);
+                final budgetCount = context
+                    .read<BudgetController>()
+                    .countPaymentMethodUsage(pm.name);
                 return Card(
                   key: ValueKey(pm.id),
                   child: ListTile(
                     leading: const Icon(LucideIcons.creditCard),
                     title: Text(pm.name),
                     subtitle: Text(
-                      '$subsCount subskrypcji · '
+                      '${_usageLabel(subsCount, budgetCount)} · '
                       '${pm.isAutomatic ? 'Automatyczna' : 'Manualna'}',
                       style: theme.textTheme.labelMedium,
                     ),
@@ -83,8 +89,13 @@ class _PaymentMethodManagementScreenState
                             size: 18,
                             color: AppColors.negative,
                           ),
-                          onPressed: () =>
-                              _confirmDelete(context, storage, pm, subsCount),
+                          onPressed: () => _confirmDelete(
+                            context,
+                            storage,
+                            pm,
+                            subsCount,
+                            budgetCount,
+                          ),
                         ),
                         const Icon(LucideIcons.gripVertical, size: 18),
                       ],
@@ -112,18 +123,35 @@ class _PaymentMethodManagementScreenState
     if (mounted) context.read<SubscriptionController>().refresh();
   }
 
+  /// Podpis licznika użycia: „X subskrypcji · Y w budżecie" (pomija zerowe
+  /// człony). „Nieużywana", gdy nigdzie nie występuje.
+  String _usageLabel(int subs, int budget) {
+    final parts = <String>[
+      if (subs > 0) '$subs subskrypcji',
+      if (budget > 0) '$budget w budżecie',
+    ];
+    return parts.isEmpty ? 'Nieużywana' : parts.join(' · ');
+  }
+
   void _confirmDelete(
     BuildContext context,
     StorageService storage,
     PaymentMethod pm,
     int subsCount,
+    int budgetCount,
   ) {
+    final affected = <String>[
+      if (subsCount > 0) '$subsCount subskrypcji',
+      if (budgetCount > 0) '$budgetCount pozycji budżetu',
+    ];
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Usunąć "${pm.name}"?'),
-        content: subsCount > 0
-            ? Text('$subsCount subskrypcji straci oznaczenie metody płatności.')
+        content: affected.isNotEmpty
+            ? Text(
+                '${affected.join(' i ')} straci oznaczenie metody płatności.',
+              )
             : null,
         actions: [
           TextButton(
@@ -148,7 +176,9 @@ class _PaymentMethodManagementScreenState
     PaymentMethod pm,
   ) async {
     final ctrl = context.read<SubscriptionController>();
+    final budget = context.read<BudgetController>();
     await ctrl.clearPaymentMethodFromAll(pm.name);
+    await budget.clearPaymentMethodEverywhere(pm.name);
     await storage.deletePaymentMethod(pm.id);
     ctrl.refresh();
   }
@@ -165,9 +195,11 @@ class _PaymentMethodManagementScreenState
         existing: existing,
         onSave: (pm, oldName) async {
           final ctrl = context.read<SubscriptionController>();
+          final budget = context.read<BudgetController>();
           await storage.savePaymentMethod(pm);
-          if (oldName != null && oldName != pm.name && mounted) {
+          if (oldName != null && oldName != pm.name) {
             await ctrl.renamePaymentMethod(oldName, pm.name);
+            await budget.renamePaymentMethodEverywhere(oldName, pm.name);
           }
           if (mounted) ctrl.refresh();
         },

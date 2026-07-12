@@ -20,8 +20,11 @@ final budgetNf = NumberFormat('#,##0.00', 'pl_PL');
 class BudgetScopeToggle extends StatelessWidget {
   final BudgetScope scope;
   final ValueChanged<BudgetScope> onChanged;
-  const BudgetScopeToggle(
-      {super.key, required this.scope, required this.onChanged});
+  const BudgetScopeToggle({
+    super.key,
+    required this.scope,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -30,35 +33,37 @@ class BudgetScopeToggle extends StatelessWidget {
       onChanged: onChanged,
       segments: const [
         AuroraSegment(
-            value: BudgetScope.personal,
-            label: 'Osobisty',
-            icon: LucideIcons.user),
+          value: BudgetScope.personal,
+          label: 'Osobisty',
+          icon: LucideIcons.user,
+        ),
         AuroraSegment(
-            value: BudgetScope.household,
-            label: 'Domowy',
-            icon: LucideIcons.home),
+          value: BudgetScope.household,
+          label: 'Domowy',
+          icon: LucideIcons.home,
+        ),
       ],
     );
   }
 }
 
 String budgetTypeLabel(BudgetEntryType t) => switch (t) {
-      BudgetEntryType.income => 'Wpływ',
-      BudgetEntryType.billPayment => 'Rachunek',
-      BudgetEntryType.recurringCost => 'Koszt cykliczny',
-      BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
-      BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
-      BudgetEntryType.householdTransfer => 'Przelew do domowego',
-      BudgetEntryType.installment => 'Rata',
-    };
+  BudgetEntryType.income => 'Wpływ',
+  BudgetEntryType.billPayment => 'Rachunek',
+  BudgetEntryType.recurringCost => 'Koszt cykliczny',
+  BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
+  BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
+  BudgetEntryType.householdTransfer => 'Przelew do domowego',
+  BudgetEntryType.installment => 'Rata',
+};
 
 String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
-      BillingCycle.weekly => 'tyg.',
-      BillingCycle.monthly => 'mies.',
-      BillingCycle.quarterly => 'kw.',
-      BillingCycle.yearly => 'rok',
-      BillingCycle.custom => 'cykl',
-    };
+  BillingCycle.weekly => 'tyg.',
+  BillingCycle.monthly => 'mies.',
+  BillingCycle.quarterly => 'kw.',
+  BillingCycle.yearly => 'rok',
+  BillingCycle.custom => 'cykl',
+};
 
 /// Sekcja „Podsumowanie" Dashboardu: jedna karta „Saldo: zostaje miesięcznie".
 /// Kwota-bohater + linia wpływy/koszty (zawsze widoczne). Tap rozwija/zwija opis
@@ -89,7 +94,8 @@ class BudgetSummarySection extends StatelessWidget {
     final c = context.semanticColors;
     final positive = surplus >= 0;
     final sign = positive ? '' : '−';
-    final amountText = '$sign${budgetNf.format(surplus.abs())}${curLabelSuffix(currency)}';
+    final amountText =
+        '$sign${budgetNf.format(surplus.abs())}${curLabelSuffix(currency)}';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -103,9 +109,12 @@ class BudgetSummarySection extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Saldo: zostaje miesięcznie',
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(color: c.textSecondary)),
+                    child: Text(
+                      'Saldo: zostaje miesięcznie',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
                   ),
                   Icon(
                     compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
@@ -149,8 +158,9 @@ class BudgetSummarySection extends StatelessWidget {
                       Text(
                         'w tym subskrypcje: '
                         '${budgetNf.format(subscriptionsExpense)}${curLabelSuffix(currency)}',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: c.textMuted),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: c.textMuted,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 12),
@@ -158,8 +168,9 @@ class BudgetSummarySection extends StatelessWidget {
                       'Plan: wpływy minus koszty stałe (cykliczne, subskrypcje) '
                       'i rezerwa „Na rachunki". Bez pozycji jednorazowych, korekt '
                       'i realnych rachunków — te liczy bilans miesiąca.',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: c.textSecondary),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -188,21 +199,21 @@ class _InlineTrends extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.semanticColors;
     Widget item(IconData icon, Color color, double amount) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
-            Text(
-              '${budgetNf.format(amount)}${curLabelSuffix(currency)}',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: color,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        );
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          '${budgetNf.format(amount)}${curLabelSuffix(currency)}',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: color,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
     return Wrap(
       spacing: 18,
       runSpacing: 8,
@@ -268,7 +279,11 @@ class BudgetMonthSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(LucideIcons.calendarDays, size: 20, color: c.textSecondary),
+                Icon(
+                  LucideIcons.calendarDays,
+                  size: 20,
+                  color: c.textSecondary,
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -277,8 +292,10 @@ class BudgetMonthSection extends StatelessWidget {
                       icon: const Icon(LucideIcons.chevronLeft),
                       tooltip: 'Poprzedni miesiąc',
                     ),
-                    Text(DateFormat('LLLL yyyy', 'pl').format(month),
-                        style: theme.textTheme.titleMedium),
+                    Text(
+                      DateFormat('LLLL yyyy', 'pl').format(month),
+                      style: theme.textTheme.titleMedium,
+                    ),
                     IconButton(
                       onPressed: onNext,
                       icon: const Icon(LucideIcons.chevronRight),
@@ -288,9 +305,9 @@ class BudgetMonthSection extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: onToggleCompact,
-                  icon: Icon(compact
-                      ? LucideIcons.chevronDown
-                      : LucideIcons.chevronUp),
+                  icon: Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                  ),
                   tooltip: compact ? 'Rozwiń kalendarz' : 'Zwiń kalendarz',
                 ),
               ],
@@ -299,16 +316,25 @@ class BudgetMonthSection extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Text('Bilans miesiąca',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: c.textSecondary)),
+                Text(
+                  'Bilans miesiąca',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: c.textSecondary,
+                  ),
+                ),
                 IconButton(
                   onPressed: () => _showMonthSummary(context),
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
-                  icon: Icon(LucideIcons.list, size: 18, color: c.textSecondary),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  icon: Icon(
+                    LucideIcons.list,
+                    size: 18,
+                    color: c.textSecondary,
+                  ),
                   tooltip: 'Wpływy i wydatki miesiąca',
                 ),
                 const Spacer(),
@@ -407,12 +433,12 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   ];
 
   String _groupLabel(BalanceContributionKind k) => switch (k) {
-        BalanceContributionKind.billsAllocation => 'Na rachunki (rezerwa)',
-        BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
-        BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
-        BalanceContributionKind.amountOverride => 'Korekty kwot',
-        BalanceContributionKind.installment => 'Korekty rat',
-      };
+    BalanceContributionKind.billsAllocation => 'Na rachunki (rezerwa)',
+    BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
+    BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
+    BalanceContributionKind.amountOverride => 'Korekty kwot',
+    BalanceContributionKind.installment => 'Korekty rat',
+  };
 
   String _signed(double v) =>
       '${v >= 0 ? '+' : '−'}${budgetNf.format(v.abs())}${curLabelSuffix(currency)}';
@@ -436,15 +462,22 @@ class _BalanceBreakdownSheet extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
             ),
             const SizedBox(height: 16),
-            _summaryRow(theme, c, 'Saldo planu', surplus,
-                color: c.textSecondary),
+            _summaryRow(
+              theme,
+              c,
+              'Saldo planu',
+              surplus,
+              color: c.textSecondary,
+            ),
             const Divider(height: 24),
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Brak pozycji jednorazowych i korekt — bilans równy saldu.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: c.textMuted),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: c.textMuted,
+                  ),
                 ),
               )
             else
@@ -452,54 +485,79 @@ class _BalanceBreakdownSheet extends StatelessWidget {
                 if (items.any((it) => it.kind == kind)) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
-                    child: Text(_groupLabel(kind),
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(color: c.textSecondary)),
-                  ),
-                  ...items.where((it) => it.kind == kind).map(
-                        (it) => _itemRow(theme, c, it),
+                    child: Text(
+                      _groupLabel(kind),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: c.textSecondary,
                       ),
+                    ),
+                  ),
+                  ...items
+                      .where((it) => it.kind == kind)
+                      .map((it) => _itemRow(theme, c, it)),
                 ],
             const Divider(height: 24),
-            _summaryRow(theme, c, 'Bilans miesiąca', balance,
-                color: balance >= 0 ? c.positive : c.negative, bold: true),
+            _summaryRow(
+              theme,
+              c,
+              'Bilans miesiąca',
+              balance,
+              color: balance >= 0 ? c.positive : c.negative,
+              bold: true,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _summaryRow(ThemeData theme, AppSemanticColors c, String label,
-      double value, {required Color color, bool bold = false}) {
+  Widget _summaryRow(
+    ThemeData theme,
+    AppSemanticColors c,
+    String label,
+    double value, {
+    required Color color,
+    bool bold = false,
+  }) {
     final sign = value >= 0 ? '' : '−';
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
-                ?.copyWith(color: bold ? null : c.textSecondary)),
+        Text(
+          label,
+          style:
+              (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
+                  ?.copyWith(color: bold ? null : c.textSecondary),
+        ),
         Text(
           '$sign${budgetNf.format(value.abs())}${curLabelSuffix(currency)}',
-          style: (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
-              ?.copyWith(
-            color: color,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+          style:
+              (bold ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
+                  ?.copyWith(
+                    color: color,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
         ),
       ],
     );
   }
 
-  Widget _itemRow(ThemeData theme, AppSemanticColors c, BalanceContribution it) {
+  Widget _itemRow(
+    ThemeData theme,
+    AppSemanticColors c,
+    BalanceContribution it,
+  ) {
     final color = it.delta >= 0 ? c.positive : c.negative;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Expanded(
-            child: Text(it.name,
-                style: theme.textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              it.name,
+              style: theme.textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
@@ -558,8 +616,10 @@ class _MonthSummarySheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Podsumowanie · $monthLabel',
-                  style: theme.textTheme.titleMedium),
+              Text(
+                'Podsumowanie · $monthLabel',
+                style: theme.textTheme.titleMedium,
+              ),
               const SizedBox(height: 4),
               Text(
                 'Realne wpływy i wydatki tego miesiąca — kwoty po korektach, '
@@ -573,8 +633,9 @@ class _MonthSummarySheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Text(
                     'Brak wpływów i wydatków w tym miesiącu.',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: c.textMuted),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: c.textMuted,
+                    ),
                   ),
                 )
               else
@@ -583,16 +644,29 @@ class _MonthSummarySheet extends StatelessWidget {
                     shrinkWrap: true,
                     children: [
                       if (incomes.isNotEmpty) ...[
-                        _sectionHeader(theme, c, 'Wpływy', incomeTotal,
-                            income: true),
-                        ...incomes.map((r) => _itemRow(theme, c, r.day, r.item)),
+                        _sectionHeader(
+                          theme,
+                          c,
+                          'Wpływy',
+                          incomeTotal,
+                          income: true,
+                        ),
+                        ...incomes.map(
+                          (r) => _itemRow(theme, c, r.day, r.item),
+                        ),
                       ],
                       if (expenses.isNotEmpty) ...[
                         if (incomes.isNotEmpty) const Divider(height: 24),
-                        _sectionHeader(theme, c, 'Wydatki', expenseTotal,
-                            income: false),
-                        ...expenses
-                            .map((r) => _itemRow(theme, c, r.day, r.item)),
+                        _sectionHeader(
+                          theme,
+                          c,
+                          'Wydatki',
+                          expenseTotal,
+                          income: false,
+                        ),
+                        ...expenses.map(
+                          (r) => _itemRow(theme, c, r.day, r.item),
+                        ),
                       ],
                     ],
                   ),
@@ -604,8 +678,13 @@ class _MonthSummarySheet extends StatelessWidget {
     );
   }
 
-  Widget _sectionHeader(ThemeData theme, AppSemanticColors c, String label,
-      double total, {required bool income}) {
+  Widget _sectionHeader(
+    ThemeData theme,
+    AppSemanticColors c,
+    String label,
+    double total, {
+    required bool income,
+  }) {
     final color = income ? c.positive : c.negative;
     final sign = income ? '+' : '−';
     return Padding(
@@ -613,9 +692,12 @@ class _MonthSummarySheet extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(color: c.textSecondary)),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: c.textSecondary,
+            ),
+          ),
           Text(
             '$sign${budgetNf.format(total)}${curLabelSuffix(currency)}',
             style: theme.textTheme.titleSmall?.copyWith(
@@ -629,11 +711,17 @@ class _MonthSummarySheet extends StatelessWidget {
   }
 
   Widget _itemRow(
-      ThemeData theme, AppSemanticColors c, int day, CalendarItem it) {
+    ThemeData theme,
+    AppSemanticColors c,
+    int day,
+    CalendarItem it,
+  ) {
     final color = it.isIncome ? c.positive : c.negative;
     final sign = it.isIncome ? '+' : '−';
-    final dateLabel =
-        DateFormat('d MMM', 'pl').format(DateTime(month.year, month.month, day));
+    final dateLabel = DateFormat(
+      'd MMM',
+      'pl',
+    ).format(DateTime(month.year, month.month, day));
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -642,16 +730,18 @@ class _MonthSummarySheet extends StatelessWidget {
             it.isSubscription
                 ? LucideIcons.repeat
                 : (it.isIncome
-                    ? LucideIcons.trendingUp
-                    : LucideIcons.trendingDown),
+                      ? LucideIcons.trendingUp
+                      : LucideIcons.trendingDown),
             size: 16,
             color: color,
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('${it.name} · $dateLabel',
-                style: theme.textTheme.bodyMedium,
-                overflow: TextOverflow.ellipsis),
+            child: Text(
+              '${it.name} · $dateLabel',
+              style: theme.textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
@@ -683,8 +773,8 @@ class MonthPaymentsSection extends StatelessWidget {
   final void Function(String sourceId, DateTime date) onToggle;
 
   /// Ustawia stan „wykonane" dla wielu płatności naraz (przycisk grupy).
-  final void Function(
-      List<({String sourceId, DateTime date})> items, bool done) onSetAll;
+  final void Function(List<({String sourceId, DateTime date})> items, bool done)
+  onSetAll;
 
   const MonthPaymentsSection({
     super.key,
@@ -700,7 +790,8 @@ class MonthPaymentsSection extends StatelessWidget {
 
   /// Czy miesiąc ma jakiekolwiek płatności (manualne lub automatyczne).
   static bool hasAny(Map<int, DayCashflow> calendar) => calendar.values.any(
-      (f) => f.items.any((it) => !it.isIncome && it.sourceId != null));
+    (f) => f.items.any((it) => !it.isIncome && it.sourceId != null),
+  );
 
   List<_PayRow> _rows(bool automatic) {
     final out = <_PayRow>[];
@@ -710,8 +801,14 @@ class MonthPaymentsSection extends StatelessWidget {
         if (it.isIncome || it.isAutomatic != automatic || it.sourceId == null) {
           continue;
         }
-        out.add(_PayRow(it.name, it.amount,
-            DateTime(month.year, month.month, day), it.sourceId!));
+        out.add(
+          _PayRow(
+            it.name,
+            it.amount,
+            DateTime(month.year, month.month, day),
+            it.sourceId!,
+          ),
+        );
       }
     }
     return out;
@@ -726,8 +823,10 @@ class MonthPaymentsSection extends StatelessWidget {
     if (manual.isEmpty && auto.isEmpty) return const SizedBox.shrink();
 
     final total = manual.length + auto.length;
-    final done =
-        [...manual, ...auto].where((r) => isDone(r.sourceId, r.date)).length;
+    final done = [
+      ...manual,
+      ...auto,
+    ].where((r) => isDone(r.sourceId, r.date)).length;
 
     return Card(
       child: Padding(
@@ -742,15 +841,20 @@ class MonthPaymentsSection extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('$done/$total',
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(color: c.textMuted)),
+                    Text(
+                      '$done/$total',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: c.textMuted,
+                      ),
+                    ),
                     IconButton(
                       onPressed: onToggleCompact,
                       visualDensity: VisualDensity.compact,
-                      icon: Icon(compact
-                          ? LucideIcons.chevronDown
-                          : LucideIcons.chevronUp),
+                      icon: Icon(
+                        compact
+                            ? LucideIcons.chevronDown
+                            : LucideIcons.chevronUp,
+                      ),
                       tooltip: compact ? 'Rozwiń płatności' : 'Zwiń płatności',
                     ),
                   ],
@@ -759,7 +863,11 @@ class MonthPaymentsSection extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             if (manual.isNotEmpty)
-              _group(context, 'Do zrealizowania ręcznie w tym miesiącu', manual),
+              _group(
+                context,
+                'Do zrealizowania ręcznie w tym miesiącu',
+                manual,
+              ),
             if (manual.isNotEmpty && auto.isNotEmpty) const Divider(height: 20),
             if (auto.isNotEmpty)
               _group(context, 'Pobrane automatycznie w tym miesiącu', auto),
@@ -786,22 +894,26 @@ class MonthPaymentsSection extends StatelessWidget {
             // „opis: kwota" w jednej linii (zamiast osobnego podpisu i sumy).
             Expanded(
               child: Text.rich(
-                TextSpan(children: [
-                  TextSpan(
+                TextSpan(
+                  children: [
+                    TextSpan(
                       text: '$opis: ',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: c.textSecondary)),
-                  TextSpan(
-                    text: allPaid
-                        ? 'rozliczone'
-                        : '−${budgetNf.format(remaining)}${curLabelSuffix(currency)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: allPaid ? c.positive : c.negative,
-                      fontWeight: FontWeight.w600,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: c.textSecondary,
+                      ),
                     ),
-                  ),
-                ]),
+                    TextSpan(
+                      text: allPaid
+                          ? 'rozliczone'
+                          : '−${budgetNf.format(remaining)}${curLabelSuffix(currency)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: allPaid ? c.positive : c.negative,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             // Przycisk „Odhacz" tylko w wersji rozwiniętej.
@@ -813,8 +925,9 @@ class MonthPaymentsSection extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
                 icon: Icon(
-                    allPaid ? LucideIcons.square : LucideIcons.checkSquare,
-                    size: 16),
+                  allPaid ? LucideIcons.square : LucideIcons.checkSquare,
+                  size: 16,
+                ),
                 label: Text(allPaid ? 'Odznacz' : 'Odhacz'),
               ),
           ],
@@ -838,8 +951,11 @@ class MonthPaymentsSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Icon(done ? LucideIcons.checkSquare : LucideIcons.square,
-                size: 20, color: done ? c.positive : c.textMuted),
+            Icon(
+              done ? LucideIcons.checkSquare : LucideIcons.square,
+              size: 20,
+              color: done ? c.positive : c.textMuted,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -894,11 +1010,15 @@ class _DayDetail extends StatelessWidget {
     final c = context.semanticColors;
 
     if (day == null) {
-      return Text('Wybierz dzień, aby zobaczyć wpływy i wydatki.',
-          style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted));
+      return Text(
+        'Wybierz dzień, aby zobaczyć wpływy i wydatki.',
+        style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+      );
     }
-    final dateLabel =
-        DateFormat('d MMMM', 'pl').format(DateTime(month.year, month.month, day!));
+    final dateLabel = DateFormat(
+      'd MMMM',
+      'pl',
+    ).format(DateTime(month.year, month.month, day!));
     final items = flow?.items ?? const [];
 
     return Column(
@@ -907,8 +1027,10 @@ class _DayDetail extends StatelessWidget {
         Text(dateLabel, style: theme.textTheme.labelMedium),
         const SizedBox(height: 4),
         if (items.isEmpty)
-          Text('Brak wpływów i wydatków tego dnia',
-              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted))
+          Text(
+            'Brak wpływów i wydatków tego dnia',
+            style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+          )
         else
           ...items.map((it) {
             final color = it.isIncome ? c.positive : c.negative;
@@ -921,16 +1043,18 @@ class _DayDetail extends StatelessWidget {
                     it.isSubscription
                         ? LucideIcons.repeat
                         : (it.isIncome
-                            ? LucideIcons.trendingUp
-                            : LucideIcons.trendingDown),
+                              ? LucideIcons.trendingUp
+                              : LucideIcons.trendingDown),
                     size: 16,
                     color: color,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(it.name,
-                        style: theme.textTheme.bodyMedium,
-                        overflow: TextOverflow.ellipsis),
+                    child: Text(
+                      it.name,
+                      style: theme.textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   Text(
                     '$sign${budgetNf.format(it.amount)}${curLabelSuffix(currency)}',
@@ -972,13 +1096,22 @@ class BudgetEntryCard extends StatelessWidget {
     final overrideSuffix = overrideCount > 0 ? ' · korekt: $overrideCount' : '';
     final subtitle = entry.isOneTime
         ? '${budgetTypeLabel(entry.type)} · ${entry.month ?? ''}'
-            '${dimmed ? ' · wstrzymane' : ''}'
+              '${dimmed ? ' · wstrzymane' : ''}'
         : '${budgetTypeLabel(entry.type)}$overrideSuffix'
-            '${dimmed ? ' · wstrzymane' : ''}';
+              '${dimmed ? ' · wstrzymane' : ''}';
 
     final category = entry.categoryId != null
         ? context.read<StorageService>().getCategory(entry.categoryId!)
         : null;
+
+    // Metoda płatności — pokazywana tylko tam, gdzie ją zdefiniowano (typy, które
+    // pozwalają ją ustawić). Ikona ⚡/✋ = automatyczna/manualna.
+    final method = entry.paymentMethod;
+    final methodAuto =
+        method != null &&
+        context.read<StorageService>().getPaymentMethods().any(
+          (p) => p.name == method && p.isAutomatic,
+        );
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -1007,9 +1140,12 @@ class BudgetEntryCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(entry.name, style: theme.textTheme.bodyMedium),
-                      Text(subtitle,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: c.textMuted)),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: c.textMuted,
+                        ),
+                      ),
                       if (category != null) ...[
                         const SizedBox(height: 4),
                         Row(
@@ -1026,8 +1162,29 @@ class BudgetEntryCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Text(
                               category.name,
-                              style: theme.textTheme.labelMedium
-                                  ?.copyWith(color: category.color),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: category.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (method != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              methodAuto ? LucideIcons.zap : LucideIcons.hand,
+                              size: 13,
+                              color: c.textMuted,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              method,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: c.textMuted,
+                              ),
                             ),
                           ],
                         ),

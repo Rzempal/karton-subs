@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
+import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart';
@@ -19,6 +21,7 @@ import '../widgets/category_breakdown_chart.dart';
 import '../widgets/gradient_amount.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
+import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/subscription_card.dart';
 import 'add_subscription_screen.dart';
@@ -34,13 +37,17 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   static const _pdfService = PdfExportService();
 
   String? _filterCategoryId;
-  // Spojnie z Dashboard/Budzet: tylko Osobiste/Domowe (bez „Wszystkie").
-  SubscriptionScope _scopeFilter = SubscriptionScope.personal;
   bool _showInactive = false;
   bool _isBusy = false;
 
   @override
   Widget build(BuildContext context) {
+    // Zakres jest globalny (BudgetController) — spójny tryb Osobisty/Domowy w
+    // całej aplikacji; ten ekran tylko go czyta i przełącza (swipe / segment).
+    final budget = context.watch<BudgetController>();
+    final scopeFilter = budget.isHousehold
+        ? SubscriptionScope.household
+        : SubscriptionScope.personal;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -85,29 +92,38 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: AuroraSegmented<SubscriptionScope>(
-              selected: _scopeFilter,
-              onChanged: (v) => setState(() => _scopeFilter = v),
+              selected: scopeFilter,
+              onChanged: (v) => budget.setScope(
+                v == SubscriptionScope.household
+                    ? BudgetScope.household
+                    : BudgetScope.personal,
+              ),
               segments: const [
                 AuroraSegment(
-                    value: SubscriptionScope.personal,
-                    label: 'Osobiste',
-                    icon: LucideIcons.user),
+                  value: SubscriptionScope.personal,
+                  label: 'Osobiste',
+                  icon: LucideIcons.user,
+                ),
                 AuroraSegment(
-                    value: SubscriptionScope.household,
-                    label: 'Domowe',
-                    icon: LucideIcons.home),
+                  value: SubscriptionScope.household,
+                  label: 'Domowe',
+                  icon: LucideIcons.home,
+                ),
               ],
             ),
           ),
           Expanded(
-            child: _ListTab(
-              filterCategoryId: _filterCategoryId,
-              scopeFilter: _scopeFilter,
-              showInactive: _showInactive,
-              onSelectCategory: (id) => setState(() => _filterCategoryId = id),
-              onToggleInactive: () =>
-                  setState(() => _showInactive = !_showInactive),
-              onTapEdit: _openEdit,
+            child: ScopeSwipeArea(
+              child: _ListTab(
+                filterCategoryId: _filterCategoryId,
+                scopeFilter: scopeFilter,
+                showInactive: _showInactive,
+                onSelectCategory: (id) =>
+                    setState(() => _filterCategoryId = id),
+                onToggleInactive: () =>
+                    setState(() => _showInactive = !_showInactive),
+                onTapEdit: _openEdit,
+              ),
             ),
           ),
         ],
@@ -117,13 +133,13 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
 
   // ── Akcje nagłówka / FAB ───────────────────────────────────────────────────
 
-  Future<void> _openAdd() => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AddSubscriptionScreen()),
-      );
+  Future<void> _openAdd() => Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (_) => const AddSubscriptionScreen()));
 
   Future<void> _openEdit(Subscription sub) => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => AddSubscriptionScreen(existing: sub)),
-      );
+    MaterialPageRoute(builder: (_) => AddSubscriptionScreen(existing: sub)),
+  );
 
   Future<void> _exportExcel() async {
     setState(() => _isBusy = true);
@@ -236,10 +252,8 @@ class _ListTab extends StatelessWidget {
                     : const SizedBox.shrink(),
               ),
               IconButton(
-                icon: Icon(
-                    showInactive ? LucideIcons.eyeOff : LucideIcons.eye),
-                tooltip:
-                    showInactive ? 'Ukryj nieaktywne' : 'Pokaż nieaktywne',
+                icon: Icon(showInactive ? LucideIcons.eyeOff : LucideIcons.eye),
+                tooltip: showInactive ? 'Ukryj nieaktywne' : 'Pokaż nieaktywne',
                 onPressed: onToggleInactive,
               ),
             ],
@@ -293,8 +307,9 @@ class _Card extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading:
-                  Icon(sub.isPinned ? LucideIcons.pinOff : LucideIcons.pin),
+              leading: Icon(
+                sub.isPinned ? LucideIcons.pinOff : LucideIcons.pin,
+              ),
               title: Text(sub.isPinned ? 'Odepnij' : 'Przypnij na górze'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -303,9 +318,11 @@ class _Card extends StatelessWidget {
             ),
             ListTile(
               leading: Icon(
-                  sub.isActive ? LucideIcons.xCircle : LucideIcons.checkCircle),
+                sub.isActive ? LucideIcons.xCircle : LucideIcons.checkCircle,
+              ),
               title: Text(
-                  sub.isActive ? 'Anuluj subskrypcję' : 'Wznów subskrypcję'),
+                sub.isActive ? 'Anuluj subskrypcję' : 'Wznów subskrypcję',
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 context.read<SubscriptionController>().toggleActive(sub.id);
@@ -379,17 +396,26 @@ class SubscriptionStatsView extends StatelessWidget {
 
     final monthlyTotal = _analytics.getMonthlyTotal(subs, target: currencyEnum);
     final yearly = _analytics.getYearlyProjection(subs, target: currencyEnum);
-    final breakdown =
-        _analytics.getCategoryBreakdown(subs, target: currencyEnum);
-    final trend =
-        _analytics.getSpendingTrend(subs, months: 6, target: currencyEnum);
+    final breakdown = _analytics.getCategoryBreakdown(
+      subs,
+      target: currencyEnum,
+    );
+    final trend = _analytics.getSpendingTrend(
+      subs,
+      months: 6,
+      target: currencyEnum,
+    );
     final budgetStatus = _analytics.getBudgetStatus(
-        subs, storage.getBudgetLimit(),
-        target: currencyEnum);
+      subs,
+      storage.getBudgetLimit(),
+      target: currencyEnum,
+    );
     final activeCount = subs.where((s) => s.isActive).length;
     final activeTrials = subs.where((s) => s.isTrialActive).toList()
-      ..sort((a, b) => (a.trialDaysRemaining ?? 99)
-          .compareTo(b.trialDaysRemaining ?? 99));
+      ..sort(
+        (a, b) =>
+            (a.trialDaysRemaining ?? 99).compareTo(b.trialDaysRemaining ?? 99),
+      );
 
     return Column(
       children: [
@@ -450,21 +476,32 @@ class _SummaryHero extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Łączny koszt miesięczny',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: c.heroCardTextSecondary)),
+            Text(
+              'Łączny koszt miesięczny',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: c.heroCardTextSecondary,
+              ),
+            ),
             const SizedBox(height: 8),
             // Kwota-bohater zakładki Statystyki — gradient (ShaderMask).
-            GradientAmount(amountText,
-                semanticsLabel: 'Łączny koszt miesięczny $amountText'),
+            GradientAmount(
+              amountText,
+              semanticsLabel: 'Łączny koszt miesięczny $amountText',
+            ),
             const SizedBox(height: 4),
-            Text('${nf.format(yearly)}${curLabelSuffix(currency)} / rok',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: c.heroCardTextSecondary)),
+            Text(
+              '${nf.format(yearly)}${curLabelSuffix(currency)} / rok',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: c.heroCardTextSecondary,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('$activeCount aktywne',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(color: c.heroCardTextSecondary)),
+            Text(
+              '$activeCount aktywne',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: c.heroCardTextSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -498,50 +535,59 @@ class _TrialCostsCard extends StatelessWidget {
             children: [
               Icon(LucideIcons.clock, color: c.trial, size: 20),
               const SizedBox(width: 8),
-              Text('Nadchodzące koszty z triali',
-                  style: theme.textTheme.titleMedium?.copyWith(color: c.trial)),
+              Text(
+                'Nadchodzące koszty z triali',
+                style: theme.textTheme.titleMedium?.copyWith(color: c.trial),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          ...trials.map((s) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(s.name,
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    Text('za ${s.trialDaysRemaining} dni',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: (s.trialDaysRemaining ?? 99) <= 3
-                              ? c.warning
-                              : c.trial,
-                        )),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${nf.format(s.postTrialAmount ?? s.amount)}${curLabelSuffix(currencySymbol)}/${_cycleSuffix(s.billingCycle)}',
+          ...trials.map(
+            (s) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      s.name,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                  Text(
+                    'za ${s.trialDaysRemaining} dni',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: (s.trialDaysRemaining ?? 99) <= 3
+                          ? c.warning
+                          : c.trial,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '${nf.format(s.postTrialAmount ?? s.amount)}${curLabelSuffix(currencySymbol)}/${_cycleSuffix(s.billingCycle)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   String _cycleSuffix(BillingCycle cycle) => switch (cycle) {
-        BillingCycle.weekly => 'tydz.',
-        BillingCycle.monthly => 'mies.',
-        BillingCycle.quarterly => 'kw.',
-        BillingCycle.yearly => 'rok',
-        BillingCycle.custom => 'cykl',
-      };
+    BillingCycle.weekly => 'tydz.',
+    BillingCycle.monthly => 'mies.',
+    BillingCycle.quarterly => 'kw.',
+    BillingCycle.yearly => 'rok',
+    BillingCycle.custom => 'cykl',
+  };
 }
 
 // ── Wspólne ───────────────────────────────────────────────────────────────────
@@ -575,17 +621,19 @@ class _CategoryFilter extends StatelessWidget {
               ),
             ),
           ),
-          ...categories.map((cat) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: AuroraChip(
-                    label: cat.name,
-                    selected: selected == cat.id,
-                    accent: cat.color,
-                    onTap: () => onSelect(selected == cat.id ? null : cat.id),
-                  ),
+          ...categories.map(
+            (cat) => Center(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: AuroraChip(
+                  label: cat.name,
+                  selected: selected == cat.id,
+                  accent: cat.color,
+                  onTap: () => onSelect(selected == cat.id ? null : cat.id),
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -602,8 +650,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(LucideIcons.inbox,
-              size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(
+            LucideIcons.inbox,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 12),
           Text(
             hasFilter ? 'Brak subskrypcji w tej kategorii' : 'Brak subskrypcji',

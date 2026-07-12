@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/category.dart';
+import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
@@ -23,8 +24,10 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
-    // Watch controller to rebuild after changes
+    // Watch controllers to rebuild after zmianach (słowniki są używane przez
+    // subskrypcje i budżet — liczniki muszą reagować na oba).
     context.watch<SubscriptionController>();
+    context.watch<BudgetController>();
     final categories = storage.getCategories();
     final theme = Theme.of(context);
 
@@ -55,6 +58,9 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     .getSubscriptions()
                     .where((s) => s.categoryId == cat.id)
                     .length;
+                final budgetCount = context
+                    .read<BudgetController>()
+                    .countCategoryUsage(cat.id);
                 return Card(
                   key: ValueKey(cat.id),
                   child: ListTile(
@@ -73,7 +79,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     ),
                     title: Text(cat.name),
                     subtitle: Text(
-                      '$subsCount subskrypcji',
+                      _usageLabel(subsCount, budgetCount),
                       style: theme.textTheme.labelMedium,
                     ),
                     trailing: Row(
@@ -89,8 +95,13 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                             size: 18,
                             color: AppColors.negative,
                           ),
-                          onPressed: () =>
-                              _confirmDelete(context, storage, cat, subsCount),
+                          onPressed: () => _confirmDelete(
+                            context,
+                            storage,
+                            cat,
+                            subsCount,
+                            budgetCount,
+                          ),
                         ),
                         const Icon(LucideIcons.gripVertical, size: 18),
                       ],
@@ -118,19 +129,34 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
     context.read<SubscriptionController>().refresh();
   }
 
+  /// Podpis licznika użycia: „X subskrypcji · Y w budżecie" (pomija zerowe
+  /// człony). „Nieużywana", gdy nigdzie nie występuje.
+  String _usageLabel(int subs, int budget) {
+    final parts = <String>[
+      if (subs > 0) '$subs subskrypcji',
+      if (budget > 0) '$budget w budżecie',
+    ];
+    return parts.isEmpty ? 'Nieużywana' : parts.join(' · ');
+  }
+
   void _confirmDelete(
     BuildContext context,
     StorageService storage,
     Category cat,
     int subsCount,
+    int budgetCount,
   ) {
+    final moved = <String>[
+      if (subsCount > 0) '$subsCount subskrypcji',
+      if (budgetCount > 0) '$budgetCount pozycji budżetu',
+    ];
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Usuń "${cat.name}"?'),
-        content: subsCount > 0
+        content: moved.isNotEmpty
             ? Text(
-                '$subsCount subskrypcji zostanie przeniesionych do kategorii "Inne".',
+                '${moved.join(' i ')} zostanie przeniesionych do kategorii "Inne".',
               )
             : null,
         actions: [
@@ -152,15 +178,18 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
   }
 
   Future<void> _deleteCategory(StorageService storage, Category cat) async {
-    // Przenieś subskrypcje do "Inne"
+    final ctrl = context.read<SubscriptionController>();
+    final budget = context.read<BudgetController>();
+    // Przenieś subskrypcje do "Inne".
     final subs = storage
         .getSubscriptions()
         .where((s) => s.categoryId == cat.id)
         .toList();
-    final ctrl = context.read<SubscriptionController>();
     for (final sub in subs) {
       await ctrl.update(sub.copyWith(categoryId: 'cat_other'));
     }
+    // Przenieś pozycje budżetu (oba zakresy) do "Inne".
+    await budget.reassignCategoryEverywhere(cat.id, 'cat_other');
     await storage.deleteCategory(cat.id);
     ctrl.refresh();
   }

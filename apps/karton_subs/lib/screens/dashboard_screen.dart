@@ -15,6 +15,7 @@ import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/frost_card.dart';
+import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/sync_now_button.dart';
 import 'subscription_list_screen.dart' show SubscriptionStatsView;
@@ -77,21 +78,24 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   void _togglePayments() {
     setState(() => _paymentsCompact = !_paymentsCompact);
-    context
-        .read<StorageService>()
-        .setDashboardPaymentsCompact(_paymentsCompact);
+    context.read<StorageService>().setDashboardPaymentsCompact(
+      _paymentsCompact,
+    );
   }
 
   void _shiftMonth(int delta) {
     setState(() {
-      _selectedMonth =
-          DateTime(_selectedMonth.year, _selectedMonth.month + delta, 1);
+      _selectedMonth = DateTime(
+        _selectedMonth.year,
+        _selectedMonth.month + delta,
+        1,
+      );
       // Powrót do bieżącego miesiąca → zaznacz dziś; inny miesiąc → bez wyboru.
       final t = _today;
       _selectedDay =
           (_selectedMonth.year == t.year && _selectedMonth.month == t.month)
-              ? t.day
-              : null;
+          ? t.day
+          : null;
     });
   }
 
@@ -103,7 +107,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   /// Statystyki budżetu (segment „Budżet" w Planie): saldo, predykcja, trend
   /// wydatków, podział na kategorie.
   List<Widget> _budgetStats(
-      BudgetController budget, String currency, String monthKey) {
+    BudgetController budget,
+    String currency,
+    String monthKey,
+  ) {
     final cats = context.read<StorageService>().getCategories();
     return [
       BudgetSummarySection(
@@ -139,13 +146,18 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Statystyki rachunków (segment „Rachunki"): suma miesiąca, trend, kategorie.
   List<Widget> _billsStats(
-      BudgetController budget, String currency, String monthKey) {
+    BudgetController budget,
+    String currency,
+    String monthKey,
+  ) {
     final cats = context.read<StorageService>().getCategories();
     final count = budget.billPayments
-        .where((e) =>
-            (e.month ??
-                BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
-            monthKey)
+        .where(
+          (e) =>
+              (e.month ??
+                  BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
+              monthKey,
+        )
         .length;
     return [
       _MonthBillsCard(
@@ -193,7 +205,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: BudgetScopeToggle(
-                scope: budget.scope, onChanged: budget.setScope),
+              scope: budget.scope,
+              onChanged: budget.setScope,
+            ),
           ),
           TabBar(
             controller: _tab,
@@ -203,95 +217,112 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tab,
-              children: [
-                // ── „Bilans miesiąca" — realny wybrany miesiąc (domyślna) ──
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                  children: [
-                    BudgetMonthSection(
-                      month: _selectedMonth,
-                      balance: budget.balanceForMonth(monthKey),
-                      surplus: budget.monthlySurplus,
-                      breakdown: budget.balanceBreakdownForMonth(monthKey),
-                      currency: currency,
-                      calendar: calendar,
-                      selectedDay: _selectedDay,
-                      today: _today,
-                      compact: _monthCompact,
-                      onToggleCompact: _toggleMonth,
-                      onPrev: () => _shiftMonth(-1),
-                      onNext: () => _shiftMonth(1),
-                      onSelectDay: (d) => setState(() => _selectedDay = d),
-                    ),
-                    if (MonthPaymentsSection.hasAny(calendar)) ...[
-                      const SizedBox(height: 24),
-                      MonthPaymentsSection(
+            child: ScopeSwipeArea(
+              child: TabBarView(
+                // Swipe poziomy zarezerwowany na zmianę zakresu (ScopeSwipeArea);
+                // Bilans/Plan przełącza się tapem w TabBar.
+                physics: const NeverScrollableScrollPhysics(),
+                controller: _tab,
+                children: [
+                  // ── „Bilans miesiąca" — realny wybrany miesiąc (domyślna) ──
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    children: [
+                      BudgetMonthSection(
                         month: _selectedMonth,
-                        calendar: calendar,
+                        balance: budget.balanceForMonth(monthKey),
+                        surplus: budget.monthlySurplus,
+                        breakdown: budget.balanceBreakdownForMonth(monthKey),
                         currency: currency,
-                        compact: _paymentsCompact,
-                        onToggleCompact: _togglePayments,
-                        isDone: budget.isPaymentDone,
-                        onToggle: budget.togglePaymentDone,
-                        onSetAll: (items, done) =>
-                            budget.setPaymentsDone(items, done),
+                        calendar: calendar,
+                        selectedDay: _selectedDay,
+                        today: _today,
+                        compact: _monthCompact,
+                        onToggleCompact: _toggleMonth,
+                        onPrev: () => _shiftMonth(-1),
+                        onNext: () => _shiftMonth(1),
+                        onSelectDay: (d) => setState(() => _selectedDay = d),
+                      ),
+                      if (MonthPaymentsSection.hasAny(calendar)) ...[
+                        const SizedBox(height: 24),
+                        MonthPaymentsSection(
+                          month: _selectedMonth,
+                          calendar: calendar,
+                          currency: currency,
+                          compact: _paymentsCompact,
+                          onToggleCompact: _togglePayments,
+                          isDone: budget.isPaymentDone,
+                          onToggle: budget.togglePaymentDone,
+                          onSetAll: (items, done) =>
+                              budget.setPaymentsDone(items, done),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      _MonthBillsCard(
+                        total: budget.billsActualForMonth(monthKey),
+                        count: budget.billPayments
+                            .where(
+                              (e) =>
+                                  (e.month ??
+                                      BudgetEntry.monthKeyOf(
+                                        e.startDate ?? e.dataDodania,
+                                      )) ==
+                                  monthKey,
+                            )
+                            .length,
+                        currency: currency,
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    _MonthBillsCard(
-                      total: budget.billsActualForMonth(monthKey),
-                      count: budget.billPayments
-                          .where((e) =>
-                              (e.month ??
-                                  BudgetEntry.monthKeyOf(
-                                      e.startDate ?? e.dataDodania)) ==
-                              monthKey)
-                          .length,
-                      currency: currency,
-                    ),
-                  ],
-                ),
-                // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki) ──
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                  children: [
-                    AuroraSegmented<_StatsDomain>(
-                      selected: _statsDomain,
-                      onChanged: (v) => setState(() => _statsDomain = v),
-                      segments: [
-                        const AuroraSegment(
+                  ),
+                  // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki) ──
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    children: [
+                      AuroraSegmented<_StatsDomain>(
+                        selected: _statsDomain,
+                        onChanged: (v) => setState(() => _statsDomain = v),
+                        segments: [
+                          const AuroraSegment(
                             value: _StatsDomain.budget,
                             label: 'Budżet',
-                            icon: LucideIcons.wallet),
-                        const AuroraSegment(
+                            icon: LucideIcons.wallet,
+                          ),
+                          const AuroraSegment(
                             value: _StatsDomain.subscriptions,
                             label: 'Subskrypcje',
-                            icon: LucideIcons.repeat),
-                        AuroraSegment(
+                            icon: LucideIcons.repeat,
+                          ),
+                          AuroraSegment(
                             value: _StatsDomain.bills,
                             label: 'Rachunki',
-                            icon: lucide.LucideIcons.receiptText),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ...switch (_statsDomain) {
-                      _StatsDomain.budget =>
-                        _budgetStats(budget, currency, monthKey),
-                      _StatsDomain.subscriptions => [
+                            icon: lucide.LucideIcons.receiptText,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ...switch (_statsDomain) {
+                        _StatsDomain.budget => _budgetStats(
+                          budget,
+                          currency,
+                          monthKey,
+                        ),
+                        _StatsDomain.subscriptions => [
                           SubscriptionStatsView(
                             scopeFilter: budget.isHousehold
                                 ? SubscriptionScope.household
                                 : SubscriptionScope.personal,
                           ),
                         ],
-                      _StatsDomain.bills =>
-                        _billsStats(budget, currency, monthKey),
-                    },
-                  ],
-                ),
-              ],
+                        _StatsDomain.bills => _billsStats(
+                          budget,
+                          currency,
+                          monthKey,
+                        ),
+                      },
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -319,65 +350,83 @@ class _UpdateBannerState extends State<_UpdateBanner> {
         final c = context.semanticColors;
 
         Widget shell(Widget child) => Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: c.positiveBg,
-                borderRadius: BorderRadius.circular(AppRadii.control),
-                border: Border.all(color: c.positive.withValues(alpha: 0.3)),
-              ),
-              child: child,
-            );
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: c.positiveBg,
+            borderRadius: BorderRadius.circular(AppRadii.control),
+            border: Border.all(color: c.positive.withValues(alpha: 0.3)),
+          ),
+          child: child,
+        );
 
         // Pobieranie — postep (niezaleznie od dismiss).
         if (svc.status == UpdateStatus.downloading) {
-          return shell(Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Pobieranie aktualizacji… ${svc.downloadProgress.toInt()}%',
-                  style: TextStyle(fontWeight: FontWeight.w600, color: c.positive)),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: svc.downloadProgress / 100,
-                backgroundColor: c.positive.withValues(alpha: 0.15),
-                valueColor: AlwaysStoppedAnimation(c.positive),
-                minHeight: 6,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ],
-          ));
+          return shell(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Pobieranie aktualizacji… ${svc.downloadProgress.toInt()}%',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: c.positive,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: svc.downloadProgress / 100,
+                  backgroundColor: c.positive.withValues(alpha: 0.15),
+                  valueColor: AlwaysStoppedAnimation(c.positive),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ],
+            ),
+          );
         }
 
         if (svc.status == UpdateStatus.launchingInstaller) {
-          return shell(Row(children: [
-            Icon(LucideIcons.smartphone, color: c.positive, size: 20),
-            const SizedBox(width: 10),
-            const Expanded(child: Text('Uruchamianie instalatora…')),
-          ]));
+          return shell(
+            Row(
+              children: [
+                Icon(LucideIcons.smartphone, color: c.positive, size: 20),
+                const SizedBox(width: 10),
+                const Expanded(child: Text('Uruchamianie instalatora…')),
+              ],
+            ),
+          );
         }
 
         // Dostepna aktualizacja (stan spoczynku) — info + akcja.
         if (!svc.updateAvailable || _dismissed) return const SizedBox.shrink();
 
-        return shell(Row(children: [
-          Icon(LucideIcons.download, color: c.positive, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Dostępna aktualizacja ${svc.latestVersion ?? ''}',
-              style: TextStyle(fontWeight: FontWeight.w600, color: c.positive),
-            ),
+        return shell(
+          Row(
+            children: [
+              Icon(LucideIcons.download, color: c.positive, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Dostępna aktualizacja ${svc.latestVersion ?? ''}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: c.positive,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => svc.startUpdate(),
+                child: const Text('Zainstaluj'),
+              ),
+              IconButton(
+                icon: const Icon(LucideIcons.x, size: 18),
+                tooltip: 'Ukryj',
+                onPressed: () => setState(() => _dismissed = true),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => svc.startUpdate(),
-            child: const Text('Zainstaluj'),
-          ),
-          IconButton(
-            icon: const Icon(LucideIcons.x, size: 18),
-            tooltip: 'Ukryj',
-            onPressed: () => setState(() => _dismissed = true),
-          ),
-        ]));
+        );
       },
     );
   }
@@ -397,9 +446,10 @@ class _Kv extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style:
-                theme.textTheme.labelMedium?.copyWith(color: c.textSecondary)),
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(color: c.textSecondary),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
@@ -447,14 +497,18 @@ class _PredictionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(LucideIcons.target, size: 18, color: c.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text('Predykcja vs rzeczywistość',
-                  style: theme.textTheme.titleMedium),
-            ),
-          ]),
+          Row(
+            children: [
+              Icon(LucideIcons.target, size: 18, color: c.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Predykcja vs rzeczywistość',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
           Row(
             children: [
               IconButton(
@@ -463,9 +517,11 @@ class _PredictionCard extends StatelessWidget {
                 onPressed: onPrev,
               ),
               Expanded(
-                child: Text(monthLabel,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleSmall),
+                child: Text(
+                  monthLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
@@ -479,11 +535,15 @@ class _PredictionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                  child: _Kv('Przewidywany bilans', fmt(predicted),
-                      color: amt(predicted))),
+                child: _Kv(
+                  'Przewidywany bilans',
+                  fmt(predicted),
+                  color: amt(predicted),
+                ),
+              ),
               Expanded(
-                  child: _Kv('Rzeczywisty bilans', fmt(real),
-                      color: amt(real))),
+                child: _Kv('Rzeczywisty bilans', fmt(real), color: amt(real)),
+              ),
             ],
           ),
           const Divider(height: 24),
@@ -491,8 +551,11 @@ class _PredictionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                  child: _Kv('Na rachunki (plan)',
-                      allocation != null ? fmt(allocation!) : '—')),
+                child: _Kv(
+                  'Na rachunki (plan)',
+                  allocation != null ? fmt(allocation!) : '—',
+                ),
+              ),
               Expanded(child: _Kv('Rachunki (realne)', fmt(billsActual))),
             ],
           ),
@@ -500,8 +563,9 @@ class _PredictionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Ustaw kopertę „Na rachunki" na ekranie Rachunki, aby doprecyzować predykcję.',
-              style:
-                  theme.textTheme.bodySmall?.copyWith(color: c.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: c.textSecondary,
+              ),
             ),
           ],
         ],
@@ -525,7 +589,9 @@ class _MonthBillsCard extends StatelessWidget {
   static String _plural(int n) {
     if (n == 1) return 'rachunek';
     final last = n % 10, last2 = n % 100;
-    if (last >= 2 && last <= 4 && (last2 < 10 || last2 >= 20)) return 'rachunki';
+    if (last >= 2 && last <= 4 && (last2 < 10 || last2 >= 20)) {
+      return 'rachunki';
+    }
     return 'rachunków';
   }
 
@@ -545,8 +611,9 @@ class _MonthBillsCard extends StatelessWidget {
                 Text('Rachunki miesiąca', style: theme.textTheme.titleSmall),
                 Text(
                   count == 0 ? 'Brak rachunków' : '$count ${_plural(count)}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: c.textSecondary),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: c.textSecondary,
+                  ),
                 ),
               ],
             ),

@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
+import '../models/bills_allocation_item.dart';
 import '../utils/money_format.dart';
 import 'app_logger.dart';
 
@@ -39,11 +40,14 @@ class StorageService {
     _categoriesBox = await Hive.openBox<String>('categories');
     _paymentMethodsBox = await Hive.openBox<String>('payment_methods');
     _budgetEntriesBox = await Hive.openBox<String>('budget_entries');
-    _householdBudgetEntriesBox =
-        await Hive.openBox<String>('household_budget_entries');
+    _householdBudgetEntriesBox = await Hive.openBox<String>(
+      'household_budget_entries',
+    );
     _paymentDoneBox = await Hive.openBox<bool>('payment_done');
     _settingsBox = await Hive.openBox('settings');
-    setAppDefaultCurrency(getCurrency()); // globalna waluta domyślna (ukrywanie w UI)
+    setAppDefaultCurrency(
+      getCurrency(),
+    ); // globalna waluta domyślna (ukrywanie w UI)
     _loadSubscriptionsCache();
     _loadCategoriesCache();
     _loadPaymentMethodsCache();
@@ -52,7 +56,8 @@ class StorageService {
     _seedDefaultPaymentMethods();
     _initialized = true;
     _log.info(
-        'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length}+${_householdBudgetEntriesCache.length} budget entries)');
+      'StorageService initialized (${_subscriptionsCache.length} subs, ${_categoriesCache.length} cats, ${_paymentMethodsCache.length} payment methods, ${_budgetEntriesCache.length}+${_householdBudgetEntriesCache.length} budget entries)',
+    );
   }
 
   // ── Subscriptions ──────────────────────────────────────────────────────────
@@ -62,7 +67,9 @@ class StorageService {
     for (final key in _subscriptionsBox.keys) {
       try {
         final json = jsonDecode(_subscriptionsBox.get(key as String)!);
-        _subscriptionsCache[key] = Subscription.fromJson(json as Map<String, dynamic>);
+        _subscriptionsCache[key] = Subscription.fromJson(
+          json as Map<String, dynamic>,
+        );
       } catch (e) {
         _log.warning('Failed to parse subscription $key: $e');
       }
@@ -138,8 +145,9 @@ class StorageService {
     for (final key in _paymentMethodsBox.keys) {
       try {
         final json = jsonDecode(_paymentMethodsBox.get(key as String)!);
-        _paymentMethodsCache[key] =
-            PaymentMethod.fromJson(json as Map<String, dynamic>);
+        _paymentMethodsCache[key] = PaymentMethod.fromJson(
+          json as Map<String, dynamic>,
+        );
       } catch (e) {
         _log.warning('Failed to parse payment method $key: $e');
       }
@@ -183,8 +191,8 @@ class StorageService {
 
   Map<String, BudgetEntry> _budgetCache(BudgetScope scope) =>
       scope == BudgetScope.household
-          ? _householdBudgetEntriesCache
-          : _budgetEntriesCache;
+      ? _householdBudgetEntriesCache
+      : _budgetEntriesCache;
 
   void _loadBudgetEntriesCache() {
     for (final scope in BudgetScope.values) {
@@ -201,23 +209,28 @@ class StorageService {
     }
   }
 
-  List<BudgetEntry> getBudgetEntries(
-          [BudgetScope scope = BudgetScope.personal]) =>
-      List.unmodifiable(_budgetCache(scope).values);
+  List<BudgetEntry> getBudgetEntries([
+    BudgetScope scope = BudgetScope.personal,
+  ]) => List.unmodifiable(_budgetCache(scope).values);
 
-  BudgetEntry? getBudgetEntry(String id,
-          [BudgetScope scope = BudgetScope.personal]) =>
-      _budgetCache(scope)[id];
+  BudgetEntry? getBudgetEntry(
+    String id, [
+    BudgetScope scope = BudgetScope.personal,
+  ]) => _budgetCache(scope)[id];
 
-  Future<void> saveBudgetEntry(BudgetEntry entry,
-      [BudgetScope scope = BudgetScope.personal]) async {
+  Future<void> saveBudgetEntry(
+    BudgetEntry entry, [
+    BudgetScope scope = BudgetScope.personal,
+  ]) async {
     await _budgetBox(scope).put(entry.id, jsonEncode(entry.toJson()));
     _budgetCache(scope)[entry.id] = entry;
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
-  Future<void> deleteBudgetEntry(String id,
-      [BudgetScope scope = BudgetScope.personal]) async {
+  Future<void> deleteBudgetEntry(
+    String id, [
+    BudgetScope scope = BudgetScope.personal,
+  ]) async {
     await _budgetBox(scope).delete(id);
     _budgetCache(scope).remove(id);
     _log.info('Deleted budget entry ($scope): $id');
@@ -227,7 +240,9 @@ class StorageService {
   /// ADR-009). W odróżnieniu od [saveBudgetEntry] NIE modyfikuje pozycji —
   /// zachowuje ich `updatedAt`/`deleted` (łącznie z nagrobkami).
   Future<void> replaceBudgetEntries(
-      BudgetScope scope, List<BudgetEntry> entries) async {
+    BudgetScope scope,
+    List<BudgetEntry> entries,
+  ) async {
     final box = _budgetBox(scope);
     final cache = _budgetCache(scope);
     await box.clear();
@@ -271,7 +286,8 @@ class StorageService {
 
   // ── Settings ───────────────────────────────────────────────────────────────
 
-  String getCurrency() => _settingsBox.get('currency', defaultValue: 'PLN') as String;
+  String getCurrency() =>
+      _settingsBox.get('currency', defaultValue: 'PLN') as String;
 
   Future<void> setCurrency(String currencyCode) async {
     await _settingsBox.put('currency', currencyCode);
@@ -289,8 +305,7 @@ class StorageService {
   String getAccentId() =>
       _settingsBox.get('accentId', defaultValue: 'purple') as String;
 
-  Future<void> setAccentId(String id) async =>
-      _settingsBox.put('accentId', id);
+  Future<void> setAccentId(String id) async => _settingsBox.put('accentId', id);
 
   /// Dev-only: override daty do testowania ghost detection
   DateTime? getDevDateOverride() {
@@ -323,18 +338,60 @@ class StorageService {
   /// Kwota „Na rachunki" (koperta/plan przydzielony na rachunki) — per zakres,
   /// bo osobisty i domowy to osobne budżety. `null` = nie ustawiono. Lokalne
   /// (jak `budgetLimit`) — nie wchodzi do synchronizacji domowego.
-  double? getBillsAllocation(BudgetScope scope) {
-    final v = _settingsBox.get('billsAllocation|${scope.name}');
-    return v != null ? (v as num).toDouble() : null;
+  /// Pozycje koperty „Na rachunki" danego zakresu (nazwa + kwota + metoda).
+  /// Migracja: stara pojedyncza kwota (`billsAllocation|scope`) jest czytana jako
+  /// jedna pozycja „Na rachunki", dopóki użytkownik nie zapisze listy pozycji.
+  List<BillsAllocationItem> getBillsAllocationItems(BudgetScope scope) {
+    final raw = _settingsBox.get('billsAllocationItems|${scope.name}');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        final list = (jsonDecode(raw) as List)
+            .map((e) => BillsAllocationItem.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return List.unmodifiable(list);
+      } catch (e) {
+        _log.warning('Nie udalo sie odczytac billsAllocationItems: $e');
+      }
+    }
+    // Migracja starej pojedynczej kwoty -> jedna pozycja „Na rachunki".
+    final legacy = _settingsBox.get('billsAllocation|${scope.name}');
+    final amount = legacy is num ? legacy.toDouble() : null;
+    if (amount != null && amount > 0) {
+      return [
+        BillsAllocationItem(
+          id: 'legacy-${scope.name}',
+          name: 'Na rachunki',
+          amount: amount,
+        ),
+      ];
+    }
+    return const [];
   }
 
-  Future<void> setBillsAllocation(BudgetScope scope, double? amount) async {
-    final key = 'billsAllocation|${scope.name}';
-    if (amount == null) {
+  Future<void> setBillsAllocationItems(
+    BudgetScope scope,
+    List<BillsAllocationItem> items,
+  ) async {
+    final key = 'billsAllocationItems|${scope.name}';
+    if (items.isEmpty) {
       await _settingsBox.delete(key);
     } else {
-      await _settingsBox.put(key, amount);
+      await _settingsBox.put(
+        key,
+        jsonEncode(items.map((e) => e.toJson()).toList()),
+      );
     }
+    // Stara pojedyncza kwota jest już zmigrowana do listy — usuń, by nie wracała.
+    await _settingsBox.delete('billsAllocation|${scope.name}');
+  }
+
+  /// Suma koperty „Na rachunki" danego zakresu (= Σ pozycji). `null` = pusto.
+  /// Silnik obliczeń dostaje jedną liczbę (jak dawniej) — matematyka bez zmian.
+  double? getBillsAllocation(BudgetScope scope) {
+    final items = getBillsAllocationItems(scope);
+    if (items.isEmpty) return null;
+    final sum = items.fold<double>(0, (a, b) => a + b.amount);
+    return sum > 0 ? sum : null;
   }
 
   // ── Notification preferences ───────────────────────────────────────────────

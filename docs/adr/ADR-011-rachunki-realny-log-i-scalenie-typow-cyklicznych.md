@@ -66,6 +66,11 @@ dostaje wkład `BalanceContributionKind.billsAllocation` (+koperta), utrzymując
 > surplus). W trakcie wdrożenia — na życzenie właściciela — stała się planowanym
 > kosztem widocznym w Budżecie (pomniejsza „zostaje/mies"), z podmianą na realne
 > rachunki w bilansie miesiąca.
+>
+> **Ewolucja (ADR-012):** koperta nie jest już pojedynczą kwotą, lecz **sumą listy
+> pozycji** (`billsAllocationItems|scope`, nazwa + kwota + metoda płatności). Silnik
+> nadal dostaje jedną liczbę (Σ) — zachowanie bez zmian. Patrz
+> [ADR-012](ADR-012-koperta-na-rachunki-lista-pozycji.md).
 
 ### 4. Osobisty/Domowy = pudełko, nie pole
 

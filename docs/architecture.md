@@ -166,8 +166,8 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 |----------|-------|
 | **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
 | **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek" (ADR-011) |
-| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); CTA Excel + PDF; import pod „Dodaj" |
-| **Budzet** | Zarzadzanie pozycjami planowalnymi; widok szczegolowy vs scalony (Wplywy/Wydatki); pozycja „Na rachunki" przypieta na gorze wydatkow; CTA Excel |
+| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
+| **Budzet** | Zarzadzanie pozycjami planowalnymi; grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale/jednorazowe), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
 | **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
 
 ---
@@ -177,13 +177,18 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 > **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
 > | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 > | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
+> | [ADR-012 Koperta „Na rachunki" jako lista pozycji](adr/ADR-012-koperta-na-rachunki-lista-pozycji.md)
 
 Budzet jest **osobny od subskrypcji** — nie modyfikuje wydanego modulu, tylko
 dodatkowo czyta subskrypcje jako strumien kosztow.
 
 **Dwa zakresy = dwa boxy** (ADR-006): osobisty (`budget_entries`, lokalny) i domowy
 (`household_budget_entries`, przyszla synchronizacja). `BudgetController` trzyma aktywny
-`BudgetScope` (przelacznik na Budzecie i Dashboardzie); ten sam silnik liczy oba.
+`BudgetScope` — **jeden globalny tryb Osobisty/Domowy dla calej apki**: przelacznik +
+**swipe poziomy** na kazdym ekranie (Dashboard, Rachunki, Budzet, Subskrypcje czytaja
+ten sam zakres). Ten sam silnik liczy oba. Kategorie i metody platnosci to slowniki
+**wspoldzielone** (subskrypcje + pozycje budzetu obu zakresow + koperta „Na rachunki") —
+liczniki i kaskady rename/usun w Ustawieniach obejmuja wszystkie te zrodla.
 
 ```
 BudgetController (ChangeNotifier, aktywny BudgetScope)

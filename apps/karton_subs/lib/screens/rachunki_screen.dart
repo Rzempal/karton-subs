@@ -12,6 +12,7 @@ import '../widgets/aurora_add_menu.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/gradient_amount.dart';
+import '../widgets/scope_swipe_area.dart';
 import 'add_bill_payment_screen.dart';
 
 /// Ekran „Rachunki" — realny log opłaconych pozycji ([BudgetEntryType.billPayment]).
@@ -42,7 +43,8 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   Future<void> _openAdd(BudgetController ctrl) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-          builder: (_) => AddBillPaymentScreen(scope: ctrl.scope)),
+        builder: (_) => AddBillPaymentScreen(scope: ctrl.scope),
+      ),
     );
   }
 
@@ -50,8 +52,8 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     final ctrl = context.read<BudgetController>();
     await Navigator.of(context).push(
       MaterialPageRoute(
-          builder: (_) =>
-              AddBillPaymentScreen(existing: e, scope: ctrl.scope)),
+        builder: (_) => AddBillPaymentScreen(existing: e, scope: ctrl.scope),
+      ),
     );
   }
 
@@ -63,11 +65,13 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
         content: Text('„${e.name}" zniknie z listy i bilansu miesiąca.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Anuluj')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Anuluj'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Usuń')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Usuń'),
+          ),
         ],
       ),
     );
@@ -79,10 +83,12 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     final ctrl = context.watch<BudgetController>();
     final monthKey = BudgetEntry.monthKeyOf(_month);
     final items = ctrl.billPayments
-        .where((e) =>
-            (e.month ??
-                BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
-            monthKey)
+        .where(
+          (e) =>
+              (e.month ??
+                  BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
+              monthKey,
+        )
         .toList();
 
     return Scaffold(
@@ -108,41 +114,57 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
               onChanged: ctrl.setScope,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _AllocationCard(
-              monthKey: monthKey,
-              month: _month,
-              onPrev: () => _shiftMonth(-1),
-              onNext: () => _shiftMonth(1),
-            ),
-          ),
+          // Karta „Na rachunki" + lista objęte swipe zakresu; wiersze listy to
+          // Dismissible (swipe = usuń), więc karta jest pewną strefą flicku.
           Expanded(
-            child: items.isEmpty
-                ? _EmptyState(month: _month)
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 112),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) {
-                      final e = items[i];
-                      return Dismissible(
-                        key: ValueKey(e.id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: Icon(LucideIcons.trash2,
-                              color: AppColors.negative),
-                        ),
-                        confirmDismiss: (_) => _confirmDelete(e),
-                        onDismissed: (_) =>
-                            context.read<BudgetController>().delete(e.id),
-                        child: BudgetEntryCard(
-                            entry: e, onTap: () => _openEdit(e)),
-                      );
-                    },
+            child: ScopeSwipeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: _AllocationCard(
+                      monthKey: monthKey,
+                      month: _month,
+                      onPrev: () => _shiftMonth(-1),
+                      onNext: () => _shiftMonth(1),
+                    ),
                   ),
+                  Expanded(
+                    child: items.isEmpty
+                        ? _EmptyState(month: _month)
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 112),
+                            itemCount: items.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 8),
+                            itemBuilder: (_, i) {
+                              final e = items[i];
+                              return Dismissible(
+                                key: ValueKey(e.id),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  child: Icon(
+                                    LucideIcons.trash2,
+                                    color: AppColors.negative,
+                                  ),
+                                ),
+                                confirmDismiss: (_) => _confirmDelete(e),
+                                onDismissed: (_) => context
+                                    .read<BudgetController>()
+                                    .delete(e.id),
+                                child: BudgetEntryCard(
+                                  entry: e,
+                                  onTap: () => _openEdit(e),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -173,7 +195,9 @@ class _AllocationCard extends StatelessWidget {
     final alloc = ctrl.billsAllocation;
 
     final raw = DateFormat('LLLL y', 'pl_PL').format(month);
-    final monthLabel = raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
+    final monthLabel = raw.isEmpty
+        ? raw
+        : raw[0].toUpperCase() + raw.substring(1);
 
     final remaining = alloc != null ? alloc - actual : null;
     final over = remaining != null && remaining < 0;
@@ -182,9 +206,12 @@ class _AllocationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Na rachunki',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Na rachunki',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           // Selektor miesiąca.
           Row(
             children: [
@@ -194,9 +221,11 @@ class _AllocationCard extends StatelessWidget {
                 onPressed: onPrev,
               ),
               Expanded(
-                child: Text(monthLabel,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleSmall),
+                child: Text(
+                  monthLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
@@ -206,17 +235,24 @@ class _AllocationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text('Wydane w tym miesiącu',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary)),
+          Text(
+            'Wydane w tym miesiącu',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           const SizedBox(height: 2),
-          GradientAmount('${budgetNf.format(actual)}${curLabelSuffix(cur)}', fontSize: 32),
+          GradientAmount(
+            '${budgetNf.format(actual)}${curLabelSuffix(cur)}',
+            fontSize: 32,
+          ),
           const SizedBox(height: 12),
           if (alloc == null)
             Text(
               'Ustaw kopertę „Na rachunki" na ekranie Budżet, by porównać plan z realnymi wydatkami.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
             )
           else ...[
             ClipRRect(
@@ -232,8 +268,10 @@ class _AllocationCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Plan: ${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
-                    style: theme.textTheme.bodyMedium),
+                Text(
+                  'Plan: ${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
                 Text(
                   over
                       ? 'Przekroczono o ${budgetNf.format(-remaining)}${curLabelSuffix(cur)}'
@@ -266,16 +304,18 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(lucide.LucideIcons.receiptText,
-                size: 40, color: AppColors.textSecondary),
+            Icon(
+              lucide.LucideIcons.receiptText,
+              size: 40,
+              color: AppColors.textSecondary,
+            ),
             const SizedBox(height: 12),
             Text(
               'Brak rachunków w $label.\nDodaj pierwszy przyciskiem „+".',
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),

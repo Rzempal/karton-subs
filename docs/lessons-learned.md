@@ -4,6 +4,29 @@
 
 ---
 
+## 2026-07-12: Stan „aktywny" nie moze zalezec tylko od koloru akcentu (motyw mono)
+
+### Problem
+Aktywna ikona grupowania w Budzecie sygnalizowala stan tylko **kolorem akcentu**
+(`semanticColors.primary`). W motywie „standardowy czarno-bialy" (ADR-010) akcent jest
+**bezbarwny** (`accentViolet` = `#E5E5E5` w dark, `#171717` w light) — praktycznie
+nieodroznialny od domyslnego koloru ikony. Efekt: w mono nie bylo widac, czy przycisk
+jest aktywny. `analyze`/`test` tego nie wykryja — to render zalezny od motywu.
+
+### Rozwiazanie
+Aktywny/zaznaczony stan sygnalizuj **ksztaltem, nie sama barwa**: wypelniona pigulka pod
+ikona (`IconButton.styleFrom(backgroundColor: primary.withValues(alpha: 0.25))` +
+`isSelected`). W motywach kolorowych to zabarwiony krazek, w mono — szary krazek na
+czarnym/bialym pasku. Stan widac niezaleznie od hue.
+
+### Wniosek
+Przy wielu motywach (w tym mono, ADR-010) **nie koduj stanu aktywny/zaznaczony wylacznie
+kolorem** — akcent moze byc szaroscia. Uzyj afordancji ksztaltu (tlo/pigulka/obramowanie)
+albo zmiany glifu. To ta sama rodzina bledow co „kolory na sztywno lamia sie przy wielu
+motywach" (2026-06-24), ale tu problemem jest sam **kanal informacji** (barwa), nie token.
+
+---
+
 ## 2026-07-11: Nowe ikony Lucide tylko w `lucide_icons_flutter`
 
 ### Problem

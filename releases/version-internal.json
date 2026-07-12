@@ -1,7 +1,32 @@
 {
-  "version": "0.10.26071102",
-  "releaseNotes": "- Ustawienia: Sprawdz aktualizacje inline (wersja + status + przycisk Sprawdz teraz + instalacja) bez wchodzenia w osobny ekran; usuniety osobny ekran Aktualizacje",
+  "releaseNotes": "- Sortowanie (A-Z / kwota) obejmuje teraz liste Na rachunki",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071205",
+  "versionCode": 1026071205,
   "changelog": [
+    {
+      "version": "0.10.26071205",
+      "notes": "- Sortowanie (A-Z / kwota) obejmuje teraz liste Na rachunki"
+    },
+    {
+      "version": "0.10.26071204",
+      "notes": "- Aktywna ikona grupowania: wypelniona pigulka (widoczna takze w motywie mono)"
+    },
+    {
+      "version": "0.10.26071203",
+      "notes": "- Budzet: sekcja Koszty cykliczne to teraz Wydatki stale\n- Przycisk grupowania grupuje wydatki po kategoriach (etykietach)\n- Aktywna ikona grupowania w kolorze akcentu"
+    },
+    {
+      "version": "0.10.26071202",
+      "notes": "- Liczniki kategorii i metod platnosci licza tez budzet i rachunki\n- Zmiana nazwy/usuniecie metody propaguje sie na budzet i Na rachunki\n- Usuniecie kategorii przenosi pozycje budzetu do Inne"
+    },
+    {
+      "version": "0.10.26071201",
+      "notes": "- Na rachunki: koperta jako lista pozycji (nazwa, kwota, metoda platnosci)\n- Metoda platnosci widoczna na kafelkach budzetu i rachunkow"
+    },
+    {
+      "version": "0.10.26071200",
+      "notes": "- Swipe poziomy przelacza Osobisty/Domowy na kazdym ekranie\n- Subskrypcje: wspolny globalny tryb zakresu\n- Dashboard: Bilans/Plan tylko tapem"
+    },
     {
       "version": "0.10.26071102",
       "notes": "- Ustawienia: Sprawdz aktualizacje inline (wersja + status + przycisk Sprawdz teraz + instalacja) bez wchodzenia w osobny ekran; usuniety osobny ekran Aktualizacje"
@@ -17,33 +42,8 @@
     {
       "version": "0.10.26071002",
       "notes": "- Plan: statystyki jako hub - przelacznik segmentowy Budzet / Subskrypcje / Rachunki (hero + trend + podzial na kategorie dla kazdej domeny)\n- Statystyki subskrypcji przeniesione z ekranu Subskrypcje do Planu; Subskrypcje = sama lista\n- Nowe trendy i podzial na kategorie dla budzetu i rachunkow"
-    },
-    {
-      "version": "0.10.26071001",
-      "notes": "- Dashboard: Bilans miesiaca teraz pierwsza (domyslna) zakladka, Plan druga\n- Platnosci + Platnosci automatyczne scalone w jedna sekcje: dwie grupy rozdzielone separatorem, przycisk odhacz wszystkie w kazdej grupie"
-    },
-    {
-      "version": "0.10.26071000",
-      "notes": "- Ikona Rachunkow zmieniona na receipt-text (navbar, karty Na rachunki, rachunki miesiaca, pusty stan)"
-    },
-    {
-      "version": "0.10.26070904",
-      "notes": "- Budzet: Wyplywy przemianowane na Wydatki\n- Na rachunki przypiete na gorze listy wydatkow (wliczone w sume sekcji)"
-    },
-    {
-      "version": "0.10.26070903",
-      "notes": "- Predykcja vs rzeczywistosc: przelacznik miesiecy (wspolny z kalendarzem Bilansu miesiaca), domyslnie biezacy miesiac - statystyka retrospektywna"
-    },
-    {
-      "version": "0.10.26070902",
-      "notes": "- Na rachunki jako pozycja w Budzecie (pomniejsza zostaje/mies; bilans liczy realne rachunki)\n- Fix grupowania Budzetu: przelacznik widok szczegolowy / scalony (Wplywy/Wyplywy)\n- Edycja koperty Na rachunki przeniesiona z Rachunkow do Budzetu"
-    },
-    {
-      "version": "0.10.26070901",
-      "notes": "- Ekran Rachunki (realny log oplat) + koperta Na rachunki\n- Dashboard: podzakladki Plan / Bilans miesiaca + predykcja vs rzeczywisty\n- Scalenie typow cyklicznych (rachunek+koszt w jeden z korekta), nowy typ rachunku"
     }
   ],
-  "releaseDate": "2026-07-11T09:12:31Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071102",
-  "versionCode": 1026071102
+  "releaseDate": "2026-07-12T21:17:51Z",
+  "version": "0.10.26071205"
 }

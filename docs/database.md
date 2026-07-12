@@ -168,10 +168,13 @@ wplywaja tylko na **bilans danego miesiaca** i **kalendarz**. Patrz
 **`billPayment` (rachunek — realny log, ADR-011):** datowana, faktycznie oplacona
 pozycja (trudna do zaplanowania; docelowo z OCR). Traktowana jak wydatek jednorazowy
 (`isOneTime`): zasila **bilans miesiaca**, NIE plan „zostaje/mies". Ma wlasny ekran
-„Rachunki". Zgadywanke planu dla tej puli pelni koperta **„Na rachunki"**
-(`billsAllocation` w `settings`, per zakres) — osobna statystyka, nie zmienia
-surplus ani bilansu. Patrz
-[ADR-011](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md).
+„Rachunki". Zgadywanke planu dla tej puli pelni koperta **„Na rachunki"** —
+**lista pozycji** (`billsAllocationItems|scope` w `settings`, per zakres; nazwa +
+kwota + metoda platnosci, ADR-012). Suma pozycji **pomniejsza** surplus, a w bilansie
+miesiaca jest oddawana i podmieniana na realne rachunki (silnik dostaje jedna liczbe =
+Σ). Patrz
+[ADR-011](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md) i
+[ADR-012](adr/ADR-012-koperta-na-rachunki-lista-pozycji.md).
 
 **`installment` (rata):** koszt miesieczny z okreslonym koncem — `startDate` (pierwsza
 rata) + `installmentCount`; data ostatniej raty = start + (count−1) miesiecy. Liczy sie
@@ -202,7 +205,7 @@ w domowym (spiety `linkId`). Patrz [ADR-006](adr/ADR-006-budzet-domowy-osobny-zb
 | Koszty/mies | koszty cykliczne budzetu **+** suma miesieczna subskrypcji |
 | Zostaje/mies (surplus) | wplywy - koszty cykliczne - subskrypcje - **rezerwa „Na rachunki"** (koszty z **kwoty bazowej**; raty tylko **aktywne teraz**; `billPayment` NIE wchodzi) |
 | Bilans miesiaca | surplus **+ rezerwa „Na rachunki" (oddana)** **+** jednorazowe wplywy - jednorazowe wydatki (w tym `billPayment`) **+** korekty kwot - **korekta rat** (koperta skraca sie => bilans liczy realne rachunki; ADR-011) |
-| Rachunki realne (mies.) | suma `billPayment` danego miesiaca (`billsActualForMonth`) — porownanie z koperta „Na rachunki" (`billsAllocation`) |
+| Rachunki realne (mies.) | suma `billPayment` danego miesiaca (`billsActualForMonth`) — porownanie z koperta „Na rachunki" (`billsAllocation` = Σ `billsAllocationItems`) |
 | Trendy/kategorie (Plan) | `expenseTrend`/`billsTrend` (6 mies.) + `expenseBreakdownByCategory`/`billsBreakdownByCategory` — do wykresow statystyk |
 | Kalendarz dnia | rzutowanie wystapien (`occurrencesInRange`); rachunek z korekta bierze jej date/kwote |
 
@@ -348,7 +351,7 @@ class PaymentMethod {
 | Hive Box: `budget_entries` | JSON pozycji budzetu **osobistego** (lokalny) |
 | Hive Box: `household_budget_entries` | JSON pozycji budzetu **domowego** — synchronizowany E2E (ADR-009); pozycje niosa `updatedAt`/`deleted` (nagrobki) |
 | Hive Box: `payment_done` | Bool: odhaczone platnosci (klucz `scope\|sourceId\|YYYY-MM-DD`); lokalne, w backupie od v5 |
-| Hive Box: `settings` | Key-value: waluta domyslna, limit budzetu subskrypcji, koperta „Na rachunki" (`billsAllocation\|scope`, per zakres), preferencje |
+| Hive Box: `settings` | Key-value: waluta domyslna, limit budzetu subskrypcji, koperta „Na rachunki" (`billsAllocationItems\|scope` — lista pozycji, per zakres; legacy `billsAllocation\|scope` migrowany w locie), preferencje |
 
 Wzorzec: ten sam co w APPteczka (StorageService z cache + lazy deserialization).
 Referencja: `reference-code/services/storage_service.dart`
