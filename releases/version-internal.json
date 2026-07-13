@@ -1,8 +1,9 @@
 {
-  "releaseNotes": "- Sortowanie (A-Z / kwota) obejmuje teraz liste Na rachunki",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071205",
-  "versionCode": 1026071205,
   "changelog": [
+    {
+      "version": "0.10.26071300",
+      "notes": "- Kropka koloru kategorii w filtrach Budzetu i Subskrypcji\n- Kategoria dla przelewu wewnetrznego (widoczna w filtrze i na karcie)\n- Kategoria dla pozycji Na rachunki (kolor kropki przy nazwie)\n- Kaskady zmiany/usuniecia kategorii obejmuja teraz rowniez koperty Na rachunki"
+    },
     {
       "version": "0.10.26071205",
       "notes": "- Sortowanie (A-Z / kwota) obejmuje teraz liste Na rachunki"
@@ -38,12 +39,11 @@
     {
       "version": "0.10.26071100",
       "notes": "- Platnosci kompaktowe: bez naglowkow grup; jedna linia opis: kwota (Do zrealizowania recznie / Pobrane automatycznie); przycisk Odhacz tylko w wersji rozwinietej"
-    },
-    {
-      "version": "0.10.26071002",
-      "notes": "- Plan: statystyki jako hub - przelacznik segmentowy Budzet / Subskrypcje / Rachunki (hero + trend + podzial na kategorie dla kazdej domeny)\n- Statystyki subskrypcji przeniesione z ekranu Subskrypcje do Planu; Subskrypcje = sama lista\n- Nowe trendy i podzial na kategorie dla budzetu i rachunkow"
     }
   ],
-  "releaseDate": "2026-07-12T21:17:51Z",
-  "version": "0.10.26071205"
+  "releaseDate": "2026-07-13T16:55:54Z",
+  "versionCode": 1026071300,
+  "releaseNotes": "- Kropka koloru kategorii w filtrach Budzetu i Subskrypcji\n- Kategoria dla przelewu wewnetrznego (widoczna w filtrze i na karcie)\n- Kategoria dla pozycji Na rachunki (kolor kropki przy nazwie)\n- Kaskady zmiany/usuniecia kategorii obejmuja teraz rowniez koperty Na rachunki",
+  "version": "0.10.26071300",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071300"
 }
