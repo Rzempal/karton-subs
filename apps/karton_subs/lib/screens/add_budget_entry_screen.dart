@@ -61,9 +61,17 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.oneTimeIncome;
 
-  /// Kategoria dotyczy tylko wydatków (rachunek / koszt cykliczny / jednorazowy).
-  /// Wpływy i przelew do domowego nie mają kategorii.
+  /// Kategoria dotyczy wydatków (rachunek / koszt cykliczny / jednorazowy) oraz
+  /// przelewu do domowego. Wpływy nie mają kategorii.
   bool get _typeHasCategory =>
+      _type == BudgetEntryType.recurringCost ||
+      _type == BudgetEntryType.oneTimeExpense ||
+      _type == BudgetEntryType.installment ||
+      _type == BudgetEntryType.householdTransfer;
+
+  /// Metoda płatności dotyczy tylko wydatków — bez przelewu do domowego (nie
+  /// ma sensu jako „metoda płatności" wewnętrznego przesunięcia środków).
+  bool get _typeHasPaymentMethod =>
       _type == BudgetEntryType.recurringCost ||
       _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.installment;
@@ -449,7 +457,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               const SizedBox(height: 24),
             ],
 
-            if (_typeHasCategory) ...[
+            if (_typeHasPaymentMethod) ...[
               _SectionLabel('Metoda płatności'),
               const SizedBox(height: 8),
               Wrap(
@@ -693,7 +701,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     final startDate = _isOneTime ? _oneTimeDate : _anchorDate;
     // Kategoria/metoda tylko dla wydatków — przy wpływie/przelewie czyścimy.
     final categoryId = _typeHasCategory ? _categoryId : null;
-    final paymentMethod = _typeHasCategory ? _paymentMethod : null;
+    final paymentMethod = _typeHasPaymentMethod ? _paymentMethod : null;
     // Korekty miesięczne dla rachunku i przelewu do domowego.
     final overrides = _hasOverrides && _overrides.isNotEmpty
         ? Map<String, BillMonthOverride>.from(_overrides)

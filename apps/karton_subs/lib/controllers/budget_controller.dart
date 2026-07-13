@@ -207,6 +207,7 @@ class BudgetController extends ChangeNotifier {
     required String name,
     required double amount,
     String? paymentMethod,
+    String? categoryId,
   }) async {
     final items = [
       ...billsAllocationItems,
@@ -215,6 +216,7 @@ class BudgetController extends ChangeNotifier {
         name: name,
         amount: amount,
         paymentMethod: paymentMethod,
+        categoryId: categoryId,
       ),
     ];
     await _storage.setBillsAllocationItems(_scope, items);
@@ -240,12 +242,17 @@ class BudgetController extends ChangeNotifier {
   // pozycje „Na rachunki". Zarządzanie słownikami (Ustawienia) jest globalne, więc
   // te operacje działają PONAD oboma zakresami, niezależnie od aktywnego.
 
-  /// Liczba pozycji budżetu (oba zakresy, bez nagrobków) w danej kategorii.
+  /// Liczba pozycji budżetu (oba zakresy, bez nagrobków) oraz pozycji koperty
+  /// „Na rachunki" (oba zakresy) w danej kategorii.
   int countCategoryUsage(String categoryId) {
     var n = 0;
     for (final scope in BudgetScope.values) {
       n += DictionaryUsage.categoryInEntries(
         _storage.getBudgetEntries(scope),
+        categoryId,
+      );
+      n += DictionaryUsage.categoryInItems(
+        _storage.getBillsAllocationItems(scope),
         categoryId,
       );
     }
@@ -269,7 +276,8 @@ class BudgetController extends ChangeNotifier {
     return n;
   }
 
-  /// Przenosi pozycje budżetu z kategorii [fromId] do [toId] (oba zakresy).
+  /// Przenosi pozycje budżetu (oba zakresy) oraz pozycje koperty „Na rachunki"
+  /// (oba zakresy, lokalne — bez synchronizacji) z kategorii [fromId] do [toId].
   /// Zwraca liczbę zmienionych pozycji. Wywoływane przy usunięciu kategorii.
   Future<int> reassignCategoryEverywhere(String fromId, String toId) async {
     var affected = 0;
@@ -285,6 +293,21 @@ class BudgetController extends ChangeNotifier {
       if (entries.isNotEmpty) {
         affected += entries.length;
         if (scope == BudgetScope.household) touchedHousehold = true;
+      }
+      final items = _storage.getBillsAllocationItems(scope);
+      final hit = items.where((i) => i.categoryId == fromId).length;
+      if (hit > 0) {
+        await _storage.setBillsAllocationItems(
+          scope,
+          items
+              .map(
+                (i) => i.categoryId == fromId
+                    ? i.copyWith(categoryId: toId)
+                    : i,
+              )
+              .toList(),
+        );
+        affected += hit;
       }
     }
     if (affected > 0) _notifyMutation(touchedHousehold: touchedHousehold);

@@ -26,4 +26,10 @@ class DictionaryUsage {
   /// Pozycje koperty „Na rachunki" z daną metodą płatności (po nazwie).
   static int methodInItems(Iterable<BillsAllocationItem> items, String name) =>
       items.where((i) => i.paymentMethod == name).length;
+
+  /// Pozycje koperty „Na rachunki" w danej kategorii.
+  static int categoryInItems(
+    Iterable<BillsAllocationItem> items,
+    String categoryId,
+  ) => items.where((i) => i.categoryId == categoryId).length;
 }

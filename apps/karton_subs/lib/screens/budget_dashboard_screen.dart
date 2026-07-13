@@ -113,6 +113,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         if (e.categoryId != null) e.categoryId!,
       for (final e in ctrl.oneTimeExpenses)
         if (e.categoryId != null) e.categoryId!,
+      for (final e in ctrl.internalTransfers)
+        if (e.categoryId != null) e.categoryId!,
     };
     final filterCategories = context
         .read<StorageService>()
@@ -499,7 +501,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       text: existing != null ? existing.amount.toStringAsFixed(2) : '',
     );
     String? method = existing?.paymentMethod;
+    String? categoryId = existing?.categoryId;
     final methods = context.read<StorageService>().getPaymentMethods();
+    final categories = context.read<StorageService>().getCategories();
 
     await showDialog<void>(
       context: context,
@@ -532,6 +536,31 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                     labelText: 'Kwota (${ctrl.targetCurrencyLabel})',
                     hintText: 'np. 300',
                   ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Kategoria',
+                  style: Theme.of(dctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      label: const Text('Brak'),
+                      selected: categoryId == null,
+                      onSelected: (_) => setLocal(() => categoryId = null),
+                    ),
+                    ...categories.map(
+                      (cat) => FilterChip(
+                        label: Text(cat.name),
+                        selected: categoryId == cat.id,
+                        selectedColor: cat.color.withValues(alpha: 0.2),
+                        onSelected: (_) => setLocal(() => categoryId = cat.id),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -593,6 +622,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                     name: name,
                     amount: amount,
                     paymentMethod: method,
+                    categoryId: categoryId,
                   );
                 } else {
                   ctrl.updateBillsAllocationItem(
@@ -601,6 +631,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                       amount: amount,
                       paymentMethod: method,
                       clearPaymentMethod: method == null,
+                      categoryId: categoryId,
+                      clearCategoryId: categoryId == null,
                     ),
                   );
                 }
@@ -1069,6 +1101,12 @@ class _BillsAllocationCard extends StatelessWidget {
                   isAuto: it.paymentMethod != null
                       ? (autoByMethod[it.paymentMethod] ?? false)
                       : null,
+                  dotColor: it.categoryId != null
+                      ? context
+                            .read<StorageService>()
+                            .getCategory(it.categoryId!)
+                            ?.color
+                      : null,
                   onTap: () => onEdit(it),
                 ),
             ],
@@ -1094,15 +1132,19 @@ class _BillsAllocationCard extends StatelessWidget {
 
 /// Wiersz pojedynczej pozycji koperty „Na rachunki": „• nazwa · metoda | −kwota".
 /// [isAuto] `null` = brak metody; `true/false` = automatyczna/manualna (ikona).
+/// Kategoria (jeśli przypisana) objawia się TYLKO kolorem [dotColor] — bez
+/// wypisywania nazwy kategorii (celowe uproszczenie względem `BudgetEntryCard`).
 class _AllocItemRow extends StatelessWidget {
   final BillsAllocationItem item;
   final String currency;
   final bool? isAuto;
+  final Color? dotColor;
   final VoidCallback onTap;
   const _AllocItemRow({
     required this.item,
     required this.currency,
     required this.isAuto,
+    this.dotColor,
     required this.onTap,
   });
 
@@ -1116,7 +1158,7 @@ class _AllocItemRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
-            Text('•  ', style: TextStyle(color: c.textMuted)),
+            Text('•  ', style: TextStyle(color: dotColor ?? c.textMuted)),
             Expanded(
               child: Row(
                 children: [
