@@ -15,11 +15,16 @@ class BillsAllocationItem {
   /// Metoda płatności (po nazwie, jak w [BudgetEntry]). `null` = brak.
   final String? paymentMethod;
 
+  /// Kategoria (jak w [BudgetEntry]) — na liście objawia się tylko kolorem
+  /// kropki przed nazwą pozycji, bez wypisywania nazwy kategorii. `null` = brak.
+  final String? categoryId;
+
   const BillsAllocationItem({
     required this.id,
     required this.name,
     required this.amount,
     this.paymentMethod,
+    this.categoryId,
   });
 
   factory BillsAllocationItem.fromJson(Map<String, dynamic> json) =>
@@ -28,6 +33,7 @@ class BillsAllocationItem {
         name: json['name'] as String,
         amount: (json['amount'] as num).toDouble(),
         paymentMethod: json['paymentMethod'] as String?,
+        categoryId: json['categoryId'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,6 +41,7 @@ class BillsAllocationItem {
     'name': name,
     'amount': amount,
     if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    if (categoryId != null) 'categoryId': categoryId,
   };
 
   BillsAllocationItem copyWith({
@@ -42,6 +49,8 @@ class BillsAllocationItem {
     double? amount,
     String? paymentMethod,
     bool clearPaymentMethod = false,
+    String? categoryId,
+    bool clearCategoryId = false,
   }) => BillsAllocationItem(
     id: id,
     name: name ?? this.name,
@@ -49,5 +58,6 @@ class BillsAllocationItem {
     paymentMethod: clearPaymentMethod
         ? null
         : (paymentMethod ?? this.paymentMethod),
+    categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
   );
 }

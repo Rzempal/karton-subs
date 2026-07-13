@@ -22,12 +22,14 @@ BudgetEntry _entry({
   deleted: deleted,
 );
 
-BillsAllocationItem _item({String? paymentMethod}) => BillsAllocationItem(
-  id: 'i',
-  name: 'x',
-  amount: 10,
-  paymentMethod: paymentMethod,
-);
+BillsAllocationItem _item({String? paymentMethod, String? categoryId}) =>
+    BillsAllocationItem(
+      id: 'i',
+      name: 'x',
+      amount: 10,
+      paymentMethod: paymentMethod,
+      categoryId: categoryId,
+    );
 
 void main() {
   group('DictionaryUsage', () {
@@ -63,6 +65,18 @@ void main() {
       ];
       expect(DictionaryUsage.methodInItems(items, 'BLIK'), 2);
       expect(DictionaryUsage.methodInItems(items, 'Gotówka'), 0);
+    });
+
+    test('categoryInItems liczy pozycje „Na rachunki" w danej kategorii', () {
+      final items = [
+        _item(categoryId: 'cat_a'),
+        _item(categoryId: 'cat_a'),
+        _item(categoryId: 'cat_b'),
+        _item(),
+      ];
+      expect(DictionaryUsage.categoryInItems(items, 'cat_a'), 2);
+      expect(DictionaryUsage.categoryInItems(items, 'cat_b'), 1);
+      expect(DictionaryUsage.categoryInItems(items, 'cat_x'), 0);
     });
   });
 }
