@@ -12,15 +12,21 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- Lokalny Silnik AI: wpiecie do uslugi AIDL (uprawnienie signature-level silnika
+         PRODUKCYJNEGO; przyznane tylko przy zgodnosci klucza podpisu). Takze build dev
+         Zostaje korzysta z produkcyjnego silnika. -->
+    <uses-permission android:name="app.michalrapala.ai_engine.permission.BIND_AI_ENGINE"/>
 
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- launchMode=singleTask: wymagane przez receive_sharing_intent, by
+             "Udostepnij -> Zostaje" trafialo do istniejacej instancji apki. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTop"
+            android:launchMode="singleTask"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -37,6 +43,17 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- Skan rachunku: przyjmowanie zdjecia z systemowego "Udostepnij". -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
             </intent-filter>
         </activity>
         <!-- FileProvider wymagany przez ota_update do instalacji APK (Android 7+) -->
@@ -72,5 +89,8 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Widocznosc pakietu silnika AI (Android 11+): bez tego bindService
+             do app.michalrapala.ai_engine zwraca false. -->
+        <package android:name="app.michalrapala.ai_engine"/>
     </queries>
 </manifest>

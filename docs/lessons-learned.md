@@ -4,6 +4,42 @@
 
 ---
 
+## 2026-07-24: Leciwe wtyczki Fluttera lamia build na nowym Gradle/Kotlinie
+
+### Problem
+Dodanie `receive_sharing_intent` (Udostepnij → Zostaje) wywalilo build na dwa sposoby:
+- **1.9.0** — `android/build.gradle` wtyczki ma blok `kotlin { ... }` bez zaaplikowanego
+  pluginu Kotlin → `Could not find method kotlin() ...`. Wersja jest po prostu zepsuta.
+- **1.8.1** — wtyczka nie ustawia targetow JVM: jej Java kompiluje na 1.8, a Kotlin 2.x
+  domyslnie celuje wyzej → `Inconsistent JVM Target Compatibility Between Java and Kotlin`.
+
+`flutter analyze`/`flutter test` tego NIE wykryja — to blad na etapie Gradle (natywny build).
+
+### Rozwiazanie
+- Przypiac dzialajaca wersje na sztywno w `pubspec.yaml` (`receive_sharing_intent: 1.8.1`,
+  bez `^`) i skomentowac dlaczego.
+- W `android/build.gradle.kts` (root modulu) wyrownac target JVM **tylko** dla tej wtyczki:
+  ```kotlin
+  subprojects {
+    if (name == "receive_sharing_intent") {
+      plugins.withId("org.jetbrains.kotlin.android") {
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+          compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        }
+      }
+    }
+  }
+  ```
+  (Globalne wymuszanie 17/17 na wszystkich podprojektach probowalem — pada na innych
+  wtyczkach; celowana poprawka jest bezpieczniejsza.)
+
+### Wniosek
+Przy dodawaniu wtyczki, ktora nie mial commita od dawna: **zbuduj APK od razu** (nie ufaj
+`analyze`), a gdy Gradle pada w `android/build.gradle` samej wtyczki — przypnij wersje i
+napraw target JVM celowanym `subprojects { if (name == ...) }`, nie globalnie.
+
+---
+
 ## 2026-07-12: Stan „aktywny" nie moze zalezec tylko od koloru akcentu (motyw mono)
 
 ### Problem

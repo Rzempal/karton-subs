@@ -270,13 +270,14 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: BudgetScopeToggle(
-              scope: ctrl.scope,
-              onChanged: ctrl.setScope,
+          if (ctrl.scopeSelectable)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: BudgetScopeToggle(
+                scope: ctrl.scope,
+                onChanged: ctrl.setScope,
+              ),
             ),
-          ),
           if (!isEmpty && filterCategories.isNotEmpty)
             _CategoryFilter(
               categories: filterCategories,
@@ -303,6 +304,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
             ),
           Expanded(
             child: ScopeSwipeArea(
+              enabled: ctrl.scopeSelectable,
               child: (filteredEmpty && !isEmpty)
                   ? const _FilteredEmpty()
                   : ListView(

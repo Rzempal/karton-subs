@@ -27,6 +27,9 @@ class BudgetController extends ChangeNotifier {
 
   BudgetController(this._storage, this._subscriptions) {
     _subscriptions.addListener(_onSubscriptionsChanged);
+    // Tryb budżetu (preferencja UI) wymusza zakres startowy w trybie jednym.
+    _mode = _storage.getBudgetMode();
+    _scope = _scopeForMode(_mode) ?? _scope;
   }
 
   void _onSubscriptionsChanged() => notifyListeners();
@@ -55,8 +58,35 @@ class BudgetController extends ChangeNotifier {
   BudgetScope get scope => _scope;
   bool get isHousehold => _scope == BudgetScope.household;
   void setScope(BudgetScope s) {
-    if (_scope == s) return;
+    // W trybie jednozakresowym zakres jest zablokowany (przełącznik ukryty).
+    if (!scopeSelectable || _scope == s) return;
     _scope = s;
+    notifyListeners();
+  }
+
+  // ── Tryb budżetu (Osobisty / Domowy / oba) ─────────────────────────────────
+
+  BudgetMode _mode = BudgetMode.both;
+  BudgetMode get budgetMode => _mode;
+
+  /// Czy użytkownik może przełączać zakres (tryb „oba"). W trybie jednym
+  /// przełącznik zakresu jest ukryty, a swipe zwalnia się na zakładki 2. rzędu.
+  bool get scopeSelectable => _mode == BudgetMode.both;
+
+  /// Wymuszony zakres dla trybu (null dla „oba" — zakres wybiera użytkownik).
+  BudgetScope? _scopeForMode(BudgetMode m) => switch (m) {
+        BudgetMode.personalOnly => BudgetScope.personal,
+        BudgetMode.householdOnly => BudgetScope.household,
+        BudgetMode.both => null,
+      };
+
+  Future<void> setBudgetMode(BudgetMode m) async {
+    if (_mode == m) return;
+    _mode = m;
+    await _storage.setBudgetMode(m);
+    // W trybie jednym wymuś odpowiedni zakres (pomijając blokadę setScope).
+    final forced = _scopeForMode(m);
+    if (forced != null) _scope = forced;
     notifyListeners();
   }
 
@@ -545,6 +575,16 @@ class BudgetController extends ChangeNotifier {
       dataDodania: now,
     );
     await add(entry);
+    // Rachunek (billPayment) to realny log JUŻ zapłaconej pozycji (ADR-008),
+    // więc w kalendarzu płatności oznaczamy go od razu jako wykonany — bez
+    // ręcznego odhaczania. Klucz musi zgadzać się z kalendarzem: sourceId=id,
+    // data = dzień płatności (startDate; fallback pierwszy dzień miesiąca).
+    if (type == BudgetEntryType.billPayment) {
+      final payDate = startDate ??
+          (month != null ? DateTime.tryParse('$month-01') : null) ??
+          now;
+      await _storage.setPaymentDone(_paymentKey(entry.id, payDate), true);
+    }
     return entry;
   }
 

@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../config/app_config.dart';
+import '../controllers/bill_scan_controller.dart';
+import '../controllers/budget_controller.dart';
 import '../services/sync_service.dart';
 import '../widgets/settings_widgets.dart';
 import '../widgets/update_inline_section.dart';
+import 'ai_assistant_screen.dart';
 import 'appearance_screen.dart';
 import 'backup_screen.dart';
+import 'budget_mode_screen.dart';
 import 'category_management_screen.dart';
 import 'currency_screen.dart';
 import 'dev_tools_screen.dart';
@@ -15,11 +19,19 @@ import 'notifications_screen.dart';
 import 'payment_method_management_screen.dart';
 
 /// Ekran Ustawien — lista nawigacyjna do osobnych ekranow (kazda sekcja = ekran).
-class SettingsScreen extends StatelessWidget {
+/// Stateful: podtytul kafla „Asystent AI" odswieza sie po powrocie z podekranu.
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  @override
   Widget build(BuildContext context) {
+    // watch: podtytul aktualizuje sie od razu po zmianie przelacznika.
+    final aiEnabled = context.watch<BillScanController>().aiAssistantEnabled;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Ustawienia')),
@@ -38,6 +50,12 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Waluta i limit',
                 screen: const CurrencyScreen()),
             _navTile(context,
+                icon: LucideIcons.wallet,
+                title: 'Wybór budżetów',
+                subtitle: BudgetModeScreen.labelFor(
+                    context.watch<BudgetController>().budgetMode),
+                screen: const BudgetModeScreen()),
+            _navTile(context,
                 icon: LucideIcons.bell,
                 title: 'Powiadomienia',
                 screen: const NotificationsScreen()),
@@ -45,6 +63,18 @@ class SettingsScreen extends StatelessWidget {
 
           const SettingsSectionLabel('Dane'),
           SettingsGroup(children: [
+            ListTile(
+              leading: const Icon(LucideIcons.sparkles),
+              title: const Text('Asystent AI'),
+              subtitle: Text(aiEnabled ? 'Włączony' : 'Wyłączony'),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const AiAssistantScreen(),
+                ));
+                if (mounted) setState(() {}); // odśwież podtytuł Włączony/Wyłączony
+              },
+            ),
             _navTile(context,
                 icon: LucideIcons.tag,
                 title: 'Zarządzaj kategoriami',

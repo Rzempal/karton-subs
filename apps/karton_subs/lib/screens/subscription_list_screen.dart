@@ -87,33 +87,35 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       ),
       body: Column(
         children: [
-          // Zakres (Wszystkie/Osobiste/Domowe) — taki sam przelacznik jak na
-          // Dashboardzie i w Budzecie; nad zakladkami Lista/Statystyki.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: AuroraSegmented<SubscriptionScope>(
-              selected: scopeFilter,
-              onChanged: (v) => budget.setScope(
-                v == SubscriptionScope.household
-                    ? BudgetScope.household
-                    : BudgetScope.personal,
+          // Zakres (Osobiste/Domowe) — segment jak na Dashboardzie i w Budzecie.
+          // Tryb jednozakresowy chowa go (jeden zakres na sztywno).
+          if (budget.scopeSelectable)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: AuroraSegmented<SubscriptionScope>(
+                selected: scopeFilter,
+                onChanged: (v) => budget.setScope(
+                  v == SubscriptionScope.household
+                      ? BudgetScope.household
+                      : BudgetScope.personal,
+                ),
+                segments: const [
+                  AuroraSegment(
+                    value: SubscriptionScope.personal,
+                    label: 'Osobiste',
+                    icon: LucideIcons.user,
+                  ),
+                  AuroraSegment(
+                    value: SubscriptionScope.household,
+                    label: 'Domowe',
+                    icon: LucideIcons.home,
+                  ),
+                ],
               ),
-              segments: const [
-                AuroraSegment(
-                  value: SubscriptionScope.personal,
-                  label: 'Osobiste',
-                  icon: LucideIcons.user,
-                ),
-                AuroraSegment(
-                  value: SubscriptionScope.household,
-                  label: 'Domowe',
-                  icon: LucideIcons.home,
-                ),
-              ],
             ),
-          ),
           Expanded(
             child: ScopeSwipeArea(
+              enabled: budget.scopeSelectable,
               child: _ListTab(
                 filterCategoryId: _filterCategoryId,
                 scopeFilter: scopeFilter,

@@ -6,13 +6,16 @@ import 'package:lucide_icons/lucide_icons.dart';
 // Ikona receiptText (receipt-text) jest tylko w nowszym pakiecie (alias).
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'controllers/subscription_controller.dart';
 import 'controllers/budget_controller.dart';
+import 'controllers/bill_scan_controller.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/rachunki_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/subscription_list_screen.dart';
 import 'screens/budget_dashboard_screen.dart';
+import 'services/ai_engine_service.dart';
 import 'services/app_logger.dart';
 import 'services/backup_service.dart';
 import 'services/excel_service.dart';
@@ -76,6 +79,11 @@ void main() async {
         ),
         ChangeNotifierProvider.value(value: updateService),
         ChangeNotifierProvider.value(value: syncService),
+        // Skan rachunkow lokalnym silnikiem AI (pozycje oczekujace + OCR w tle).
+        ChangeNotifierProvider(
+          create: (_) =>
+              BillScanController(storage, AiEngineService(), notificationService),
+        ),
         ChangeNotifierProvider(create: (_) => ThemeProvider(storage)),
         Provider(create: (_) => BackupService(storage)),
         Provider(create: (_) => ExcelService(storage)),
@@ -174,17 +182,25 @@ class _MainShell extends StatefulWidget {
   State<_MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<_MainShell> {
+class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   int _currentIndex = 0;
   Timer? _syncDebounce;
+  StreamSubscription<List<SharedMediaFile>>? _shareSub;
+
+  // Ostatnio obsluzone udostepnienia (sciezka -> czas): zabezpiecza przed
+  // podwojnym dodaniem tego samego zdjecia, gdy dotrze i strumieniem, i przez
+  // getInitialMedia przy wznowieniu apki.
+  final Map<String, DateTime> _recentShares = {};
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Auto-synchronizacja po zmianie budzetu domowego (debounced).
     context.read<BudgetController>().onHouseholdChanged = _scheduleSync;
     // Synchronizacja budzetu domowego przy starcie (jesli sparowane).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _checkSharedMedia(); // udostepnienie z zimnego startu
       final sync = context.read<SyncService>();
       if (!sync.isPaired) return;
       final result = await sync.syncNow();
@@ -192,6 +208,74 @@ class _MainShellState extends State<_MainShell> {
         context.read<BudgetController>().refresh();
       }
     });
+    // "Udostepnij -> Zostaje": zdjecie z galerii systemowej -> skan.
+    // Strumien lapie udostepnienia do juz dzialajacej apki; getInitialMedia
+    // (przy wznowieniu, ponizej) lapie te, ktore strumien pominie na singleTask.
+    _shareSub = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen(_onSharedMedia);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Udostepnienie do apki w tle wznawia ja - sprawdzamy oczekujace media.
+    if (state == AppLifecycleState.resumed) _checkSharedMedia();
+  }
+
+  /// Odczytuje ewentualne udostepnione media (zimny start / wznowienie) i
+  /// czysci je, by nie wrocily przy kolejnym sprawdzeniu.
+  void _checkSharedMedia() {
+    ReceiveSharingIntent.instance.getInitialMedia().then((files) {
+      if (files.isEmpty) return;
+      _onSharedMedia(files);
+      ReceiveSharingIntent.instance.reset();
+    });
+  }
+
+  /// Udostepnione zdjecia -> skan rachunku w tle + przejscie na Rachunki.
+  void _onSharedMedia(List<SharedMediaFile> files) {
+    if (!mounted) return;
+    // Dedup: to samo zdjecie moze przyjsc strumieniem i przez getInitialMedia.
+    final now = DateTime.now();
+    _recentShares.removeWhere((_, t) => now.difference(t) > const Duration(seconds: 30));
+    final images = files
+        .where((f) => f.type == SharedMediaType.image)
+        .where((f) {
+          final seen = _recentShares[f.path];
+          if (seen != null && now.difference(seen) < const Duration(seconds: 10)) {
+            return false; // duplikat tego samego udostepnienia
+          }
+          _recentShares[f.path] = now;
+          return true;
+        })
+        .toList();
+    if (images.isEmpty) return;
+    // Skan wymaga wlaczonego Asystenta AI (Ustawienia -> Asystent AI).
+    if (!context.read<BillScanController>().aiAssistantEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Włącz Asystenta AI (Ustawienia → Asystent AI), aby skanować rachunki.',
+          ),
+        ),
+      );
+      return;
+    }
+    final scanCtrl = context.read<BillScanController>();
+    final scope = context.read<BudgetController>().scope;
+    for (final f in images) {
+      scanCtrl.startScan(f.path, scope);
+    }
+    setState(() => _currentIndex = 1); // zakladka Rachunki
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          images.length == 1
+              ? 'Rozpoznaję udostępniony rachunek w tle (kolejkuję, ok. 1 min).'
+              : 'Dodano ${images.length} rachunki do kolejki rozpoznawania.',
+        ),
+      ),
+    );
   }
 
   /// Synchronizacja z opóźnieniem — seria szybkich zmian = jeden sync.
@@ -210,7 +294,9 @@ class _MainShellState extends State<_MainShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _syncDebounce?.cancel();
+    _shareSub?.cancel();
     super.dispose();
   }
 

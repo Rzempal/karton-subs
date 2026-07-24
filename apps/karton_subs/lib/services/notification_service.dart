@@ -196,6 +196,91 @@ class NotificationService {
     }
   }
 
+  // ── Skan rachunku: powiadomienie z paskiem postepu ───────────────────────
+
+  static const _scanChannelId = 'zostaje_scan';
+  static const _scanChannelName = 'Skanowanie rachunków';
+
+  /// Stabilny int-id powiadomienia dla danego skanu (jeden na pozycję).
+  int _scanNotifId(String scanId) => 900000 + (scanId.hashCode.abs() % 90000);
+
+  /// Powiadomienie „w toku" z nieokreślonym paskiem postępu (OCR nie daje %).
+  Future<void> showScanProgress(String scanId) async {
+    if (!_initialized) return;
+    final details = AndroidNotificationDetails(
+      _scanChannelId,
+      _scanChannelName,
+      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
+      importance: Importance.low,
+      priority: Priority.low,
+      showProgress: true,
+      indeterminate: true,
+      onlyAlertOnce: true,
+      ongoing: true,
+      autoCancel: false,
+    );
+    try {
+      await _plugin.show(
+        _scanNotifId(scanId),
+        'Rozpoznaję rachunek…',
+        'Lokalny silnik AI pracuje w tle (ok. 1 min)',
+        NotificationDetails(android: details),
+      );
+    } catch (e) {
+      _log.warning('showScanProgress failed: $e');
+    }
+  }
+
+  /// Zamienia powiadomienie postępu na „Gotowe" (rachunek czeka na zatwierdzenie).
+  Future<void> showScanDone(String scanId, String? name) async {
+    if (!_initialized) return;
+    final details = AndroidNotificationDetails(
+      _scanChannelId,
+      _scanChannelName,
+      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      showProgress: false,
+      autoCancel: true,
+    );
+    try {
+      await _plugin.show(
+        _scanNotifId(scanId),
+        'Rachunek rozpoznany — gotowe',
+        name != null && name.isNotEmpty
+            ? '„$name" czeka na zatwierdzenie w zakładce Rachunki'
+            : 'Czeka na zatwierdzenie w zakładce Rachunki',
+        NotificationDetails(android: details),
+      );
+    } catch (e) {
+      _log.warning('showScanDone failed: $e');
+    }
+  }
+
+  /// Zamienia powiadomienie postępu na informację o nieudanym rozpoznaniu.
+  Future<void> showScanFailed(String scanId) async {
+    if (!_initialized) return;
+    final details = AndroidNotificationDetails(
+      _scanChannelId,
+      _scanChannelName,
+      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      showProgress: false,
+      autoCancel: true,
+    );
+    try {
+      await _plugin.show(
+        _scanNotifId(scanId),
+        'Nie udało się rozpoznać rachunku',
+        'Otwórz zakładkę Rachunki, by ponowić lub uzupełnić ręcznie',
+        NotificationDetails(android: details),
+      );
+    } catch (e) {
+      _log.warning('showScanFailed failed: $e');
+    }
+  }
+
   // ── Dev: instant test notifications ──────────────────────────────────────
 
   /// Show a notification immediately (for dev testing).

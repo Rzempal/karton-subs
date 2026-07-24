@@ -1,49 +1,49 @@
 {
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072401",
   "changelog": [
+    {
+      "version": "0.10.26072401",
+      "notes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania"
+    },
+    {
+      "version": "0.10.26072400",
+      "notes": "- Wybor budzetow (Ustawienia > Personalizacja): Osobisty / Domowy / Osobisty i domowy. Tryb jednozakresowy chowa przelacznik zakresu z kart, a swipe przelacza zakladki 2. rzedu (Bilans/Plan na Dashboardzie)\n- Fix statusu silnika: zielone Gotowy dopiero po wczytaniu modelu; pobrany-niewczytany pokazuje ze wczyta sie przy pierwszym skanie"
+    },
+    {
+      "version": "0.10.26072100",
+      "notes": "- Archiwizacja dziala teraz takze przy zatwierdzeniu przez edycje formularza (wczesniej tylko przycisk ptaszka); blad zapisu do archiwum pokazywany na ekranie\n- Podglad zdjecia rachunku w edycji zapisanego rachunku (zdjecie wiazane z pozycja, lokalnie poza sync); sprzatane przy usunieciu rachunku"
+    },
+    {
+      "version": "0.10.26072000",
+      "notes": "- Kolejkowanie wielu rachunkow: udostepnienie kolejnego rachunku, gdy inny czeka na zatwierdzenie, dodaje go do listy (kolejka OCR jeden po drugim, status W kolejce)\n- Niezawodny odbior Udostepnij -> Zostaje takze do juz otwartej apki"
+    },
+    {
+      "version": "0.10.26071804",
+      "notes": "- Archiwum rachunkow (opcjonalne): toggle w Asystencie AI zapisuje zdjecie zatwierdzonego rachunku do Documents/<folder> (domyslnie Zostaje), z edytowalnym folderem; lokalne, poza kopia zapasowa i synchronizacja"
+    },
+    {
+      "version": "0.10.26071803",
+      "notes": "- Podglad zdjecia rachunku: klik w miniature (pop-up z zoomem) oraz miniatura w formularzu edycji rozpoznanego rachunku\n- Powiadomienie systemowe z paskiem postepu przy skanowaniu + feedback Gotowe/Nie rozpoznano"
+    },
+    {
+      "version": "0.10.26071802",
+      "notes": "- Poprawka: przelacznik Asystenta AI od razu pokazuje/ukrywa opcje skanowania w menu Dodaj rachunek (bez restartu apki)"
+    },
+    {
+      "version": "0.10.26071801",
+      "notes": "- Asystent AI w Ustawieniach: przelacznik skanowania rachunkow (domyslnie wylaczony) + link do uruchomienia lub pobrania apki Lokalny Silnik AI; wylaczony ukrywa opcje skanowania w menu Dodaj rachunek"
+    },
+    {
+      "version": "0.10.26071800",
+      "notes": "- Skan rachunkow lokalnym silnikiem AI: aparat, galeria lub Udostepnij -> Zostaje; rozpoznane rachunki czekaja w sekcji Do zatwierdzenia z miniatura zdjecia (wymaga apki Lokalny Silnik AI w wersji 0.3+)"
+    },
     {
       "version": "0.10.26071300",
       "notes": "- Kropka koloru kategorii w filtrach Budzetu i Subskrypcji\n- Kategoria dla przelewu wewnetrznego (widoczna w filtrze i na karcie)\n- Kategoria dla pozycji Na rachunki (kolor kropki przy nazwie)\n- Kaskady zmiany/usuniecia kategorii obejmuja teraz rowniez koperty Na rachunki"
-    },
-    {
-      "version": "0.10.26071205",
-      "notes": "- Sortowanie (A-Z / kwota) obejmuje teraz liste Na rachunki"
-    },
-    {
-      "version": "0.10.26071204",
-      "notes": "- Aktywna ikona grupowania: wypelniona pigulka (widoczna takze w motywie mono)"
-    },
-    {
-      "version": "0.10.26071203",
-      "notes": "- Budzet: sekcja Koszty cykliczne to teraz Wydatki stale\n- Przycisk grupowania grupuje wydatki po kategoriach (etykietach)\n- Aktywna ikona grupowania w kolorze akcentu"
-    },
-    {
-      "version": "0.10.26071202",
-      "notes": "- Liczniki kategorii i metod platnosci licza tez budzet i rachunki\n- Zmiana nazwy/usuniecie metody propaguje sie na budzet i Na rachunki\n- Usuniecie kategorii przenosi pozycje budzetu do Inne"
-    },
-    {
-      "version": "0.10.26071201",
-      "notes": "- Na rachunki: koperta jako lista pozycji (nazwa, kwota, metoda platnosci)\n- Metoda platnosci widoczna na kafelkach budzetu i rachunkow"
-    },
-    {
-      "version": "0.10.26071200",
-      "notes": "- Swipe poziomy przelacza Osobisty/Domowy na kazdym ekranie\n- Subskrypcje: wspolny globalny tryb zakresu\n- Dashboard: Bilans/Plan tylko tapem"
-    },
-    {
-      "version": "0.10.26071102",
-      "notes": "- Ustawienia: Sprawdz aktualizacje inline (wersja + status + przycisk Sprawdz teraz + instalacja) bez wchodzenia w osobny ekran; usuniety osobny ekran Aktualizacje"
-    },
-    {
-      "version": "0.10.26071101",
-      "notes": "- Ukrycie waluty domyslnej na ekranach: kwoty bez PLN/zl; etykieta waluty pojawia sie tylko gdy inna niz domyslna (np. subskrypcja w EUR). Piker waluty, eksporty i powiadomienia bez zmian"
-    },
-    {
-      "version": "0.10.26071100",
-      "notes": "- Platnosci kompaktowe: bez naglowkow grup; jedna linia opis: kwota (Do zrealizowania recznie / Pobrane automatycznie); przycisk Odhacz tylko w wersji rozwinietej"
     }
   ],
-  "releaseDate": "2026-07-13T16:55:54Z",
-  "versionCode": 1026071300,
-  "releaseNotes": "- Kropka koloru kategorii w filtrach Budzetu i Subskrypcji\n- Kategoria dla przelewu wewnetrznego (widoczna w filtrze i na karcie)\n- Kategoria dla pozycji Na rachunki (kolor kropki przy nazwie)\n- Kaskady zmiany/usuniecia kategorii obejmuja teraz rowniez koperty Na rachunki",
-  "version": "0.10.26071300",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026071300"
+  "releaseNotes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania",
+  "releaseDate": "2026-07-24T12:37:45Z",
+  "version": "0.10.26072401",
+  "versionCode": 1026072401
 }

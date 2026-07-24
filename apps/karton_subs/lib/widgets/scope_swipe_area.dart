@@ -20,7 +20,12 @@ import '../models/budget_entry.dart';
 /// przypadkową zmianą globalnego stanu finansowego przy ukośnym scrollu.
 class ScopeSwipeArea extends StatefulWidget {
   final Widget child;
-  const ScopeSwipeArea({super.key, required this.child});
+
+  /// Gdy `false` (tryb jednozakresowy) warstwa jest przezroczysta dla gestów —
+  /// nie przechwytuje swipe, oddaje go dziecku (np. swipe zakładek na Dashboardzie).
+  final bool enabled;
+
+  const ScopeSwipeArea({super.key, required this.child, this.enabled = true});
 
   /// Minimalna prędkość gestu (px/s), by uznać go za świadome przełączenie.
   static const double minVelocity = 240;
@@ -74,6 +79,10 @@ class _ScopeSwipeAreaState extends State<ScopeSwipeArea>
 
   @override
   Widget build(BuildContext context) {
+    // Tryb jednozakresowy: nie przechwytujemy gestu — dziecko dostaje swipe
+    // (np. TabBarView Dashboardu przełącza Bilans/Plan).
+    if (!widget.enabled) return widget.child;
+
     final scope = context.watch<BudgetController>().scope;
     if (_lastScope != null && _lastScope != scope) {
       // Przejście do Domowego → nowa treść wjeżdża z prawej (+1); do Osobistego

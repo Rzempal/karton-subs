@@ -27,6 +27,11 @@ android {
         versionName = flutter.versionName
     }
 
+    // AIDL: duplikaty kontraktu Lokalnego Silnika AI (src/main/aidl) - mostek OCR rachunkow.
+    buildFeatures {
+        aidl = true
+    }
+
     flavorDimensions += "channel"
 
     productFlavors {

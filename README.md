@@ -21,6 +21,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 - **Synchronizacja budzetu domowego (preview):** wspoldzielenie miedzy telefonami bez kont —
   parowanie kodem QR + haslo, szyfrowanie end-to-end (serwer nie widzi tresci). Budzety
   osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
+- **Skan rachunku AI (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje";
+  rozpoznanie (kwota, wystawca, termin) robi wlasny silnik AI NA telefonie, rachunek
+  czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013)
 - Przypomnienia o odnowieniach i trialach
 - Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
 - Szyfrowany backup `.zostaje` (obejmuje subskrypcje i budzet; stare `.subkarton` nadal importowalne)
@@ -28,7 +31,8 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
 - Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium, jeden ciemny motyw; wdrozenie Faza 6)
-- Brak integracji z AI
+- AI wylacznie LOKALNIE: skan rachunkow przez wlasna apke-silnik na urzadzeniu
+  (Gemma 4 E4B, repo karton-ai) -- zero chmury, zero kont, zero API w sieci (ADR-013)
 - Offline-first, dane lokalne
 
 ---

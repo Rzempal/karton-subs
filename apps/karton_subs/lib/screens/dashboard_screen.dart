@@ -202,13 +202,14 @@ class _DashboardScreenState extends State<DashboardScreen>
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: const _UpdateBanner(),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: BudgetScopeToggle(
-              scope: budget.scope,
-              onChanged: budget.setScope,
+          if (budget.scopeSelectable)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: BudgetScopeToggle(
+                scope: budget.scope,
+                onChanged: budget.setScope,
+              ),
             ),
-          ),
           TabBar(
             controller: _tab,
             tabs: const [
@@ -218,10 +219,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           Expanded(
             child: ScopeSwipeArea(
+              enabled: budget.scopeSelectable,
               child: TabBarView(
-                // Swipe poziomy zarezerwowany na zmianę zakresu (ScopeSwipeArea);
-                // Bilans/Plan przełącza się tapem w TabBar.
-                physics: const NeverScrollableScrollPhysics(),
+                // Tryb „oba": swipe poziomy zmienia zakres (ScopeSwipeArea),
+                // Bilans/Plan tapem. Tryb jednozakresowy: swipe przełącza
+                // Bilans/Plan (ScopeSwipeArea oddaje gest TabBarView).
+                physics: budget.scopeSelectable
+                    ? const NeverScrollableScrollPhysics()
+                    : null,
                 controller: _tab,
                 children: [
                   // ── „Bilans miesiąca" — realny wybrany miesiąc (domyślna) ──

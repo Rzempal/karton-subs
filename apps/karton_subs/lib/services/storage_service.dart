@@ -4,6 +4,7 @@ import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
 import '../models/bills_allocation_item.dart';
+import '../models/pending_bill_scan.dart';
 import '../utils/money_format.dart';
 import 'app_logger.dart';
 
@@ -392,6 +393,106 @@ class StorageService {
     if (items.isEmpty) return null;
     final sum = items.fold<double>(0, (a, b) => a + b.amount);
     return sum > 0 ? sum : null;
+  }
+
+  /// Powiązanie zdjęcia rachunku z zapisaną pozycją budżetu (id → ścieżka do
+  /// prywatnej kopii w katalogu apki). LOKALNE, poza synchronizacją i backupem
+  /// — ścieżka nie ma sensu na drugim urządzeniu. Służy podglądowi zdjęcia
+  /// przy edycji zatwierdzonego rachunku.
+  Map<String, String> getReceiptPhotoPaths() {
+    final raw = _settingsBox.get('receiptPhotoPaths');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        return (jsonDecode(raw) as Map).map((k, v) => MapEntry('$k', '$v'));
+      } catch (e) {
+        _log.warning('Nie udalo sie odczytac receiptPhotoPaths: $e');
+      }
+    }
+    return {};
+  }
+
+  String? getReceiptPhotoPath(String entryId) =>
+      getReceiptPhotoPaths()[entryId];
+
+  Future<void> setReceiptPhotoPath(String entryId, String path) async {
+    final map = getReceiptPhotoPaths()..[entryId] = path;
+    await _settingsBox.put('receiptPhotoPaths', jsonEncode(map));
+  }
+
+  Future<void> removeReceiptPhotoPath(String entryId) async {
+    final map = getReceiptPhotoPaths();
+    if (map.remove(entryId) != null) {
+      await _settingsBox.put('receiptPhotoPaths', jsonEncode(map));
+    }
+  }
+
+  /// Rachunki rozpoznane przez lokalny silnik AI, oczekujące na zatwierdzenie.
+  /// LOKALNE (jak koperta): poza synchronizacją, backupem i bilansem — do budżetu
+  /// trafiają dopiero po zatwierdzeniu (wtedy stają się zwykłym billPayment).
+  List<PendingBillScan> getPendingBillScans() {
+    final raw = _settingsBox.get('pendingBillScans');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        return (jsonDecode(raw) as List)
+            .map((e) => PendingBillScan.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } catch (e) {
+        _log.warning('Nie udalo sie odczytac pendingBillScans: $e');
+      }
+    }
+    return [];
+  }
+
+  /// Tryb budżetu (preferencja UI, lokalna — poza sync). Default: oba zakresy
+  /// (jak dotąd). Tryb jednozakresowy chowa przełącznik zakresu i zwalnia swipe.
+  BudgetMode getBudgetMode() {
+    final raw = _settingsBox.get('budgetMode') as String?;
+    return BudgetMode.values.firstWhere(
+      (m) => m.name == raw,
+      orElse: () => BudgetMode.both,
+    );
+  }
+
+  Future<void> setBudgetMode(BudgetMode mode) =>
+      _settingsBox.put('budgetMode', mode.name);
+
+  /// Asystent AI (skan rachunków lokalnym silnikiem): opt-in, domyślnie
+  /// wyłączony. Wyłączony ukrywa opcje skanowania w menu „Dodaj rachunek".
+  bool getAiAssistantEnabled() =>
+      _settingsBox.get('aiAssistantEnabled', defaultValue: false) as bool;
+
+  Future<void> setAiAssistantEnabled(bool value) =>
+      _settingsBox.put('aiAssistantEnabled', value);
+
+  /// Archiwum rachunków: trwały zapis zdjęć zatwierdzonych rachunków do
+  /// publicznego katalogu `Documents/[podfolder]`. Opt-in, lokalne (poza sync).
+  bool getReceiptArchiveEnabled() =>
+      _settingsBox.get('receiptArchiveEnabled', defaultValue: false) as bool;
+
+  Future<void> setReceiptArchiveEnabled(bool value) =>
+      _settingsBox.put('receiptArchiveEnabled', value);
+
+  /// Podfolder w Documents dla archiwum (domyślnie „Zostaje").
+  String getReceiptArchiveSubfolder() =>
+      _settingsBox.get('receiptArchiveSubfolder', defaultValue: 'Zostaje') as String;
+
+  Future<void> setReceiptArchiveSubfolder(String value) {
+    final clean = value.trim().replaceAll(RegExp(r'^/+|/+$'), '');
+    return _settingsBox.put(
+      'receiptArchiveSubfolder',
+      clean.isEmpty ? 'Zostaje' : clean,
+    );
+  }
+
+  Future<void> savePendingBillScans(List<PendingBillScan> items) async {
+    if (items.isEmpty) {
+      await _settingsBox.delete('pendingBillScans');
+    } else {
+      await _settingsBox.put(
+        'pendingBillScans',
+        jsonEncode(items.map((e) => e.toJson()).toList()),
+      );
+    }
   }
 
   // ── Notification preferences ───────────────────────────────────────────────

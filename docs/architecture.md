@@ -70,12 +70,14 @@ lib/
 │   └── app_config.dart          # Build-time config (channels, URLs)
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
-│   └── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty)
+│   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty)
+│   └── bill_scan_controller.dart # Skan rachunkow AI: kolejka pozycji oczekujacych + OCR w tle (ADR-013)
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
-│   └── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek-log/rata/jednorazowy)
+│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek-log/rata/jednorazowy)
+│   └── pending_bill_scan.dart   # Rachunek rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
 │   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies
 ├── services/
@@ -85,6 +87,8 @@ lib/
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
+│   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
+│   ├── bill_scan_service.dart   # Parser odpowiedzi silnika (JSON rachunkow) + dopasowanie kategorii
 │   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
 │   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
 │   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
@@ -165,10 +169,20 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 | Zakladka | Tresc |
 |----------|-------|
 | **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
-| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek" (ADR-011) |
+| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc) — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
 | **Budzet** | Zarzadzanie pozycjami planowalnymi; grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale/jednorazowe), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
-| **Ustawienia** | Kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
+| **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow + archiwum + link do apki silnika), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
+
+**Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
+lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
+Tryb jednozakresowy (`personalOnly`/`householdOnly`) chowa przelacznik (`scopeSelectable`),
+a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — na Dashboardzie `TabBarView`
+przelacza Bilans/Plan. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
+
+**Rachunek auto-oplacony:** przy tworzeniu `billPayment` (log JUZ zaplaconej pozycji,
+ADR-008) `BudgetController.create` od razu ustawia jego stan „wykonane" w platnosciach
+miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 
 ---
 
@@ -217,6 +231,34 @@ QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmi
 wygrywa" per pozycja (`updatedAt`) + nagrobki (`deleted`). Osobisty zostaje lokalny.
 Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 [security.md](security.md).
+
+---
+
+## Skan rachunkow — Lokalny Silnik AI (ADR-013)
+
+> **ADR:** [ADR-013 Skan rachunkow lokalnym silnikiem AI](adr/ADR-013-skan-rachunkow-lokalny-silnik-ai.md)
+> | Silnik: repo `karton-ai` (osobna apka, model Gemma 4 E4B on-device)
+
+Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
+(usluga AIDL, straznik podpisu). Klienci — takze build dev Zostaje — binduja
+wylacznie pakiet PRODUKCYJNY silnika `app.michalrapala.ai_engine`.
+
+```
+Zdjecie (aparat / galeria / Udostepnij -> Zostaje)
+  │  BillScanController.startScan: kopia do bill_scans/, pozycja "processing"
+  ▼
+AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
+  │                                            │ bindService + PFD + callback
+  │                                            ▼
+  │                              Lokalny Silnik AI: recognizeBill (~30-45 s, CPU)
+  ▼
+BillScanParser (JSON -> pola) ──► PendingBillScan "done" (sekcja "Do zatwierdzenia",
+  miniatura zdjecia) ──► Zatwierdz/Edytuj -> zwykly billPayment | Odrzuc -> kasacja
+```
+
+Pozycje oczekujace sa LOKALNE (settings, poza sync/backupem/bilansem) — do
+budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w
+`android/app/src/main/aidl/` musza byc identyczne z repo silnika.
 
 ---
 

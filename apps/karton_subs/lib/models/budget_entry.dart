@@ -35,6 +35,12 @@ enum BudgetEntryType {
 /// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
 enum BudgetScope { personal, household }
 
+/// Tryb budżetu (preferencja UI, lokalna): które zakresy są widoczne.
+/// `both` = przełącznik Osobisty/Domowy na kartach + swipe zmienia zakres (jak dotąd).
+/// `personalOnly`/`householdOnly` = jeden zakres na sztywno, bez przełącznika;
+/// swipe zwalnia się na zakładki drugiego rzędu (np. Bilans/Plan na Dashboardzie).
+enum BudgetMode { personalOnly, householdOnly, both }
+
 /// Korekta pozycji cyklicznej ([BudgetEntryType.recurringCost]) lub przelewu do
 /// domowego dla konkretnego miesiąca.
 ///

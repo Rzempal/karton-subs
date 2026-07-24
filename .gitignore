@@ -48,3 +48,7 @@ pubspec.lock
 
 # Claude Code — local/machine-specific settings
 settings.local.json
+
+# Gradle build output nested modulow Fluttera (nie commitujemy)
+apps/karton_subs/android/build/
+apps/karton_subs/**/build/

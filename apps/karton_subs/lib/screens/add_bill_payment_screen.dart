@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import '../controllers/bill_scan_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
+import '../widgets/image_preview_dialog.dart';
 
 /// Formularz rachunku — realny log opłaconej pozycji ([BudgetEntryType.billPayment]).
 ///
@@ -21,10 +25,28 @@ class AddBillPaymentScreen extends StatefulWidget {
   /// Zakres, w którym dodajemy (domyślnie aktywny z ekranu Rachunki).
   final BudgetScope scope;
 
+  /// Prefill nowej pozycji (skan rachunku przez lokalny silnik AI).
+  /// Używane tylko, gdy [existing] == null.
+  final String? initialName;
+  final double? initialAmount;
+  final DateTime? initialDate;
+  final String? initialCategoryId;
+  final Currency? initialCurrency;
+
+  /// Zdjęcie rozpoznanego rachunku (skan) — miniatura u góry formularza
+  /// z podglądem po kliknięciu. Pozwala sprawdzić rozpoznane pola ze źródłem.
+  final String? initialImagePath;
+
   const AddBillPaymentScreen({
     super.key,
     this.existing,
     this.scope = BudgetScope.personal,
+    this.initialName,
+    this.initialAmount,
+    this.initialDate,
+    this.initialCategoryId,
+    this.initialCurrency,
+    this.initialImagePath,
   });
 
   @override
@@ -44,6 +66,10 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
   String? _categoryId;
   bool _isSubmitting = false;
 
+  /// Ścieżka zdjęcia do podglądu: prefill ze skanu (nowy) albo powiązane
+  /// zdjęcie zapisanego rachunku (edycja).
+  String? _photoPath;
+
   bool get _isEditing => widget.existing != null;
 
   @override
@@ -51,22 +77,33 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     super.initState();
     final e = widget.existing;
     final now = Subscription.devDateOverride ?? DateTime.now();
-    _nameCtrl = TextEditingController(text: e?.name ?? '');
-    _amountCtrl =
-        TextEditingController(text: e != null ? e.amount.toStringAsFixed(2) : '');
+    _nameCtrl = TextEditingController(text: e?.name ?? widget.initialName ?? '');
+    _amountCtrl = TextEditingController(
+      text: e != null
+          ? e.amount.toStringAsFixed(2)
+          : widget.initialAmount?.toStringAsFixed(2) ?? '',
+    );
     _noteCtrl = TextEditingController(text: e?.note ?? '');
     _scope = widget.scope;
-    _categoryId = e?.categoryId;
+    _categoryId = e?.categoryId ?? widget.initialCategoryId;
+
+    // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego rachunku.
+    _photoPath = widget.initialImagePath ??
+        (e != null
+            ? context.read<StorageService>().getReceiptPhotoPath(e.id)
+            : null);
 
     final fallbackMonth =
         e?.month != null ? DateTime.tryParse('${e!.month}-01') : null;
     _date = e?.startDate ??
         fallbackMonth ??
+        widget.initialDate ??
         DateTime(now.year, now.month, now.day);
 
     // Domyślna waluta z ustawień (tylko dla nowej pozycji).
     final code = context.read<StorageService>().getCurrency();
     _currency = e?.currency ??
+        widget.initialCurrency ??
         Currency.values.firstWhere(
           (c) => c.name == code || c.label == code,
           orElse: () => Currency.PLN,
@@ -121,24 +158,27 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     final name = _nameCtrl.text.trim();
 
     try {
+      // Zwracamy utworzoną/edytowaną pozycję — ekran Rachunki po skanie wiąże
+      // z nią zdjęcie (podgląd + archiwum).
+      final BudgetEntry result;
       if (_isEditing) {
-        await ctrl.update(
-          widget.existing!.copyWith(
-            name: name,
-            amount: amount,
-            currency: _currency,
-            month: monthKey,
-            startDate: _date,
-            categoryId: _categoryId,
-            clearCategoryId: _categoryId == null,
-            note: note,
-            clearNote: note == null,
-          ),
+        final updated = widget.existing!.copyWith(
+          name: name,
+          amount: amount,
+          currency: _currency,
+          month: monthKey,
+          startDate: _date,
+          categoryId: _categoryId,
+          clearCategoryId: _categoryId == null,
+          note: note,
+          clearNote: note == null,
         );
+        await ctrl.update(updated);
+        result = updated;
       } else {
         // Zakres wybiera pudełko danych (osobisty lokalny / domowy synchronizowany).
         ctrl.setScope(_scope);
-        await ctrl.create(
+        result = await ctrl.create(
           name: name,
           type: BudgetEntryType.billPayment,
           amount: amount,
@@ -149,7 +189,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           note: note,
         );
       }
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(result);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -173,6 +213,8 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     );
     if (ok != true || !mounted) return;
     final ctrl = context.read<BudgetController>();
+    // Sprzątamy powiązane zdjęcie rachunku (prywatna kopia podglądu).
+    await context.read<BillScanController>().deletePhotoFor(widget.existing!.id);
     await ctrl.delete(widget.existing!.id);
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -200,7 +242,37 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            if (!_isEditing) ...[
+            // Podgląd zdjęcia rachunku (skan lub powiązane zdjęcie) — tap powiększa.
+            if (_photoPath != null && File(_photoPath!).existsSync()) ...[
+              _SectionLabel('Zdjęcie rachunku'),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => ImagePreviewDialog.show(context, _photoPath!),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(_photoPath!),
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Dotknij, aby powiększyć.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Wybór zakresu tylko w trybie „oba"; w trybie jednym zakres jest
+            // wymuszony i przełącznik znika (spójnie z ekranami).
+            if (!_isEditing &&
+                context.read<BudgetController>().scopeSelectable) ...[
               _SectionLabel('Zakres'),
               const SizedBox(height: 8),
               BudgetScopeToggle(

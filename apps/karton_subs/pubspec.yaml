@@ -48,6 +48,12 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   share_plus: ^10.1.4
   file_picker: ^8.1.7
+  # Skan rachunku: zdjecie z aparatu/galerii dla lokalnego silnika AI
+  image_picker: ^1.1.2
+  # Skan rachunku: "Udostepnij -> Zostaje" z galerii systemowej.
+  # PRZYPIETE do 1.8.1: wersja 1.9.0 ma zepsuty android/build.gradle
+  # (blok kotlin{} bez zaaplikowanego pluginu -> "Could not find method kotlin()").
+  receive_sharing_intent: 1.8.1
   # OTA updates
   ota_update: ^7.1.0
   # Charts
