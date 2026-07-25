@@ -89,6 +89,7 @@ lib/
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
 │   ├── bill_scan_service.dart   # Parser odpowiedzi silnika (JSON rachunkow) + dopasowanie kategorii
+│   ├── receipt_crop_service.dart # Przyciecie zdjecia rachunku (natywny uCrop, kadr wolny)
 │   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
 │   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
 │   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
@@ -169,7 +170,7 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 | Zakladka | Tresc |
 |----------|-------|
 | **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
-| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc) — ADR-011, ADR-013 |
+| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
 | **Budzet** | Zarzadzanie pozycjami planowalnymi; grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale/jednorazowe), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
 | **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow + archiwum + link do apki silnika), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
@@ -237,6 +238,7 @@ Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 ## Skan rachunkow — Lokalny Silnik AI (ADR-013)
 
 > **ADR:** [ADR-013 Skan rachunkow lokalnym silnikiem AI](adr/ADR-013-skan-rachunkow-lokalny-silnik-ai.md)
+> | [ADR-015 Przycinanie zdjecia rachunku (uCrop)](adr/ADR-015-przycinanie-zdjecia-rachunku-ucrop.md)
 > | Silnik: repo `karton-ai` (osobna apka, model Gemma 4 E4B on-device)
 
 Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
@@ -244,7 +246,10 @@ Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
 wylacznie pakiet PRODUKCYJNY silnika `app.michalrapala.ai_engine`.
 
 ```
-Zdjecie (aparat / galeria / Udostepnij -> Zostaje)
+Zdjecie (aparat / galeria)          Udostepnij -> Zostaje
+  │  ReceiptCropService.crop:         │  bez przerywania (fire-and-forget)
+  │  natywny uCrop, kadr wolny        │  crop pozniej, z poczekalni
+  └──────────────┬────────────────────┘
   │  BillScanController.startScan: kopia do bill_scans/, pozycja "processing"
   ▼
 AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
@@ -253,12 +258,33 @@ AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
   │                              Lokalny Silnik AI: recognizeBill (~30-45 s, CPU)
   ▼
 BillScanParser (JSON -> pola) ──► PendingBillScan "done" (sekcja "Do zatwierdzenia",
-  miniatura zdjecia) ──► Zatwierdz/Edytuj -> zwykly billPayment | Odrzuc -> kasacja
+  miniatura zdjecia; tap -> podglad + "Przytnij") ──► Zatwierdz/Edytuj -> zwykly
+  billPayment | Odrzuc -> kasacja
 ```
 
 Pozycje oczekujace sa LOKALNE (settings, poza sync/backupem/bilansem) — do
 budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w
 `android/app/src/main/aidl/` musza byc identyczne z repo silnika.
+
+**Przycinanie zdjecia (uCrop, bez Google Play Services).** Zdjecie z aparatu i
+galerii jest docinane od razu po wyborze — sam paragon, bez reki i tla: mniej
+szumu dla silnika i lzejszy plik w archiwum. Zdjecie z „Udostepnij" leci prosto
+do rozpoznania (nie przerywamy fire-and-forget), a docic je mozna pozniej z
+poczekalni: tap w miniature -> podglad -> „Przytnij". Crop z poczekalni podmienia
+TYLKO obraz (`BillScanController.recrop` zapisuje nowy plik i kasuje stary, o ile
+nie dzieli go inna pozycja) — **nie uruchamia OCR ponownie**, wiec odczytane pola
+zostaja; kto ich nie ma, uzywa „Ponow" i silnik dostaje juz dociety kadr.
+Przycinanie jest zablokowane w trakcie rozpoznawania (silnik czyta ten plik).
+
+Crop jest takze w **formularzu edycji** rachunku (`AddBillPaymentScreen`, tap w
+miniature). Dwie sciezki zapisu: dla skanu przed zatwierdzeniem docieta sciezka
+wraca z formularza (rekord `entry`+`imagePath`) i trafia do prywatnej kopii oraz
+archiwum przy `finalizeApproval`; dla juz zapisanego rachunku podmieniana jest
+od razu prywatna kopia (`BillScanController.replaceReceiptPhoto`, ma `entryId`) —
+publiczne archiwum zapisane wczesniej zostaje bez zmian.
+
+Poniewaz `startScan` kopiuje zdjecie raz, a OCR, prywatna kopia i archiwum biora
+ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
 
 ---
 
@@ -275,4 +301,4 @@ budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-17
+> **Ostatnia aktualizacja:** 2026-07-25

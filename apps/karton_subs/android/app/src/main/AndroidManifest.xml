@@ -56,6 +56,13 @@
                 <data android:mimeType="image/*"/>
             </intent-filter>
         </activity>
+        <!-- image_cropper: natywny ekran przycinania zdjecia rachunku (uCrop).
+             Motyw ciemny pod Aurore; konkretne kolory ustawia Dart
+             (AndroidUiSettings w receipt_crop_service.dart). -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
         <!-- FileProvider wymagany przez ota_update do instalacji APK (Android 7+) -->
         <provider
             android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"

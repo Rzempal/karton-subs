@@ -52,6 +52,7 @@ class PendingBillScan {
   });
 
   PendingBillScan copyWith({
+    String? imagePath,
     PendingScanStatus? status,
     String? name,
     double? amount,
@@ -62,7 +63,7 @@ class PendingBillScan {
   }) =>
       PendingBillScan(
         id: id,
-        imagePath: imagePath,
+        imagePath: imagePath ?? this.imagePath,
         scope: scope,
         status: status ?? this.status,
         createdAt: createdAt,

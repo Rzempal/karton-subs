@@ -6,16 +6,28 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// Pełnoekranowy podgląd zdjęcia rachunku (z zoomem). Otwierany z miniaturki
 /// pozycji „Do zatwierdzenia" oraz z formularza edycji rozpoznanego rachunku —
 /// żeby porównać rozpoznane pola ze źródłem.
+///
+/// [onCrop] (opcjonalne) dokłada przycisk „Przytnij". Podaje go tylko podgląd
+/// pozycji oczekującej — zdjęcie zapisanego rachunku jest już zamknięte.
 class ImagePreviewDialog extends StatelessWidget {
   final String imagePath;
+  final VoidCallback? onCrop;
 
-  const ImagePreviewDialog({super.key, required this.imagePath});
+  const ImagePreviewDialog({
+    super.key,
+    required this.imagePath,
+    this.onCrop,
+  });
 
-  static Future<void> show(BuildContext context, String imagePath) {
+  static Future<void> show(
+    BuildContext context,
+    String imagePath, {
+    VoidCallback? onCrop,
+  }) {
     return showDialog<void>(
       context: context,
       barrierColor: Colors.black87,
-      builder: (_) => ImagePreviewDialog(imagePath: imagePath),
+      builder: (_) => ImagePreviewDialog(imagePath: imagePath, onCrop: onCrop),
     );
   }
 
@@ -54,6 +66,24 @@ class ImagePreviewDialog extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
+          // Przycięcie zdjęcia — zamyka podgląd i oddaje sterowanie ekranowi,
+          // bo natywny ekran uCrop otwiera się nad aplikacją.
+          if (onCrop != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 20,
+              child: Center(
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    onCrop!();
+                  },
+                  icon: const Icon(LucideIcons.crop, size: 18),
+                  label: const Text('Przytnij'),
+                ),
+              ),
+            ),
         ],
       ),
     );

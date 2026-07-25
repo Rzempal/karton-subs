@@ -11,6 +11,7 @@ import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/pending_bill_scan.dart';
 import '../models/subscription.dart';
+import '../services/receipt_crop_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
@@ -98,7 +99,12 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     );
     if (picked == null || !mounted) return;
 
-    await scanCtrl.startScan(picked.path, budgetCtrl.scope);
+    // Przycięcie do samego paragonu (bez ręki i tła): mniej szumu dla silnika
+    // i lżejszy plik w archiwum. Anulowanie zwraca oryginał — skan i tak rusza.
+    final imagePath = await ReceiptCropService.crop(picked.path);
+    if (!mounted) return;
+
+    await scanCtrl.startScan(imagePath, budgetCtrl.scope);
     if (mounted) {
       _snack('Rozpoznaję rachunek w tle (ok. 1 min) — pojawi się w „Do zatwierdzenia".');
     }
@@ -115,7 +121,8 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   /// wiąże z nim zdjęcie (podgląd + archiwum) i usuwa pozycję oczekującą.
   Future<void> _editScan(PendingBillScan item) async {
     final scanCtrl = context.read<BillScanController>();
-    final result = await Navigator.of(context).push<BudgetEntry>(
+    final result =
+        await Navigator.of(context).push<({BudgetEntry entry, String? imagePath})>(
       MaterialPageRoute(
         builder: (_) => AddBillPaymentScreen(
           scope: item.scope,
@@ -134,15 +141,28 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       ),
     );
     if (result == null) return;
+    final entry = result.entry;
     final archiveError = await scanCtrl.finalizeApproval(
-      entryId: result.id,
-      item: item,
-      name: result.name,
-      amount: result.amount,
-      date: result.startDate ?? item.date ?? DateTime.now(),
+      entryId: entry.id,
+      // Ścieżka z formularza: jeśli użytkownik docił kadr w edycji, to już
+      // przycięta wersja; inaczej oryginalna kopia skanu.
+      imagePath: result.imagePath ?? item.imagePath,
+      name: entry.name,
+      amount: entry.amount,
+      date: entry.startDate ?? item.date ?? DateTime.now(),
     );
     await scanCtrl.remove(item.id);
     if (mounted && archiveError != null) _snack(archiveError);
+  }
+
+  /// Przycięcie zdjęcia pozycji czekającej w „Do zatwierdzenia" — głównie dla
+  /// rachunków z „Udostępnij", które trafiają tu w pełnym kadrze. Podmienia samo
+  /// zdjęcie (archiwum i podgląd dostaną docięte); rozpoznane pola zostają.
+  Future<void> _cropScan(PendingBillScan item) async {
+    final scanCtrl = context.read<BillScanController>();
+    final cropped = await ReceiptCropService.crop(item.imagePath);
+    if (cropped == item.imagePath) return; // anulowane
+    await scanCtrl.recrop(item.id, cropped);
   }
 
   Future<void> _rejectScan(PendingBillScan item) async {
@@ -298,6 +318,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                                     onApprove: () => _approveScan(p),
                                     onEdit: () => _editScan(p),
                                     onReject: () => _rejectScan(p),
+                                    onCrop: () => _cropScan(p),
                                     onRetry: () => context
                                         .read<BillScanController>()
                                         .retry(p.id),
@@ -348,7 +369,8 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
 }
 
 /// Karta pozycji oczekującej: miniatura zdjęcia (punkt odniesienia dla
-/// użytkownika) + rozpoznane dane + akcje Zatwierdź / Edytuj / Odrzuć.
+/// użytkownika, tap → podgląd z przycinaniem) + rozpoznane dane + akcje
+/// Zatwierdź / Edytuj / Odrzuć.
 class _PendingScanCard extends StatelessWidget {
   final PendingBillScan item;
   final bool isActive;
@@ -356,6 +378,7 @@ class _PendingScanCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onReject;
   final VoidCallback onRetry;
+  final VoidCallback onCrop;
 
   const _PendingScanCard({
     required this.item,
@@ -364,6 +387,7 @@ class _PendingScanCard extends StatelessWidget {
     required this.onEdit,
     required this.onReject,
     required this.onRetry,
+    required this.onCrop,
   });
 
   @override
@@ -401,9 +425,15 @@ class _PendingScanCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Miniatura zdjęcia — tap otwiera pełny podgląd (porównanie ze źródłem).
+          // Miniatura zdjęcia — tap otwiera pełny podgląd (porównanie ze
+          // źródłem), a stamtąd można docić kadr. Przycinanie tylko poza
+          // rozpoznawaniem: w trakcie OCR silnik czyta ten właśnie plik.
           GestureDetector(
-            onTap: () => ImagePreviewDialog.show(context, item.imagePath),
+            onTap: () => ImagePreviewDialog.show(
+              context,
+              item.imagePath,
+              onCrop: processing ? null : onCrop,
+            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.file(

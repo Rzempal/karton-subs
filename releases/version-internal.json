@@ -1,6 +1,18 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072401",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072403",
+  "versionCode": 1026072403,
+  "version": "0.10.26072403",
+  "releaseDate": "2026-07-24T23:26:49Z",
+  "releaseNotes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)",
   "changelog": [
+    {
+      "version": "0.10.26072403",
+      "notes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)"
+    },
+    {
+      "version": "0.10.26072402",
+      "notes": "- Przycinanie zdjecia rachunku: po zrobieniu lub wybraniu zdjecia otwiera sie kadrowanie do samego paragonu (bez reki i tla) - czytelniejszy skan i lzejszy plik w archiwum\n- Rachunek z Udostepnij mozna docic pozniej: tap w miniature w Do zatwierdzenia otwiera podglad z przyciskiem Przytnij; rozpoznane pola zostaja, a gdy rachunek sie nie rozpoznal - po przycieciu uzyj Ponow"
+    },
     {
       "version": "0.10.26072401",
       "notes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania"
@@ -32,18 +44,6 @@
     {
       "version": "0.10.26071801",
       "notes": "- Asystent AI w Ustawieniach: przelacznik skanowania rachunkow (domyslnie wylaczony) + link do uruchomienia lub pobrania apki Lokalny Silnik AI; wylaczony ukrywa opcje skanowania w menu Dodaj rachunek"
-    },
-    {
-      "version": "0.10.26071800",
-      "notes": "- Skan rachunkow lokalnym silnikiem AI: aparat, galeria lub Udostepnij -> Zostaje; rozpoznane rachunki czekaja w sekcji Do zatwierdzenia z miniatura zdjecia (wymaga apki Lokalny Silnik AI w wersji 0.3+)"
-    },
-    {
-      "version": "0.10.26071300",
-      "notes": "- Kropka koloru kategorii w filtrach Budzetu i Subskrypcji\n- Kategoria dla przelewu wewnetrznego (widoczna w filtrze i na karcie)\n- Kategoria dla pozycji Na rachunki (kolor kropki przy nazwie)\n- Kaskady zmiany/usuniecia kategorii obejmuja teraz rowniez koperty Na rachunki"
     }
-  ],
-  "releaseNotes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania",
-  "releaseDate": "2026-07-24T12:37:45Z",
-  "version": "0.10.26072401",
-  "versionCode": 1026072401
+  ]
 }

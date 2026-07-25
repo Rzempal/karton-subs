@@ -23,7 +23,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
 - **Skan rachunku AI (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje";
   rozpoznanie (kwota, wystawca, termin) robi wlasny silnik AI NA telefonie, rachunek
-  czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013)
+  czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013). Zdjecie mozna
+  przyciac do samego paragonu (mniej szumu dla OCR, lzejsze archiwum) — przy aparacie/
+  galerii od razu, a dla "Udostepnij" i w edycji z podgladu miniatury (ADR-015)
 - Przypomnienia o odnowieniach i trialach
 - Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
 - Szyfrowany backup `.zostaje` (obejmuje subskrypcje i budzet; stare `.subkarton` nadal importowalne)

@@ -118,6 +118,50 @@ class BillScanController extends ChangeNotifier {
     _enqueue(id);
   }
 
+  /// Podmienia zdjęcie pozycji oczekującej na przycięte (akcja „Przytnij"
+  /// w podglądzie miniatury). [croppedPath] równe dotychczasowej ścieżce
+  /// oznacza anulowanie — nic się nie dzieje.
+  ///
+  /// Świadomie NIE uruchamia rozpoznawania od nowa: kto ma już poprawnie
+  /// odczytane pola, nie czeka drugi raz ~45 s. Kto nie ma — użyje „Ponów",
+  /// a silnik dostanie wtedy zdjęcie już docięte. Zatwierdzenie zabiera
+  /// przycięty plik do prywatnej kopii i do archiwum.
+  Future<void> recrop(String id, String croppedPath) async {
+    final item = _byId(id);
+    if (item == null || croppedPath == item.imagePath) return;
+    // W trakcie rozpoznawania ani drgnij: [_process] trzyma własną kopię
+    // pozycji sprzed OCR i po zakończeniu cofnąłby podmianę ścieżki, a stary
+    // plik byłby już skasowany.
+    if (item.status == PendingScanStatus.processing) return;
+    final previous = item.imagePath;
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final scansDir = Directory('${dir.path}/bill_scans');
+      await scansDir.create(recursive: true);
+      // Nowy plik zamiast nadpisania starego z dwóch powodów: to samo zdjęcie
+      // bywa podpięte pod kilka pozycji (kilka rachunków z jednego kadru),
+      // a Flutter trzyma wczytane obrazy pod kluczem ścieżki — zmiana ścieżki
+      // wymusza odświeżenie miniatury.
+      final dest = '${scansDir.path}/${_uuid.v4()}.jpg';
+      await File(croppedPath).copy(dest);
+      _replace(item.copyWith(imagePath: dest));
+
+      // Poprzednie zdjęcie kasujemy tylko, gdy nie korzysta z niego inna pozycja.
+      if (!_items.any((e) => e.imagePath == previous)) {
+        try {
+          await File(previous).delete();
+        } catch (_) {
+          // Brak pliku nie jest problemem.
+        }
+      }
+      await _persist();
+      notifyListeners();
+    } catch (e, st) {
+      _log.warning('Podmiana przyciętego zdjęcia: $e', e, st);
+    }
+  }
+
   /// Dokłada skan do kolejki OCR i uruchamia jej opróżnianie (jeśli nie działa).
   void _enqueue(String id) {
     if (!_queue.contains(id)) _queue.add(id);
@@ -179,7 +223,7 @@ class BillScanController extends ChangeNotifier {
     );
     final err = await finalizeApproval(
       entryId: entry.id,
-      item: item,
+      imagePath: item.imagePath,
       name: item.name ?? 'Rachunek',
       amount: amount,
       date: date,
@@ -190,19 +234,51 @@ class BillScanController extends ChangeNotifier {
 
   /// Wspólny finał zatwierdzenia (dla ✓ i dla ścieżki edycji formularza):
   /// prywatna kopia zdjęcia powiązana z rachunkiem (podgląd) + archiwum (opt-in).
+  /// [imagePath] to zdjęcie do zapisania — zwykle kopia skanu, ale jeśli
+  /// użytkownik docił kadr w edycji, to już wersja przycięta.
   /// Zwraca komunikat błędu archiwum albo null.
   Future<String?> finalizeApproval({
     required String entryId,
-    required PendingBillScan item,
+    required String imagePath,
     required String name,
     required double amount,
     required DateTime date,
   }) async {
-    await _linkPhoto(entryId, item.imagePath);
+    await _linkPhoto(entryId, imagePath);
     if (_storage.getReceiptArchiveEnabled()) {
-      return _archive(item.imagePath, name, amount, date);
+      return _archive(imagePath, name, amount, date);
     }
     return null;
+  }
+
+  /// Podmienia prywatną kopię zdjęcia ZAPISANEGO rachunku na przyciętą
+  /// (akcja „Przytnij" w edycji istniejącej pozycji). Nowa nazwa pliku wymusza
+  /// odświeżenie miniatury (Flutter cache'uje obraz po ścieżce). Zwraca nową
+  /// ścieżkę albo null przy błędzie.
+  ///
+  /// Uwaga: dotyczy tylko podglądu w apce. Publiczne archiwum w `Documents`
+  /// zapisane przy zatwierdzeniu nie jest tu ruszane.
+  Future<String?> replaceReceiptPhoto(String entryId, String croppedPath) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final receiptsDir = Directory('${dir.path}/receipts');
+      await receiptsDir.create(recursive: true);
+      final previous = _storage.getReceiptPhotoPath(entryId);
+      final dest = '${receiptsDir.path}/${entryId}_${_uuid.v4()}.jpg';
+      await File(croppedPath).copy(dest);
+      await _storage.setReceiptPhotoPath(entryId, dest);
+      if (previous != null && previous != dest) {
+        try {
+          await File(previous).delete();
+        } catch (_) {
+          // Brak pliku nie jest problemem.
+        }
+      }
+      return dest;
+    } catch (e, st) {
+      _log.warning('Podmiana zdjęcia zapisanego rachunku: $e', e, st);
+      return null;
+    }
   }
 
   /// Trwała, prywatna kopia zdjęcia w katalogu apki (`receipts/[entryId].jpg`)

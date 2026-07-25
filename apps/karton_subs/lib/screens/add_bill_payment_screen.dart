@@ -8,6 +8,7 @@ import '../controllers/bill_scan_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
+import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
 import '../widgets/image_preview_dialog.dart';
@@ -144,6 +145,26 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
+  /// Przycięcie zdjęcia z podglądu w formularzu. Zapisany rachunek podmienia
+  /// prywatną kopię od razu (mamy id). Skan przed zatwierdzeniem nie ma jeszcze
+  /// id — docięta ścieżka wraca z formularza i trafia do prywatnej kopii oraz
+  /// archiwum dopiero przy zatwierdzeniu ([BillScanController.finalizeApproval]).
+  Future<void> _cropPhoto() async {
+    final current = _photoPath;
+    if (current == null) return;
+    final cropped = await ReceiptCropService.crop(current);
+    if (!mounted || cropped == current) return; // anulowane
+    if (_isEditing) {
+      final persisted = await context
+          .read<BillScanController>()
+          .replaceReceiptPhoto(widget.existing!.id, cropped);
+      if (!mounted || persisted == null) return;
+      setState(() => _photoPath = persisted);
+    } else {
+      setState(() => _photoPath = cropped);
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final amount = _parseAmount(_amountCtrl.text);
@@ -189,7 +210,13 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           note: note,
         );
       }
-      if (mounted) Navigator.of(context).pop(result);
+      // Zwracamy też aktualną ścieżkę zdjęcia — po docięciu w edycji skanu to
+      // wersja przycięta, którą ekran Rachunki zapisze do prywatnej kopii i
+      // archiwum. Dla zapisanego rachunku pole jest ignorowane (podmiana już
+      // się wydarzyła w [_cropPhoto]).
+      if (mounted) {
+        Navigator.of(context).pop((entry: result, imagePath: _photoPath));
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -247,7 +274,11 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
               _SectionLabel('Zdjęcie rachunku'),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () => ImagePreviewDialog.show(context, _photoPath!),
+                onTap: () => ImagePreviewDialog.show(
+                  context,
+                  _photoPath!,
+                  onCrop: _cropPhoto,
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.file(
@@ -261,7 +292,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Dotknij, aby powiększyć.',
+                'Dotknij, aby powiększyć i przyciąć.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

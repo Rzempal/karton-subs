@@ -4,6 +4,32 @@
 
 ---
 
+## 2026-07-25: Flutter cache'uje `Image.file` po sciezce — podmiana w miejscu nie odswieza miniatury
+
+### Problem
+Przy przycinaniu zdjecia rachunku podmieniany plik nadpisywany „w tym samym miejscu"
+(ta sama sciezka) nie odswiezal miniatury — `Image.file` pokazywal STARY kadr, mimo ze
+plik na dysku byl juz przyciety. Powod: Flutter trzyma zdekodowany obraz w `ImageCache`
+pod kluczem sciezki pliku; identyczna sciezka = trafienie w cache, nowa zawartosc
+ignorowana. Dodatkowo to samo zdjecie bywa wspoldzielone przez kilka pozycji „Do
+zatwierdzenia" (kilka rachunkow z jednego kadru) — nadpisanie w miejscu zepsuloby kadr
+rodzenstwa.
+
+### Rozwiazanie
+Docietny wynik zapisywac zawsze pod **nowa nazwa pliku** (np. `<id>_<uuid>.jpg`),
+zaktualizowac przechowywana sciezke i skasowac stary plik dopiero, gdy nie korzysta z
+niego inna pozycja. Zmiana sciezki wymusza ponowne dekodowanie i odswiezenie widoku bez
+recznego czyszczenia `ImageCache`. Zastosowane w `BillScanController.recrop` i
+`replaceReceiptPhoto`.
+
+### Wniosek
+Gdy podmieniasz zawartosc pliku, ktory jest juz gdzies wyswietlany przez `Image.file`
+(albo `FileImage`), **zmien sciezke**, nie nadpisuj w miejscu — inaczej cache pokaze
+stara wersje. Alternatywa (`imageCache.evict(FileImage(...))`) jest mozliwa, ale nowa
+sciezka jest prostsza i przy okazji chroni wspoldzielone pliki.
+
+---
+
 ## 2026-07-24: Leciwe wtyczki Fluttera lamia build na nowym Gradle/Kotlinie
 
 ### Problem
