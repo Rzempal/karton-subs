@@ -1,7 +1,14 @@
 {
-  "version": "0.10.26072500",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072500",
+  "versionCode": 1026072501,
+  "releaseDate": "2026-07-25T23:42:36Z",
+  "releaseNotes": "- Data bez roku na rachunku: rok poprzedni nie przechodzi juz jako wiarygodny (zrzuty Google Wallet)\n- Dluzszy limit czasu na rozpoznanie gestego paragonu (300 s)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072501",
+  "version": "0.10.26072501",
   "changelog": [
+    {
+      "version": "0.10.26072501",
+      "notes": "- Data bez roku na rachunku: rok poprzedni nie przechodzi juz jako wiarygodny (zrzuty Google Wallet)\n- Dluzszy limit czasu na rozpoznanie gestego paragonu (300 s)"
+    },
     {
       "version": "0.10.26072500",
       "notes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy"
@@ -37,13 +44,6 @@
     {
       "version": "0.10.26071803",
       "notes": "- Podglad zdjecia rachunku: klik w miniature (pop-up z zoomem) oraz miniatura w formularzu edycji rozpoznanego rachunku\n- Powiadomienie systemowe z paskiem postepu przy skanowaniu + feedback Gotowe/Nie rozpoznano"
-    },
-    {
-      "version": "0.10.26071802",
-      "notes": "- Poprawka: przelacznik Asystenta AI od razu pokazuje/ukrywa opcje skanowania w menu Dodaj rachunek (bez restartu apki)"
     }
-  ],
-  "versionCode": 1026072500,
-  "releaseNotes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy",
-  "releaseDate": "2026-07-25T19:42:01Z"
+  ]
 }
