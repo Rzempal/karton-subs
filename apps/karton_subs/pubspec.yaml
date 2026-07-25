@@ -76,6 +76,8 @@ dependencies:
   dynamic_color: ^1.8.1
   lucide_icons_flutter: ^3.1.14+2
   animations: ^2.2.0
+  google_mlkit_text_recognition: ^0.16.0
+  image: ^4.3.0
 
 dev_dependencies:
   flutter_test:

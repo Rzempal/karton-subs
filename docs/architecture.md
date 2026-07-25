@@ -89,6 +89,8 @@ lib/
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
 │   ├── bill_scan_service.dart   # Parser odpowiedzi silnika (JSON rachunkow) + dopasowanie kategorii
+│   ├── text_ocr_service.dart    # Szybka sciezka: zwykly OCR tekstowy (ML Kit bundled) + obroty zdjecia
+│   ├── receipt_text_parser.dart # Szybka sciezka: reguly (paragon fiskalny, zrzut platnosci) — ADR-017
 │   ├── receipt_crop_service.dart # Przyciecie zdjecia rachunku (natywny uCrop, kadr wolny)
 │   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
 │   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
@@ -240,6 +242,7 @@ Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 > **ADR:** [ADR-013 Skan rachunkow lokalnym silnikiem AI](adr/ADR-013-skan-rachunkow-lokalny-silnik-ai.md)
 > | [ADR-015 Przycinanie zdjecia rachunku (uCrop)](adr/ADR-015-przycinanie-zdjecia-rachunku-ucrop.md)
 > | [ADR-016 Skan w usludze pierwszoplanowej](adr/ADR-016-skan-rachunku-usluga-pierwszoplanowa.md)
+> | [ADR-017 Szybka sciezka OCR przed silnikiem](adr/ADR-017-szybka-sciezka-ocr-przed-silnikiem-ai.md)
 > | Silnik: repo `karton-ai` (osobna apka, model Gemma 4 E4B on-device)
 
 Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
@@ -253,6 +256,9 @@ Zdjecie (aparat / galeria)          Udostepnij -> Zostaje
   └──────────────┬────────────────────┘
   │  BillScanController.startScan: kopia do bill_scans/, pozycja "processing"
   ▼
+TextOcrService + ReceiptTextParser (szybka sciezka, ~1-2 s, ADR-017)
+  │  paragon fiskalny / zrzut platnosci -> pozycja gotowa OD RAZU
+  │  brak trafienia ▼
 AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
   │                                            │ zlecenie (wraca od razu)
   │                                            ▼
@@ -278,10 +284,22 @@ Dart oproznia skrzynke przy starcie i na ping z warstwy natywnej. Bindowanie do
 silnika uzywa `FLAG_INCLUDE_STOPPED_PACKAGES` — bez tego uspiona lub swiezo
 zainstalowana apka silnika wymagala recznego uruchomienia przed pierwszym skanem.
 
+**Szybka sciezka (ADR-017).** Zanim ruszy silnik, zdjecie czyta zwykly OCR
+tekstowy (`TextOcrService`, model ML Kit wbudowany w APK — bez Google Play
+Services i bez sieci) i reguly (`ReceiptTextParser`). Paragon fiskalny
+(`SUMA PLN`, data ISO) i zrzut platnosci telefonem (kwota `X,XX zl`, „sobota,
+25 lip") sa odczytane w ~1-2 s, z data wzieta wprost z dokumentu. Nietrafiony
+wzorzec albo brak pewnej kwoty → dokument przejmuje silnik AI. Przy braku
+trafienia zdjecie jest jeszcze obracane (90/270/180 stopni) — paragony
+fotografuje sie w poprzek.
+
 **Rok w dacie.** Silnik nie ma zegara: gdy na dokumencie widnieje sam dzien
-i miesiac, model rok zmysla (zwykle lata wstecz). `BillScanParser` dokłada rok
-wiarygodny wobec „dzisiaj" — data spoza okna −15/+12 miesiecy zachowuje dzien
-i miesiac, a rok dostaje najblizszy dzisiejszej dacie (remis → rok biezacy).
+i miesiac, model rok zmysla (zwykle rok poprzedni). Szybka sciezka bierze rok
+z dokumentu (paragon — data ISO; zrzut platnosci — dzien tygodnia jednoznacznie
+wskazuje rok). Dla wyniku z silnika `BillScanParser` dokłada rok wiarygodny
+wobec „dzisiaj": data spoza okna −9/+3 miesiecy zachowuje dzien i miesiac,
+a rok dostaje najblizszy dzisiejszej dacie (remis → rok biezacy). Okno musi byc
+krotsze niz rok, inaczej „ta sama data rok temu" przechodzi jako wiarygodna.
 
 Pozycje oczekujace sa LOKALNE (settings, poza sync/backupem/bilansem) — do
 budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w

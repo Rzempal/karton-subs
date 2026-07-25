@@ -13,6 +13,7 @@ import '../services/app_logger.dart';
 import '../services/bill_scan_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
+import '../services/text_ocr_service.dart';
 import 'budget_controller.dart';
 
 /// Skanowanie rachunków lokalnym silnikiem AI: kolejka pozycji oczekujących.
@@ -29,6 +30,9 @@ class BillScanController extends ChangeNotifier {
   final StorageService _storage;
   final AiEngineService _engine;
   final NotificationService _notifications;
+
+  /// Szybka ścieżka: zwykły OCR + reguły przed sięgnięciem po silnik AI.
+  final TextOcrService _ocr;
 
   List<PendingBillScan> _items = [];
 
@@ -50,7 +54,12 @@ class BillScanController extends ChangeNotifier {
   /// Id aktualnie rozpoznawanego skanu (reszta „processing" czeka w kolejce).
   String? get activeScanId => _activeId;
 
-  BillScanController(this._storage, this._engine, this._notifications) {
+  BillScanController(
+    this._storage,
+    this._engine,
+    this._notifications,
+    this._ocr,
+  ) {
     _items = List.of(_storage.getPendingBillScans());
     _engine.setScanResultsListener(() => unawaited(_drainResults()));
     unawaited(_recoverAfterStart());
@@ -422,6 +431,21 @@ class BillScanController extends ChangeNotifier {
   Future<void> _process(String id) async {
     final item = _byId(id);
     if (item == null) return;
+
+    // Szybka ścieżka: zwykły OCR + reguły. Typowy paragon fiskalny i zrzut
+    // płatności telefonem są odczytane w ~1–2 s, z datą wziętą wprost
+    // z dokumentu. Nietrafiony wzorzec oddaje sprawę silnikowi AI (~45 s).
+    final quick = await _quickRead(item);
+    if (quick != null) {
+      final filled = _filled(item, quick);
+      _replace(filled);
+      _activeId = null;
+      unawaited(_notifications.showScanDone(id, filled.name));
+      await _persist();
+      notifyListeners();
+      return;
+    }
+
     final completer = Completer<void>();
     _awaiting[id] = completer;
     try {
@@ -443,6 +467,17 @@ class BillScanController extends ChangeNotifier {
       if (_byId(id)?.status == PendingScanStatus.processing) {
         await _fail(id, 'Rozpoznawanie nie odpowiada — ponów');
       }
+    }
+  }
+
+  /// Próba odczytu regułami (zwykły OCR). Nigdy nie blokuje — każdy problem
+  /// oznacza po prostu „nie trafiono" i sprawę przejmuje silnik AI.
+  Future<ParsedBill?> _quickRead(PendingBillScan item) async {
+    try {
+      return await _ocr.readBill(item.imagePath);
+    } catch (e, st) {
+      _log.warning('Szybka sciezka OCR: $e', e, st);
+      return null;
     }
   }
 

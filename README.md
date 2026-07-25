@@ -21,8 +21,10 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 - **Synchronizacja budzetu domowego (preview):** wspoldzielenie miedzy telefonami bez kont —
   parowanie kodem QR + haslo, szyfrowanie end-to-end (serwer nie widzi tresci). Budzety
   osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
-- **Skan rachunku AI (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje";
-  rozpoznanie (kwota, wystawca, termin) robi wlasny silnik AI NA telefonie, rachunek
+- **Skan rachunku (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje".
+  Paragon fiskalny i zrzut platnosci telefonem czyta szybka sciezka — zwykly OCR
+  + reguly, ~1-2 s, data wprost z dokumentu (ADR-017); dokument o dowolnym ukladzie
+  przejmuje wlasny silnik AI NA telefonie. Rachunek
   czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013). Zdjecie mozna
   przyciac do samego paragonu (mniej szumu dla OCR, lzejsze archiwum) — przy aparacie/
   galerii od razu, a dla "Udostepnij" i w edycji z podgladu miniatury (ADR-015)
@@ -34,7 +36,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
 - Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium, jeden ciemny motyw; wdrozenie Faza 6)
 - AI wylacznie LOKALNIE: skan rachunkow przez wlasna apke-silnik na urzadzeniu
-  (Gemma 4 E4B, repo karton-ai) -- zero chmury, zero kont, zero API w sieci (ADR-013)
+  (Gemma 4 E4B, repo karton-ai) -- zero chmury, zero kont, zero API w sieci (ADR-013).
+  Szybka sciezka OCR tez jest offline: model rozpoznawania tekstu siedzi w APK,
+  bez Google Play Services (ADR-017)
 - Offline-first, dane lokalne
 
 ---

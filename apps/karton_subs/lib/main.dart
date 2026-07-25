@@ -21,6 +21,7 @@ import 'services/backup_service.dart';
 import 'services/excel_service.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
+import 'services/text_ocr_service.dart';
 import 'services/theme_provider.dart';
 import 'services/update_service.dart';
 import 'services/notification_service.dart';
@@ -81,8 +82,12 @@ void main() async {
         ChangeNotifierProvider.value(value: syncService),
         // Skan rachunkow lokalnym silnikiem AI (pozycje oczekujace + OCR w tle).
         ChangeNotifierProvider(
-          create: (_) =>
-              BillScanController(storage, AiEngineService(), notificationService),
+          create: (_) => BillScanController(
+            storage,
+            AiEngineService(),
+            notificationService,
+            TextOcrService(),
+          ),
         ),
         ChangeNotifierProvider(create: (_) => ThemeProvider(storage)),
         Provider(create: (_) => BackupService(storage)),
