@@ -196,7 +196,11 @@ class NotificationService {
     }
   }
 
-  // ── Skan rachunku: powiadomienie z paskiem postepu ───────────────────────
+  // ── Skan rachunku: powiadomienia o zakonczeniu ───────────────────────────
+  //
+  // Powiadomienie „w toku" wystawia natywna usluga skanujaca (jest warunkiem
+  // jej pracy na pierwszym planie — ADR-016). Tutaj zostaja tylko powiadomienia
+  // koncowe, pokazywane, gdy aplikacja zyje i zna nazwe rachunku.
 
   static const _scanChannelId = 'zostaje_scan';
   static const _scanChannelName = 'Skanowanie rachunków';
@@ -204,34 +208,7 @@ class NotificationService {
   /// Stabilny int-id powiadomienia dla danego skanu (jeden na pozycję).
   int _scanNotifId(String scanId) => 900000 + (scanId.hashCode.abs() % 90000);
 
-  /// Powiadomienie „w toku" z nieokreślonym paskiem postępu (OCR nie daje %).
-  Future<void> showScanProgress(String scanId) async {
-    if (!_initialized) return;
-    final details = AndroidNotificationDetails(
-      _scanChannelId,
-      _scanChannelName,
-      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
-      importance: Importance.low,
-      priority: Priority.low,
-      showProgress: true,
-      indeterminate: true,
-      onlyAlertOnce: true,
-      ongoing: true,
-      autoCancel: false,
-    );
-    try {
-      await _plugin.show(
-        _scanNotifId(scanId),
-        'Rozpoznaję rachunek…',
-        'Lokalny silnik AI pracuje w tle (ok. 1 min)',
-        NotificationDetails(android: details),
-      );
-    } catch (e) {
-      _log.warning('showScanProgress failed: $e');
-    }
-  }
-
-  /// Zamienia powiadomienie postępu na „Gotowe" (rachunek czeka na zatwierdzenie).
+  /// Powiadomienie „Gotowe" (rachunek czeka na zatwierdzenie).
   Future<void> showScanDone(String scanId, String? name) async {
     if (!_initialized) return;
     final details = AndroidNotificationDetails(

@@ -40,29 +40,62 @@ class BillScanController extends ChangeNotifier {
   bool _draining = false;
   String? _activeId;
 
+  /// Skany zlecone warstwie natywnej, na których wynik czeka kolejka.
+  final Map<String, Completer<void>> _awaiting = {};
+
+  /// Zapas ponad limity warstwy natywnej (25 s na połączenie + 180 s pracy):
+  /// gdyby usługa zginęła bez śladu, kolejka nie może stać w nieskończoność.
+  static const _watchdog = Duration(seconds: 300);
+
   /// Id aktualnie rozpoznawanego skanu (reszta „processing" czeka w kolejce).
   String? get activeScanId => _activeId;
 
   BillScanController(this._storage, this._engine, this._notifications) {
     _items = List.of(_storage.getPendingBillScans());
-    // „processing" po restarcie to sierota (proces zginął w trakcie OCR) —
-    // oznacz jako błąd z możliwością ponowienia.
-    var changed = false;
+    _engine.setScanResultsListener(() => unawaited(_drainResults()));
+    unawaited(_recoverAfterStart());
+  }
+
+  /// Po starcie aplikacji: odbiera wyniki skanów policzonych, gdy aplikacja nie
+  /// żyła (usługa pracuje niezależnie od ekranu), zostawia w spokoju te nadal
+  /// przetwarzane, a resztę „processing" — sieroty po ubitym procesie —
+  /// oznacza jako błąd z możliwością ponowienia.
+  Future<void> _recoverAfterStart() async {
+    // Sierotami mogą być tylko pozycje wczytane z dysku — skan rozpoczęty już
+    // po starcie (gdyby użytkownik zdążył) idzie normalną drogą przez kolejkę.
+    final known = _items.map((e) => e.id).toSet();
+    final snapshot = await _engine.drainScanResults();
+    for (final outcome in snapshot.results) {
+      _applyOutcome(outcome);
+    }
+    final running = snapshot.inFlight.toSet();
     _items = _items
         .map(
-          (e) => e.status == PendingScanStatus.processing
-              ? () {
-                  changed = true;
-                  return e.copyWith(
-                    status: PendingScanStatus.error,
-                    errorMessage:
-                        'Rozpoznawanie przerwane (aplikacja została zamknięta) — ponów',
-                  );
-                }()
+          (e) => e.status == PendingScanStatus.processing &&
+                  known.contains(e.id) &&
+                  !running.contains(e.id)
+              ? e.copyWith(
+                  status: PendingScanStatus.error,
+                  errorMessage:
+                      'Rozpoznawanie przerwane (aplikacja została zamknięta) — ponów',
+                )
               : e,
         )
         .toList();
-    if (changed) unawaited(_persist());
+    if (running.isNotEmpty) _activeId ??= running.first;
+    await _persist();
+    notifyListeners();
+  }
+
+  /// Odbiera gotowe wyniki ze skrzynki warstwy natywnej.
+  Future<void> _drainResults() async {
+    final snapshot = await _engine.drainScanResults();
+    if (snapshot.results.isEmpty) return;
+    for (final outcome in snapshot.results) {
+      _applyOutcome(outcome);
+    }
+    await _persist();
+    notifyListeners();
   }
 
   /// Pozycje oczekujące (wszystkie zakresy; ekran filtruje po aktywnym).
@@ -180,7 +213,8 @@ class BillScanController extends ChangeNotifier {
         if (item == null || item.status != PendingScanStatus.processing) continue;
         _activeId = id;
         notifyListeners(); // „W kolejce…" -> „Rozpoznaję…"
-        unawaited(_notifications.showScanProgress(id));
+        // Powiadomienie postępu wystawia usługa natywna (jest jej warunkiem
+        // pracy na pierwszym planie) — tutaj już go nie dublujemy.
         await _process(id);
       }
     } finally {
@@ -365,6 +399,10 @@ class BillScanController extends ChangeNotifier {
     final item = _byId(id);
     if (item == null) return;
     _queue.remove(id); // gdyby czekał jeszcze w kolejce OCR
+    // Gdy kasujemy właśnie rozpoznawaną pozycję, kolejka rusza dalej od razu
+    // (wynik z warstwy natywnej trafi w próżnię — nie ma już czego wypełniać).
+    _awaiting.remove(id)?.complete();
+    if (_activeId == id) _activeId = null;
     _items = _items.where((e) => e.id != id).toList();
     final shared = _items.any((e) => e.imagePath == item.imagePath);
     if (!shared) {
@@ -378,58 +416,92 @@ class BillScanController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Zleca rozpoznanie warstwie natywnej i czeka na wynik — nie dlatego, że
+  /// wynik musi tu wrócić (przyjdzie skrzynką, choćby po ponownym otwarciu
+  /// aplikacji), tylko po to, by kolejny skan z kolejki nie ruszył równolegle.
   Future<void> _process(String id) async {
     final item = _byId(id);
     if (item == null) return;
+    final completer = Completer<void>();
+    _awaiting[id] = completer;
     try {
-      final raw = await _engine.scanBillRaw(item.imagePath);
-      final bills = BillScanParser.parse(raw);
-      if (bills.isEmpty) {
-        _replace(
-          item.copyWith(
-            status: PendingScanStatus.error,
-            errorMessage:
-                'Nie rozpoznano rachunku na zdjęciu — spróbuj wyraźniejszego ujęcia',
-          ),
-        );
-        unawaited(_notifications.showScanFailed(id));
-      } else {
-        // Pierwszy rachunek aktualizuje pozycję; kolejne (kilka dokumentów na
-        // jednym zdjęciu) stają się osobnymi pozycjami z tą samą miniaturą.
-        final filled = _filled(item, bills.first);
-        _replace(filled);
-        unawaited(_notifications.showScanDone(id, filled.name));
-        for (final extra in bills.skip(1)) {
-          _items = [
-            ..._items,
-            _filled(
-              PendingBillScan(
-                id: _uuid.v4(),
-                imagePath: item.imagePath,
-                scope: item.scope,
-                status: PendingScanStatus.processing,
-                createdAt: item.createdAt,
-              ),
-              extra,
-            ),
-          ];
-        }
-      }
+      await _engine.startBillScan(scanId: id, imagePath: item.imagePath);
     } on AiEngineException catch (e) {
-      _replace(
-        item.copyWith(status: PendingScanStatus.error, errorMessage: e.message),
-      );
-      unawaited(_notifications.showScanFailed(id));
+      _awaiting.remove(id);
+      await _fail(id, e.message);
+      return;
     } catch (e, st) {
-      _log.severe('Blad rozpoznawania rachunku', e, st);
+      _awaiting.remove(id);
+      _log.severe('Zlecenie rozpoznawania rachunku', e, st);
+      await _fail(id, 'Błąd rozpoznawania — ponów');
+      return;
+    }
+    try {
+      await completer.future.timeout(_watchdog);
+    } on TimeoutException {
+      _awaiting.remove(id);
+      if (_byId(id)?.status == PendingScanStatus.processing) {
+        await _fail(id, 'Rozpoznawanie nie odpowiada — ponów');
+      }
+    }
+  }
+
+  /// Wynik jednego skanu z warstwy natywnej — także taki, który przyszedł
+  /// w czasie, gdy aplikacja była zamknięta.
+  void _applyOutcome(ScanOutcome outcome) {
+    if (_activeId == outcome.scanId) _activeId = null;
+    _awaiting.remove(outcome.scanId)?.complete();
+    final item = _byId(outcome.scanId);
+    if (item == null) return; // pozycję skasowano w międzyczasie
+
+    final raw = outcome.rawJson;
+    final bills = raw == null ? const <ParsedBill>[] : BillScanParser.parse(raw);
+    if (bills.isEmpty) {
       _replace(
         item.copyWith(
           status: PendingScanStatus.error,
-          errorMessage: 'Błąd rozpoznawania — ponów',
+          errorMessage: outcome.errorMessage ??
+              'Nie rozpoznano rachunku na zdjęciu — spróbuj wyraźniejszego ujęcia',
         ),
       );
-      unawaited(_notifications.showScanFailed(id));
+      if (!outcome.nativeNotified) {
+        unawaited(_notifications.showScanFailed(item.id));
+      }
+      return;
     }
+    // Pierwszy rachunek aktualizuje pozycję; kolejne (kilka dokumentów na
+    // jednym zdjęciu) stają się osobnymi pozycjami z tą samą miniaturą.
+    final filled = _filled(item, bills.first);
+    _replace(filled);
+    if (!outcome.nativeNotified) {
+      unawaited(_notifications.showScanDone(item.id, filled.name));
+    }
+    for (final extra in bills.skip(1)) {
+      _items = [
+        ..._items,
+        _filled(
+          PendingBillScan(
+            id: _uuid.v4(),
+            imagePath: item.imagePath,
+            scope: item.scope,
+            status: PendingScanStatus.processing,
+            createdAt: item.createdAt,
+          ),
+          extra,
+        ),
+      ];
+    }
+  }
+
+  /// Kończy skan błędem (zlecenie nieprzyjęte albo cisza z warstwy natywnej).
+  Future<void> _fail(String id, String message) async {
+    final item = _byId(id);
+    if (item == null) return;
+    if (_activeId == id) _activeId = null;
+    _replace(
+      item.copyWith(status: PendingScanStatus.error, errorMessage: message),
+    );
+    unawaited(_notifications.showScanFailed(id));
     await _persist();
     notifyListeners();
   }

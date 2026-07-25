@@ -1,10 +1,11 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072403",
-  "versionCode": 1026072403,
-  "version": "0.10.26072403",
-  "releaseDate": "2026-07-24T23:26:49Z",
-  "releaseNotes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)",
+  "version": "0.10.26072500",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072500",
   "changelog": [
+    {
+      "version": "0.10.26072500",
+      "notes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy"
+    },
     {
       "version": "0.10.26072403",
       "notes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)"
@@ -40,10 +41,9 @@
     {
       "version": "0.10.26071802",
       "notes": "- Poprawka: przelacznik Asystenta AI od razu pokazuje/ukrywa opcje skanowania w menu Dodaj rachunek (bez restartu apki)"
-    },
-    {
-      "version": "0.10.26071801",
-      "notes": "- Asystent AI w Ustawieniach: przelacznik skanowania rachunkow (domyslnie wylaczony) + link do uruchomienia lub pobrania apki Lokalny Silnik AI; wylaczony ukrywa opcje skanowania w menu Dodaj rachunek"
     }
-  ]
+  ],
+  "versionCode": 1026072500,
+  "releaseNotes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy",
+  "releaseDate": "2026-07-25T19:42:01Z"
 }

@@ -7,6 +7,10 @@ import 'package:karton_subs/services/bill_scan_service.dart';
 // Strażnik kontraktu z lokalnym silnikiem AI: parser odpowiedzi
 // {"rachunki":[...]} musi przeżyć zepsuty JSON (mały model potrafi go zwrócić)
 // i różne formaty kwot; dopasowanie kategorii idzie po nazwie.
+
+/// Stały „dzisiaj" — testy dat muszą być niezależne od zegara maszyny.
+final _now = DateTime(2026, 7, 25);
+
 void main() {
   group('BillScanParser.parse', () {
     test('pelny rachunek: wszystkie pola', () {
@@ -14,7 +18,7 @@ void main() {
 {"rachunki":[{"wystawca":"Energa","tytul":"Faktura za energię","kwota":184.32,
 "waluta":"PLN","terminPlatnosci":"2026-08-01","dataWystawienia":"2026-07-15",
 "rodzaj":"prad"}]}''';
-      final bills = BillScanParser.parse(raw);
+      final bills = BillScanParser.parse(raw, now: _now);
       expect(bills, hasLength(1));
       final b = bills.first;
       expect(b.name, 'Energa — Faktura za energię');
@@ -28,7 +32,7 @@ void main() {
       const raw =
           '{"rachunki":[{"wystawca":"X","kwota":10,"terminPlatnosci":null,'
           '"dataWystawienia":"2026-07-01"}]}';
-      expect(BillScanParser.parse(raw).first.date, DateTime(2026, 7, 1));
+      expect(BillScanParser.parse(raw, now: _now).first.date, DateTime(2026, 7, 1));
     });
 
     test('kwota jako string z przecinkiem i walutą', () {
@@ -60,6 +64,50 @@ void main() {
       expect(BillScanParser.parse('nie-json'), isEmpty);
       expect(BillScanParser.parse('{"leki":[]}'), isEmpty);
       expect(BillScanParser.parse('{"rachunki":"tekst"}'), isEmpty);
+    });
+  });
+
+  // Silnik nie ma zegara: bez roku na dokumencie model go zmyśla (zwykle lata
+  // wstecz). Parser dokłada rok wiarygodny wobec „dzisiaj".
+  group('BillScanParser — kotwica roku w dacie', () {
+    DateTime? dateOf(String value) =>
+        BillScanParser.parse('{"rachunki":[{"wystawca":"X","kwota":10,'
+                '"terminPlatnosci":"$value"}]}', now: _now)
+            .first
+            .date;
+
+    test('data w oknie wiarygodności zostaje bez zmian', () {
+      expect(dateOf('2026-03-12'), DateTime(2026, 3, 12));
+      expect(dateOf('2025-11-10'), DateTime(2025, 11, 10)); // 8 mies. wstecz
+      expect(dateOf('2026-08-01'), DateTime(2026, 8, 1)); // termin w przód
+    });
+
+    test('zmyślony rok wstecz -> najbliższy dzisiaj', () {
+      expect(dateOf('2024-03-12'), DateTime(2026, 3, 12));
+      expect(dateOf('2023-12-05'), DateTime(2026, 12, 5)); // grudzień bieżącego roku
+    });
+
+    test('data zbyt daleko w przód -> najbliższy rok', () {
+      expect(dateOf('2027-12-01'), DateTime(2026, 12, 1));
+    });
+
+    test('sam dzień i miesiąc -> rok bieżący', () {
+      expect(dateOf('12.03'), DateTime(2026, 3, 12));
+      expect(dateOf('5/09'), DateTime(2026, 9, 5));
+    });
+
+    test('zapis nie-ISO z rokiem', () {
+      expect(dateOf('12.03.2026'), DateTime(2026, 3, 12));
+      expect(dateOf('12-03-26'), DateTime(2026, 3, 12));
+    });
+
+    test('bzdurne składowe nie przewijają miesiąca', () {
+      expect(dateOf('31.02.2026'), DateTime(2026, 2, 28));
+    });
+
+    test('nieczytelna data -> null', () {
+      expect(dateOf('brak'), isNull);
+      expect(dateOf(''), isNull);
     });
   });
 

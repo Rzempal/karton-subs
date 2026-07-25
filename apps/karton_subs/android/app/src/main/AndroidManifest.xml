@@ -16,6 +16,12 @@
          PRODUKCYJNEGO; przyznane tylko przy zgodnosci klucza podpisu). Takze build dev
          Zostaje korzysta z produkcyjnego silnika. -->
     <uses-permission android:name="app.michalrapala.ai_engine.permission.BIND_AI_ENGINE"/>
+    <!-- Skan rachunku: usluga pierwszoplanowa na czas rozpoznawania (~45 s).
+         Bez niej system ubijal zbuforowana apke, gdy silnik zajmowal pamiec
+         modelem, i skan przepadal (ADR-016). Uprawnienia systemowe - bez pytania
+         uzytkownika. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
 
     <application
         android:label="@string/app_name"
@@ -63,6 +69,12 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <!-- Skan rachunku: rozpoznawanie prowadzone poza cyklem zycia ekranu,
+             zeby przetrwalo wyjscie z apki (ADR-016). -->
+        <service
+            android:name=".BillScanService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
         <!-- FileProvider wymagany przez ota_update do instalacji APK (Android 7+) -->
         <provider
             android:name="sk.fourq.otaupdate.OtaUpdateFileProvider"

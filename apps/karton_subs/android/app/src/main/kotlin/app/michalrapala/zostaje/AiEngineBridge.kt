@@ -1,29 +1,28 @@
 package app.michalrapala.zostaje
 
-import android.content.ComponentName
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
-import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import app.michalrapala.ai_engine.IAiCallback
-import app.michalrapala.ai_engine.IAiEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileInputStream
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Mostek do Lokalnego Silnika AI (Mechanizm 2): bind do uslugi AIDL silnika,
- * zdjecie przez ParcelFileDescriptor, JSON wraca callbackiem.
+ * Mostek do Lokalnego Silnika AI (Mechanizm 2): zlecenia z warstwy Dart.
+ *
+ * Rozpoznawanie rachunku nie dzieje sie tutaj, tylko w [BillScanService]
+ * (usluga pierwszoplanowa, ADR-016) - inaczej wyjscie z apki w trakcie OCR
+ * konczylo sie ubiciem procesu i utrata skanu. Mostek zleca prace i oddaje
+ * wyniki ze skrzynki [ScanResultStore].
  *
  * ZAWSZE pakiet PRODUKCYJNY silnika (app.michalrapala.ai_engine) - takze
  * w buildzie dev Zostaje. Silnik DEV (.dev) to osobna apka wylacznie do
@@ -35,18 +34,43 @@ import java.util.concurrent.atomic.AtomicBoolean
 class AiEngineBridge(private val context: Context) {
 
     private val main = Handler(Looper.getMainLooper())
+    private var channel: MethodChannel? = null
+
+    /**
+     * Podpina kanal do warstwy Dart: dopoki zyje, wyniki skanow sa do niej
+     * zglaszane od razu (i to ona pokazuje powiadomienie z nazwa rachunku).
+     */
+    fun attach(channel: MethodChannel) {
+        this.channel = channel
+        ScanResultStore.setListener {
+            main.post { this.channel?.invokeMethod("scanResultsAvailable", null) }
+        }
+    }
+
+    /** Warstwa Flutter znika (np. zamkniecie ekranu) - usluga pracuje dalej. */
+    fun detach() {
+        ScanResultStore.setListener(null)
+        channel = null
+    }
 
     fun handle(call: MethodCall, result: MethodChannel.Result) {
         when (call.method) {
             "engineStatus" -> engineStatus(result)
-            "scanBill" -> {
+            "startBillScan" -> {
+                val scanId = call.argument<String>("scanId")
                 val path = call.argument<String>("imagePath")
-                if (path.isNullOrBlank()) {
-                    result.error("BAD_INPUT", "Brak sciezki zdjecia", null)
+                if (scanId.isNullOrBlank() || path.isNullOrBlank()) {
+                    result.error("BAD_INPUT", "Brak identyfikatora skanu lub sciezki zdjecia", null)
                 } else {
-                    scanBill(path, result)
+                    startBillScan(scanId, path, result)
                 }
             }
+            "drainScanResults" -> result.success(
+                mapOf(
+                    "results" to ScanResultStore.drain(context),
+                    "inFlight" to ScanResultStore.inFlightIds(),
+                ),
+            )
             "openEngineApp" -> openEngineApp(result)
             "openUrl" -> openUrl(call.argument<String>("url"), result)
             "archiveReceipt" -> archiveReceipt(
@@ -127,7 +151,7 @@ class AiEngineBridge(private val context: Context) {
 
     /** Uruchamia apke silnika (ekran zarzadzania modelem). */
     private fun openEngineApp(result: MethodChannel.Result) {
-        val intent = context.packageManager.getLaunchIntentForPackage(ENGINE_PACKAGE)
+        val intent = context.packageManager.getLaunchIntentForPackage(EngineClient.ENGINE_PACKAGE)
         if (intent == null) {
             result.error(
                 "ENGINE_NOT_INSTALLED",
@@ -156,15 +180,15 @@ class AiEngineBridge(private val context: Context) {
 
     /** Status silnika: zainstalowany? model pobrany? model w pamieci? */
     private fun engineStatus(result: MethodChannel.Result) {
-        if (!isEngineInstalled()) {
+        if (!EngineClient.isInstalled(context)) {
             result.success(
                 mapOf("installed" to false, "modelReady" to false, "modelLoaded" to false),
             )
             return
         }
-        withEngine(
-            result,
-            timeoutMs = STATUS_TIMEOUT_MS,
+        EngineClient.withEngine(
+            context,
+            workTimeoutMs = EngineClient.STATUS_TIMEOUT_MS,
             onConnected = { engine, finish ->
                 val ready = engine.isModelReady
                 val loaded = engine.isModelLoaded
@@ -174,32 +198,57 @@ class AiEngineBridge(private val context: Context) {
                     )
                 }
             },
+            onFailure = { code, message -> result.error(code, message, null) },
         )
     }
 
-    /** OCR rachunku: zwraca surowy JSON {"rachunki":[...]} z silnika. */
-    private fun scanBill(path: String, result: MethodChannel.Result) {
+    /**
+     * Zleca rozpoznanie rachunku i wraca od razu - wynik przyjdzie skrzynka
+     * [ScanResultStore]. Normalnie prace prowadzi [BillScanService]; gdy system
+     * odmowi startu uslugi (Android 12+ blokuje start z tla), skanujemy po
+     * staremu w procesie apki - gorzej chronione, ale lepsze niz nic.
+     */
+    private fun startBillScan(scanId: String, path: String, result: MethodChannel.Result) {
         val file = File(path)
         if (!file.exists()) {
             result.error("BAD_INPUT", "Plik zdjecia nie istnieje: $path", null)
             return
         }
+        if (BillScanService.start(context, scanId, path)) {
+            result.success(true)
+            return
+        }
+        ScanResultStore.markInFlight(scanId)
+        ScanNotifications.showProgress(context)
+        scanInProcess(scanId, file)
+        result.success(true)
+    }
+
+    /** Awaryjna sciezka: bind i OCR bez uslugi pierwszoplanowej. */
+    private fun scanInProcess(scanId: String, file: File) {
+        fun complete(json: String?, code: String?, message: String?) {
+            ScanNotifications.cancelProgress(context)
+            val handledByApp = ScanResultStore.complete(context, scanId, json, code, message)
+            if (!handledByApp) ScanNotifications.showTerminal(context, scanId, json != null)
+        }
+
         val mime = when (file.extension.lowercase()) {
             "png" -> "image/png"
             "webp" -> "image/webp"
             "gif" -> "image/gif"
             else -> "image/jpeg"
         }
-        withEngine(
-            result,
-            timeoutMs = SCAN_TIMEOUT_MS,
+        EngineClient.withEngine(
+            context,
+            workTimeoutMs = EngineClient.SCAN_TIMEOUT_MS,
             onConnected = { engine, finish ->
                 val cb = object : IAiCallback.Stub() {
                     override fun onResult(json: String?) {
-                        finish { result.success(json ?: "") }
+                        finish { complete(json ?: "", null, null) }
                     }
+
                     override fun onError(code: String?, message: String?) {
-                        finish { result.error(code ?: "ENGINE_ERROR", message, null) }
+                        finish { complete(null, code ?: "ENGINE_ERROR", message) }
                     }
                 }
                 // Binder duplikuje deskryptor przy przekazaniu miedzy procesami;
@@ -211,78 +260,11 @@ class AiEngineBridge(private val context: Context) {
                     runCatching { pfd.close() }
                 }
             },
+            onFailure = { code, message -> complete(null, code, message) },
         )
     }
-
-    /**
-     * Wspolny cykl: bind -> praca -> unbind (przez [finish], dokladnie raz).
-     * [onConnected] dostaje polaczony interfejs i funkcje domykajaca; bledy,
-     * timeout i rozlaczenie uslugi tez koncza wywolanie przez [finish].
-     */
-    private fun withEngine(
-        result: MethodChannel.Result,
-        timeoutMs: Long,
-        onConnected: (IAiEngine, finish: (block: () -> Unit) -> Unit) -> Unit,
-    ) {
-        val done = AtomicBoolean(false)
-        var connRef: ServiceConnection? = null
-
-        fun finish(block: () -> Unit) {
-            if (done.compareAndSet(false, true)) {
-                main.post {
-                    connRef?.let { runCatching { context.unbindService(it) } }
-                    block()
-                }
-            }
-        }
-
-        val conn = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-                try {
-                    onConnected(IAiEngine.Stub.asInterface(binder), ::finish)
-                } catch (t: Throwable) {
-                    finish { result.error("ENGINE_ERROR", t.message ?: "Blad silnika", null) }
-                }
-            }
-
-            override fun onServiceDisconnected(name: ComponentName?) {
-                finish { result.error("ENGINE_DISCONNECTED", "Usluga silnika rozlaczona", null) }
-            }
-        }
-        connRef = conn
-
-        val intent = Intent(BIND_ACTION).setPackage(ENGINE_PACKAGE)
-        val bound = runCatching { context.bindService(intent, conn, Context.BIND_AUTO_CREATE) }
-            .getOrDefault(false)
-        if (!bound) {
-            finish {
-                result.error(
-                    "ENGINE_NOT_INSTALLED",
-                    "Nie mozna wpiac sie do Lokalnego Silnika AI - zainstaluj apke silnika",
-                    null,
-                )
-            }
-            return
-        }
-        main.postDelayed(
-            { finish { result.error("TIMEOUT", "Silnik nie odpowiedzial w czasie ${timeoutMs / 1000} s", null) } },
-            timeoutMs,
-        )
-    }
-
-    private fun isEngineInstalled(): Boolean =
-        runCatching { context.packageManager.getPackageInfo(ENGINE_PACKAGE, 0) }.isSuccess
 
     companion object {
         const val CHANNEL = "zostaje/ai_engine"
-
-        /** Pakiet PRODUKCYJNY silnika - jedyny, do ktorego binduja klienci. */
-        private const val ENGINE_PACKAGE = "app.michalrapala.ai_engine"
-        private const val BIND_ACTION = "app.michalrapala.ai_engine.BIND"
-
-        private const val STATUS_TIMEOUT_MS = 10_000L
-
-        /** OCR na CPU trwa ~30-46 s + ewentualne ladowanie modelu (~10 s) + kolejka. */
-        private const val SCAN_TIMEOUT_MS = 180_000L
     }
 }

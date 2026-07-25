@@ -239,6 +239,7 @@ Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 
 > **ADR:** [ADR-013 Skan rachunkow lokalnym silnikiem AI](adr/ADR-013-skan-rachunkow-lokalny-silnik-ai.md)
 > | [ADR-015 Przycinanie zdjecia rachunku (uCrop)](adr/ADR-015-przycinanie-zdjecia-rachunku-ucrop.md)
+> | [ADR-016 Skan w usludze pierwszoplanowej](adr/ADR-016-skan-rachunku-usluga-pierwszoplanowa.md)
 > | Silnik: repo `karton-ai` (osobna apka, model Gemma 4 E4B on-device)
 
 Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
@@ -253,14 +254,34 @@ Zdjecie (aparat / galeria)          Udostepnij -> Zostaje
   │  BillScanController.startScan: kopia do bill_scans/, pozycja "processing"
   ▼
 AiEngineService (Dart) ── MethodChannel ──► AiEngineBridge (Kotlin)
-  │                                            │ bindService + PFD + callback
+  │                                            │ zlecenie (wraca od razu)
+  │                                            ▼
+  │                              BillScanService (usluga pierwszoplanowa):
+  │                              EngineClient.bind + PFD + callback
+  │                                            │
   │                                            ▼
   │                              Lokalny Silnik AI: recognizeBill (~30-45 s, CPU)
+  │                                            │
+  │       ScanResultStore (skrzynka na dysku) ◄┘
   ▼
 BillScanParser (JSON -> pola) ──► PendingBillScan "done" (sekcja "Do zatwierdzenia",
   miniatura zdjecia; tap -> podglad + "Przytnij") ──► Zatwierdz/Edytuj -> zwykly
   billPayment | Odrzuc -> kasacja
 ```
+
+**Praca w tle (ADR-016).** Rozpoznawanie prowadzi natywna usluga pierwszoplanowa
+Zostaje (`BillScanService`, powiadomienie „Rozpoznaje rachunek…"), nie warstwa
+Dart — inaczej wyjscie z apki konczylo sie ubiciem zbuforowanego procesu przez
+system (silnik zajmuje pamiec modelem) i utrata skanu. Wynik trafia do skrzynki
+`ScanResultStore` na dysku, wiec przezywa takze zniszczenie ekranu aplikacji;
+Dart oproznia skrzynke przy starcie i na ping z warstwy natywnej. Bindowanie do
+silnika uzywa `FLAG_INCLUDE_STOPPED_PACKAGES` — bez tego uspiona lub swiezo
+zainstalowana apka silnika wymagala recznego uruchomienia przed pierwszym skanem.
+
+**Rok w dacie.** Silnik nie ma zegara: gdy na dokumencie widnieje sam dzien
+i miesiac, model rok zmysla (zwykle lata wstecz). `BillScanParser` dokłada rok
+wiarygodny wobec „dzisiaj" — data spoza okna −15/+12 miesiecy zachowuje dzien
+i miesiac, a rok dostaje najblizszy dzisiejszej dacie (remis → rok biezacy).
 
 Pozycje oczekujace sa LOKALNE (settings, poza sync/backupem/bilansem) — do
 budzetu wchodza dopiero po zatwierdzeniu. Duplikaty plikow AIDL w
