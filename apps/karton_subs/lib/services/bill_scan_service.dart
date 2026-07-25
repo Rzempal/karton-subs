@@ -83,21 +83,24 @@ class BillScanParser {
   // ── Data: kotwica roku ────────────────────────────────────────────────────
   //
   // Silnik AI nie ma zegara — gdy na rachunku widnieje sam dzień i miesiąc
-  // (paragon, zrzut z Google Pay), model musi rok zmyślić i zwykle trafia
-  // w lata z czasu swojego treningu. Rachunek fotografuje się „na bieżąco",
-  // więc data spoza okna wokół dzisiaj to prawie na pewno zmyślony rok:
-  // zachowujemy dzień i miesiąc, a rok bierzemy ten, który wypada najbliżej
-  // dzisiaj (remis → rok bieżący).
+  // (paragon, zrzut z Google Pay), model musi rok zmyślić i najczęściej wpisuje
+  // rok poprzedni: dokument z „25 lip" oglądany 25.07.2026 wracał jako
+  // 2025-07-25. Rachunek fotografuje się „na bieżąco", więc data spoza okna
+  // wokół dzisiaj to prawie na pewno zmyślony rok: zachowujemy dzień i miesiąc,
+  // a rok bierzemy ten, który wypada najbliżej dzisiaj (remis → rok bieżący).
   //
-  // Świadome ograniczenie: zdjęcie naprawdę starego rachunku (ponad ~15 mies.)
-  // zostanie przesunięte do bieżącego roku — datę trzeba wtedy poprawić ręcznie
+  // Okno wstecz musi być KRÓTSZE niż rok, inaczej „ten sam dzień rok temu"
+  // przechodzi jako wiarygodny — na tym poległa pierwsza wersja tej reguły.
+  //
+  // Świadome ograniczenie: zdjęcie naprawdę starego rachunku (ponad ~9 mies.)
+  // zostanie przesunięte bliżej dzisiaj — datę trzeba wtedy poprawić ręcznie
   // w edycji przed zatwierdzeniem.
 
-  /// Ile wstecz data jest jeszcze wiarygodna (~15 miesięcy).
-  static const int _pastLimitDays = 460;
+  /// Ile wstecz data jest jeszcze wiarygodna (~9 miesięcy).
+  static const int _pastLimitDays = 270;
 
-  /// Ile w przód data jest jeszcze wiarygodna (~12 miesięcy — termin płatności).
-  static const int _futureLimitDays = 370;
+  /// Ile w przód data jest jeszcze wiarygodna (~3 miesiące — termin płatności).
+  static const int _futureLimitDays = 90;
 
   static DateTime? _parseDate(dynamic v, DateTime now) {
     if (v is! String || v.trim().isEmpty) return null;

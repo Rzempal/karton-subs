@@ -33,8 +33,12 @@ object EngineClient {
     /** Odpytanie o stan modelu jest natychmiastowe. */
     const val STATUS_TIMEOUT_MS = 10_000L
 
-    /** OCR na CPU trwa ~30-45 s + ewentualne ladowanie modelu (~10 s). */
-    const val SCAN_TIMEOUT_MS = 180_000L
+    /**
+     * OCR na CPU trwa ~30-45 s, ale gesty paragon (duzo tekstu do wygenerowania)
+     * plus ponowne ladowanie modelu potrafi wyjsc grubo ponad 3 minuty - stad
+     * zapas. Skan i tak pracuje w tle, wiec dluzszy limit nikogo nie blokuje.
+     */
+    const val SCAN_TIMEOUT_MS = 300_000L
 
     fun isInstalled(context: Context): Boolean =
         runCatching { context.packageManager.getPackageInfo(ENGINE_PACKAGE, 0) }.isSuccess

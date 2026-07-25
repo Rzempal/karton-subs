@@ -43,9 +43,9 @@ class BillScanController extends ChangeNotifier {
   /// Skany zlecone warstwie natywnej, na których wynik czeka kolejka.
   final Map<String, Completer<void>> _awaiting = {};
 
-  /// Zapas ponad limity warstwy natywnej (25 s na połączenie + 180 s pracy):
+  /// Zapas ponad limity warstwy natywnej (25 s na połączenie + 300 s pracy):
   /// gdyby usługa zginęła bez śladu, kolejka nie może stać w nieskończoność.
-  static const _watchdog = Duration(seconds: 300);
+  static const _watchdog = Duration(seconds: 420);
 
   /// Id aktualnie rozpoznawanego skanu (reszta „processing" czeka w kolejce).
   String? get activeScanId => _activeId;

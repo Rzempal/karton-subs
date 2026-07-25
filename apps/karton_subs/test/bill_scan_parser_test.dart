@@ -83,6 +83,10 @@ void main() {
     });
 
     test('zmyślony rok wstecz -> najbliższy dzisiaj', () {
+      // Realny przypadek: zrzut z Google Wallet „sobota, 25 lip" oglądany
+      // 25.07.2026 wracał z silnika jako 2025-07-25 (rok temu co do dnia).
+      expect(dateOf('2025-07-25'), DateTime(2026, 7, 25));
+      expect(dateOf('2025-07-20'), DateTime(2026, 7, 20));
       expect(dateOf('2024-03-12'), DateTime(2026, 3, 12));
       expect(dateOf('2023-12-05'), DateTime(2026, 12, 5)); // grudzień bieżącego roku
     });
