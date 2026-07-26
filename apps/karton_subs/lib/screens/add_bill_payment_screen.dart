@@ -10,6 +10,7 @@ import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
+import '../theme/app_theme.dart' show AppColors;
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
 import '../widgets/image_preview_dialog.dart';
 
@@ -65,6 +66,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
   late DateTime _date;
   late Currency _currency;
   String? _categoryId;
+  String? _paymentMethod;
   bool _isSubmitting = false;
 
   /// Ścieżka zdjęcia do podglądu: prefill ze skanu (nowy) albo powiązane
@@ -87,6 +89,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     _noteCtrl = TextEditingController(text: e?.note ?? '');
     _scope = widget.scope;
     _categoryId = e?.categoryId ?? widget.initialCategoryId;
+    _paymentMethod = e?.paymentMethod;
 
     // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego rachunku.
     _photoPath = widget.initialImagePath ??
@@ -191,6 +194,8 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           startDate: _date,
           categoryId: _categoryId,
           clearCategoryId: _categoryId == null,
+          paymentMethod: _paymentMethod,
+          clearPaymentMethod: _paymentMethod == null,
           note: note,
           clearNote: note == null,
         );
@@ -207,6 +212,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           month: monthKey,
           startDate: _date,
           categoryId: _categoryId,
+          paymentMethod: _paymentMethod,
           note: note,
         );
       }
@@ -392,6 +398,40 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
                     avatar: CircleAvatar(
                         backgroundColor: cat.color, radius: 6),
                     onSelected: (_) => setState(() => _categoryId = cat.id),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Metoda płatności decyduje, czy pozycja trafi w kalendarzu do
+            // „pobranych automatycznie", czy do „do zrealizowania ręcznie".
+            _SectionLabel('Metoda płatności (opcjonalnie)'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Brak'),
+                  selected: _paymentMethod == null,
+                  onSelected: (_) => setState(() => _paymentMethod = null),
+                ),
+                for (final pm
+                    in context.read<StorageService>().getPaymentMethods())
+                  FilterChip(
+                    avatar: Icon(
+                      pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                      size: 16,
+                      // Zaznaczony chip ma ciemne tło akcentu — ikona musi być
+                      // kontrastowa (onAccent), tak jak tekst.
+                      color: _paymentMethod == pm.name
+                          ? AppColors.onAccent
+                          : null,
+                    ),
+                    label: Text(pm.name),
+                    selected: _paymentMethod == pm.name,
+                    onSelected: (_) =>
+                        setState(() => _paymentMethod = pm.name),
                   ),
               ],
             ),

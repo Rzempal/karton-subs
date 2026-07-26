@@ -151,23 +151,9 @@ class BudgetController extends ChangeNotifier {
   /// Waluta docelowa (kod) — do formatowania w UI.
   String get targetCurrencyLabel => _target.label;
 
-  /// Wydatki jednorazowe (Budżet) — BEZ rachunków ([billPayment]), które mają
-  /// własny ekran „Rachunki" mimo tej samej semantyki czasu (jednorazowy wydatek).
-  List<BudgetEntry> get oneTimeExpenses {
-    final list = all
-        .where(
-          (e) =>
-              e.isOneTime &&
-              e.isExpense &&
-              e.type != BudgetEntryType.billPayment,
-        )
-        .toList();
-    list.sort((a, b) => (a.month ?? '').compareTo(b.month ?? ''));
-    return list;
-  }
-
-  /// Rachunki (realny log opłaconych pozycji, [BudgetEntryType.billPayment])
-  /// aktywnego zakresu — najnowsze u góry (ekran „Rachunki").
+  /// Rachunki ([BudgetEntryType.billPayment]) aktywnego zakresu — najnowsze
+  /// u góry (ekran „Rachunki"). Obejmuje wydatki jednorazowe: po scaleniu
+  /// typów (ADR-018) to jeden byt — datowany wydatek poza planem.
   List<BudgetEntry> get billPayments {
     final list = all
         .where((e) => e.type == BudgetEntryType.billPayment)
@@ -575,15 +561,19 @@ class BudgetController extends ChangeNotifier {
       dataDodania: now,
     );
     await add(entry);
-    // Rachunek (billPayment) to realny log JUŻ zapłaconej pozycji (ADR-008),
-    // więc w kalendarzu płatności oznaczamy go od razu jako wykonany — bez
-    // ręcznego odhaczania. Klucz musi zgadzać się z kalendarzem: sourceId=id,
+    // Rachunek z datą dzisiejszą lub wcześniejszą to log JUŻ zapłaconej
+    // pozycji — oznaczamy go od razu jako wykonany, bez ręcznego odhaczania.
+    // Rachunek z datą PRZYSZŁĄ to plan: zostaje nieodhaczony, żeby nie udawał
+    // zapłaconego (ADR-018). Klucz musi zgadzać się z kalendarzem: sourceId=id,
     // data = dzień płatności (startDate; fallback pierwszy dzień miesiąca).
     if (type == BudgetEntryType.billPayment) {
       final payDate = startDate ??
           (month != null ? DateTime.tryParse('$month-01') : null) ??
           now;
-      await _storage.setPaymentDone(_paymentKey(entry.id, payDate), true);
+      final today = DateTime(now.year, now.month, now.day);
+      if (!DateTime(payDate.year, payDate.month, payDate.day).isAfter(today)) {
+        await _storage.setPaymentDone(_paymentKey(entry.id, payDate), true);
+      }
     }
     return entry;
   }

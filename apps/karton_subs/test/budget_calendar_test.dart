@@ -93,7 +93,7 @@ void main() {
             amount: 200,
             startDate: DateTime(2026, 1, 10)),
         _entry(
-            type: BudgetEntryType.oneTimeExpense,
+            type: BudgetEntryType.billPayment,
             amount: 3000,
             startDate: DateTime(2026, 3, 18),
             month: '2026-03'),
@@ -153,7 +153,7 @@ void main() {
     test('jednorazowy bez startDate — fallback na 1. dzień miesiąca', () {
       final entries = [
         _entry(
-            type: BudgetEntryType.oneTimeExpense,
+            type: BudgetEntryType.billPayment,
             amount: 500,
             month: '2026-03'),
       ];

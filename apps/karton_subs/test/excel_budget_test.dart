@@ -54,7 +54,7 @@ void main() {
       expect(byName['Prąd']!.type, BudgetEntryType.billPayment);
       expect(byName['Ubezpieczenie']!.type, BudgetEntryType.recurringCost);
       expect(byName['Ubezpieczenie']!.cycle, BillingCycle.yearly);
-      expect(byName['Pralka']!.type, BudgetEntryType.oneTimeExpense);
+      expect(byName['Pralka']!.type, BudgetEntryType.billPayment);
       expect(byName['Pralka']!.month, '2026-07');
     });
 
@@ -107,7 +107,7 @@ void main() {
         BudgetEntry(
           id: 'b',
           name: 'Pralka',
-          type: BudgetEntryType.oneTimeExpense,
+          type: BudgetEntryType.billPayment,
           amount: 3000,
           currency: Currency.PLN,
           month: '2026-09',
@@ -120,7 +120,7 @@ void main() {
       expect(r.importedCount, 2);
       final byName = {for (final e in r.entries) e.name: e};
       expect(byName['Pensja']!.type, BudgetEntryType.income);
-      expect(byName['Pralka']!.type, BudgetEntryType.oneTimeExpense);
+      expect(byName['Pralka']!.type, BudgetEntryType.billPayment);
       expect(byName['Pralka']!.month, '2026-09');
     });
   });

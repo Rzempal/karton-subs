@@ -370,7 +370,6 @@ class ExcelService {
         BudgetEntryType.income => 'Wpływ',
         BudgetEntryType.billPayment => 'Rachunek',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
-        BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
         BudgetEntryType.householdTransfer => 'Przelew do domowego',
         BudgetEntryType.installment => 'Rata',
@@ -882,8 +881,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
         ? rawName.substring(0, _maxNameLength)
         : rawName;
     final type = _parseBudgetType(cell(_BudgetHeaderField.type));
-    final isOneTime = type == BudgetEntryType.oneTimeExpense ||
-        type == BudgetEntryType.oneTimeIncome ||
+    final isOneTime = type == BudgetEntryType.oneTimeIncome ||
         type == BudgetEntryType.billPayment;
     final (cycle, customDays) = _parseCycle(cell(_BudgetHeaderField.cycle));
     final month = isOneTime
@@ -892,7 +890,6 @@ BudgetExcelImportResult _parseBudgetWorkbook(
         : null;
     // Kategoria/metoda tylko dla wydatków — wpływy ignorują kolumny.
     final isExpenseType = type == BudgetEntryType.recurringCost ||
-        type == BudgetEntryType.oneTimeExpense ||
         type == BudgetEntryType.installment ||
         type == BudgetEntryType.billPayment;
     final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
@@ -1024,7 +1021,8 @@ BudgetEntryType _parseBudgetType(String? raw) {
       t.contains('bonus');
 
   if (isOneTime && isIncomeKw) return BudgetEntryType.oneTimeIncome;
-  if (isOneTime) return BudgetEntryType.oneTimeExpense;
+  // „Wydatek jednorazowy" ze starszych arkuszy to dziś rachunek (ADR-018).
+  if (isOneTime) return BudgetEntryType.billPayment;
   if (isIncomeKw) return BudgetEntryType.income;
   if (t.contains('rata') ||
       t.contains('raty') ||

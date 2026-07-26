@@ -76,7 +76,7 @@ lib/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
-│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek-log/rata/jednorazowy)
+│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek/rata/przelew) — ADR-018
 │   └── pending_bill_scan.dart   # Rachunek rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
 │   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies
@@ -173,9 +173,9 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 | Zakladka | Tresc |
 |----------|-------|
 | **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
-| **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
+| **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018): log oplaconych + zaplanowane na przyszla date, per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
-| **Budzet** | Zarzadzanie pozycjami planowalnymi; grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale/jednorazowe), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
+| **Budzet** | Zarzadzanie pozycjami planowalnymi (wplywy, koszty cykliczne, raty, przelew — datowane wydatki jednorazowe sa w „Rachunkach", ADR-018); grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
 | **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow silnikiem + link do apki silnika), **Archiwum rachunkow** (osobna sekcja: zapis zdjec zatwierdzonych rachunkow do `Documents/<podfolder>`), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
@@ -192,7 +192,8 @@ miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 
 ## Domena Budzet domowy (rownolegla warstwa)
 
-> **ADR:** [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
+> **ADR:** [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
+> | [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
 > | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 > | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
 > | [ADR-012 Koperta „Na rachunki" jako lista pozycji](adr/ADR-012-koperta-na-rachunki-lista-pozycji.md)

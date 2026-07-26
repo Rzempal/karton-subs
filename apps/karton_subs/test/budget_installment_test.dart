@@ -82,7 +82,7 @@ void main() {
     BudgetEntry oneTime(String month) => BudgetEntry(
           id: 'o_$month',
           name: 'Jednorazowy',
-          type: BudgetEntryType.oneTimeExpense,
+          type: BudgetEntryType.billPayment,
           amount: 300,
           currency: t,
           month: month,

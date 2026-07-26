@@ -12,13 +12,14 @@ enum BudgetEntryType {
   /// (bilans + kalendarz). Patrz [ADR-008]. Scalony z dawnym `bill`.
   recurringCost,
 
-  /// Rachunek — realny log już opłaconej, trudnej do zaplanowania pozycji.
-  /// Datowany (jak wydatek jednorazowy): zasila **bilans miesiąca**, a NIE plan
-  /// („zostaje/mies"). Zgadywankę planu dla tej puli pełni koperta „Na rachunki".
+  /// Rachunek — datowany wydatek jednorazowy: opłacony (log) albo zaplanowany
+  /// na przyszłą datę. Zasila **bilans miesiąca**, a NIE plan („zostaje/mies");
+  /// zgadywankę planu dla tej puli pełni koperta „Na rachunki".
+  ///
+  /// Scalony z dawnym `oneTimeExpense` (ADR-018): oba typy liczyły się
+  /// identycznie, a rozróżnienie „rachunek vs większy zakup" lepiej nosi
+  /// kategoria. Stare pozycje `"type":"oneTimeExpense"` czyta [typeFromName].
   billPayment,
-
-  /// Większy wydatek jednorazowy — przypięty do konkretnej daty.
-  oneTimeExpense,
 
   /// Wpływ jednorazowy (np. premia, bonus) — przypięty do konkretnej daty.
   oneTimeIncome,
@@ -226,7 +227,6 @@ class BudgetEntry {
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
   bool get isOneTime =>
-      type == BudgetEntryType.oneTimeExpense ||
       type == BudgetEntryType.oneTimeIncome ||
       type == BudgetEntryType.billPayment;
   bool get isExpense => !isIncome;
@@ -250,14 +250,25 @@ class BudgetEntry {
   static String monthKeyOf(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}';
 
+  /// Typ z zapisanej nazwy — z jawnym mapowaniem typów SCALONYCH.
+  ///
+  /// Bez tego mapowania każdy stary „Wydatek jednorazowy" wpadłby w domyślny
+  /// `recurringCost` i zacząłby obciążać plan („zostaje/mies") co miesiąc.
+  /// Dotyczy naraz bazy lokalnej, backupu i synchronizacji domowej.
+  static BudgetEntryType typeFromName(String? raw) {
+    if (raw == 'oneTimeExpense') return BudgetEntryType.billPayment; // ADR-018
+    if (raw == 'bill') return BudgetEntryType.recurringCost; // ADR-011
+    return BudgetEntryType.values.firstWhere(
+      (t) => t.name == raw,
+      orElse: () => BudgetEntryType.recurringCost,
+    );
+  }
+
   factory BudgetEntry.fromJson(Map<String, dynamic> json) {
     return BudgetEntry(
       id: json['id'] as String,
       name: json['name'] as String,
-      type: BudgetEntryType.values.firstWhere(
-        (t) => t.name == json['type'],
-        orElse: () => BudgetEntryType.recurringCost,
-      ),
+      type: typeFromName(json['type'] as String?),
       amount: (json['amount'] as num).toDouble(),
       currency: Currency.values.firstWhere(
         (c) => c.name == json['currency'],

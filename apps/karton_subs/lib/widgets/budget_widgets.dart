@@ -51,7 +51,6 @@ String budgetTypeLabel(BudgetEntryType t) => switch (t) {
   BudgetEntryType.income => 'Wpływ',
   BudgetEntryType.billPayment => 'Rachunek',
   BudgetEntryType.recurringCost => 'Koszt cykliczny',
-  BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
   BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
   BudgetEntryType.householdTransfer => 'Przelew do domowego',
   BudgetEntryType.installment => 'Rata',

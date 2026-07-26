@@ -22,7 +22,8 @@ import '../widgets/image_preview_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import 'add_bill_payment_screen.dart';
 
-/// Ekran „Rachunki" — realny log opłaconych pozycji ([BudgetEntryType.billPayment]).
+/// Ekran „Rachunki" — datowane wydatki jednorazowe ([BudgetEntryType.billPayment]):
+/// log opłaconych oraz pozycje zaplanowane na przyszłą datę (ADR-018).
 ///
 /// Dla wybranego miesiąca: karta „Na rachunki" (plan/koperta vs realnie wydane)
 /// oraz lista rachunków tego miesiąca. Rachunki zasilają bilans miesiąca, a nie
@@ -597,7 +598,9 @@ class _AllocationCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Wydane w tym miesiącu',
+            // Nie „wydane": po scaleniu typów (ADR-018) suma obejmuje też
+            // rachunki zaplanowane na przyszłą datę tego miesiąca.
+            'Rachunki tego miesiąca',
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textSecondary,
             ),

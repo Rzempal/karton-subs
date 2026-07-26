@@ -22,11 +22,13 @@ import 'add_budget_entry_screen.dart';
 /// Sortowanie listy budżetu.
 enum _BudgetSort { alpha, amountDesc }
 
-/// Grupowanie: zawsze po typach (Wpływy/Przelew/Wydatki stałe/jednorazowe);
+/// Grupowanie: zawsze po typach (Wpływy/Przelew/Wydatki stałe);
 /// `byCategory` dodatkowo grupuje pozycje wydatków po kategoriach (etykietach).
 enum _BudgetGrouping { byType, byCategory }
 
-/// Ekran Budżet — zarządzanie pozycjami (wpływy, koszty cykliczne, jednorazowe).
+/// Ekran Budżet — zarządzanie pozycjami PLANOWALNYMI (wpływy, koszty cykliczne,
+/// raty, przelew do domowego). Datowane wydatki jednorazowe = rachunki, więc
+/// mieszkają na ekranie „Rachunki" (ADR-018).
 /// Przegląd liczbowy (surplus, bilans miesiąca) jest na Dashboardzie.
 class BudgetDashboardScreen extends StatefulWidget {
   const BudgetDashboardScreen({super.key});
@@ -92,26 +94,23 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
 
-    // Widok: szczegółowy = 4 kubełki; scalony = tylko Wpływy/Wypływy.
+    // Kubełki pozycji planowalnych. Wydatki jednorazowe TU NIE WCHODZĄ — to ten
+    // sam byt co rachunek i mieszkają na ekranie „Rachunki" (ADR-018).
     final incomes = ctrl.incomes;
     final transfers = ctrl.internalTransfers;
     final recurring = ctrl.recurringExpenses;
-    final oneTime = ctrl.oneTimeExpenses;
     // Zawsze grupowanie po typach; flaga `true` = kubełek kategoryzowalny
     // (wydatki), w którym przycisk grupowania włącza podgrupy po kategoriach.
     final rawBuckets = <(String, List<BudgetEntry>, bool)>[
       ('Wpływy', incomes, false),
       ('Przelew wewnętrzny', transfers, false),
       ('Wydatki stałe', recurring, true),
-      ('Wydatki jednorazowe', oneTime, true),
     ];
     final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
 
     // Kategorie użyte w wydatkach (pasek filtra kategorii).
     final usedCatIds = <String>{
       for (final e in ctrl.recurringExpenses)
-        if (e.categoryId != null) e.categoryId!,
-      for (final e in ctrl.oneTimeExpenses)
         if (e.categoryId != null) e.categoryId!,
       for (final e in ctrl.internalTransfers)
         if (e.categoryId != null) e.categoryId!,

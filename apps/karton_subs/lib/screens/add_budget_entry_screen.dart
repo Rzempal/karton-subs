@@ -57,15 +57,12 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.existing != null;
-  bool get _isOneTime =>
-      _type == BudgetEntryType.oneTimeExpense ||
-      _type == BudgetEntryType.oneTimeIncome;
+  bool get _isOneTime => _type == BudgetEntryType.oneTimeIncome;
 
-  /// Kategoria dotyczy wydatków (rachunek / koszt cykliczny / jednorazowy) oraz
-  /// przelewu do domowego. Wpływy nie mają kategorii.
+  /// Kategoria dotyczy wydatków (koszt cykliczny, rata) oraz przelewu do
+  /// domowego. Wpływy nie mają kategorii.
   bool get _typeHasCategory =>
       _type == BudgetEntryType.recurringCost ||
-      _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.installment ||
       _type == BudgetEntryType.householdTransfer;
 
@@ -73,7 +70,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   /// ma sensu jako „metoda płatności" wewnętrznego przesunięcia środków).
   bool get _typeHasPaymentMethod =>
       _type == BudgetEntryType.recurringCost ||
-      _type == BudgetEntryType.oneTimeExpense ||
       _type == BudgetEntryType.installment;
 
   /// Koszt cykliczny — typ z opcjonalnymi korektami miesięcznymi (ADR-008).
@@ -89,11 +85,12 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   bool get _isInstallment => _type == BudgetEntryType.installment;
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
+  /// Wydatki jednorazowe NIE są tu obecne: to ten sam byt co rachunek, więc
+  /// mają jedno miejsce dodawania — ekran „Rachunki" (ADR-018).
   List<BudgetEntryType> get _availableTypes => [
     BudgetEntryType.income,
     BudgetEntryType.recurringCost,
     BudgetEntryType.installment,
-    BudgetEntryType.oneTimeExpense,
     BudgetEntryType.oneTimeIncome,
     if (widget.scope == BudgetScope.personal) BudgetEntryType.householdTransfer,
   ];
@@ -793,7 +790,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     BudgetEntryType.income => 'Nazwa wpływu *',
     BudgetEntryType.billPayment => 'Nazwa rachunku *',
     BudgetEntryType.recurringCost => 'Nazwa kosztu *',
-    BudgetEntryType.oneTimeExpense => 'Nazwa wydatku *',
     BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
     BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
     BudgetEntryType.installment => 'Nazwa raty *',
@@ -814,7 +810,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     BudgetEntryType.income => 'Wpływ',
     BudgetEntryType.billPayment => 'Rachunek',
     BudgetEntryType.recurringCost => 'Koszt cykliczny',
-    BudgetEntryType.oneTimeExpense => 'Wydatek jednorazowy',
     BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
     BudgetEntryType.householdTransfer => 'Przelew do domowego',
     BudgetEntryType.installment => 'Rata',
