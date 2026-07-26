@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
+import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
 import 'backup_crypto_service.dart';
 import 'storage_service.dart';
@@ -18,11 +19,20 @@ class BackupImportResult {
   final int categoriesImported;
   final int paymentMethodsImported;
   final int budgetEntriesImported;
+
+  /// Czy import odtwarzał stan z pliku (czyścił dane) — do podsumowania.
+  final bool replaced;
+
+  /// Ile pozycji (subskrypcje + budżet) usunięto przed odtworzeniem.
+  final int removedBeforeRestore;
+
   BackupImportResult({
     required this.subscriptionsImported,
     required this.categoriesImported,
     this.paymentMethodsImported = 0,
     this.budgetEntriesImported = 0,
+    this.replaced = false,
+    this.removedBeforeRestore = 0,
   });
 }
 
@@ -117,9 +127,12 @@ class BackupService {
   }
 
   /// Importuje dane z wcześniej odczytanego pliku.
+  /// [replace] = odtworzenie stanu z pliku (czysci dane objete backupem).
+  /// Domyslnie scalanie — zachowanie sprzed ADR-021.
   Future<BackupImportResult> importFromBytes(
     BackupFileInfo fileInfo, {
     String? password,
+    bool replace = false,
   }) async {
     final format = fileInfo.format;
     String jsonString;
@@ -139,13 +152,13 @@ class BackupService {
       throw const FormatException('Nieznany format pliku');
     }
 
-    return await _applyJsonPayload(jsonString);
+    return await _applyJsonPayload(jsonString, replace: replace);
   }
 
   /// Legacy: otwiera file picker + importuje (dla kompatybilności).
-  Future<BackupImportResult> importFromFile({String? password}) async {
+  Future<BackupImportResult> importFromFile({String? password, bool replace = false}) async {
     final fileInfo = await pickFile();
-    return importFromBytes(fileInfo, password: password);
+    return importFromBytes(fileInfo, password: password, replace: replace);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -157,7 +170,7 @@ class BackupService {
     final budget = _storage.getBudgetEntries(BudgetScope.personal);
     final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      'version': 5,
+      'version': 6,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -173,14 +186,37 @@ class BackupService {
       'householdBudgetEntries': household.map((e) => e.toJson()).toList(),
       // Lokalny stan „wykonane" płatności (klucz: scope|sourceId|YYYY-MM-DD).
       'paymentDone': _storage.getAllPaymentDone(),
+      // Planner („Na rachunki") — pomniejsza plan „zostaje/mies", więc bez
+      // niego odtworzony budżet pokazywałby inne liczby (wersja 6).
+      'billsAllocation': {
+        for (final scope in BudgetScope.values)
+          scope.name: _storage
+              .getBillsAllocationItems(scope)
+              .map((e) => e.toJson())
+              .toList(),
+      },
     });
   }
 
-  Future<BackupImportResult> _applyJsonPayload(String jsonString) async {
+  /// [replace] = odtworzenie stanu z pliku: dane objęte backupem są najpierw
+  /// czyszczone. Bez tego import jest SCALANIEM — pozycje, których nie ma
+  /// w pliku, zostają w aplikacji i doliczają się do sum (ADR-021).
+  Future<BackupImportResult> _applyJsonPayload(
+    String jsonString, {
+    required bool replace,
+  }) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 5) {
+    if (version > 6) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
+    }
+    // Liczba pozycji usuniętych przy odtwarzaniu — do uczciwego podsumowania.
+    var removed = 0;
+    if (replace) {
+      removed = _storage.getSubscriptions().length +
+          _storage.getBudgetEntries(BudgetScope.personal).length +
+          _storage.getBudgetEntries(BudgetScope.household).length;
+      await _storage.clearForRestore();
     }
 
     int subsImported = 0;
@@ -235,13 +271,42 @@ class BackupService {
       );
     }
 
+    // Planner („Na rachunki") — backupy < 6 nie miały tego pola.
+    final allocRaw = data['billsAllocation'] as Map<String, dynamic>?;
+    if (allocRaw != null) {
+      for (final scope in BudgetScope.values) {
+        final list = allocRaw[scope.name] as List<dynamic>?;
+        if (list == null) continue;
+        final items = list
+            .whereType<Map<String, dynamic>>()
+            .map(BillsAllocationItem.fromJson)
+            .toList();
+        // Scalanie: dokładamy tylko pozycje o nieznanym id, żeby nie kasować
+        // planu, którego w pliku nie ma. Odtworzenie: lista z pliku wygrywa.
+        if (replace) {
+          await _storage.setBillsAllocationItems(scope, items);
+        } else {
+          final current = _storage.getBillsAllocationItems(scope);
+          final known = current.map((e) => e.id).toSet();
+          await _storage.setBillsAllocationItems(scope, [
+            ...current,
+            ...items.where((e) => !known.contains(e.id)),
+          ]);
+        }
+      }
+    }
+
     _log.info(
-        'Import: $subsImported subs, $catsImported cats, $pmsImported payment methods, $budgetImported budget entries');
+        'Import (${replace ? "odtworzenie" : "scalenie"}): $subsImported subs, '
+        '$catsImported cats, $pmsImported payment methods, '
+        '$budgetImported budget entries, usunieto $removed');
     return BackupImportResult(
       subscriptionsImported: subsImported,
       categoriesImported: catsImported,
       paymentMethodsImported: pmsImported,
       budgetEntriesImported: budgetImported,
+      replaced: replace,
+      removedBeforeRestore: removed,
     );
   }
 

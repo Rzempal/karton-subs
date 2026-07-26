@@ -57,6 +57,16 @@ Wszystko testowane kanalem DEV (`v0.10.26072500` → `…26072612`).
 - Sortowanie (A→Z / po dacie) i grupowanie po typie glownym dla sekcji miesiaca.
 - Archiwum rachunkow jako osobna sekcja Ustawien.
 
+### Backup — odtworzenie zamiast cichego scalania (ADR-021)
+- Zgloszone z uzycia: po wgraniu backupu z DEV na PROD pojawily sie pozycje usuniete
+  w DEV (+1455,49 zl w podsumowaniu). Przyczyna: import zapisywal pozycje z pliku po
+  `id`, ale **nie usuwal tego, czego w pliku nie ma** — byl scalaniem, nie odtworzeniem.
+- Import pyta teraz o tryb: **Odtworz stan z pliku** (domyslny) albo **Scal**.
+- Planner („Na rachunki") dopisany do formatu backupu (wersja 6) — wczesniej w ogole
+  nie wchodzil do pliku, choc pomniejsza plan „zostaje/mies".
+- Haslo eksportu potwierdzane drugim polem (literowki nie da sie wykryc pozniej).
+- Podsumowanie po imporcie mowi, ile pozycji usunieto przy odtwarzaniu.
+
 ## Decyzje
 
 - **[ADR-016](../adr/ADR-016-skan-rachunku-usluga-pierwszoplanowa.md)** — skan w usludze
@@ -72,8 +82,17 @@ Wszystko testowane kanalem DEV (`v0.10.26072500` → `…26072612`).
   miesiecy) zamiast osobnego „co N miesiecy"; kazdy sensowny interwal dzieli 12.
 - **Regula wyboru sekcji** (dopisana do `architecture.md`): sekcja JEST wyborem sposobu
   liczenia — cykliczne usredniaja (x/12), rachunki uderzaja w swoj miesiac.
+- **[ADR-021](../adr/ADR-021-import-backupu-odtworzenie-vs-scalenie.md)** — import backupu
+  odtwarza stan z pliku (domyslnie), scalanie zostaje jako swiadomy wybor. Backup, ktory
+  nie odtwarza stanu, nie pelni roli siatki bezpieczenstwa dla zmian lamiacych dane.
 
 ## Otwarte kwestie
+
+- **PROD ma zawyzone dane** po imporcie w trybie scalania (+1455,49 zl). Naprawa:
+  ponowny import tego samego pliku w trybie „Odtworz stan z pliku" (od 0.11.26072601).
+- **Brak testu automatycznego dla backupu** — `BackupService` operuje na Hive przez
+  `StorageService`, a repozytorium nie ma infrastruktury do testow z baza. Gdyby
+  backup mial dalej rosnac, warto ja dolozyc (Hive.init na katalogu tymczasowym).
 
 - **Prompt silnika w repo `karton-ai`**: podanie modelowi dzisiejszej daty rozwiazaloby
   problem roku u zrodla (dzis lata kotwica po stronie apki). Wymaga wdrozenia

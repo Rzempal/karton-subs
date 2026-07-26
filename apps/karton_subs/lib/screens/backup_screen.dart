@@ -78,7 +78,10 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   Future<void> _exportWithPassword() async {
-    final password = await _askPassword(title: 'Ustaw hasło backupu');
+    final password = await _askPassword(
+      title: 'Ustaw hasło backupu',
+      confirm: true,
+    );
     if (password == null || password.isEmpty) return;
     setState(() => _isBusy = true);
     try {
@@ -97,6 +100,15 @@ class _BackupScreenState extends State<BackupScreen> {
       final backup = context.read<BackupService>();
       final fileInfo = await backup.pickFile();
 
+      // Tryb importu PRZED hasłem: to decyzja o danych, więc pytamy o nią
+      // zanim użytkownik zacznie cokolwiek wpisywać.
+      if (!mounted) return;
+      final replace = await _askImportMode();
+      if (replace == null) {
+        if (mounted) setState(() => _isBusy = false);
+        return;
+      }
+
       String? password;
       if (fileInfo.needsPassword && mounted) {
         password = await _askPassword(title: 'Hasło backupu');
@@ -106,7 +118,11 @@ class _BackupScreenState extends State<BackupScreen> {
         }
       }
 
-      final result = await backup.importFromBytes(fileInfo, password: password);
+      final result = await backup.importFromBytes(
+        fileInfo,
+        password: password,
+        replace: replace,
+      );
 
       if (mounted) {
         context.read<SubscriptionController>().refresh();
@@ -119,8 +135,14 @@ class _BackupScreenState extends State<BackupScreen> {
           if (result.budgetEntriesImported > 0)
             '${result.budgetEntriesImported} pozycji budżetu',
         ];
+        // Uczciwe podsumowanie: przy odtworzeniu mówimy WPROST, ile pozycji
+        // usunięto — inaczej różnica w sumach byłaby zagadką.
+        final head = result.replaced
+            ? 'Odtworzono z pliku (usunięto ${result.removedBeforeRestore} '
+                  'wcześniejszych pozycji)'
+            : 'Scalono z obecnymi danymi';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import zakończony: ${parts.join(', ')}')),
+          SnackBar(content: Text('$head: ${parts.join(', ')}')),
         );
       }
     } on FormatException catch (e) {
@@ -132,28 +154,123 @@ class _BackupScreenState extends State<BackupScreen> {
     }
   }
 
-  Future<String?> _askPassword({required String title}) async {
+  /// Wybór trybu importu. `true` = odtworzenie stanu z pliku, `false` = scalenie,
+  /// `null` = anulowano.
+  Future<bool?> _askImportMode() async {
+    var replace = true;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Jak wgrać backup?'),
+          content: RadioGroup<bool>(
+            groupValue: replace,
+            onChanged: (v) => setLocal(() => replace = v!),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RadioListTile<bool>(
+                  value: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Odtwórz stan z pliku'),
+                  subtitle: Text(
+                    'Aplikacja będzie miała dokładnie to, co w backupie. '
+                    'Pozycje dodane po jego zrobieniu ZNIKNĄ.',
+                  ),
+                ),
+                RadioListTile<bool>(
+                  value: false,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('Scal z obecnymi danymi'),
+                  subtitle: Text(
+                    'Dokłada zawartość pliku do tego, co już jest. Pozycje '
+                    'spoza pliku zostają — sumy mogą być wyższe niż w źródle.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Anuluj'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, replace),
+              child: const Text('Dalej'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Pyta o hasło. [confirm] dokłada drugie pole — przy eksporcie literówki nie
+  /// da się wykryć później: plik zaszyfrowany błędnym hasłem otworzy się TYM
+  /// błędnym hasłem, więc powtórzenie to jedyna kontrola.
+  Future<String?> _askPassword({
+    required String title,
+    bool confirm = false,
+  }) async {
     final ctrl = TextEditingController();
+    final repeatCtrl = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: ctrl,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Hasło'),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Anuluj'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final pass = ctrl.text;
+          final repeat = repeatCtrl.text;
+          final mismatch = confirm && repeat.isNotEmpty && pass != repeat;
+          final canSave =
+              pass.isNotEmpty && (!confirm || (pass == repeat && repeat.isNotEmpty));
+          return AlertDialog(
+            title: Text(title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: ctrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Hasło'),
+                  autofocus: true,
+                  onChanged: (_) => setLocal(() {}),
+                ),
+                if (confirm) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: repeatCtrl,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Powtórz hasło',
+                      errorText: mismatch ? 'Hasła są różne' : null,
+                    ),
+                    onChanged: (_) => setLocal(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Zapamiętaj to hasło. Bez niego pliku nie da się odczytać — '
+                    'nie ma sposobu na jego odzyskanie.',
+                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Anuluj'),
+              ),
+              FilledButton(
+                onPressed: canSave ? () => Navigator.pop(ctx, ctrl.text) : null,
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

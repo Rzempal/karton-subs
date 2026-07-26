@@ -1,5 +1,12 @@
 {
+  "version": "0.11.26072613",
+  "versionCode": 1126072613,
+  "releaseDate": "2026-07-26T21:49:04Z",
   "changelog": [
+    {
+      "version": "0.11.26072613",
+      "notes": "- Import backupu pyta: odtworzyc stan z pliku czy scalic z obecnymi danymi (wczesniej zawsze scalal po cichu)\n- Planner wchodzi do backupu (format v6)\n- Powtorzenie hasla przy eksporcie z haslem\n- Podsumowanie importu mowi, ile pozycji usunieto przy odtwarzaniu"
+    },
     {
       "version": "0.10.26072612",
       "notes": "- Opis sekcji w oknie z przyciskiem 'Rozumiem' zamiast znikajacej podpowiedzi\n- Tresc w punktach, wiekszym fontem - latwiejsza do przeczytania"
@@ -35,15 +42,8 @@
     {
       "version": "0.10.26072604",
       "notes": "- Wydatek jednorazowy i rachunek to teraz jedna rzecz: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Stare wydatki jednorazowe przeniesione automatycznie, plan miesieczny bez zmian\n- Rachunek z data przyszla nie udaje juz zaplaconego\n- Formularz rachunku dostal metode platnosci"
-    },
-    {
-      "version": "0.10.26072603",
-      "notes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca"
     }
   ],
-  "releaseDate": "2026-07-26T21:06:24Z",
-  "versionCode": 1026072612,
-  "version": "0.10.26072612",
-  "releaseNotes": "- Opis sekcji w oknie z przyciskiem 'Rozumiem' zamiast znikajacej podpowiedzi\n- Tresc w punktach, wiekszym fontem - latwiejsza do przeczytania",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072612"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072613",
+  "releaseNotes": "- Import backupu pyta: odtworzyc stan z pliku czy scalic z obecnymi danymi (wczesniej zawsze scalal po cichu)\n- Planner wchodzi do backupu (format v6)\n- Powtorzenie hasla przy eksporcie z haslem\n- Podsumowanie importu mowi, ile pozycji usunieto przy odtwarzaniu"
 }

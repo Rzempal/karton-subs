@@ -30,7 +30,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   galerii od razu, a dla "Udostepnij" i w edycji z podgladu miniatury (ADR-015)
 - Przypomnienia o odnowieniach i trialach
 - Import i eksport do Excela (.xlsx) -- osobno subskrypcje i budzet
-- Szyfrowany backup `.zostaje` (obejmuje subskrypcje i budzet; stare `.subkarton` nadal importowalne)
+- Szyfrowany backup `.zostaje` — subskrypcje, budzet obu zakresow, Planner i stan platnosci;
+  import pyta, czy **odtworzyc stan z pliku** (domyslnie) czy **scalic** z obecnymi danymi
+  (ADR-021). Stare `.subkarton` nadal importowalne
 
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena

@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-07-26: „Import backupu" domyslnie SCALAL zamiast odtwarzac — ciche zawyzenie sum
+
+### Problem
+Import przechodzil po pozycjach z pliku i zapisywal kazda po `id`, ale nie usuwal
+tego, czego w pliku NIE BYLO. Przy przeniesieniu danych z DEV na PROD pozycje
+usuniete w DEV zostaly w PROD i **doliczyly sie do sum** — podsumowanie miesiaca
+urosło o 1455,49 zl. Zadnego sygnalu: komunikat mowil tylko, ile pozycji wczytano.
+Przy okazji wyszlo, ze Planner („Na rachunki") w ogole nie wchodzil do backupu,
+choc pomniejsza plan „zostaje/mies".
+
+### Rozwiazanie
+Pytanie o tryb przed importem: **Odtworz stan z pliku** (domyslne, czysci dane objete
+backupem) albo **Scal**. Podsumowanie po imporcie mowi wprost, ile pozycji usunieto.
+Planner dopisany do formatu (wersja 6). Szczegoly: ADR-021.
+
+### Wniosek
+Jesli funkcja nazywa sie „backup", to jej import ma **odtwarzac stan**, a nie dokladac
+dane. Rozjazd miedzy nazwa a zachowaniem daje bledy, ktorych uzytkownik nie ma jak
+zauwazyc — tu ujawnil sie tylko dlatego, ze suma miesiaca „wygladala dziwnie".
+Przy kazdym rozszerzeniu modelu sprawdz, czy nowe pole trafia do eksportu: Planner
+przezyl w kodzie dwa ADR-y (012, 019), zanim ktos zauwazyl, ze go tam nie ma.
+
+---
+
 ## 2026-07-26: Usuwanie wartosci z enuma modelu wymaga JAWNEGO mapowania w `fromJson`
 
 ### Problem

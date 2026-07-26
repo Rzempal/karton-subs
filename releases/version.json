@@ -1,6 +1,13 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072600",
+  "releaseDate": "2026-07-26T21:51:22Z",
+  "versionCode": 1126072601,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072601",
+  "releaseNotes": "- Import backupu pyta, czy odtworzyc stan z pliku (domyslnie) czy scalic z obecnymi danymi\n- Poprawka: wczesniej import zawsze scalal, wiec pozycje usuniete w zrodle zostawaly i zawyzaly sumy\n- Planner (kwota na rachunki) wchodzi teraz do backupu\n- Przy eksporcie z haslem trzeba je powtorzyc - literowka oznaczala plik nie do odczytania\n- Podsumowanie po imporcie mowi, ile pozycji usunieto",
   "changelog": [
+    {
+      "version": "0.11.26072601",
+      "notes": "- Import backupu pyta, czy odtworzyc stan z pliku (domyslnie) czy scalic z obecnymi danymi\n- Poprawka: wczesniej import zawsze scalal, wiec pozycje usuniete w zrodle zostawaly i zawyzaly sumy\n- Planner (kwota na rachunki) wchodzi teraz do backupu\n- Przy eksporcie z haslem trzeba je powtorzyc - literowka oznaczala plik nie do odczytania\n- Podsumowanie po imporcie mowi, ile pozycji usunieto"
+    },
     {
       "version": "0.11.26072600",
       "notes": "- Skan rachunku ze zdjecia: aparat, galeria albo 'Udostepnij -> Zostaje'; rozpoznawanie w calosci na telefonie, bez chmury\n- Paragony i zrzuty platnosci telefonem czyta szybki OCR w ok. 2 s; faktury o dowolnym ukladzie przejmuje lokalny silnik AI\n- Rozpoznawanie dziala w tle - mozesz wyjsc z aplikacji, wynik czeka w sekcji 'Do zatwierdzenia'\n- Zdjecie rachunku mozna przyciac do samego paragonu; opcjonalne archiwum zdjec w Documents\n- Nowy uklad sekcji: Budzet (przeglad), Wplywy, Rachunki, Subskrypcje, Wydatki cykliczne\n- Rachunek i wydatek jednorazowy to teraz jedno: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Planner: kwota zaplanowana w budzecie na rachunki, edytowana przy rachunkach\n- Nowy cykl platnosci: wybrane miesiace roku, z presetami co 2 / 3 / 4 miesiace i co pol roku\n- Tryb budzetu: Osobisty / Domowy / oba\n- Podsumowanie miesiaca jako osobna sekcja, z sortowaniem i grupowaniem po typie\n- Ikona 'i' przy kazdej sekcji tlumaczy, po co ona jest\n- Paczka aktualizacji schudla do 43 MB"
@@ -36,14 +43,7 @@
     {
       "version": "0.9.26062001",
       "notes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty"
-    },
-    {
-      "version": "0.8.26062000",
-      "notes": "dodano badge preview dla funkcji synchronizacji"
     }
   ],
-  "version": "0.11.26072600",
-  "releaseDate": "2026-07-26T21:22:18Z",
-  "releaseNotes": "- Skan rachunku ze zdjecia: aparat, galeria albo 'Udostepnij -> Zostaje'; rozpoznawanie w calosci na telefonie, bez chmury\n- Paragony i zrzuty platnosci telefonem czyta szybki OCR w ok. 2 s; faktury o dowolnym ukladzie przejmuje lokalny silnik AI\n- Rozpoznawanie dziala w tle - mozesz wyjsc z aplikacji, wynik czeka w sekcji 'Do zatwierdzenia'\n- Zdjecie rachunku mozna przyciac do samego paragonu; opcjonalne archiwum zdjec w Documents\n- Nowy uklad sekcji: Budzet (przeglad), Wplywy, Rachunki, Subskrypcje, Wydatki cykliczne\n- Rachunek i wydatek jednorazowy to teraz jedno: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Planner: kwota zaplanowana w budzecie na rachunki, edytowana przy rachunkach\n- Nowy cykl platnosci: wybrane miesiace roku, z presetami co 2 / 3 / 4 miesiace i co pol roku\n- Tryb budzetu: Osobisty / Domowy / oba\n- Podsumowanie miesiaca jako osobna sekcja, z sortowaniem i grupowaniem po typie\n- Ikona 'i' przy kazdej sekcji tlumaczy, po co ona jest\n- Paczka aktualizacji schudla do 43 MB",
-  "versionCode": 1126072600
+  "version": "0.11.26072601"
 }

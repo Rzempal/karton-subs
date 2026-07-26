@@ -228,6 +228,26 @@ class StorageService {
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
+  /// Czysci zbiory objete backupem — do odtworzenia stanu z pliku („Zastap").
+  ///
+  /// Kategorie domyslne ZOSTAJA: eksport ich nie zapisuje (sa zawsze zasiane),
+  /// wiec ich skasowanie osierocilo by pozycje, ktore sie do nich odwoluja.
+  Future<void> clearForRestore() async {
+    await _subscriptionsBox.clear();
+    await _budgetEntriesBox.clear();
+    await _householdBudgetEntriesBox.clear();
+    await _paymentDoneBox.clear();
+    for (final key in _categoriesBox.keys.toList()) {
+      if (defaultCategories.any((d) => d.id == key)) continue;
+      await _categoriesBox.delete(key);
+    }
+    await setBillsAllocationItems(BudgetScope.personal, const []);
+    await setBillsAllocationItems(BudgetScope.household, const []);
+    _budgetEntriesCache.clear();
+    _householdBudgetEntriesCache.clear();
+    _log.info('Wyczyszczono dane przed odtworzeniem z backupu');
+  }
+
   Future<void> deleteBudgetEntry(
     String id, [
     BudgetScope scope = BudgetScope.personal,
