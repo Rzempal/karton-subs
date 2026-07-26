@@ -45,7 +45,7 @@ class BillsAllocationItems extends StatelessWidget {
       children: [
         if (items.isEmpty)
           Text(
-            'Dodaj pozycje, z których składa się rezerwa (np. Paliwo, Prąd).',
+            'Dodaj pozycje, z których składa się plan (np. Paliwo, Prąd).',
             style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
           )
         else
@@ -66,7 +66,7 @@ class BillsAllocationItems extends StatelessWidget {
           child: TextButton.icon(
             onPressed: onAdd,
             icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Dodaj pozycję'),
+            label: const Text('Dodaj pozycję do planu'),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 4),
               minimumSize: Size.zero,
@@ -176,7 +176,7 @@ Future<void> showBillsAllocationItemEditor(
     builder: (dctx) => StatefulBuilder(
       builder: (dctx, setLocal) => AlertDialog(
         title: Text(
-          existing == null ? 'Nowa pozycja „Na rachunki"' : 'Edytuj pozycję',
+          existing == null ? 'Nowa pozycja planu' : 'Edytuj pozycję planu',
         ),
         content: SingleChildScrollView(
           child: Column(

@@ -1,5 +1,13 @@
 {
+  "releaseNotes": "- Karta 'Na rachunki' to teraz 'Planner' z opisem, co robi\n- 'Dodaj pozycje' zmienione na 'Dodaj pozycje do planu'",
+  "releaseDate": "2026-07-26T16:40:14Z",
+  "version": "0.10.26072608",
+  "versionCode": 1026072608,
   "changelog": [
+    {
+      "version": "0.10.26072608",
+      "notes": "- Karta 'Na rachunki' to teraz 'Planner' z opisem, co robi\n- 'Dodaj pozycje' zmienione na 'Dodaj pozycje do planu'"
+    },
     {
       "version": "0.10.26072607",
       "notes": "- Wplywy maja wlasna zakladke w nawigacji (pod-zakladka byla zbyt schowana)\n- Pasek nawigacji: szesc pozycji, zabezpieczony przed wyjsciem za krawedz ekranu"
@@ -35,15 +43,7 @@
     {
       "version": "0.10.26072502",
       "notes": "- Szybka sciezka skanu: paragon fiskalny i zrzut platnosci telefonem czyta zwykly OCR w ~1-2 s\n- Data brana wprost z dokumentu (dzien tygodnia wskazuje rok) zamiast zgadywania przez model\n- Silnik AI wchodzi dopiero przy dokumencie o dowolnym ukladzie"
-    },
-    {
-      "version": "0.10.26072501",
-      "notes": "- Data bez roku na rachunku: rok poprzedni nie przechodzi juz jako wiarygodny (zrzuty Google Wallet)\n- Dluzszy limit czasu na rozpoznanie gestego paragonu (300 s)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072607",
-  "version": "0.10.26072607",
-  "releaseDate": "2026-07-26T16:24:18Z",
-  "versionCode": 1026072607,
-  "releaseNotes": "- Wplywy maja wlasna zakladke w nawigacji (pod-zakladka byla zbyt schowana)\n- Pasek nawigacji: szesc pozycji, zabezpieczony przed wyjsciem za krawedz ekranu"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072608"
 }

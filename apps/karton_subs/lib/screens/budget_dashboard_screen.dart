@@ -918,11 +918,11 @@ class _AllocationSummaryRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Na rachunki', style: theme.textTheme.bodyMedium),
+                  Text('Planner', style: theme.textTheme.bodyMedium),
                   Text(
                     isSet
-                        ? 'Rezerwa planu — skład i edycja w „Rachunkach"'
-                        : 'Rezerwa na rachunki — ustaw ją w „Rachunkach"',
+                        ? 'Kwota zaplanowana na rachunki — edycja w „Rachunkach"'
+                        : 'Zaplanuj kwotę na rachunki w „Rachunkach"',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: c.textMuted,
                     ),

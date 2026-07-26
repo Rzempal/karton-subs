@@ -570,9 +570,16 @@ class _AllocationCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Na rachunki',
+            'Planner',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Zaplanuj kwotę w budżecie przeznaczoną na rachunki',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
           // Selektor miesiąca.
@@ -614,8 +621,8 @@ class _AllocationCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (alloc == null)
             Text(
-              'Ustaw kopertę „Na rachunki" poniżej, by porównać plan z realnymi '
-              'wydatkami. Rezerwa pomniejsza „zostaje miesięcznie".',
+              'Dodaj pozycje planu poniżej, by porównać plan z realnymi '
+              'wydatkami. Zaplanowana kwota pomniejsza „zostaje miesięcznie".',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),
