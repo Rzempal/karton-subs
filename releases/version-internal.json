@@ -1,8 +1,13 @@
 {
-  "releaseDate": "2026-07-26T13:54:18Z",
-  "versionCode": 1026072603,
-  "releaseNotes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca",
+  "releaseDate": "2026-07-26T15:23:30Z",
+  "versionCode": 1026072604,
+  "version": "0.10.26072604",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072604",
   "changelog": [
+    {
+      "version": "0.10.26072604",
+      "notes": "- Wydatek jednorazowy i rachunek to teraz jedna rzecz: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Stare wydatki jednorazowe przeniesione automatycznie, plan miesieczny bez zmian\n- Rachunek z data przyszla nie udaje juz zaplaconego\n- Formularz rachunku dostal metode platnosci"
+    },
     {
       "version": "0.10.26072603",
       "notes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca"
@@ -38,12 +43,7 @@
     {
       "version": "0.10.26072402",
       "notes": "- Przycinanie zdjecia rachunku: po zrobieniu lub wybraniu zdjecia otwiera sie kadrowanie do samego paragonu (bez reki i tla) - czytelniejszy skan i lzejszy plik w archiwum\n- Rachunek z Udostepnij mozna docic pozniej: tap w miniature w Do zatwierdzenia otwiera podglad z przyciskiem Przytnij; rozpoznane pola zostaja, a gdy rachunek sie nie rozpoznal - po przycieciu uzyj Ponow"
-    },
-    {
-      "version": "0.10.26072401",
-      "notes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072603",
-  "version": "0.10.26072603"
+  "releaseNotes": "- Wydatek jednorazowy i rachunek to teraz jedna rzecz: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Stare wydatki jednorazowe przeniesione automatycznie, plan miesieczny bez zmian\n- Rachunek z data przyszla nie udaje juz zaplaconego\n- Formularz rachunku dostal metode platnosci"
 }
