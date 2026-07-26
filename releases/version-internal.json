@@ -1,8 +1,13 @@
 {
-  "version": "0.10.26072605",
-  "versionCode": 1026072605,
-  "releaseNotes": "- Koperta 'Na rachunki' edytowana na ekranie Rachunki (bylo w Budzecie)\n- W Budzecie zostaje sam wiersz z suma rezerwy, bo nadal pomniejsza plan",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072606",
+  "versionCode": 1026072606,
+  "releaseNotes": "- Nowe nazwy sekcji: 'Budzet' to przeglad calosci (dawny Dashboard), a zarzadzanie pozycjami to 'Wydatki cykliczne'\n- Wplywy maja wlasna pod-zakladke w Wydatkach cyklicznych",
+  "version": "0.10.26072606",
   "changelog": [
+    {
+      "version": "0.10.26072606",
+      "notes": "- Nowe nazwy sekcji: 'Budzet' to przeglad calosci (dawny Dashboard), a zarzadzanie pozycjami to 'Wydatki cykliczne'\n- Wplywy maja wlasna pod-zakladke w Wydatkach cyklicznych"
+    },
     {
       "version": "0.10.26072605",
       "notes": "- Koperta 'Na rachunki' edytowana na ekranie Rachunki (bylo w Budzecie)\n- W Budzecie zostaje sam wiersz z suma rezerwy, bo nadal pomniejsza plan"
@@ -38,12 +43,7 @@
     {
       "version": "0.10.26072500",
       "notes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy"
-    },
-    {
-      "version": "0.10.26072403",
-      "notes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072605",
-  "releaseDate": "2026-07-26T15:52:14Z"
+  "releaseDate": "2026-07-26T16:07:28Z"
 }

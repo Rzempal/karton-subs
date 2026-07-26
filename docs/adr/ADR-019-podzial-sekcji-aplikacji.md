@@ -65,5 +65,5 @@ nazw w kodzie byłby ryzykiem bez zysku.
 
 1. Scalenie typów — [ADR-018](ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md). ✅
 2. Koperta „Na rachunki" → ekran Rachunki (wiersz sumy zostaje w wydatkach). ✅
-3. Nazwy zakładek + pod-zakładka Wpływy.
+3. Nazwy zakładek + pod-zakładka Wpływy. ✅
 4. Osobno, poza tym ADR: rozszerzenie cykli (co N miesięcy, konkretne miesiące roku).

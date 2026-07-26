@@ -211,7 +211,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        // „Budżet" = przeglad calosci (ADR-019). Ekran zarzadzania pozycjami
+        // planowalnymi nazywa sie „Wydatki cykliczne".
+        title: const Text('Budżet'),
         centerTitle: false,
         actions: [
           const SyncNowButton(),

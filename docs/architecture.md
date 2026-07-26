@@ -101,12 +101,12 @@ lib/
 ├── theme/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
-│   ├── dashboard_screen.dart    # Dashboard: pod-zakladki Plan / Bilans miesiaca (ADR-011)
+│   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Bilans miesiaca / Plan (ADR-011)
 │   ├── rachunki_screen.dart     # Rachunki: realny log oplat + koperta „Na rachunki" (ADR-011)
 │   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
 │   ├── add_subscription_screen.dart # Formularz subskrypcji
-│   ├── budget_dashboard_screen.dart  # Budzet: zarzadzanie pozycjami + Excel
+│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne": pod-zakladki Wydatki / Wplywy + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
@@ -167,21 +167,26 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ## Nawigacja (5 zakladek)
 
-Kolejnosc: Dashboard | Rachunki | Subskrypcje | Budzet | ⋮ Ustawienia (separator
+Kolejnosc: Budzet | Rachunki | Subskrypcje | Wydatki | ⋮ Ustawienia (separator
 oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
+
+Nazwy sekcji wg **[ADR-019](adr/ADR-019-podzial-sekcji-aplikacji.md)**: „Budzet" to
+PRZEGLAD calosci (dawny „Dashboard"), a ekran zarzadzania pozycjami planowalnymi to
+„Wydatki cykliczne" (w pasku nawigacji skrocone do „Wydatki"). Wplywy maja tam
+pod-zakladke — bez szostej pozycji w nawigacji.
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
+| **Budzet** (przeglad) | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
 | **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018): log oplaconych + zaplanowane na przyszla date, per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
-| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
-| **Budzet** | Zarzadzanie pozycjami planowalnymi (wplywy, koszty cykliczne, raty, przelew — datowane wydatki jednorazowe sa w „Rachunkach", ADR-018); grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |
+| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" w Budzecie); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
+| **Wydatki cykliczne** | Zarzadzanie pozycjami planowalnymi w dwoch pod-zakladkach: **Wydatki** (koszty stale, raty, przelew wewnetrzny) i **Wplywy** (cykliczne + jednorazowe). Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach w wydatkach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
 | **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow silnikiem + link do apki silnika), **Archiwum rachunkow** (osobna sekcja: zapis zdjec zatwierdzonych rachunkow do `Documents/<podfolder>`), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
 lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).
 Tryb jednozakresowy (`personalOnly`/`householdOnly`) chowa przelacznik (`scopeSelectable`),
-a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — na Dashboardzie `TabBarView`
+a `ScopeSwipeArea(enabled: false)` oddaje swipe dziecku — w Budzecie `TabBarView`
 przelacza Bilans/Plan. Dane obu zakresow zostaja; tryb je tylko chowa/odslania.
 
 **Rachunek auto-oplacony:** przy tworzeniu `billPayment` (log JUZ zaplaconej pozycji,
@@ -204,7 +209,7 @@ dodatkowo czyta subskrypcje jako strumien kosztow.
 **Dwa zakresy = dwa boxy** (ADR-006): osobisty (`budget_entries`, lokalny) i domowy
 (`household_budget_entries`, przyszla synchronizacja). `BudgetController` trzyma aktywny
 `BudgetScope` — **jeden globalny tryb Osobisty/Domowy dla calej apki**: przelacznik +
-**swipe poziomy** na kazdym ekranie (Dashboard, Rachunki, Budzet, Subskrypcje czytaja
+**swipe poziomy** na kazdym ekranie (Budzet, Rachunki, Wydatki cykliczne, Subskrypcje czytaja
 ten sam zakres). Ten sam silnik liczy oba. Kategorie i metody platnosci to slowniki
 **wspoldzielone** (subskrypcje + pozycje budzetu obu zakresow + koperta „Na rachunki") —
 liczniki i kaskady rename/usun w Ustawieniach obejmuja wszystkie te zrodla.

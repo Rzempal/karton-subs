@@ -11,7 +11,7 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 
 **Kluczowe funkcje:**
 - Zero logowania, zero rejestracji -- 100% prywatnosci, wszystko na urzadzeniu
-- Dashboard: pelny przeglad budzetu razem z subskrypcjami
+- Zakladka "Budzet": pelny przeglad budzetu razem z subskrypcjami (bilans miesiaca + plan)
 - Subskrypcje: podsumowanie miesieczne/roczne, trend, podzial wg kategorii, triale, limit
 - **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (rachunki),
   koszty cykliczne i wieksze wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie"
@@ -73,7 +73,7 @@ karton-subs/
 │       │   ├── controllers/    # SubscriptionController, BudgetController
 │       │   ├── utils/          # cycle_math (normalizacja cyklu)
 │       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
-│       │   ├── screens/        # Dashboard, Subskrypcje, Budzet, Ustawienia
+│       │   ├── screens/        # Budzet (przeglad), Rachunki, Subskrypcje, Wydatki cykliczne, Ustawienia
 │       │   └── widgets/        # SubscriptionCard
 │       └── pubspec.yaml
 ├── docs/

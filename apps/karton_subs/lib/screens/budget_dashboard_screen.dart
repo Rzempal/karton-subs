@@ -36,8 +36,15 @@ class BudgetDashboardScreen extends StatefulWidget {
   State<BudgetDashboardScreen> createState() => _BudgetDashboardScreenState();
 }
 
-class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
+class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
+    with SingleTickerProviderStateMixin {
   bool _isBusy = false;
+
+  /// Pod-zakładki: 0 = wydatki cykliczne (koszty, raty, przelew), 1 = wpływy.
+  /// Wpływy dostają własną przestrzeń bez szóstej zakładki w nawigacji (ADR-019).
+  late final TabController _sub;
+
+  bool get _onIncomes => _sub.index == 1;
 
   /// Aktywny filtr kategorii (null = wszystkie). Filtruje sekcje wydatków.
   String? _filterCategoryId;
@@ -53,6 +60,23 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
   _BudgetGrouping _grouping = _BudgetGrouping.byType;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = TabController(length: 2, vsync: this);
+    // Zmiana pod-zakładki przebudowuje ekran: inne kubełki, inne filtry,
+    // inna zawartość menu „Dodaj".
+    _sub.addListener(() {
+      if (!_sub.indexIsChanging) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub.dispose();
+    super.dispose();
+  }
 
   /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i
   /// okien spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wchodzą.
@@ -93,18 +117,18 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
 
-    // Kubełki pozycji planowalnych. Wydatki jednorazowe TU NIE WCHODZĄ — to ten
-    // sam byt co rachunek i mieszkają na ekranie „Rachunki" (ADR-018).
-    final incomes = ctrl.incomes;
-    final transfers = ctrl.internalTransfers;
-    final recurring = ctrl.recurringExpenses;
-    // Zawsze grupowanie po typach; flaga `true` = kubełek kategoryzowalny
-    // (wydatki), w którym przycisk grupowania włącza podgrupy po kategoriach.
-    final rawBuckets = <(String, List<BudgetEntry>, bool)>[
-      ('Wpływy', incomes, false),
-      ('Przelew wewnętrzny', transfers, false),
-      ('Wydatki stałe', recurring, true),
-    ];
+    // Kubełki pozycji planowalnych, rozdzielone na pod-zakładki: wydatki
+    // (koszty stałe, raty, przelew) i wpływy. Datowane wydatki jednorazowe TU
+    // NIE WCHODZĄ — to ten sam byt co rachunek i mieszkają na ekranie
+    // „Rachunki" (ADR-018).
+    // Flaga `true` = kubełek kategoryzowalny (wydatki), w którym przycisk
+    // grupowania włącza podgrupy po kategoriach.
+    final rawBuckets = _onIncomes
+        ? <(String, List<BudgetEntry>, bool)>[('Wpływy', ctrl.incomes, false)]
+        : <(String, List<BudgetEntry>, bool)>[
+            ('Przelew wewnętrzny', ctrl.internalTransfers, false),
+            ('Wydatki stałe', ctrl.recurringExpenses, true),
+          ];
     final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
 
     // Kategorie użyte w wydatkach (pasek filtra kategorii).
@@ -189,7 +213,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Budżet'),
+        title: const Text('Wydatki cykliczne'),
         centerTitle: false,
         actions: [
           const SyncNowButton(),
@@ -246,9 +270,12 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         actions: [
           AuroraAddAction(
             icon: LucideIcons.plus,
-            label: 'Dodaj ręcznie',
+            label: _onIncomes ? 'Dodaj wpływ' : 'Dodaj ręcznie',
             primary: true,
-            onTap: () => _openAdd(),
+            // Na pod-zakładce Wpływy formularz startuje od razu jako wpływ.
+            onTap: () => _openAdd(
+              initialType: _onIncomes ? BudgetEntryType.income : null,
+            ),
           ),
           if (ctrl.isHousehold)
             AuroraAddAction(
@@ -276,6 +303,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 onChanged: ctrl.setScope,
               ),
             ),
+          TabBar(
+            controller: _sub,
+            tabs: const [
+              Tab(text: 'Wydatki'),
+              Tab(text: 'Wpływy'),
+            ],
+          ),
           if (!isEmpty && filterCategories.isNotEmpty)
             _CategoryFilter(
               categories: filterCategories,
@@ -311,7 +345,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                         ctrl,
                         buckets,
                         expensesTitle,
-                        showAlloc: noFilter,
+                        // Koperta „Na rachunki" należy do wydatków — na
+                        // pod-zakładce Wpływy nie ma czego nią pomniejszać.
+                        showAlloc: noFilter && !_onIncomes,
                         isEmpty: isEmpty,
                         byCategory: _grouping == _BudgetGrouping.byCategory,
                       ),
@@ -412,7 +448,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           title: const Text('Wkład z budżetu osobistego'),
           content: const Text(
             'Tę pozycję dodano jako „Przelew do domowego" w budżecie osobistym. '
-            'Edytuj lub usuń ją tam: Budżet → Osobisty.',
+            'Edytuj lub usuń ją tam: Wydatki cykliczne → Osobisty.',
           ),
           actions: [
             TextButton(
@@ -855,7 +891,7 @@ class _EmptyBudget extends StatelessWidget {
   }
 }
 
-/// Koperta „Na rachunki" na ekranie Budżet — SAMA SUMA, bez edycji.
+/// Koperta „Na rachunki" na ekranie „Wydatki cykliczne" — SAMA SUMA, bez edycji.
 ///
 /// Rezerwa pomniejsza „zostaje/mies", więc musi być widoczna w sumie wydatków,
 /// inaczej plan przestałby się tłumaczyć. Skład koperty i jej edycja mieszkają
