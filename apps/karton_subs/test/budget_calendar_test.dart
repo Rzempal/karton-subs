@@ -111,6 +111,32 @@ void main() {
       expect(cal[1], isNull);
     });
 
+    // Typ glowny pozycji zasila grupowanie sekcji miesiaca na Dashboardzie
+    // (rachunki / subskrypcje / budzet).
+    test('typ glowny: rachunek, subskrypcja, pozycja budzetu', () {
+      final entries = [
+        _entry(
+            type: BudgetEntryType.billPayment,
+            amount: 184,
+            startDate: DateTime(2026, 3, 8),
+            month: '2026-03'),
+        _entry(
+            type: BudgetEntryType.recurringCost,
+            amount: 200,
+            startDate: DateTime(2026, 3, 12)),
+      ];
+      final cal = _svc.calendarForMonth(
+        entries,
+        [_sub(30, DateTime(2026, 3, 5))],
+        monthStart,
+      );
+
+      expect(cal[8]!.items.single.kind, CalendarItemKind.bill);
+      expect(cal[12]!.items.single.kind, CalendarItemKind.budgetEntry);
+      expect(cal[5]!.items.single.kind, CalendarItemKind.subscription);
+      expect(cal[5]!.items.single.isSubscription, isTrue);
+    });
+
     test('jednorazowy wpływ (premia) na swojej dacie jako wpływ', () {
       final entries = [
         _entry(

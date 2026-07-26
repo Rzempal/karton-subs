@@ -546,6 +546,38 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   }
 }
 
+/// Sortowanie pozycji w sekcjach miesiąca („Płatności", „Podsumowanie miesiąca").
+/// Przełącznik siedzi w prawym górnym rogu Dashboardu i rządzi obiema sekcjami.
+enum MonthFlowSort { byDate, byName }
+
+/// Grupowanie pozycji po typie głównym (rachunki / subskrypcje / budżet).
+/// Działa jak „warstwy" w Budżecie: nie zastępuje istniejącego podziału sekcji,
+/// tylko dokłada podgrupy w środku.
+enum MonthFlowGrouping { none, byType }
+
+/// Dzieli pozycje na podgrupy typu głównego w stałej kolejności (puste pomija).
+List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
+  List<T> rows,
+  CalendarItemKind Function(T) kindOf,
+) {
+  final out = <({CalendarItemKind kind, List<T> rows})>[];
+  for (final kind in CalendarItemKind.values) {
+    final group = rows.where((r) => kindOf(r) == kind).toList();
+    if (group.isNotEmpty) out.add((kind: kind, rows: group));
+  }
+  return out;
+}
+
+/// Podpis podgrupy typu głównego (wewnątrz sekcji).
+Widget _kindLabel(ThemeData theme, AppSemanticColors c, CalendarItemKind kind) =>
+    Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 2),
+      child: Text(
+        kind.label,
+        style: theme.textTheme.labelSmall?.copyWith(color: c.textMuted),
+      ),
+    );
+
 /// Sekcja „Podsumowanie miesiąca": pełne listy wpływów i wydatków z kalendarza
 /// przepływów, posortowane wg dnia, z sumami. Kwoty to realne płatności miesiąca
 /// (po korektach, z pozycjami jednorazowymi), więc suma może różnić się od
@@ -560,6 +592,8 @@ class MonthSummarySection extends StatelessWidget {
   final String currency;
   final bool compact;
   final VoidCallback onToggleCompact;
+  final MonthFlowSort sort;
+  final MonthFlowGrouping grouping;
 
   const MonthSummarySection({
     super.key,
@@ -568,6 +602,8 @@ class MonthSummarySection extends StatelessWidget {
     required this.currency,
     required this.compact,
     required this.onToggleCompact,
+    this.sort = MonthFlowSort.byDate,
+    this.grouping = MonthFlowGrouping.none,
   });
 
   /// Czy miesiąc ma cokolwiek do podsumowania (inaczej sekcja się nie pokazuje).
@@ -588,6 +624,12 @@ class MonthSummarySection extends StatelessWidget {
       }
     }
     if (incomes.isEmpty && expenses.isEmpty) return const SizedBox.shrink();
+    if (sort == MonthFlowSort.byName) {
+      int byName(({int day, CalendarItem item}) a, ({int day, CalendarItem item}) b) =>
+          a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase());
+      incomes.sort(byName);
+      expenses.sort(byName);
+    }
 
     final incomeTotal = incomes.fold(0.0, (s, r) => s + r.item.amount);
     final expenseTotal = expenses.fold(0.0, (s, r) => s + r.item.amount);
@@ -634,18 +676,37 @@ class MonthSummarySection extends StatelessWidget {
               ),
               if (incomes.isNotEmpty) ...[
                 _sectionHeader(theme, c, 'Wpływy', incomeTotal, income: true),
-                ...incomes.map((r) => _itemRow(theme, c, r.day, r.item)),
+                ..._rows(theme, c, incomes),
               ],
               if (expenses.isNotEmpty) ...[
                 if (incomes.isNotEmpty) const Divider(height: 24),
                 _sectionHeader(theme, c, 'Wydatki', expenseTotal, income: false),
-                ...expenses.map((r) => _itemRow(theme, c, r.day, r.item)),
+                ..._rows(theme, c, expenses),
               ],
             ],
           ],
         ),
       ),
     );
+  }
+
+  /// Wiersze sekcji — płasko albo w podgrupach typu głównego. Podpisy podgrup
+  /// pokazujemy tylko wtedy, gdy jest ich więcej niż jedna (inaczej to sam szum).
+  List<Widget> _rows(
+    ThemeData theme,
+    AppSemanticColors c,
+    List<({int day, CalendarItem item})> rows,
+  ) {
+    if (grouping == MonthFlowGrouping.none) {
+      return [for (final r in rows) _itemRow(theme, c, r.day, r.item)];
+    }
+    final groups = _groupByKind(rows, (r) => r.item.kind);
+    return [
+      for (final g in groups) ...[
+        if (groups.length > 1) _kindLabel(theme, c, g.kind),
+        for (final r in g.rows) _itemRow(theme, c, r.day, r.item),
+      ],
+    ];
   }
 
   Widget _sectionHeader(
@@ -746,6 +807,9 @@ class MonthPaymentsSection extends StatelessWidget {
   final void Function(List<({String sourceId, DateTime date})> items, bool done)
   onSetAll;
 
+  final MonthFlowSort sort;
+  final MonthFlowGrouping grouping;
+
   const MonthPaymentsSection({
     super.key,
     required this.month,
@@ -756,6 +820,8 @@ class MonthPaymentsSection extends StatelessWidget {
     required this.isDone,
     required this.onToggle,
     required this.onSetAll,
+    this.sort = MonthFlowSort.byDate,
+    this.grouping = MonthFlowGrouping.none,
   });
 
   /// Czy miesiąc ma jakiekolwiek płatności (manualne lub automatyczne).
@@ -777,9 +843,13 @@ class MonthPaymentsSection extends StatelessWidget {
             it.amount,
             DateTime(month.year, month.month, day),
             it.sourceId!,
+            it.kind,
           ),
         );
       }
+    }
+    if (sort == MonthFlowSort.byName) {
+      out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
     return out;
   }
@@ -904,10 +974,30 @@ class MonthPaymentsSection extends StatelessWidget {
         ),
         if (!compact) ...[
           const SizedBox(height: 4),
-          ...rows.map((r) => _item(context, r)),
+          ..._payRows(context, theme, c, rows),
         ],
       ],
     );
+  }
+
+  /// Wiersze grupy — płasko albo w podgrupach typu głównego (jak „warstwy"
+  /// w Budżecie). Podpisy tylko przy więcej niż jednej podgrupie.
+  List<Widget> _payRows(
+    BuildContext context,
+    ThemeData theme,
+    AppSemanticColors c,
+    List<_PayRow> rows,
+  ) {
+    if (grouping == MonthFlowGrouping.none) {
+      return [for (final r in rows) _item(context, r)];
+    }
+    final groups = _groupByKind(rows, (r) => r.kind);
+    return [
+      for (final g in groups) ...[
+        if (groups.length > 1) _kindLabel(theme, c, g.kind),
+        for (final r in g.rows) _item(context, r),
+      ],
+    ];
   }
 
   Widget _item(BuildContext context, _PayRow r) {
@@ -958,7 +1048,17 @@ class _PayRow {
   final double amount;
   final DateTime date;
   final String sourceId;
-  const _PayRow(this.name, this.amount, this.date, this.sourceId);
+
+  /// Typ główny (rachunek / subskrypcja / budżet) — do grupowania podgrupami.
+  final CalendarItemKind kind;
+
+  const _PayRow(
+    this.name,
+    this.amount,
+    this.date,
+    this.sourceId,
+    this.kind,
+  );
 }
 
 class _DayDetail extends StatelessWidget {

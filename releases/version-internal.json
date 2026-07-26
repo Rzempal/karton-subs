@@ -1,7 +1,12 @@
 {
-  "version": "0.10.26072602",
-  "versionCode": 1026072602,
+  "releaseDate": "2026-07-26T13:54:18Z",
+  "versionCode": 1026072603,
+  "releaseNotes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca",
   "changelog": [
+    {
+      "version": "0.10.26072603",
+      "notes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca"
+    },
     {
       "version": "0.10.26072602",
       "notes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie"
@@ -37,13 +42,8 @@
     {
       "version": "0.10.26072401",
       "notes": "- Dodany rachunek od razu oznacza sie jako wykonany w platnosciach miesiaca (rachunek to log juz zaplaconej pozycji) - bez recznego odhaczania"
-    },
-    {
-      "version": "0.10.26072400",
-      "notes": "- Wybor budzetow (Ustawienia > Personalizacja): Osobisty / Domowy / Osobisty i domowy. Tryb jednozakresowy chowa przelacznik zakresu z kart, a swipe przelacza zakladki 2. rzedu (Bilans/Plan na Dashboardzie)\n- Fix statusu silnika: zielone Gotowy dopiero po wczytaniu modelu; pobrany-niewczytany pokazuje ze wczyta sie przy pierwszym skanie"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072602",
-  "releaseNotes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie",
-  "releaseDate": "2026-07-26T13:25:09Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072603",
+  "version": "0.10.26072603"
 }

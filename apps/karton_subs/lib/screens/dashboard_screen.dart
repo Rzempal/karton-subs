@@ -46,12 +46,22 @@ class _DashboardScreenState extends State<DashboardScreen>
   /// Wybrana domena statystyk na zakładce „Plan".
   _StatsDomain _statsDomain = _StatsDomain.budget;
 
+  /// Sortowanie i grupowanie sekcji miesiąca („Płatności", „Podsumowanie") —
+  /// jak w Budżecie: stan widoku, nietrwały.
+  MonthFlowSort _flowSort = MonthFlowSort.byDate;
+  MonthFlowGrouping _flowGrouping = MonthFlowGrouping.none;
+
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 2, vsync: this);
+    // Przyciski sortowania/grupowania dotyczą tylko zakładki „Bilans miesiąca",
+    // więc pasek akcji musi się przebudować po zmianie zakładki.
+    _tab.addListener(() {
+      if (!_tab.indexIsChanging) setState(() {});
+    });
     final now = _today;
     _selectedMonth = DateTime(now.year, now.month, 1);
     _selectedDay = now.day; // bieżący miesiąc → domyślnie dziś
@@ -203,7 +213,50 @@ class _DashboardScreenState extends State<DashboardScreen>
       appBar: AppBar(
         title: const Text('Dashboard'),
         centerTitle: false,
-        actions: const [SyncNowButton(), SizedBox(width: 4)],
+        actions: [
+          const SyncNowButton(),
+          // Sortowanie i grupowanie dotyczą sekcji „Płatności" i „Podsumowanie
+          // miesiąca", więc pokazujemy je tylko na zakładce „Bilans miesiąca".
+          if (_tab.index == 0 && MonthSummarySection.hasAny(calendar)) ...[
+            IconButton(
+              tooltip: _flowSort == MonthFlowSort.byName
+                  ? 'Sortuj: A→Z (nazwa)'
+                  : 'Sortuj: po dacie',
+              icon: Icon(
+                _flowSort == MonthFlowSort.byName
+                    ? LucideIcons.arrowDownAZ
+                    : LucideIcons.arrowDown01,
+              ),
+              onPressed: () => setState(
+                () => _flowSort = _flowSort == MonthFlowSort.byName
+                    ? MonthFlowSort.byDate
+                    : MonthFlowSort.byName,
+              ),
+            ),
+            IconButton(
+              isSelected: _flowGrouping == MonthFlowGrouping.byType,
+              tooltip: _flowGrouping == MonthFlowGrouping.byType
+                  ? 'Grupowanie po typie (włączone)'
+                  : 'Grupuj po typie: rachunki / subskrypcje / budżet',
+              // Aktywny stan = wypełniona pigułka (widoczna też w motywie mono,
+              // gdzie akcent jest bezbarwny) + ikona w kolorze akcentu.
+              style: _flowGrouping == MonthFlowGrouping.byType
+                  ? IconButton.styleFrom(
+                      backgroundColor: context.semanticColors.primary
+                          .withValues(alpha: 0.25),
+                      foregroundColor: context.semanticColors.primary,
+                    )
+                  : null,
+              icon: const Icon(LucideIcons.layers),
+              onPressed: () => setState(
+                () => _flowGrouping = _flowGrouping == MonthFlowGrouping.byType
+                    ? MonthFlowGrouping.none
+                    : MonthFlowGrouping.byType,
+              ),
+            ),
+          ],
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
@@ -269,6 +322,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onToggle: budget.togglePaymentDone,
                           onSetAll: (items, done) =>
                               budget.setPaymentsDone(items, done),
+                          sort: _flowSort,
+                          grouping: _flowGrouping,
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -294,6 +349,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                           currency: currency,
                           compact: _monthSummaryCompact,
                           onToggleCompact: _toggleMonthSummary,
+                          sort: _flowSort,
+                          grouping: _flowGrouping,
                         ),
                       ],
                     ],

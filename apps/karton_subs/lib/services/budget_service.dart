@@ -18,7 +18,9 @@ class CalendarItem {
   final String name;
   final double amount;
   final bool isIncome;
-  final bool isSubscription;
+
+  /// Skad pozycja pochodzi — do grupowania „po typie glownym" na Dashboardzie.
+  final CalendarItemKind kind;
 
   /// Czy platnosc jest automatyczna (wg metody platnosci). Wydatek auto = zolty,
   /// manual = czerwony na kalendarzu; manualne trafiaja na liste „Platnosci".
@@ -31,10 +33,32 @@ class CalendarItem {
     required this.name,
     required this.amount,
     required this.isIncome,
-    this.isSubscription = false,
+    this.kind = CalendarItemKind.budgetEntry,
     this.isAutomatic = false,
     this.sourceId,
   });
+
+  bool get isSubscription => kind == CalendarItemKind.subscription;
+}
+
+/// Typ glowny pozycji kalendarza (grupowanie na Dashboardzie).
+enum CalendarItemKind {
+  /// Rachunek — realny log oplaty (`BudgetEntryType.billPayment`).
+  bill,
+
+  /// Odnowienie subskrypcji.
+  subscription,
+
+  /// Pozostale pozycje budzetu: wplywy, koszty stale, raty, jednorazowe.
+  budgetEntry;
+
+  /// Etykieta grupy. „Budzet" zamiast „Cykliczne", bo w tej grupie sa takze
+  /// pozycje jednorazowe (premia, wieksze zakupy) — nazwa musi je objac.
+  String get label => switch (this) {
+        CalendarItemKind.bill => 'Rachunki',
+        CalendarItemKind.subscription => 'Subskrypcje',
+        CalendarItemKind.budgetEntry => 'Budżet',
+      };
 }
 
 /// Przeplywy jednego dnia kalendarza.
@@ -457,6 +481,10 @@ class BudgetService {
     bool autoOf(String? pm) => pm != null && (autoByPayment?[pm] ?? false);
 
     for (final e in entries.where((e) => e.isActive)) {
+      // Rachunek (realny log oplaty) ma wlasna grupe w widoku Dashboardu.
+      final kind = e.type == BudgetEntryType.billPayment
+          ? CalendarItemKind.bill
+          : CalendarItemKind.budgetEntry;
       if (e.isOneTime) {
         final d = e.startDate ?? _monthFallbackDate(e.month);
         if (d == null) continue;
@@ -467,6 +495,7 @@ class BudgetService {
               name: e.name,
               amount: _currency.convert(e.amount, e.currency, t),
               isIncome: e.isIncome,
+              kind: kind,
               isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
               sourceId: e.id,
             ),
@@ -496,6 +525,7 @@ class BudgetService {
                       name: e.name,
                       amount: amt,
                       isIncome: e.isIncome,
+                      kind: kind,
                       isAutomatic: auto,
                       sourceId: e.id));
               continue;
@@ -510,6 +540,7 @@ class BudgetService {
                         name: e.name,
                         amount: amt,
                         isIncome: e.isIncome,
+                        kind: kind,
                         isAutomatic: auto,
                         sourceId: e.id));
               }
@@ -526,6 +557,7 @@ class BudgetService {
               name: e.name,
               amount: _currency.convert(e.amount, e.currency, t),
               isIncome: e.isIncome,
+              kind: kind,
               isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
               sourceId: e.id,
             ),
@@ -543,7 +575,7 @@ class BudgetService {
             name: s.name,
             amount: _currency.convert(s.amount, s.currency, t),
             isIncome: false,
-            isSubscription: true,
+            kind: CalendarItemKind.subscription,
             isAutomatic: autoOf(s.paymentMethod),
             sourceId: s.id,
           ),
