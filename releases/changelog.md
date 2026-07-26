@@ -1,14 +1,30 @@
 # Zostaje - Historia zmian
 
+## v0.11.26072600
+- Skan rachunku ze zdjecia: aparat, galeria albo 'Udostepnij -> Zostaje'; rozpoznawanie w calosci na telefonie, bez chmury
+- Paragony i zrzuty platnosci telefonem czyta szybki OCR w ok. 2 s; faktury o dowolnym ukladzie przejmuje lokalny silnik AI
+- Rozpoznawanie dziala w tle - mozesz wyjsc z aplikacji, wynik czeka w sekcji 'Do zatwierdzenia'
+- Zdjecie rachunku mozna przyciac do samego paragonu; opcjonalne archiwum zdjec w Documents
+- Nowy uklad sekcji: Budzet (przeglad), Wplywy, Rachunki, Subskrypcje, Wydatki cykliczne
+- Rachunek i wydatek jednorazowy to teraz jedno: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)
+- Planner: kwota zaplanowana w budzecie na rachunki, edytowana przy rachunkach
+- Nowy cykl platnosci: wybrane miesiace roku, z presetami co 2 / 3 / 4 miesiace i co pol roku
+- Tryb budzetu: Osobisty / Domowy / oba
+- Podsumowanie miesiaca jako osobna sekcja, z sortowaniem i grupowaniem po typie
+- Ikona 'i' przy kazdej sekcji tlumaczy, po co ona jest
+- Paczka aktualizacji schudla do 43 MB
+
 ## v0.10.26062500
 - Dashboard: sekcja Saldo zostaje miesiecznie scalona w jedna karte z opisem jak liczone jest saldo
 - Bilans miesiaca: lepszy opis + przytrzymanie kwoty pokazuje rozbicie roznicy wzgledem salda
 - Budzet: filtr czasu (rok i miesiac) obok kategorii i typow
 
+
 ## v0.9.26062401
 - Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)
 - Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)
 - Poprawki kontrastu: zaznaczone chipy oraz obramowanie paska nawigacji w trybie jasnym
+
 
 
 ## v0.9.26062400
@@ -18,14 +34,17 @@
 
 
 
+
 ## v0.9.26062100
 - Baner dostepnej aktualizacji na Dashboardzie
 
 
 
 
+
 ## v0.9.26062004
 - Migracja na nowy identyfikator aplikacji (reinstalacja + import backupu)
+
 
 
 
@@ -39,8 +58,10 @@
 
 
 
+
 ## v0.9.26062002
 bugs
+
 
 
 
@@ -59,8 +80,10 @@ bugs
 
 
 
+
 ## v0.8.26062000
 dodano badge preview dla funkcji synchronizacji
+
 
 
 
@@ -82,11 +105,13 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
 ## v0.8.26061704
 - Budzet: sortowanie (A-Z / kwota), filtr typu, grupowanie wg typu
 - Przelew do domowego: osobna sekcja + korekty kwoty (spojne z budzetem domowym)
 - Sumy w naglowkach sekcji (miesiecznie)
 - Dashboard: zwijanie kalendarza i listy platnosci
+
 
 
 
@@ -117,9 +142,11 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
 ## v0.6.26061702
 - Kategorie wydatkow w budzecie: oznaczanie pozycji i filtrowanie listy
 - Kategoria w eksporcie i imporcie Excel budzetu
+
 
 
 
@@ -139,6 +166,7 @@ dodano badge preview dla funkcji synchronizacji
 - Menu Dodaj wysuwane nad przyciskiem
 - Personalizacja Dashboardu: zwijanie sekcji (full/compact)
 - Spojny system kolorow i zaokraglen (tokeny)
+
 
 
 
@@ -176,8 +204,10 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
 ## v0.3.26061600
 - Import i eksport subskrypcji do Excela (.xlsx)
+
 
 
 
@@ -213,8 +243,10 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
 ## v0.2.26032905
 - bug fixes
+
 
 
 
@@ -254,8 +286,10 @@ dodano badge preview dla funkcji synchronizacji
 
 
 
+
 ## v0.2.26032903
 - bug fixes
+
 
 
 
@@ -299,8 +333,10 @@ fix ikony
 
 
 
+
 ## v0.2.26032901
 zmiana ikony aplikacji
+
 
 
 
@@ -348,8 +384,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032808
 - bug fixes
+
 
 
 
@@ -401,8 +439,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032805
 - bug fixes
+
 
 
 
@@ -458,8 +498,10 @@ zmiana ikony aplikacji
 
 
 
+
 ## v0.1.26032803
 OTA
+
 
 
 
@@ -519,8 +561,10 @@ OTA
 
 
 
+
 ## v0.1.26032801
 - bug fixes
+
 
 
 
