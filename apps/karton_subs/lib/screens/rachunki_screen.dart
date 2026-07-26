@@ -15,6 +15,7 @@ import '../services/receipt_crop_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
+import '../widgets/bills_allocation_editor.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/gradient_amount.dart';
@@ -613,7 +614,8 @@ class _AllocationCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (alloc == null)
             Text(
-              'Ustaw kopertę „Na rachunki" na ekranie Budżet, by porównać plan z realnymi wydatkami.',
+              'Ustaw kopertę „Na rachunki" poniżej, by porównać plan z realnymi '
+              'wydatkami. Rezerwa pomniejsza „zostaje miesięcznie".',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -648,6 +650,17 @@ class _AllocationCard extends StatelessWidget {
               ],
             ),
           ],
+          // Skład koperty — edycja tutaj, bo to plan dla tej samej puli, którą
+          // ten ekran realnie loguje (ADR-019).
+          const Divider(height: 24),
+          BillsAllocationItems(
+            items: ctrl.billsAllocationItems.toList()
+              ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
+            currency: cur,
+            onAdd: () => showBillsAllocationItemEditor(context),
+            onEdit: (it) =>
+                showBillsAllocationItemEditor(context, existing: it),
+          ),
         ],
       ),
     );

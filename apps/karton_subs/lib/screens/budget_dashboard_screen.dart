@@ -3,7 +3,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
-import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../services/excel_service.dart';
@@ -337,22 +336,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   }) {
     final cur = ctrl.targetCurrencyLabel;
     final alloc = ctrl.billsAllocation;
-    // Pozycje „Na rachunki" słuchają tego samego przełącznika sortowania co reszta
-    // listy (A→Z / kwota malejąco); kolejność w magazynie bez zmian.
-    final allocItems = ctrl.billsAllocationItems.toList()
-      ..sort(
-        (a, b) => switch (_sort) {
-          _BudgetSort.alpha => a.name.toLowerCase().compareTo(
-            b.name.toLowerCase(),
-          ),
-          _BudgetSort.amountDesc => b.amount.compareTo(a.amount),
-        },
-      );
-    Widget allocCard() => _BillsAllocationCard(
-      items: allocItems,
+    // Koperta „Na rachunki" jest tu tylko POKAZYWANA — pomniejsza plan, więc
+    // suma wydatków musi się tłumaczyć. Edycja mieszka na ekranie Rachunki,
+    // przy realnych rachunkach tej samej puli (ADR-019).
+    Widget allocCard() => _AllocationSummaryRow(
+      total: alloc ?? 0,
+      itemCount: ctrl.billsAllocationItems.length,
       currency: cur,
-      onAdd: () => _openAllocItemEditor(ctrl),
-      onEdit: (it) => _openAllocItemEditor(ctrl, existing: it),
     );
 
     if (isEmpty) {
@@ -490,162 +480,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     );
   }
 
-  /// Dodanie/edycja pojedynczej pozycji koperty „Na rachunki" (nazwa, kwota,
-  /// metoda płatności). Suma pozycji = rezerwa planu (pomniejsza „zostaje/mies");
-  /// realne rachunki liczy ekran Rachunki i bilans miesiąca.
-  Future<void> _openAllocItemEditor(
-    BudgetController ctrl, {
-    BillsAllocationItem? existing,
-  }) async {
-    final nameC = TextEditingController(text: existing?.name ?? '');
-    final amountC = TextEditingController(
-      text: existing != null ? existing.amount.toStringAsFixed(2) : '',
-    );
-    String? method = existing?.paymentMethod;
-    String? categoryId = existing?.categoryId;
-    final methods = context.read<StorageService>().getPaymentMethods();
-    final categories = context.read<StorageService>().getCategories();
-
-    await showDialog<void>(
-      context: context,
-      builder: (dctx) => StatefulBuilder(
-        builder: (dctx, setLocal) => AlertDialog(
-          title: Text(
-            existing == null ? 'Nowa pozycja „Na rachunki"' : 'Edytuj pozycję',
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: nameC,
-                  autofocus: existing == null,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Nazwa',
-                    hintText: 'np. Paliwo',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: amountC,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Kwota (${ctrl.targetCurrencyLabel})',
-                    hintText: 'np. 300',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Kategoria',
-                  style: Theme.of(dctx).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text('Brak'),
-                      selected: categoryId == null,
-                      onSelected: (_) => setLocal(() => categoryId = null),
-                    ),
-                    ...categories.map(
-                      (cat) => FilterChip(
-                        label: Text(cat.name),
-                        selected: categoryId == cat.id,
-                        selectedColor: cat.color.withValues(alpha: 0.2),
-                        onSelected: (_) => setLocal(() => categoryId = cat.id),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Metoda płatności',
-                  style: Theme.of(dctx).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text('Brak'),
-                      selected: method == null,
-                      onSelected: (_) => setLocal(() => method = null),
-                    ),
-                    ...methods.map(
-                      (pm) => FilterChip(
-                        avatar: Icon(
-                          pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
-                          size: 16,
-                          color: method == pm.name ? AppColors.onAccent : null,
-                        ),
-                        label: Text(pm.name),
-                        selected: method == pm.name,
-                        onSelected: (_) => setLocal(() => method = pm.name),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            if (existing != null)
-              TextButton(
-                onPressed: () {
-                  ctrl.removeBillsAllocationItem(existing.id);
-                  Navigator.pop(dctx);
-                },
-                child: const Text('Usuń'),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(dctx),
-              child: const Text('Anuluj'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final name = nameC.text.trim();
-                final amount = double.tryParse(
-                  amountC.text.trim().replaceAll(' ', '').replaceAll(',', '.'),
-                );
-                if (name.isEmpty || amount == null || amount <= 0) {
-                  Navigator.pop(dctx);
-                  return;
-                }
-                if (existing == null) {
-                  ctrl.addBillsAllocationItem(
-                    name: name,
-                    amount: amount,
-                    paymentMethod: method,
-                    categoryId: categoryId,
-                  );
-                } else {
-                  ctrl.updateBillsAllocationItem(
-                    existing.copyWith(
-                      name: name,
-                      amount: amount,
-                      paymentMethod: method,
-                      clearPaymentMethod: method == null,
-                      categoryId: categoryId,
-                      clearCategoryId: categoryId == null,
-                    ),
-                  );
-                }
-                Navigator.pop(dctx);
-              },
-              child: const Text('Zapisz'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _Section extends StatelessWidget {
@@ -1021,31 +855,27 @@ class _EmptyBudget extends StatelessWidget {
   }
 }
 
-/// Pozycja „Na rachunki" (koperta planu) w Budżecie — edytowalna. Pomniejsza
-/// „zostaje/mies"; realne rachunki liczy ekran Rachunki i bilans miesiąca.
-/// Karta „Na rachunki" (koperta planu) na ekranie Budżet — nagłówek z sumą,
-/// rozbicie na pozycje (nazwa · metoda | −kwota) i przycisk „Dodaj pozycję".
-class _BillsAllocationCard extends StatelessWidget {
-  final List<BillsAllocationItem> items;
+/// Koperta „Na rachunki" na ekranie Budżet — SAMA SUMA, bez edycji.
+///
+/// Rezerwa pomniejsza „zostaje/mies", więc musi być widoczna w sumie wydatków,
+/// inaczej plan przestałby się tłumaczyć. Skład koperty i jej edycja mieszkają
+/// na ekranie „Rachunki", przy realnych rachunkach tej samej puli (ADR-019).
+class _AllocationSummaryRow extends StatelessWidget {
+  final double total;
+  final int itemCount;
   final String currency;
-  final VoidCallback onAdd;
-  final ValueChanged<BillsAllocationItem> onEdit;
-  const _BillsAllocationCard({
-    required this.items,
+
+  const _AllocationSummaryRow({
+    required this.total,
+    required this.itemCount,
     required this.currency,
-    required this.onAdd,
-    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final total = items.fold<double>(0, (a, b) => a + b.amount);
-    final autoByMethod = {
-      for (final pm in context.read<StorageService>().getPaymentMethods())
-        pm.name: pm.isAutomatic,
-    };
+    final isSet = total > 0 || itemCount > 0;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -1055,147 +885,32 @@ class _BillsAllocationCard extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  lucide.LucideIcons.receiptText,
-                  size: 20,
-                  color: c.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Na rachunki', style: theme.textTheme.bodyMedium),
-                      Text(
-                        items.isEmpty
-                            ? 'Rezerwa na rachunki — dodaj pozycje'
-                            : 'Rezerwa planu (pomniejsza „zostaje/mies")',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: c.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  items.isEmpty
-                      ? 'Ustaw'
-                      : '−${budgetNf.format(total)}${curLabelSuffix(currency)}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: items.isEmpty ? c.primary : c.negative,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-            if (items.isNotEmpty) ...[
-              const Divider(height: 20),
-              for (final it in items)
-                _AllocItemRow(
-                  item: it,
-                  currency: currency,
-                  isAuto: it.paymentMethod != null
-                      ? (autoByMethod[it.paymentMethod] ?? false)
-                      : null,
-                  dotColor: it.categoryId != null
-                      ? context
-                            .read<StorageService>()
-                            .getCategory(it.categoryId!)
-                            ?.color
-                      : null,
-                  onTap: () => onEdit(it),
-                ),
-            ],
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(LucideIcons.plus, size: 16),
-                label: const Text('Dodaj pozycję'),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Wiersz pojedynczej pozycji koperty „Na rachunki": „• nazwa · metoda | −kwota".
-/// [isAuto] `null` = brak metody; `true/false` = automatyczna/manualna (ikona).
-/// Kategoria (jeśli przypisana) objawia się TYLKO kolorem [dotColor] — bez
-/// wypisywania nazwy kategorii (celowe uproszczenie względem `BudgetEntryCard`).
-class _AllocItemRow extends StatelessWidget {
-  final BillsAllocationItem item;
-  final String currency;
-  final bool? isAuto;
-  final Color? dotColor;
-  final VoidCallback onTap;
-  const _AllocItemRow({
-    required this.item,
-    required this.currency,
-    required this.isAuto,
-    this.dotColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(
           children: [
-            Text('•  ', style: TextStyle(color: dotColor ?? c.textMuted)),
+            Icon(lucide.LucideIcons.receiptText, size: 20, color: c.primary),
+            const SizedBox(width: 12),
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    child: Text(
-                      item.name,
-                      style: theme.textTheme.bodyMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (item.paymentMethod != null) ...[
-                    const SizedBox(width: 8),
-                    Icon(
-                      isAuto == true ? LucideIcons.zap : LucideIcons.hand,
-                      size: 13,
+                  Text('Na rachunki', style: theme.textTheme.bodyMedium),
+                  Text(
+                    isSet
+                        ? 'Rezerwa planu — skład i edycja w „Rachunkach"'
+                        : 'Rezerwa na rachunki — ustaw ją w „Rachunkach"',
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: c.textMuted,
                     ),
-                    const SizedBox(width: 3),
-                    Flexible(
-                      child: Text(
-                        item.paymentMethod!,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: c.textMuted,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
             Text(
-              '−${budgetNf.format(item.amount)}${curLabelSuffix(currency)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: c.negative,
+              isSet
+                  ? '−${budgetNf.format(total)}${curLabelSuffix(currency)}'
+                  : 'Brak',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: isSet ? c.negative : c.textMuted,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -1205,3 +920,4 @@ class _AllocItemRow extends StatelessWidget {
     );
   }
 }
+

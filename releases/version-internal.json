@@ -1,9 +1,12 @@
 {
-  "releaseDate": "2026-07-26T15:23:30Z",
-  "versionCode": 1026072604,
-  "version": "0.10.26072604",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072604",
+  "version": "0.10.26072605",
+  "versionCode": 1026072605,
+  "releaseNotes": "- Koperta 'Na rachunki' edytowana na ekranie Rachunki (bylo w Budzecie)\n- W Budzecie zostaje sam wiersz z suma rezerwy, bo nadal pomniejsza plan",
   "changelog": [
+    {
+      "version": "0.10.26072605",
+      "notes": "- Koperta 'Na rachunki' edytowana na ekranie Rachunki (bylo w Budzecie)\n- W Budzecie zostaje sam wiersz z suma rezerwy, bo nadal pomniejsza plan"
+    },
     {
       "version": "0.10.26072604",
       "notes": "- Wydatek jednorazowy i rachunek to teraz jedna rzecz: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Stare wydatki jednorazowe przeniesione automatycznie, plan miesieczny bez zmian\n- Rachunek z data przyszla nie udaje juz zaplaconego\n- Formularz rachunku dostal metode platnosci"
@@ -39,11 +42,8 @@
     {
       "version": "0.10.26072403",
       "notes": "- Przycinanie zdjecia takze w formularzu edycji rachunku: dotknij miniatury i uzyj Przytnij (dla nowego skanu docina sie przed zapisem, dla zapisanego rachunku podmienia sie kopia podgladu)"
-    },
-    {
-      "version": "0.10.26072402",
-      "notes": "- Przycinanie zdjecia rachunku: po zrobieniu lub wybraniu zdjecia otwiera sie kadrowanie do samego paragonu (bez reki i tla) - czytelniejszy skan i lzejszy plik w archiwum\n- Rachunek z Udostepnij mozna docic pozniej: tap w miniature w Do zatwierdzenia otwiera podglad z przyciskiem Przytnij; rozpoznane pola zostaja, a gdy rachunek sie nie rozpoznal - po przycieciu uzyj Ponow"
     }
   ],
-  "releaseNotes": "- Wydatek jednorazowy i rachunek to teraz jedna rzecz: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Stare wydatki jednorazowe przeniesione automatycznie, plan miesieczny bez zmian\n- Rachunek z data przyszla nie udaje juz zaplaconego\n- Formularz rachunku dostal metode platnosci"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072605",
+  "releaseDate": "2026-07-26T15:52:14Z"
 }
