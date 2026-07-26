@@ -1,6 +1,12 @@
+import '../utils/cycle_math.dart';
 import 'usage_event.dart';
 
-enum BillingCycle { weekly, monthly, quarterly, yearly, custom }
+/// Cykl rozliczeniowy. [monthsOfYear] to wzor roczny — platnosc w wybranych
+/// miesiacach (pole `cycleMonths`), np. [1, 4, 9]. Pokrywa tez „co N miesiecy"
+/// dla N dzielacego 12: co 2 = szesc miesiecy, co 4 = trzy, co pol roku = dwa
+/// (ADR-020). Odstepy istniejace wczesniej (miesiecznie, kwartalnie, rocznie)
+/// zostaja jako wlasne wartosci — jeden wzor ma miec jeden zapis.
+enum BillingCycle { weekly, monthly, quarterly, yearly, monthsOfYear, custom }
 
 // ignore: constant_identifier_names
 enum Currency {
@@ -55,6 +61,11 @@ class Subscription {
   final Currency currency;
   final BillingCycle billingCycle;
   final int? customCycleDays;
+
+  /// Miesiace platnosci dla [BillingCycle.monthsOfYear] (1..12), np. [1, 4, 9].
+  /// Ignorowane przy pozostalych cyklach; brak = zachowanie jak dotad.
+  final List<int>? cycleMonths;
+
   final String? categoryId;
   final DateTime startDate;
   final String? cancellationUrl;
@@ -81,6 +92,7 @@ class Subscription {
     required this.currency,
     required this.billingCycle,
     this.customCycleDays,
+    this.cycleMonths,
     this.categoryId,
     required this.startDate,
     this.cancellationUrl,
@@ -101,21 +113,7 @@ class Subscription {
   });
 
   /// Pełna kwota znormalizowana do miesięcznej (bez podziału)
-  double get monthlyAmountFull {
-    switch (billingCycle) {
-      case BillingCycle.weekly:
-        return amount * 52 / 12;
-      case BillingCycle.monthly:
-        return amount;
-      case BillingCycle.quarterly:
-        return amount / 3;
-      case BillingCycle.yearly:
-        return amount / 12;
-      case BillingCycle.custom:
-        final days = customCycleDays ?? 30;
-        return amount * 30 / days;
-    }
-  }
+  double get monthlyAmountFull => _monthlyFromAmount(amount);
 
   /// Kwota miesięczna po podziale na współdzielących.
   /// Zwraca 0 dla aktywnych triali (jeszcze nie płacisz).
@@ -132,6 +130,19 @@ class Subscription {
   DateTime get nextRenewalDate {
     var next = startDate;
     final now = _now;
+    // Wzor roczny (wybrane miesiace) nie da sie policzyc krokiem stalej
+    // dlugosci — bierzemy pierwsze wystapienie z projekcji na dwa lata w przod.
+    if (billingCycle == BillingCycle.monthsOfYear) {
+      final upcoming = occurrencesInRange(
+        startDate,
+        billingCycle,
+        customCycleDays,
+        now,
+        DateTime(now.year + 2, now.month, now.day),
+        cycleMonths: cycleMonths,
+      );
+      return upcoming.isNotEmpty ? upcoming.first : startDate;
+    }
     while (next.isBefore(now)) {
       switch (billingCycle) {
         case BillingCycle.weekly:
@@ -142,6 +153,8 @@ class Subscription {
           next = DateTime(next.year, next.month + 3, next.day);
         case BillingCycle.yearly:
           next = DateTime(next.year + 1, next.month, next.day);
+        case BillingCycle.monthsOfYear:
+          break; // obsluzone wyzej
         case BillingCycle.custom:
           next = next.add(Duration(days: customCycleDays ?? 30));
       }
@@ -210,21 +223,14 @@ class Subscription {
     return full;
   }
 
-  double _monthlyFromAmount(double amt) {
-    switch (billingCycle) {
-      case BillingCycle.weekly:
-        return amt * 52 / 12;
-      case BillingCycle.monthly:
-        return amt;
-      case BillingCycle.quarterly:
-        return amt / 3;
-      case BillingCycle.yearly:
-        return amt / 12;
-      case BillingCycle.custom:
-        final days = customCycleDays ?? 30;
-        return amt * 30 / days;
-    }
-  }
+  /// Normalizacja do kwoty miesięcznej — wspólny wzór z budżetem
+  /// (`cycle_math.monthlyFromCycle`), bez duplikowania arytmetyki cykli.
+  double _monthlyFromAmount(double amt) => monthlyFromCycle(
+        amt,
+        billingCycle,
+        customCycleDays,
+        cycleMonths: cycleMonths,
+      );
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
     return Subscription(
@@ -241,6 +247,9 @@ class Subscription {
         orElse: () => BillingCycle.monthly,
       ),
       customCycleDays: json['customCycleDays'] as int?,
+      cycleMonths: (json['cycleMonths'] as List?)?.whereType<num>()
+          .map((e) => e.toInt())
+          .toList(),
       categoryId: json['categoryId'] as String?,
       startDate: DateTime.parse(json['startDate'] as String),
       cancellationUrl: json['cancellationUrl'] as String?,
@@ -278,6 +287,7 @@ class Subscription {
         'currency': currency.name,
         'billingCycle': billingCycle.name,
         if (customCycleDays != null) 'customCycleDays': customCycleDays,
+        if (cycleMonths != null) 'cycleMonths': cycleMonths,
         if (categoryId != null) 'categoryId': categoryId,
         'startDate': startDate.toIso8601String(),
         if (cancellationUrl != null) 'cancellationUrl': cancellationUrl,
@@ -310,6 +320,8 @@ class Subscription {
     BillingCycle? billingCycle,
     int? customCycleDays,
     bool clearCustomCycleDays = false,
+    List<int>? cycleMonths,
+    bool clearCycleMonths = false,
     String? categoryId,
     bool clearCategoryId = false,
     DateTime? startDate,
@@ -348,6 +360,8 @@ class Subscription {
       customCycleDays: clearCustomCycleDays
           ? null
           : (customCycleDays ?? this.customCycleDays),
+      cycleMonths:
+          clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       startDate: startDate ?? this.startDate,
       cancellationUrl: clearCancellationUrl

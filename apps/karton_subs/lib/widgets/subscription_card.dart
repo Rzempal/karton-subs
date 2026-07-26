@@ -249,6 +249,7 @@ class SubscriptionCard extends StatelessWidget {
         BillingCycle.monthly => 'mies.',
         BillingCycle.quarterly => 'kw.',
         BillingCycle.yearly => 'rok',
+        BillingCycle.monthsOfYear => 'rok',
         BillingCycle.custom => 'cykl',
       };
 }

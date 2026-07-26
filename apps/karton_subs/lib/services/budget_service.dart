@@ -533,7 +533,8 @@ class BudgetService {
             if (anchor != null) {
               // Korekta tylko kwoty: projekcja wg cyklu, ale z kwotą korekty.
               for (final d in occurrencesInRange(
-                  anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {
+                  anchor, e.cycle, e.customCycleDays, mStart, mEnd,
+                  cycleMonths: e.cycleMonths)) {
                 add(
                     d.day,
                     CalendarItem(
@@ -550,7 +551,8 @@ class BudgetService {
         }
         if (anchor == null) continue;
         for (final d in occurrencesInRange(
-            anchor, e.cycle, e.customCycleDays, mStart, mEnd)) {
+            anchor, e.cycle, e.customCycleDays, mStart, mEnd,
+            cycleMonths: e.cycleMonths)) {
           add(
             d.day,
             CalendarItem(
@@ -568,7 +570,8 @@ class BudgetService {
 
     for (final s in subs.where((s) => s.isActive)) {
       for (final d in occurrencesInRange(
-          s.startDate, s.billingCycle, s.customCycleDays, mStart, mEnd)) {
+          s.startDate, s.billingCycle, s.customCycleDays, mStart, mEnd,
+          cycleMonths: s.cycleMonths)) {
         add(
           d.day,
           CalendarItem(

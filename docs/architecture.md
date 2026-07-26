@@ -79,7 +79,7 @@ lib/
 │   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek/rata/przelew) — ADR-018
 │   └── pending_bill_scan.dart   # Rachunek rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
-│   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies
+│   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # E2E encryption (AES-256-GCM)
@@ -204,7 +204,8 @@ miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 
 ## Domena Budzet domowy (rownolegla warstwa)
 
-> **ADR:** [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
+> **ADR:** [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md)
+> | [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
 > | [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
 > | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
 > | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
@@ -229,6 +230,13 @@ BudgetService  ──►  BudgetEntry[]  (box: budget_entries | household_budget
    │                          + subskrypcje danego zakresu (Subscription.scope)
    └──►  AnalyticsService.getMonthlyTotal(subscriptions)  ◄─ integracja
 ```
+
+**Cykle platnosci (ADR-020):** obok `weekly/monthly/quarterly/yearly/custom (dni)`
+jest tryb **`monthsOfYear`** — lista miesiacow platnosci (`cycleMonths`, np. 1,4,9)
+ze wspolnym dniem z daty-kotwicy. Pokrywa „co N miesiecy" dla N dzielacego 12
+(co 2 = szesc miesiecy, co 4 = trzy, co pol roku = dwa); presety w formularzu tylko
+wypelniaja te liste. Kwota/mies = kwota x liczba miesiecy / 12. Dotyczy pozycji
+budzetu i subskrypcji (wspolna matematyka w `cycle_math`).
 
 **Model czasu (hybryda):**
 - Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`

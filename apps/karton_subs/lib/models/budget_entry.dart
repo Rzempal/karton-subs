@@ -103,6 +103,10 @@ class BudgetEntry {
   final BillingCycle cycle;
   final int? customCycleDays;
 
+  /// Miesiace platnosci dla [BillingCycle.monthsOfYear] (1..12), np. [1, 4, 9].
+  /// Ignorowane przy pozostalych cyklach; brak = zachowanie jak dotad (ADR-020).
+  final List<int>? cycleMonths;
+
   /// Miesiąc przypisania w formacie "YYYY-MM" — dla [oneTimeExpense] i [billPayment].
   final String? month;
 
@@ -153,6 +157,7 @@ class BudgetEntry {
     required this.currency,
     this.cycle = BillingCycle.monthly,
     this.customCycleDays,
+    this.cycleMonths,
     this.month,
     this.monthOverrides,
     this.categoryId,
@@ -236,7 +241,12 @@ class BudgetEntry {
   /// a nie średnią miesięczną.
   double get monthlyAmount {
     if (isOneTime) return 0;
-    return monthlyFromCycle(amount, cycle, customCycleDays);
+    return monthlyFromCycle(
+      amount,
+      cycle,
+      customCycleDays,
+      cycleMonths: cycleMonths,
+    );
   }
 
   /// Miesięczny wpływ na budżet ze znakiem: wpływy `+`, koszty `-`,
@@ -279,6 +289,10 @@ class BudgetEntry {
         orElse: () => BillingCycle.monthly,
       ),
       customCycleDays: json['customCycleDays'] as int?,
+      cycleMonths: (json['cycleMonths'] as List?)
+          ?.whereType<num>()
+          .map((e) => e.toInt())
+          .toList(),
       month: json['month'] as String?,
       monthOverrides: (json['monthOverrides'] as Map<String, dynamic>?)?.map(
         (k, v) =>
@@ -309,6 +323,7 @@ class BudgetEntry {
         'currency': currency.name,
         'cycle': cycle.name,
         if (customCycleDays != null) 'customCycleDays': customCycleDays,
+        if (cycleMonths != null) 'cycleMonths': cycleMonths,
         if (month != null) 'month': month,
         if (monthOverrides != null && monthOverrides!.isNotEmpty)
           'monthOverrides': {
@@ -335,6 +350,8 @@ class BudgetEntry {
     BillingCycle? cycle,
     int? customCycleDays,
     bool clearCustomCycleDays = false,
+    List<int>? cycleMonths,
+    bool clearCycleMonths = false,
     String? month,
     bool clearMonth = false,
     Map<String, BillMonthOverride>? monthOverrides,
@@ -367,6 +384,8 @@ class BudgetEntry {
       customCycleDays: clearCustomCycleDays
           ? null
           : (customCycleDays ?? this.customCycleDays),
+      cycleMonths:
+          clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
       month: clearMonth ? null : (month ?? this.month),
       monthOverrides: clearMonthOverrides
           ? null

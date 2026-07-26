@@ -61,6 +61,7 @@ String budgetCycleSuffix(BillingCycle cycle) => switch (cycle) {
   BillingCycle.monthly => 'mies.',
   BillingCycle.quarterly => 'kw.',
   BillingCycle.yearly => 'rok',
+  BillingCycle.monthsOfYear => 'rok',
   BillingCycle.custom => 'cykl',
 };
 

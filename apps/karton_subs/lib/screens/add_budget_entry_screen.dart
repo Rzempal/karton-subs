@@ -8,6 +8,7 @@ import '../controllers/budget_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import '../widgets/cycle_months_picker.dart';
 
 class AddBudgetEntryScreen extends StatefulWidget {
   final BudgetEntry? existing;
@@ -52,6 +53,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   DateTime? _installmentLastDate;
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
+
+  /// Miesiące płatności dla cyklu „wybrane miesiące" (ADR-020).
+  List<int> _cycleMonths = const [];
   late DateTime _oneTimeDate; // dokładna data wydatku jednorazowego
   DateTime? _anchorDate; // data-kotwica pozycji cyklicznej (opcjonalna)
   bool _isSubmitting = false;
@@ -125,6 +129,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     if (e != null) {
       _currency = e.currency;
       _cycle = e.cycle;
+      _cycleMonths = e.cycleMonths ?? const [];
     }
     // Data jednorazowego: startDate -> (fallback) 1. dzień z month -> dziś.
     final fallbackMonth = e?.month != null
@@ -343,6 +348,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     .toList(),
                 onChanged: (v) => setState(() => _cycle = v!),
               ),
+              if (_cycle == BillingCycle.monthsOfYear) ...[
+                const SizedBox(height: 12),
+                CycleMonthsPicker(
+                  months: _cycleMonths,
+                  anchorMonth: (_anchorDate ?? _oneTimeDate).month,
+                  onChanged: (m) => setState(() => _cycleMonths = m),
+                ),
+              ],
               if (_cycle == BillingCycle.custom) ...[
                 const SizedBox(height: 12),
                 TextFormField(
@@ -731,6 +744,13 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       effStartDate = start;
       installmentCount = count;
     }
+    // Miesiące płatności tylko dla swojego cyklu; pusty wybór = wszystkie
+    // (zachowuje się jak miesięczny, zamiast gubić pozycję w kalendarzu).
+    final effCycleMonths = effCycle == BillingCycle.monthsOfYear && !_isOneTime
+        ? (_cycleMonths.isEmpty
+            ? CycleMonthsPicker.everyN(2, (effStartDate ?? _oneTimeDate).month)
+            : _cycleMonths)
+        : null;
 
     try {
       if (_isEditing) {
@@ -743,6 +763,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             cycle: effCycle,
             customCycleDays: effCustomDays,
             clearCustomCycleDays: effCustomDays == null,
+            cycleMonths: effCycleMonths,
+            clearCycleMonths: effCycleMonths == null,
             month: monthKey,
             clearMonth: monthKey == null,
             startDate: effStartDate,
@@ -767,6 +789,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           currency: _currency,
           cycle: effCycle,
           customCycleDays: effCustomDays,
+          cycleMonths: effCycleMonths,
           month: monthKey,
           categoryId: categoryId,
           paymentMethod: paymentMethod,
@@ -820,6 +843,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     BillingCycle.monthly => 'Miesięcznie',
     BillingCycle.quarterly => 'Kwartalnie',
     BillingCycle.yearly => 'Rocznie',
+    BillingCycle.monthsOfYear => 'Wybrane miesiące',
     BillingCycle.custom => 'Własny cykl',
   };
 

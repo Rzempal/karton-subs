@@ -7,6 +7,7 @@ import '../models/quick_add_templates.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/cycle_months_picker.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
@@ -27,6 +28,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   Currency _currency = Currency.PLN;
   BillingCycle _cycle = BillingCycle.monthly;
+
+  /// Miesiące płatności dla cyklu „wybrane miesiące" (ADR-020).
+  List<int> _cycleMonths = const [];
+
+  /// Miesiące do zapisu: tylko dla swojego cyklu; pusty wybór dostaje domyślne
+  /// „co 2 miesiące" od miesiąca startu, żeby pozycja nie wypadła z kalendarza.
+  List<int>? get _effCycleMonths => _cycle == BillingCycle.monthsOfYear
+      ? (_cycleMonths.isEmpty
+          ? CycleMonthsPicker.everyN(2, _startDate.month)
+          : _cycleMonths)
+      : null;
   String? _categoryId;
   DateTime _startDate = DateTime.now();
   int? _sharedWith;
@@ -57,6 +69,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     if (s != null) {
       _currency = s.currency;
       _cycle = s.billingCycle;
+      _cycleMonths = s.cycleMonths ?? const [];
       _categoryId = s.categoryId;
       _startDate = s.startDate;
       _sharedWith = s.sharedWith;
@@ -202,6 +215,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   .toList(),
               onChanged: (v) => setState(() => _cycle = v!),
             ),
+            if (_cycle == BillingCycle.monthsOfYear) ...[
+              const SizedBox(height: 12),
+              CycleMonthsPicker(
+                months: _cycleMonths,
+                anchorMonth: _startDate.month,
+                onChanged: (m) => setState(() => _cycleMonths = m),
+              ),
+            ],
             const SizedBox(height: 24),
 
             _SectionLabel('Kategoria'),
@@ -499,6 +520,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
             amount: amount,
             currency: _currency,
             billingCycle: _cycle,
+            cycleMonths: _effCycleMonths,
+            clearCycleMonths: _effCycleMonths == null,
             categoryId: _categoryId,
             startDate: _startDate,
             cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
@@ -526,6 +549,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           amount: amount,
           currency: _currency,
           billingCycle: _cycle,
+          cycleMonths: _effCycleMonths,
           categoryId: _categoryId,
           startDate: _startDate,
           cancellationUrl: _cancelUrlCtrl.text.trim().isEmpty
@@ -551,6 +575,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       BillingCycle.monthly => 'Miesięcznie',
       BillingCycle.quarterly => 'Kwartalnie',
       BillingCycle.yearly => 'Rocznie',
+      BillingCycle.monthsOfYear => 'Wybrane miesiące',
       BillingCycle.custom => 'Własny cykl',
     };
   }

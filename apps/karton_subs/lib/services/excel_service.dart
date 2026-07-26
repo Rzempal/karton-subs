@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../models/category.dart';
 import '../models/subscription.dart';
 import '../models/budget_entry.dart';
+import '../utils/cycle_math.dart';
 import 'app_logger.dart';
 import 'storage_service.dart';
 
@@ -133,7 +134,7 @@ class ExcelService {
         TextCellValue(_sanitizeCell(s.name)),
         DoubleCellValue(s.amount),
         TextCellValue(s.currency.label),
-        TextCellValue(_cycleLabel(s.billingCycle, s.customCycleDays)),
+        TextCellValue(_cycleLabel(s.billingCycle, s.customCycleDays, s.cycleMonths)),
         TextCellValue(_sanitizeCell(catName(s.categoryId) ?? '')),
         TextCellValue(_sanitizeCell(s.paymentMethod ?? '')),
         TextCellValue(s.isActive ? 'tak' : 'nie'),
@@ -160,7 +161,11 @@ class ExcelService {
     return value;
   }
 
-  static String _cycleLabel(BillingCycle cycle, int? customDays) {
+  static String _cycleLabel(
+    BillingCycle cycle,
+    int? customDays, [
+    List<int>? cycleMonths,
+  ]) {
     switch (cycle) {
       case BillingCycle.weekly:
         return 'tygodniowo';
@@ -170,6 +175,9 @@ class ExcelService {
         return 'kwartalnie';
       case BillingCycle.yearly:
         return 'rocznie';
+      case BillingCycle.monthsOfYear:
+        // Format czytelny i odwracalny przy imporcie: „miesiące: 1,4,9".
+        return 'miesiące: ${normalizedCycleMonths(cycleMonths).join(',')}';
       case BillingCycle.custom:
         return 'co ${customDays ?? 30} dni';
     }
@@ -257,6 +265,7 @@ class ExcelService {
         currency: row.currency,
         billingCycle: row.billingCycle,
         customCycleDays: row.customCycleDays,
+        cycleMonths: row.cycleMonths,
         categoryId: categoryId,
         startDate: row.startDate,
         isActive: row.isActive,
@@ -345,7 +354,7 @@ class ExcelService {
         TextCellValue(_sanitizeCell(e.name)),
         DoubleCellValue(e.amount),
         TextCellValue(e.currency.label),
-        TextCellValue(e.isOneTime ? '' : _cycleLabel(e.cycle, e.customCycleDays)),
+        TextCellValue(e.isOneTime ? '' : _cycleLabel(e.cycle, e.customCycleDays, e.cycleMonths)),
         TextCellValue(_sanitizeCell(catName(e.categoryId))),
         TextCellValue(e.isOneTime ? (e.month ?? '') : ''),
         TextCellValue(_sanitizeCell(e.note ?? '')),
@@ -458,6 +467,7 @@ class _RawRow {
   final Currency currency;
   final BillingCycle billingCycle;
   final int? customCycleDays;
+  final List<int>? cycleMonths;
   final String? categoryName;
   final String? paymentName;
   final bool isActive;
@@ -470,6 +480,7 @@ class _RawRow {
     required this.currency,
     required this.billingCycle,
     this.customCycleDays,
+    this.cycleMonths,
     this.categoryName,
     this.paymentName,
     required this.isActive,
@@ -580,7 +591,7 @@ _RawParse _parseWorkbook(Uint8List bytes) {
     final name = rawName.length > _maxNameLength
         ? rawName.substring(0, _maxNameLength)
         : rawName;
-    final (cycle, customDays) = _parseCycle(cell(_HeaderField.cycle));
+    final (cycle, customDays, cycleMonths) = _parseCycle(cell(_HeaderField.cycle));
 
     rows.add(_RawRow(
       name: name,
@@ -588,6 +599,7 @@ _RawParse _parseWorkbook(Uint8List bytes) {
       currency: _parseCurrency(cell(_HeaderField.currency)),
       billingCycle: cycle,
       customCycleDays: customDays,
+      cycleMonths: cycleMonths,
       categoryName: _blankToNull(cell(_HeaderField.category)),
       paymentName: _blankToNull(cell(_HeaderField.payment)),
       isActive: _parseActive(cell(_HeaderField.active)),
@@ -723,27 +735,39 @@ Currency _parseCurrency(String? raw) {
   return Currency.PLN;
 }
 
-(BillingCycle, int?) _parseCycle(String? raw) {
-  if (raw == null) return (BillingCycle.monthly, null);
+(BillingCycle, int?, List<int>?) _parseCycle(String? raw) {
+  if (raw == null) return (BillingCycle.monthly, null, null);
   final t = raw.toLowerCase().trim();
+  // „miesiące: 1,4,9" — wzor roczny (ADR-020). Sprawdzane PRZED „mies", bo
+  // slowo „miesiace" zawiera ten sam rdzen co cykl miesieczny.
+  if (t.startsWith('miesiąc') || t.startsWith('miesiac') || t.startsWith('months')) {
+    final months = RegExp(r'\d+')
+        .allMatches(t)
+        .map((m) => int.parse(m.group(0)!))
+        .where((m) => m >= 1 && m <= 12)
+        .toSet()
+        .toList()
+      ..sort();
+    if (months.isNotEmpty) return (BillingCycle.monthsOfYear, null, months);
+  }
   if (t.contains('tyg') || t.contains('week')) {
-    return (BillingCycle.weekly, null);
+    return (BillingCycle.weekly, null, null);
   }
   if (t.contains('kwart') || t.contains('quart')) {
-    return (BillingCycle.quarterly, null);
+    return (BillingCycle.quarterly, null, null);
   }
   if (t.contains('rok') ||
       t.contains('rocz') ||
       t.contains('year') ||
       t.contains('annual')) {
-    return (BillingCycle.yearly, null);
+    return (BillingCycle.yearly, null, null);
   }
   if (t.contains('dni') || t.contains('custom') || t.contains('day')) {
     final m = RegExp(r'\d+').firstMatch(t);
     final days = m != null ? int.tryParse(m.group(0)!) : null;
-    return (BillingCycle.custom, (days != null && days > 0) ? days : 30);
+    return (BillingCycle.custom, (days != null && days > 0) ? days : 30, null);
   }
-  return (BillingCycle.monthly, null);
+  return (BillingCycle.monthly, null, null);
 }
 
 bool _parseActive(String? raw) {
@@ -883,7 +907,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
     final type = _parseBudgetType(cell(_BudgetHeaderField.type));
     final isOneTime = type == BudgetEntryType.oneTimeIncome ||
         type == BudgetEntryType.billPayment;
-    final (cycle, customDays) = _parseCycle(cell(_BudgetHeaderField.cycle));
+    final (cycle, customDays, cycleMonths) = _parseCycle(cell(_BudgetHeaderField.cycle));
     final month = isOneTime
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
             BudgetEntry.monthKeyOf(now))
@@ -920,6 +944,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
       currency: _parseCurrency(cell(_BudgetHeaderField.currency)),
       cycle: cycle,
       customCycleDays: isOneTime ? null : customDays,
+      cycleMonths: isOneTime ? null : cycleMonths,
       month: month,
       categoryId: categoryId,
       paymentMethod: paymentMethod,
