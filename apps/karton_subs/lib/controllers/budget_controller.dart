@@ -219,6 +219,12 @@ class BudgetController extends ChangeNotifier {
   List<BillsAllocationItem> get billsAllocationItems =>
       _storage.getBillsAllocationItems(_scope);
 
+  /// Pozycje Plannera z nagrobkami — podstawa KAZDEJ mutacji. Budowanie nowej
+  /// listy z widocznych pozycji gubiloby nagrobki, a wtedy usuniecie przestaloby
+  /// docierac do drugiego telefonu (ADR-022).
+  List<BillsAllocationItem> get _allocRaw =>
+      _storage.getBillsAllocationItemsRaw(_scope);
+
   Future<void> addBillsAllocationItem({
     required String name,
     required double amount,
@@ -226,31 +232,47 @@ class BudgetController extends ChangeNotifier {
     String? categoryId,
   }) async {
     final items = [
-      ...billsAllocationItems,
+      ..._allocRaw,
       BillsAllocationItem(
         id: _uuid.v4(),
         name: name,
         amount: amount,
+        updatedAt: DateTime.now(),
         paymentMethod: paymentMethod,
         categoryId: categoryId,
       ),
     ];
-    await _storage.setBillsAllocationItems(_scope, items);
-    notifyListeners();
+    await _saveAllocation(items);
   }
 
   Future<void> updateBillsAllocationItem(BillsAllocationItem item) async {
-    final items = billsAllocationItems
-        .map((e) => e.id == item.id ? item : e)
+    final stamped = item.copyWith(updatedAt: DateTime.now());
+    final items = _allocRaw
+        .map((e) => e.id == item.id ? stamped : e)
         .toList();
-    await _storage.setBillsAllocationItems(_scope, items);
-    notifyListeners();
+    await _saveAllocation(items);
   }
 
+  /// Usuwa pozycję Plannera. W zakresie DOMOWYM zostawia nagrobek, by usunięcie
+  /// dotarło do drugiego telefonu; w osobistym (bez synchronizacji) kasuje twardo.
   Future<void> removeBillsAllocationItem(String id) async {
-    final items = billsAllocationItems.where((e) => e.id != id).toList();
+    final items = isHousehold
+        ? _allocRaw
+            .map(
+              (e) => e.id == id
+                  ? e.copyWith(deleted: true, updatedAt: DateTime.now())
+                  : e,
+            )
+            .toList()
+        : _allocRaw.where((e) => e.id != id).toList();
+    await _saveAllocation(items);
+  }
+
+  /// Zapis Plannera + powiadomienie UI; w zakresie domowym wyzwala też
+  /// synchronizację (ADR-022 — Planner jedzie w tej samej paczce co pozycje).
+  Future<void> _saveAllocation(List<BillsAllocationItem> items) async {
     await _storage.setBillsAllocationItems(_scope, items);
-    notifyListeners();
+    _notifyMutation(touchedHousehold: isHousehold);
   }
 
   // ── Słowniki: użycie i kaskady (Kategorie / Metody płatności) ───────────────

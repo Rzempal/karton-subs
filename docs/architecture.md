@@ -258,6 +258,13 @@ tego podzialu.
 domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz
 [ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
 
+**Planner w synchronizacji (ADR-022):** koperta „Na rachunki" zakresu DOMOWEGO jedzie
+w tej samej paczce co pozycje — jako **sekcja opcjonalna przy tej samej wersji paczki**,
+zeby telefony mogly aktualizowac sie w roznym czasie. Pozycje Plannera maja `updatedAt`
+i nagrobki (scalanie per pozycja). Brak sekcji w paczce = BRAK INFORMACJI (lokalny
+Planner zostaje), pusta lista w paczce = „Planner jest pusty". Planner osobisty zostaje
+lokalny.
+
 **Synchronizacja domowego (ADR-009):** box `household_budget_entries` jest opcjonalnie
 synchronizowany miedzy urzadzeniami przez relay E2E (Supabase) — bez kont, parowanie
 QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmiana

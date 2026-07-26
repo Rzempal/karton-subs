@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
 import 'app_logger.dart';
 import 'storage_service.dart';
@@ -120,6 +121,12 @@ class SyncService extends ChangeNotifier {
 
   final List<BudgetEntry> Function() _readHousehold;
   final Future<void> Function(List<BudgetEntry>) _writeHousehold;
+
+  /// Planner budżetu domowego — z nagrobkami, żeby usunięcie propagowało się
+  /// na drugi telefon (ADR-022).
+  final List<BillsAllocationItem> Function() _readAllocation;
+  final Future<void> Function(List<BillsAllocationItem>) _writeAllocation;
+
   final SyncStore _store;
   final SyncCryptoService _crypto;
   final http.Client _http;
@@ -140,11 +147,20 @@ class SyncService extends ChangeNotifier {
     String? apiKey,
     List<BudgetEntry> Function()? readHousehold,
     Future<void> Function(List<BudgetEntry>)? writeHousehold,
+    List<BillsAllocationItem> Function()? readAllocation,
+    Future<void> Function(List<BillsAllocationItem>)? writeAllocation,
   })  : _readHousehold = readHousehold ??
             (() => storage.getBudgetEntries(BudgetScope.household)),
         _writeHousehold = writeHousehold ??
             ((entries) =>
                 storage.replaceBudgetEntries(BudgetScope.household, entries)),
+        _readAllocation = readAllocation ??
+            (() => storage.getBillsAllocationItemsRaw(BudgetScope.household)),
+        _writeAllocation = writeAllocation ??
+            ((items) => storage.setBillsAllocationItems(
+                  BudgetScope.household,
+                  items,
+                )),
         _store = store ?? const SecureSyncStore(),
         _crypto = crypto ?? SyncCryptoService(),
         _http = httpClient ?? http.Client(),
@@ -207,24 +223,48 @@ class SyncService extends ChangeNotifier {
     final p = _pairing!;
     try {
       final local = _readHousehold();
+      // Planner budżetu domowego jedzie w tej samej paczce (ADR-022).
+      final localAlloc = _readAllocation();
 
       // 1) Pull + pierwsze scalenie.
       final remote = await _pull(p.householdId);
       var expectedVersion = remote?.version ?? 0;
-      final remoteEntries =
-          remote == null ? <BudgetEntry>[] : _decode(remote.ciphertext, p.key);
+      final remoteSnapshot = remote == null
+          ? const SyncSnapshot(entries: [])
+          : _decode(remote.ciphertext, p.key);
+      final remoteEntries = remoteSnapshot.entries;
       var merged = remote == null ? local : SyncMerge.merge(local, remoteEntries);
+      // Brak sekcji w paczce (starszy telefon) = brak informacji → zostawiamy
+      // lokalny Planner. Pusta lista W paczce jest znacząca i wygra scalaniem.
+      var mergedAlloc = remoteSnapshot.allocation == null
+          ? localAlloc
+          : SyncMerge.mergeAllocation(localAlloc, remoteSnapshot.allocation!);
 
       final localSig = _signature(local);
       final mergedSig = _signature(merged);
-      var changed = localSig != mergedSig;
-      if (changed) {
+      final allocChanged = _allocSignature(localAlloc) != _allocSignature(mergedAlloc);
+      var changed = localSig != mergedSig || allocChanged;
+      if (localSig != mergedSig) {
         await _writeHousehold(merged);
       }
+      if (allocChanged) {
+        await _writeAllocation(mergedAlloc);
+      }
+
+      // Czy Planner wymaga wysłania? Gdy paczka na serwerze nie ma tej sekcji
+      // (telefon partnera ze starszą aplikacją), dopychamy ją TYLKO gdy mamy co
+      // wysłać — inaczej dwa telefony z pustym Plannerem biłyby wersję w
+      // nieskończoność (anty-ping-pong).
+      final allocNeedsPush = remoteSnapshot.allocation == null
+          ? mergedAlloc.isNotEmpty
+          : _allocSignature(mergedAlloc) !=
+              _allocSignature(remoteSnapshot.allocation!);
 
       // Skrót: jeśli po scaleniu nic się nie różni od serwera, push zbędny —
       // unikamy zbędnego bicia wersji i ping-pongu między urządzeniami.
-      if (remote != null && mergedSig == _signature(remoteEntries)) {
+      if (remote != null &&
+          mergedSig == _signature(remoteEntries) &&
+          !allocNeedsPush) {
         await _store.saveVersion(remote.version);
         _log.info('Sync OK (no change, v${remote.version})');
         return SyncResult(SyncOutcome.ok, changedLocal: changed);
@@ -232,8 +272,10 @@ class SyncService extends ChangeNotifier {
 
       // 2) Push z compare-and-swap; przy konflikcie scal ponownie i ponów.
       for (var attempt = 0; attempt < _maxPushAttempts; attempt++) {
-        final cipher =
-            _crypto.encryptEnvelope(SyncMerge.encodeSnapshot(merged), p.key);
+        final cipher = _crypto.encryptEnvelope(
+          SyncMerge.encodeSnapshot(merged, allocation: mergedAlloc),
+          p.key,
+        );
         final res = await _push(p.householdId, cipher, expectedVersion);
         if (res.ok) {
           await _store.saveVersion(res.version);
@@ -242,9 +284,14 @@ class SyncService extends ChangeNotifier {
         }
         // Konflikt: ktoś zapisał w międzyczasie — wciel jego zmiany i ponów.
         final theirs = res.ciphertext == null
-            ? <BudgetEntry>[]
+            ? const SyncSnapshot(entries: [])
             : _decode(res.ciphertext!, p.key);
-        merged = SyncMerge.merge(merged, theirs);
+        merged = SyncMerge.merge(merged, theirs.entries);
+        if (theirs.allocation != null) {
+          mergedAlloc =
+              SyncMerge.mergeAllocation(mergedAlloc, theirs.allocation!);
+          await _writeAllocation(mergedAlloc);
+        }
         expectedVersion = res.version;
         await _writeHousehold(merged);
         changed = true;
@@ -313,13 +360,18 @@ class SyncService extends ChangeNotifier {
 
   // ── Pomocnicze ────────────────────────────────────────────────────────────────
 
-  List<BudgetEntry> _decode(String ciphertext, Uint8List key) =>
-      SyncMerge.decodeSnapshot(_crypto.decryptEnvelope(ciphertext, key));
+  SyncSnapshot _decode(String ciphertext, Uint8List key) =>
+      SyncMerge.decodeSnapshotFull(_crypto.decryptEnvelope(ciphertext, key));
 
   /// Deterministyczny „odcisk" zbioru (po id) — do wykrycia, czy scalanie coś
   /// zmieniło lokalnie.
   String _signature(List<BudgetEntry> entries) {
     final sorted = [...entries]..sort((a, b) => a.id.compareTo(b.id));
+    return jsonEncode([for (final e in sorted) e.toJson()]);
+  }
+
+  String _allocSignature(List<BillsAllocationItem> items) {
+    final sorted = [...items]..sort((a, b) => a.id.compareTo(b.id));
     return jsonEncode([for (final e in sorted) e.toJson()]);
   }
 }

@@ -422,7 +422,15 @@ class StorageService {
   /// Pozycje koperty „Na rachunki" danego zakresu (nazwa + kwota + metoda).
   /// Migracja: stara pojedyncza kwota (`billsAllocation|scope`) jest czytana jako
   /// jedna pozycja „Na rachunki", dopóki użytkownik nie zapisze listy pozycji.
-  List<BillsAllocationItem> getBillsAllocationItems(BudgetScope scope) {
+  /// Pozycje Plannera WIDOCZNE (bez nagrobkow) — UI i sumy.
+  List<BillsAllocationItem> getBillsAllocationItems(BudgetScope scope) =>
+      List.unmodifiable(
+        getBillsAllocationItemsRaw(scope).where((e) => !e.deleted),
+      );
+
+  /// Pozycje Plannera Z NAGROBKAMI — do synchronizacji i backupu, gdzie
+  /// usuniecie musi dotrzec do drugiego telefonu (ADR-022).
+  List<BillsAllocationItem> getBillsAllocationItemsRaw(BudgetScope scope) {
     final raw = _settingsBox.get('billsAllocationItems|${scope.name}');
     if (raw is String && raw.isNotEmpty) {
       try {

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:karton_subs/models/bills_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -114,6 +115,10 @@ void main() {
     required List<BudgetEntry> Function() read,
     required Future<void> Function(List<BudgetEntry>) write,
     SyncStore? store,
+    // Planner budzetu domowego (ADR-022) — domyslnie pusty i bez zapisu, zeby
+    // istniejace testy nie musialy o nim wiedziec.
+    List<BillsAllocationItem> Function()? readAlloc,
+    Future<void> Function(List<BillsAllocationItem>)? writeAlloc,
   }) =>
       SyncService(
         StorageService(), // nieużywany — dostęp przez closury poniżej
@@ -124,6 +129,8 @@ void main() {
         apiKey: 'test-key',
         readHousehold: read,
         writeHousehold: write,
+        readAllocation: readAlloc ?? () => const <BillsAllocationItem>[],
+        writeAllocation: writeAlloc ?? (_) async {},
       );
 
   group('SyncService.syncNow', () {
@@ -189,6 +196,75 @@ void main() {
       // nagrobek (nowszy) wygrywa — w danych zostaje, ale jako deleted
       expect(household.single.deleted, isTrue);
       expect(SyncMerge.visible(household), isEmpty);
+    });
+
+    // Najwazniejszy przypadek dla dwoch telefonow (ADR-022): partner ze STARSZA
+    // aplikacja wysyla paczke bez sekcji Plannera. To brak informacji, nie
+    // „Planner jest pusty" — lokalny plan musi przezyc.
+    test('paczka bez sekcji Plannera nie czysci lokalnego Plannera', () async {
+      final fs = fakeServer();
+      fs.seed(pack([entry('a', at: DateTime(2026, 6, 10))]), 1);
+      var household = <BudgetEntry>[];
+      var alloc = [
+        BillsAllocationItem(
+          id: 'p1',
+          name: 'Paliwo',
+          amount: 300,
+          updatedAt: DateTime(2026, 7, 26, 10),
+        ),
+      ];
+      final svc = service(
+        fs.client,
+        read: () => household,
+        write: (l) async => household = l,
+        readAlloc: () => alloc,
+        writeAlloc: (l) async => alloc = l,
+      );
+      await svc.setPairing(SyncPairing('house-1', key));
+
+      await svc.syncNow();
+
+      expect(alloc, hasLength(1));
+      expect(alloc.single.amount, 300);
+    });
+
+    test('Planner partnera dociera i scala sie z lokalnym', () async {
+      final fs = fakeServer();
+      // Paczka partnera Z sekcja Plannera.
+      final theirs = SyncMerge.encodeSnapshot(
+        [entry('a', at: DateTime(2026, 6, 10))],
+        allocation: [
+          BillsAllocationItem(
+            id: 'p2',
+            name: 'Barber',
+            amount: 120,
+            updatedAt: DateTime(2026, 7, 26, 11),
+          ),
+        ],
+      );
+      fs.seed(crypto.encryptEnvelope(theirs, key), 1);
+
+      var household = <BudgetEntry>[];
+      var alloc = [
+        BillsAllocationItem(
+          id: 'p1',
+          name: 'Paliwo',
+          amount: 300,
+          updatedAt: DateTime(2026, 7, 26, 10),
+        ),
+      ];
+      final svc = service(
+        fs.client,
+        read: () => household,
+        write: (l) async => household = l,
+        readAlloc: () => alloc,
+        writeAlloc: (l) async => alloc = l,
+      );
+      await svc.setPairing(SyncPairing('house-1', key));
+
+      await svc.syncNow();
+
+      expect(alloc.map((e) => e.id).toSet(), {'p1', 'p2'});
     });
 
     test('konflikt zapisu: ponawia i wciela cudze zmiany', () async {
