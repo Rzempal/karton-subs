@@ -67,8 +67,12 @@ Dane subskrypcji sa **umiarkowanie wrazliwe** -- nie sa to dane bankowe, ale zdr
 Referencja: `reference-code/services/backup_crypto_service.dart`
 
 > **Zakres i semantyka importu ([ADR-021](adr/ADR-021-import-backupu-odtworzenie-vs-scalenie.md)):**
-> plik (format v6) obejmuje subskrypcje, kategorie niedomyslne, metody platnosci,
-> pozycje budzetu obu zakresow, stan odhaczonych platnosci i Planner („Na rachunki").
+> plik (format v7) obejmuje subskrypcje, kategorie niedomyslne, metody platnosci,
+> pozycje budzetu obu zakresow, stan odhaczonych platnosci, Planner („Na rachunki")
+> oraz ustawienia uzytkownika z bialej listy (waluta, limit, tryb budzetu,
+> powiadomienia, Asystent AI, archiwum, motyw). POZA plikiem: sciezki zdjec rachunkow
+> (zdjec tam nie ma — byly by martwe linki), stan zwiniecia sekcji i pozycje
+> oczekujace skanu.
 > Import pyta o tryb: **Odtworz stan z pliku** (domyslny — czysci dane objete backupem)
 > albo **Scal** (dokłada zawartosc pliku, pozycje spoza pliku zostaja). Haslo eksportu
 > potwierdzane drugim polem — literowki nie da sie wykryc pozniej, bo plik otworzy sie

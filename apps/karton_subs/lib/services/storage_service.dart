@@ -228,6 +228,46 @@ class StorageService {
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
+  // ── Ustawienia w backupie (format v7) ──────────────────────────────────────
+  //
+  // Tylko preferencje UZYTKOWNIKA, ktore zmieniaja liczby albo dzialanie apki.
+  // Celowo POZA backupem: `receiptPhotoPaths` (zdjec w pliku nie ma, wiec
+  // sciezki odtworzylyby sie jako martwe linki), stan zwiniecia sekcji
+  // Dashboardu (stan widoku konkretnego telefonu), `pendingBillScans`
+  // (ADR-013) i `devDateOverride` (narzedzie dev).
+  static const _backedUpSettingKeys = <String>[
+    'currency',
+    'budgetLimit',
+    'budgetMode',
+    'notifyTrialReminders',
+    'notifyRenewalReminders',
+    'aiAssistantEnabled',
+    'receiptArchiveEnabled',
+    'receiptArchiveSubfolder',
+    'themeMode',
+    'accentId',
+  ];
+
+  /// Ustawienia do zapisania w backupie (pomija klucze nieustawione).
+  Map<String, dynamic> exportSettings() {
+    final out = <String, dynamic>{};
+    for (final key in _backedUpSettingKeys) {
+      final value = _settingsBox.get(key);
+      if (value != null) out[key] = value;
+    }
+    return out;
+  }
+
+  /// Wgrywa ustawienia z backupu — wylacznie znane klucze, zeby plik nie mogl
+  /// wstrzyknac czegokolwiek do pudelka ustawien.
+  Future<void> importSettings(Map<String, dynamic> settings) async {
+    for (final key in _backedUpSettingKeys) {
+      if (!settings.containsKey(key)) continue;
+      await _settingsBox.put(key, settings[key]);
+    }
+    _log.info('Zaimportowano ustawienia z backupu (${settings.length} pol)');
+  }
+
   /// Czysci zbiory przed odtworzeniem stanu z backupu.
   ///
   /// Kazdy obszar ma wlasna flage i czyscimy TYLKO te, ktore dany plik potrafi

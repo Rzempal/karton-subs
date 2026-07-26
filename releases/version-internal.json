@@ -1,7 +1,11 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072614",
-  "versionCode": 1126072614,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072615",
+  "releaseDate": "2026-07-26T22:44:36Z",
   "changelog": [
+    {
+      "version": "0.11.26072615",
+      "notes": "- Backup obejmuje teraz takze ustawienia: walute, limit budzetu, tryb budzetu, powiadomienia, Asystenta AI, archiwum i motyw (format v7)\n- Sciezki zdjec rachunkow swiadomie poza plikiem - zdjec tam nie ma, wiec byly by martwe linki"
+    },
     {
       "version": "0.11.26072614",
       "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje juz danych, ktorych ten plik nie zawiera (Planner)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
@@ -37,13 +41,9 @@
     {
       "version": "0.10.26072606",
       "notes": "- Nowe nazwy sekcji: 'Budzet' to przeglad calosci (dawny Dashboard), a zarzadzanie pozycjami to 'Wydatki cykliczne'\n- Wplywy maja wlasna pod-zakladke w Wydatkach cyklicznych"
-    },
-    {
-      "version": "0.10.26072605",
-      "notes": "- Koperta 'Na rachunki' edytowana na ekranie Rachunki (bylo w Budzecie)\n- W Budzecie zostaje sam wiersz z suma rezerwy, bo nadal pomniejsza plan"
     }
   ],
-  "releaseDate": "2026-07-26T22:25:21Z",
-  "releaseNotes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje juz danych, ktorych ten plik nie zawiera (Planner)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku",
-  "version": "0.11.26072614"
+  "version": "0.11.26072615",
+  "versionCode": 1126072615,
+  "releaseNotes": "- Backup obejmuje teraz takze ustawienia: walute, limit budzetu, tryb budzetu, powiadomienia, Asystenta AI, archiwum i motyw (format v7)\n- Sciezki zdjec rachunkow swiadomie poza plikiem - zdjec tam nie ma, wiec byly by martwe linki"
 }

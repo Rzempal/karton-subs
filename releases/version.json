@@ -1,8 +1,12 @@
 {
-  "version": "0.11.26072602",
-  "versionCode": 1126072602,
-  "releaseNotes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku",
+  "releaseDate": "2026-07-26T22:46:44Z",
+  "releaseNotes": "- Backup obejmuje teraz takze ustawienia: walute, limit budzetu, tryb budzetu, powiadomienia, Asystenta AI, archiwum i motyw\n- Sciezki zdjec rachunkow swiadomie poza plikiem - zdjec tam nie ma, wiec byly by martwe linki",
+  "versionCode": 1126072603,
   "changelog": [
+    {
+      "version": "0.11.26072603",
+      "notes": "- Backup obejmuje teraz takze ustawienia: walute, limit budzetu, tryb budzetu, powiadomienia, Asystenta AI, archiwum i motyw\n- Sciezki zdjec rachunkow swiadomie poza plikiem - zdjec tam nie ma, wiec byly by martwe linki"
+    },
     {
       "version": "0.11.26072602",
       "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
@@ -38,12 +42,8 @@
     {
       "version": "0.9.26062003",
       "notes": "- Nowa nazwa (Zostaje) i ikona aplikacji"
-    },
-    {
-      "version": "0.9.26062002",
-      "notes": "bugs"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072602",
-  "releaseDate": "2026-07-26T22:27:30Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072603",
+  "version": "0.11.26072603"
 }

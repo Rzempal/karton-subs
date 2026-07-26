@@ -52,6 +52,22 @@ skasowanie osierociłoby pozycje, które się do nich odwołują.
 Poza czyszczeniem zostają ustawienia aplikacji (motyw, waluta, tryb budżetu) —
 backup ich nie przenosi, więc nie ma czego odtwarzać.
 
+### 3a. Ustawienia użytkownika wchodzą do backupu (format wersja 7)
+
+Pole `settings` z **białą listą** kluczy: waluta, limit budżetu, tryb budżetu,
+powiadomienia (triale, odnowienia), Asystent AI, archiwum rachunków (włączone +
+podfolder), motyw i kolor akcentu. Biała lista, nie całe pudełko ustawień — plik
+importowany nie może wstrzyknąć dowolnego klucza.
+
+Świadomie **poza** backupem:
+- `receiptPhotoPaths` — same zdjęcia nie wchodzą do pliku (megabajty), więc
+  odtworzone ścieżki byłyby martwymi linkami. Gorsze niż brak.
+- stan zwinięcia sekcji Dashboardu — to stan widoku konkretnego telefonu.
+- `pendingBillScans` (ADR-013) i `devDateOverride` (narzędzie dev).
+
+Ustawienia są **nadpisywane** przy imporcie w obu trybach (to preferencje, nie
+lista pozycji do scalania).
+
 ### 3. Planner wchodzi do backupu (format wersja 6)
 
 Nowe pole `billsAllocation` (per zakres). Starsze pliki (wersja ≤ 5) wczytują się

@@ -170,7 +170,7 @@ class BackupService {
     final budget = _storage.getBudgetEntries(BudgetScope.personal);
     final household = _storage.getBudgetEntries(BudgetScope.household);
     return jsonEncode({
-      'version': 6,
+      'version': 7,
       'exportDate': DateTime.now().toIso8601String(),
       'subscriptions': subs.map((s) => s.toJson()).toList(),
       'categories': cats
@@ -195,6 +195,9 @@ class BackupService {
               .map((e) => e.toJson())
               .toList(),
       },
+      // Preferencje użytkownika, które zmieniają liczby albo działanie apki
+      // (waluta, limit, tryb budżetu, powiadomienia, asystent, motyw) — v7.
+      'settings': _storage.exportSettings(),
     });
   }
 
@@ -207,7 +210,7 @@ class BackupService {
   }) async {
     final data = jsonDecode(jsonString) as Map<String, dynamic>;
     final version = data['version'] as int? ?? 1;
-    if (version > 6) {
+    if (version > 7) {
       throw FormatException('Nieobsługiwana wersja backupu: $version');
     }
     // Liczba pozycji usuniętych przy odtwarzaniu — do uczciwego podsumowania.
@@ -310,6 +313,13 @@ class BackupService {
           ]);
         }
       }
+    }
+
+    // Ustawienia użytkownika — backupy < 7 nie miały tego pola. Zawsze
+    // nadpisujemy (to preferencje, nie lista pozycji do scalania).
+    final settingsRaw = data['settings'] as Map<String, dynamic>?;
+    if (settingsRaw != null) {
+      await _storage.importSettings(settingsRaw);
     }
 
     _log.info(
