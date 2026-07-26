@@ -73,7 +73,7 @@ karton-subs/
 │       │   ├── controllers/    # SubscriptionController, BudgetController
 │       │   ├── utils/          # cycle_math (normalizacja cyklu)
 │       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
-│       │   ├── screens/        # Budzet (przeglad), Rachunki, Subskrypcje, Wydatki cykliczne, Ustawienia
+│       │   ├── screens/        # Budzet (przeglad), Rachunki, Subskrypcje, Wydatki, Wplywy, Ustawienia
 │       │   └── widgets/        # SubscriptionCard
 │       └── pubspec.yaml
 ├── docs/

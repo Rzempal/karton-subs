@@ -309,18 +309,20 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     DashboardScreen(),
     RachunkiScreen(),
     SubscriptionListScreen(),
-    BudgetDashboardScreen(),
+    BudgetDashboardScreen(mode: BudgetEntriesMode.expenses),
+    BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
     SettingsScreen(),
   ];
 
   static const _navItems = [
-    // Nazwy sekcji wg ADR-019: „Budżet" to przeglad calosci, a ekran
-    // zarzadzania pozycjami planowalnymi to „Wydatki cykliczne" (w pasku
-    // nawigacji skrocone do „Wydatki" — pelny tytul jest na ekranie).
+    // Nazwy sekcji wg ADR-019: „Budżet" to przeglad calosci, a zarzadzanie
+    // pozycjami planowalnymi rozbite na „Wydatki cykliczne" (w pasku skrocone
+    // do „Wydatki" — pelny tytul jest na ekranie) i „Wplywy".
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
     GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Rachunki'),
     GlassNavItem(icon: LucideIcons.repeat, label: 'Subskrypcje'),
     GlassNavItem(icon: LucideIcons.trendingDown, label: 'Wydatki'),
+    GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
 

@@ -1,9 +1,9 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072606",
-  "versionCode": 1026072606,
-  "releaseNotes": "- Nowe nazwy sekcji: 'Budzet' to przeglad calosci (dawny Dashboard), a zarzadzanie pozycjami to 'Wydatki cykliczne'\n- Wplywy maja wlasna pod-zakladke w Wydatkach cyklicznych",
-  "version": "0.10.26072606",
   "changelog": [
+    {
+      "version": "0.10.26072607",
+      "notes": "- Wplywy maja wlasna zakladke w nawigacji (pod-zakladka byla zbyt schowana)\n- Pasek nawigacji: szesc pozycji, zabezpieczony przed wyjsciem za krawedz ekranu"
+    },
     {
       "version": "0.10.26072606",
       "notes": "- Nowe nazwy sekcji: 'Budzet' to przeglad calosci (dawny Dashboard), a zarzadzanie pozycjami to 'Wydatki cykliczne'\n- Wplywy maja wlasna pod-zakladke w Wydatkach cyklicznych"
@@ -39,11 +39,11 @@
     {
       "version": "0.10.26072501",
       "notes": "- Data bez roku na rachunku: rok poprzedni nie przechodzi juz jako wiarygodny (zrzuty Google Wallet)\n- Dluzszy limit czasu na rozpoznanie gestego paragonu (300 s)"
-    },
-    {
-      "version": "0.10.26072500",
-      "notes": "- Skan rachunku dziala w tle: rozpoznawanie prowadzi usluga z powiadomieniem, wynik nie ginie po wyjsciu z apki\n- Silnik AI wybudza sie sam (bez recznego uruchamiania apki silnika)\n- Data bez roku na rachunku dostaje rok biezacy"
     }
   ],
-  "releaseDate": "2026-07-26T16:07:28Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072607",
+  "version": "0.10.26072607",
+  "releaseDate": "2026-07-26T16:24:18Z",
+  "versionCode": 1026072607,
+  "releaseNotes": "- Wplywy maja wlasna zakladke w nawigacji (pod-zakladka byla zbyt schowana)\n- Pasek nawigacji: szesc pozycji, zabezpieczony przed wyjsciem za krawedz ekranu"
 }

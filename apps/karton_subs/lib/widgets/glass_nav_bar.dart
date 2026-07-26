@@ -44,42 +44,51 @@ class GlassNavBar extends StatelessWidget {
       // Row z wyśrodkowaniem zajmuje pełną szerokość, ale wysokość = sama
       // pigułka (Center rozszerzałby się na całą wysokość slotu nawigacji).
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppColors.navGlass,
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                    border: Border.all(
-                      // Token zalezny od trybu: w jasnym to ciemny hairline
-                      // (widoczny na jasnym tle), w ciemnym subtelny jasny kontur.
-                      // Staly bialy zlewal sie z tlem w trybie jasnym.
-                      color: isDev
-                          ? _devBorder.withValues(alpha: 0.55)
-                          : AppColors.frostBorderStrong,
-                      width: isDev ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var i = 0; i < items.length; i++) ...[
-                        if (i == _dividerBefore && _dividerBefore > 0)
-                          const _NavDivider(),
-                        _NavCell(
-                          item: items[i],
-                          selected: i == currentIndex,
-                          onTap: () => onTap(i),
+            // Straznik szerokosci: przy szesciu pozycjach (albo waskim ekranie)
+            // pigulka nie ma sie prawa rozjechac poza ekran — FittedBox skaluje
+            // ja w dol dopiero wtedy, gdy faktycznie nie mieszczy sie w szerokosc.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.navGlass,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        border: Border.all(
+                          // Token zalezny od trybu: w jasnym to ciemny hairline
+                          // (widoczny na jasnym tle), w ciemnym subtelny jasny
+                          // kontur. Staly bialy zlewal sie z tlem w jasnym.
+                          color: isDev
+                              ? _devBorder.withValues(alpha: 0.55)
+                              : AppColors.frostBorderStrong,
+                          width: isDev ? 1.5 : 1,
                         ),
-                      ],
-                    ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < items.length; i++) ...[
+                            if (i == _dividerBefore && _dividerBefore > 0)
+                              const _NavDivider(),
+                            _NavCell(
+                              item: items[i],
+                              selected: i == currentIndex,
+                              onTap: () => onTap(i),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

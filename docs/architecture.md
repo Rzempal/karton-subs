@@ -106,7 +106,7 @@ lib/
 │   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
 │   ├── add_subscription_screen.dart # Formularz subskrypcji
-│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne": pod-zakladki Wydatki / Wplywy + Excel
+│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne" i „Wplywy" (jeden widget, tryby) + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
@@ -165,22 +165,26 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-## Nawigacja (5 zakladek)
+## Nawigacja (6 zakladek)
 
-Kolejnosc: Budzet | Rachunki | Subskrypcje | Wydatki | ⋮ Ustawienia (separator
-oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
+Kolejnosc: Budzet | Rachunki | Subskrypcje | Wydatki | Wplywy | ⋮ Ustawienia
+(separator oddziela Ustawienia od piatki funkcyjnej; `GlassNavBar` liczy go
+dynamicznie). Pasek pokazuje etykiete TYLKO aktywnej pozycji (reszta to ikony),
+a `FittedBox(scaleDown)` chroni pigulke od wyjscia za krawedz na waskim ekranie.
 
 Nazwy sekcji wg **[ADR-019](adr/ADR-019-podzial-sekcji-aplikacji.md)**: „Budzet" to
-PRZEGLAD calosci (dawny „Dashboard"), a ekran zarzadzania pozycjami planowalnymi to
-„Wydatki cykliczne" (w pasku nawigacji skrocone do „Wydatki"). Wplywy maja tam
-pod-zakladke — bez szostej pozycji w nawigacji.
+PRZEGLAD calosci (dawny „Dashboard"), a zarzadzanie pozycjami planowalnymi rozbite na
+„Wydatki cykliczne" (w pasku skrocone do „Wydatki") i „Wplywy". Oba to jeden widget
+`BudgetDashboardScreen` w dwoch trybach (`BudgetEntriesMode`) — wspolne filtry,
+sortowanie, grupowanie i Excel.
 
 | Zakladka | Tresc |
 |----------|-------|
 | **Budzet** (przeglad) | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
 | **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018): log oplaconych + zaplanowane na przyszla date, per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" w Budzecie); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
-| **Wydatki cykliczne** | Zarzadzanie pozycjami planowalnymi w dwoch pod-zakladkach: **Wydatki** (koszty stale, raty, przelew wewnetrzny) i **Wplywy** (cykliczne + jednorazowe). Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach w wydatkach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
+| **Wydatki** (tytul: „Wydatki cykliczne") | Pozycje planowalne: koszty stale, raty, przelew wewnetrzny. Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
+| **Wplywy** | Wplywy cykliczne (pensja) i jednorazowe (premia); w budzecie domowym takze wklady czlonkow i lustro przelewu z osobistego. Ten sam widget co „Wydatki", tryb `incomes` |
 | **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow silnikiem + link do apki silnika), **Archiwum rachunkow** (osobna sekcja: zapis zdjec zatwierdzonych rachunkow do `Documents/<podfolder>`), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,

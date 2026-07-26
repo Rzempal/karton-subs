@@ -25,26 +25,39 @@ enum _BudgetSort { alpha, amountDesc }
 /// `byCategory` dodatkowo grupuje pozycje wydatków po kategoriach (etykietach).
 enum _BudgetGrouping { byType, byCategory }
 
-/// Ekran Budżet — zarządzanie pozycjami PLANOWALNYMI (wpływy, koszty cykliczne,
-/// raty, przelew do domowego). Datowane wydatki jednorazowe = rachunki, więc
-/// mieszkają na ekranie „Rachunki" (ADR-018).
-/// Przegląd liczbowy (surplus, bilans miesiąca) jest na Dashboardzie.
+/// Co pokazuje ten ekran — dwie osobne zakładki nawigacji na jednym widgecie,
+/// bo cała maszyneria (filtry, sortowanie, grupowanie, Excel, stany puste) jest
+/// wspólna. Różni je zestaw kubełków i drobiazgi w pasku akcji.
+enum BudgetEntriesMode {
+  /// „Wydatki cykliczne": koszty stałe, raty, przelew do domowego.
+  expenses,
+
+  /// „Wpływy": wpływy cykliczne (pensja) i jednorazowe (premia).
+  incomes,
+}
+
+/// Ekran zarządzania pozycjami PLANOWALNYMI budżetu — w dwóch wariantach
+/// ([BudgetEntriesMode]): „Wydatki cykliczne" i „Wpływy" (ADR-019).
+///
+/// Datowane wydatki jednorazowe = rachunki, więc mieszkają na ekranie
+/// „Rachunki" (ADR-018). Przegląd liczbowy (surplus, bilans miesiąca) jest
+/// w zakładce „Budżet".
 class BudgetDashboardScreen extends StatefulWidget {
-  const BudgetDashboardScreen({super.key});
+  final BudgetEntriesMode mode;
+
+  const BudgetDashboardScreen({
+    super.key,
+    this.mode = BudgetEntriesMode.expenses,
+  });
 
   @override
   State<BudgetDashboardScreen> createState() => _BudgetDashboardScreenState();
 }
 
-class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
-    with SingleTickerProviderStateMixin {
+class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   bool _isBusy = false;
 
-  /// Pod-zakładki: 0 = wydatki cykliczne (koszty, raty, przelew), 1 = wpływy.
-  /// Wpływy dostają własną przestrzeń bez szóstej zakładki w nawigacji (ADR-019).
-  late final TabController _sub;
-
-  bool get _onIncomes => _sub.index == 1;
+  bool get _onIncomes => widget.mode == BudgetEntriesMode.incomes;
 
   /// Aktywny filtr kategorii (null = wszystkie). Filtruje sekcje wydatków.
   String? _filterCategoryId;
@@ -60,23 +73,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
   /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
   _BudgetGrouping _grouping = _BudgetGrouping.byType;
-
-  @override
-  void initState() {
-    super.initState();
-    _sub = TabController(length: 2, vsync: this);
-    // Zmiana pod-zakładki przebudowuje ekran: inne kubełki, inne filtry,
-    // inna zawartość menu „Dodaj".
-    _sub.addListener(() {
-      if (!_sub.indexIsChanging) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _sub.dispose();
-    super.dispose();
-  }
 
   /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i
   /// okien spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wchodzą.
@@ -117,9 +113,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
 
-    // Kubełki pozycji planowalnych, rozdzielone na pod-zakładki: wydatki
-    // (koszty stałe, raty, przelew) i wpływy. Datowane wydatki jednorazowe TU
-    // NIE WCHODZĄ — to ten sam byt co rachunek i mieszkają na ekranie
+    // Kubełki pozycji planowalnych zależne od trybu ekranu: wydatki (koszty
+    // stałe, raty, przelew) albo wpływy. Datowane wydatki jednorazowe TU NIE
+    // WCHODZĄ — to ten sam byt co rachunek i mieszkają na ekranie
     // „Rachunki" (ADR-018).
     // Flaga `true` = kubełek kategoryzowalny (wydatki), w którym przycisk
     // grupowania włącza podgrupy po kategoriach.
@@ -213,7 +209,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Wydatki cykliczne'),
+        title: Text(_onIncomes ? 'Wpływy' : 'Wydatki cykliczne'),
         centerTitle: false,
         actions: [
           const SyncNowButton(),
@@ -272,7 +268,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
             icon: LucideIcons.plus,
             label: _onIncomes ? 'Dodaj wpływ' : 'Dodaj ręcznie',
             primary: true,
-            // Na pod-zakładce Wpływy formularz startuje od razu jako wpływ.
+            // Na ekranie Wpływy formularz startuje od razu jako wpływ.
             onTap: () => _openAdd(
               initialType: _onIncomes ? BudgetEntryType.income : null,
             ),
@@ -303,13 +299,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
                 onChanged: ctrl.setScope,
               ),
             ),
-          TabBar(
-            controller: _sub,
-            tabs: const [
-              Tab(text: 'Wydatki'),
-              Tab(text: 'Wpływy'),
-            ],
-          ),
           if (!isEmpty && filterCategories.isNotEmpty)
             _CategoryFilter(
               categories: filterCategories,
@@ -345,8 +334,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen>
                         ctrl,
                         buckets,
                         expensesTitle,
-                        // Koperta „Na rachunki" należy do wydatków — na
-                        // pod-zakładce Wpływy nie ma czego nią pomniejszać.
+                        // Koperta „Na rachunki" należy do wydatków — na ekranie
+                        // Wpływy nie ma czego nią pomniejszać.
                         showAlloc: noFilter && !_onIncomes,
                         isEmpty: isEmpty,
                         byCategory: _grouping == _BudgetGrouping.byCategory,
