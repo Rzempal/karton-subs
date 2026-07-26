@@ -238,6 +238,14 @@ ze wspolnym dniem z daty-kotwicy. Pokrywa „co N miesiecy" dla N dzielacego 12
 wypelniaja te liste. Kwota/mies = kwota x liczba miesiecy / 12. Dotyczy pozycji
 budzetu i subskrypcji (wspolna matematyka w `cycle_math`).
 
+**Regula wyboru sekcji (intencja uzytkownika):** sekcja, do ktorej trafia pozycja,
+JEST wyborem sposobu liczenia. **Wydatki cykliczne** = koszt usredniony (kwota x
+liczba platnosci / 12), niezaleznie od tego, w ktorym miesiacu dodano pozycje —
+to wlasciwe zachowanie przy planowaniu miesiecznego budzetu. **Rachunki** = koszt
+datowany, uderzajacy w bilans konkretnego miesiaca. Stad scalenie typow z ADR-018:
+„rachunek" i „wydatek jednorazowy" byly dwiema nazwami tej samej, datowanej strony
+tego podzialu.
+
 **Model czasu (hybryda):**
 - Rdzen usredniony: `surplus = wplywy - (koszty cykliczne + subskrypcje)`
 - Jednorazowe (wplyw/wydatek): przypiete do daty, koryguja `balanceForMonth`
