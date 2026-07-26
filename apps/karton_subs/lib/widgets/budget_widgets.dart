@@ -322,21 +322,6 @@ class BudgetMonthSection extends StatelessWidget {
                     color: c.textSecondary,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _showMonthSummary(context),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  icon: Icon(
-                    LucideIcons.list,
-                    size: 18,
-                    color: c.textSecondary,
-                  ),
-                  tooltip: 'Wpływy i wydatki miesiąca',
-                ),
                 const Spacer(),
                 GestureDetector(
                   onLongPress: () => _showBalanceBreakdown(context),
@@ -393,18 +378,6 @@ class BudgetMonthSection extends StatelessWidget {
     );
   }
 
-  void _showMonthSummary(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (_) => _MonthSummarySheet(
-        month: month,
-        calendar: calendar,
-        currency: currency,
-      ),
-    );
-  }
 }
 
 /// Treść bottom sheeta „dlaczego bilans ≠ saldo": saldo planu → pozycje
@@ -573,20 +546,33 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   }
 }
 
-/// Treść bottom sheeta „Podsumowanie miesiąca": pełne listy wpływów i wydatków
-/// z kalendarza przepływów, posortowane wg dnia, z sumami sekcji. Kwoty to
-/// realne płatności miesiąca (po korektach, z pozycjami jednorazowymi), więc
-/// suma może różnić się od bilansu, który uśrednia koszty cykliczne.
-class _MonthSummarySheet extends StatelessWidget {
+/// Sekcja „Podsumowanie miesiąca": pełne listy wpływów i wydatków z kalendarza
+/// przepływów, posortowane wg dnia, z sumami. Kwoty to realne płatności miesiąca
+/// (po korektach, z pozycjami jednorazowymi), więc suma może różnić się od
+/// bilansu, który uśrednia koszty cykliczne.
+///
+/// Zestawienie było wcześniej schowane w bottom sheecie pod małą ikoną w karcie
+/// bilansu — praktycznie niewidoczne. Teraz jest osobną sekcją na dole zakładki
+/// „Bilans miesiąca", zwijaną jak pozostałe (stan trwały w [StorageService]).
+class MonthSummarySection extends StatelessWidget {
   final DateTime month;
   final Map<int, DayCashflow> calendar;
   final String currency;
+  final bool compact;
+  final VoidCallback onToggleCompact;
 
-  const _MonthSummarySheet({
+  const MonthSummarySection({
+    super.key,
     required this.month,
     required this.calendar,
     required this.currency,
+    required this.compact,
+    required this.onToggleCompact,
   });
+
+  /// Czy miesiąc ma cokolwiek do podsumowania (inaczej sekcja się nie pokazuje).
+  static bool hasAny(Map<int, DayCashflow> calendar) =>
+      calendar.values.any((f) => f.items.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
@@ -601,78 +587,62 @@ class _MonthSummarySheet extends StatelessWidget {
         (it.isIncome ? incomes : expenses).add((day: day, item: it));
       }
     }
+    if (incomes.isEmpty && expenses.isEmpty) return const SizedBox.shrink();
+
     final incomeTotal = incomes.fold(0.0, (s, r) => s + r.item.amount);
     final expenseTotal = expenses.fold(0.0, (s, r) => s + r.item.amount);
-    final monthLabel = DateFormat('LLLL yyyy', 'pl').format(month);
 
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.75,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Podsumowanie · $monthLabel',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 4),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    'Podsumowanie miesiąca',
+                    style: theme.textTheme.titleMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  onPressed: onToggleCompact,
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                  ),
+                  tooltip: compact ? 'Rozwiń podsumowanie' : 'Zwiń podsumowanie',
+                ),
+              ],
+            ),
+            // Sumy widoczne zawsze — także po zwinięciu sekcji.
+            _InlineTrends(
+              income: incomeTotal,
+              expenses: expenseTotal,
+              currency: currency,
+            ),
+            if (!compact) ...[
+              const SizedBox(height: 8),
               Text(
                 'Realne wpływy i wydatki tego miesiąca — kwoty po korektach, '
                 'z pozycjami jednorazowymi. Suma może różnić się od bilansu, '
                 'który uśrednia koszty cykliczne.',
                 style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
               ),
-              const SizedBox(height: 8),
-              if (incomes.isEmpty && expenses.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    'Brak wpływów i wydatków w tym miesiącu.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: c.textMuted,
-                    ),
-                  ),
-                )
-              else
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: [
-                      if (incomes.isNotEmpty) ...[
-                        _sectionHeader(
-                          theme,
-                          c,
-                          'Wpływy',
-                          incomeTotal,
-                          income: true,
-                        ),
-                        ...incomes.map(
-                          (r) => _itemRow(theme, c, r.day, r.item),
-                        ),
-                      ],
-                      if (expenses.isNotEmpty) ...[
-                        if (incomes.isNotEmpty) const Divider(height: 24),
-                        _sectionHeader(
-                          theme,
-                          c,
-                          'Wydatki',
-                          expenseTotal,
-                          income: false,
-                        ),
-                        ...expenses.map(
-                          (r) => _itemRow(theme, c, r.day, r.item),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
+              if (incomes.isNotEmpty) ...[
+                _sectionHeader(theme, c, 'Wpływy', incomeTotal, income: true),
+                ...incomes.map((r) => _itemRow(theme, c, r.day, r.item)),
+              ],
+              if (expenses.isNotEmpty) ...[
+                if (incomes.isNotEmpty) const Divider(height: 24),
+                _sectionHeader(theme, c, 'Wydatki', expenseTotal, income: false),
+                ...expenses.map((r) => _itemRow(theme, c, r.day, r.item)),
+              ],
             ],
-          ),
+          ],
         ),
       ),
     );

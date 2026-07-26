@@ -530,6 +530,15 @@ class StorageService {
   Future<void> setDashboardMonthCompact(bool value) async =>
       _settingsBox.put('dashboardMonthCompact', value);
 
+  /// Sekcja „Podsumowanie miesiąca" (wpływy i wydatki po dniach) — domyślnie
+  /// rozwinięta: to zestawienie ma być widoczne, a nie ukryte pod przyciskiem.
+  bool getDashboardMonthSummaryCompact() =>
+      _settingsBox.get('dashboardMonthSummaryCompact', defaultValue: false)
+          as bool;
+
+  Future<void> setDashboardMonthSummaryCompact(bool value) async =>
+      _settingsBox.put('dashboardMonthSummaryCompact', value);
+
   bool getDashboardPaymentsCompact() =>
       _settingsBox.get('dashboardPaymentsCompact', defaultValue: false) as bool;
 

@@ -172,7 +172,7 @@ oddziela Ustawienia od czworki funkcyjnej; `GlassNavBar` liczy go dynamicznie).
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
+| **Dashboard** | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
 | **Rachunki** | Realny log oplat (`billPayment`) per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" Dashboardu); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
 | **Budzet** | Zarzadzanie pozycjami planowalnymi; grupowanie zawsze po typach (Wplywy/Przelew/Wydatki stale/jednorazowe), przycisk „warstwy" wlacza podgrupy po kategoriach (etykietach) w wydatkach; koperta „Na rachunki" jako **lista pozycji** (nazwa+kwota+metoda) przypieta na gorze wydatkow (ADR-012); CTA Excel |

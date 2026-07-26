@@ -40,6 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   // Personalizacja: zwinięcie sekcji (trwałe — StorageService).
   late bool _summaryCompact;
   late bool _monthCompact;
+  late bool _monthSummaryCompact;
   late bool _paymentsCompact;
 
   /// Wybrana domena statystyk na zakładce „Plan".
@@ -57,6 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final storage = context.read<StorageService>();
     _summaryCompact = storage.getDashboardSummaryCompact();
     _monthCompact = storage.getDashboardMonthCompact();
+    _monthSummaryCompact = storage.getDashboardMonthSummaryCompact();
     _paymentsCompact = storage.getDashboardPaymentsCompact();
   }
 
@@ -74,6 +76,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _toggleMonth() {
     setState(() => _monthCompact = !_monthCompact);
     context.read<StorageService>().setDashboardMonthCompact(_monthCompact);
+  }
+
+  void _toggleMonthSummary() {
+    setState(() => _monthSummaryCompact = !_monthSummaryCompact);
+    context.read<StorageService>().setDashboardMonthSummaryCompact(
+      _monthSummaryCompact,
+    );
   }
 
   void _togglePayments() {
@@ -277,6 +286,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                             .length,
                         currency: currency,
                       ),
+                      if (MonthSummarySection.hasAny(calendar)) ...[
+                        const SizedBox(height: 24),
+                        MonthSummarySection(
+                          month: _selectedMonth,
+                          calendar: calendar,
+                          currency: currency,
+                          compact: _monthSummaryCompact,
+                          onToggleCompact: _toggleMonthSummary,
+                        ),
+                      ],
                     ],
                   ),
                   // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki) ──

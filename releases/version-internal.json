@@ -1,10 +1,11 @@
 {
-  "version": "0.10.26072601",
-  "releaseNotes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Paczka aktualizacji schudla z 112 MB do 43 MB (APK tylko pod 64-bitowe ARM)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072601",
-  "releaseDate": "2026-07-26T10:06:15Z",
-  "versionCode": 1026072601,
+  "version": "0.10.26072602",
+  "versionCode": 1026072602,
   "changelog": [
+    {
+      "version": "0.10.26072602",
+      "notes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie"
+    },
     {
       "version": "0.10.26072601",
       "notes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Paczka aktualizacji schudla z 112 MB do 43 MB (APK tylko pod 64-bitowe ARM)"
@@ -40,10 +41,9 @@
     {
       "version": "0.10.26072400",
       "notes": "- Wybor budzetow (Ustawienia > Personalizacja): Osobisty / Domowy / Osobisty i domowy. Tryb jednozakresowy chowa przelacznik zakresu z kart, a swipe przelacza zakladki 2. rzedu (Bilans/Plan na Dashboardzie)\n- Fix statusu silnika: zielone Gotowy dopiero po wczytaniu modelu; pobrany-niewczytany pokazuje ze wczyta sie przy pierwszym skanie"
-    },
-    {
-      "version": "0.10.26072100",
-      "notes": "- Archiwizacja dziala teraz takze przy zatwierdzeniu przez edycje formularza (wczesniej tylko przycisk ptaszka); blad zapisu do archiwum pokazywany na ekranie\n- Podglad zdjecia rachunku w edycji zapisanego rachunku (zdjecie wiazane z pozycja, lokalnie poza sync); sprzatane przy usunieciu rachunku"
     }
-  ]
+  ],
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072602",
+  "releaseNotes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie",
+  "releaseDate": "2026-07-26T13:25:09Z"
 }
