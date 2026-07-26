@@ -54,6 +54,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             // Reguly R8 (m.in. warianty jezykowe ML Kit, ktorych nie dolaczamy).
             proguardFiles("proguard-rules.pro")
+            // Tylko 64-bitowe ARM, czyli kazdy wspolczesny telefon. Flaga
+            // --target-platform przycina wylacznie biblioteki Fluttera; natywne
+            // biblioteki wtyczek (ML Kit) leca ze swoich paczek AAR i odsiewa je
+            // dopiero ten filtr - kilkadziesiat MB mniej w kazdej aktualizacji OTA.
+            // Dotyczy TYLKO buildu release: debug zostaje pelny, wiec emulator
+            // x86 dziala jak dotychczas.
+            ndk {
+                abiFilters.clear()
+                abiFilters += "arm64-v8a"
+            }
         }
     }
 }

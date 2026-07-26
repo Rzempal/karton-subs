@@ -1,8 +1,18 @@
 {
-  "version": "0.10.26072502",
-  "versionCode": 1026072502,
-  "releaseDate": "2026-07-25T23:58:34Z",
+  "version": "0.10.26072601",
+  "releaseNotes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Paczka aktualizacji schudla z 112 MB do 43 MB (APK tylko pod 64-bitowe ARM)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072601",
+  "releaseDate": "2026-07-26T10:06:15Z",
+  "versionCode": 1026072601,
   "changelog": [
+    {
+      "version": "0.10.26072601",
+      "notes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Paczka aktualizacji schudla z 112 MB do 43 MB (APK tylko pod 64-bitowe ARM)"
+    },
+    {
+      "version": "0.10.26072600",
+      "notes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Mniejsza paczka aktualizacji: APK tylko pod 64-bitowe ARM"
+    },
     {
       "version": "0.10.26072502",
       "notes": "- Szybka sciezka skanu: paragon fiskalny i zrzut platnosci telefonem czyta zwykly OCR w ~1-2 s\n- Data brana wprost z dokumentu (dzien tygodnia wskazuje rok) zamiast zgadywania przez model\n- Silnik AI wchodzi dopiero przy dokumencie o dowolnym ukladzie"
@@ -34,16 +44,6 @@
     {
       "version": "0.10.26072100",
       "notes": "- Archiwizacja dziala teraz takze przy zatwierdzeniu przez edycje formularza (wczesniej tylko przycisk ptaszka); blad zapisu do archiwum pokazywany na ekranie\n- Podglad zdjecia rachunku w edycji zapisanego rachunku (zdjecie wiazane z pozycja, lokalnie poza sync); sprzatane przy usunieciu rachunku"
-    },
-    {
-      "version": "0.10.26072000",
-      "notes": "- Kolejkowanie wielu rachunkow: udostepnienie kolejnego rachunku, gdy inny czeka na zatwierdzenie, dodaje go do listy (kolejka OCR jeden po drugim, status W kolejce)\n- Niezawodny odbior Udostepnij -> Zostaje takze do juz otwartej apki"
-    },
-    {
-      "version": "0.10.26071804",
-      "notes": "- Archiwum rachunkow (opcjonalne): toggle w Asystencie AI zapisuje zdjecie zatwierdzonego rachunku do Documents/<folder> (domyslnie Zostaje), z edytowalnym folderem; lokalne, poza kopia zapasowa i synchronizacja"
     }
-  ],
-  "releaseNotes": "- Szybka sciezka skanu: paragon fiskalny i zrzut platnosci telefonem czyta zwykly OCR w ~1-2 s\n- Data brana wprost z dokumentu (dzien tygodnia wskazuje rok) zamiast zgadywania przez model\n- Silnik AI wchodzi dopiero przy dokumencie o dowolnym ukladzie",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072502"
+  ]
 }

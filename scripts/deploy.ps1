@@ -442,8 +442,15 @@ if (-not $SkipBuild) {
     Push-Location $MOBILE_DIR
 
     try {
+        # --target-platform android-arm64: APK tylko pod 64-bitowe ARM, czyli
+        # kazdy wspolczesny telefon. Odpadaja biblioteki natywne dla arm 32-bit
+        # i x86_64, ktorych nikt tu nie uzywa - a przy silniku OCR (ML Kit) to
+        # kilkadziesiat MB do pobrania przy kazdej aktualizacji OTA.
+        # Skutek uboczny: taki APK nie zainstaluje sie na starym 32-bitowym
+        # telefonie ani na emulatorze x86. Lokalne buildy debug (flutter run)
+        # zostaja pelne, wiec praca na emulatorze dziala jak dotychczas.
         # Filtruj komunikaty tree-shaking (informacyjne, nie bledy)
-        cmd /c "flutter build apk --release --flavor $Channel --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
+        cmd /c "flutter build apk --release --flavor $Channel --target-platform android-arm64 --build-name=$VERSION_NAME --build-number=$VERSION_CODE --dart-define=CHANNEL=$Channel 2>&1" | Where-Object { $_ -notmatch "tree-shaken|Tree-shaking|source value 8 is obsolete" }
 
         if ($LASTEXITCODE -ne 0) {
             Pop-Location

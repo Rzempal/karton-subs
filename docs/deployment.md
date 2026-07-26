@@ -31,6 +31,26 @@ PROD (kanal `production`) — z bumpem wersji (minor/major) i opcjonalnym tagiem
 
 ---
 
+## Architektura APK: tylko 64-bitowe ARM
+
+Buildy **release** (czyli wszystko, co idzie na serwer OTA) zawierają biblioteki
+natywne wyłącznie dla `arm64-v8a` — architektury każdego współczesnego telefonu.
+Wymaga tego dwóch ustawień naraz:
+
+- `--target-platform android-arm64` w `deploy.ps1` — przycina biblioteki Fluttera,
+- `ndk { abiFilters += "arm64-v8a" }` w bloku `release` w `android/app/build.gradle.kts`
+  — przycina biblioteki natywne **wtyczek** (ML Kit OCR), które przychodzą z paczek
+  AAR i flagi Fluttera nie respektują.
+
+Efekt: APK 43 MB zamiast 112 MB, czyli tyle samo mniej do pobrania przy każdej
+aktualizacji OTA.
+
+> ⚠️ Taki APK **nie zainstaluje się** na starym 32-bitowym telefonie ani na
+> emulatorze x86/x86_64. Buildy `debug` (`flutter run`) zostają pełne, więc praca
+> na emulatorze działa normalnie.
+
+---
+
 ## Nazewnictwo APK i kontrola wersji
 
 APK ma **stałą nazwę** zależną tylko od kanału — na serwerze i w `releases/` jest
