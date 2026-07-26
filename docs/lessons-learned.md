@@ -4,6 +4,79 @@
 
 ---
 
+## 2026-07-26: Usuwanie wartosci z enuma modelu wymaga JAWNEGO mapowania w `fromJson`
+
+### Problem
+Przy scalaniu typow (`oneTimeExpense` → `billPayment`, ADR-018) usuniecie wartosci
+z enuma wyglada na czysta operacje — kompilator wskazuje wszystkie `switch` do
+poprawy. Ale deserializacja NIE jest sprawdzana przez kompilator:
+`BudgetEntryType.values.firstWhere(..., orElse: () => recurringCost)` po cichu
+zamienia kazda stara pozycje nieznanego typu w **koszt cykliczny**. Wydatek
+jednorazowy 3000 zl zaczalby obciazac plan „zostaje/mies" CO MIESIAC, i to
+naraz w bazie lokalnej, backupie `.zostaje` i synchronizacji domowej (wszystkie
+ida tym samym parserem).
+
+Przy ADR-011 (`bill` → `recurringCost`) problem nie wyszedl tylko dlatego, ze
+domyslka przypadkiem byla poprawnym celem migracji. To bylo szczescie, nie projekt.
+
+### Rozwiazanie
+Kazdy usuniety typ dostaje **jawna linie mapowania** w dedykowanej funkcji
+(`BudgetEntry.typeFromName`), a domyslka zostaje wylacznie dla wartosci naprawde
+nieznanych. Do tego test-straznik, ktory sprawdza nie tylko sam typ po migracji,
+ale i to, ze zmigrowana pozycja ma `monthlyAmount == 0` i nie rusza
+`monthlySurplus` (`test/budget_type_migration_test.dart`).
+
+### Wniosek
+Usuwajac wartosc z enuma zapisywanego na dysk: najpierw znajdz `fromJson`, dopisz
+alias, napisz test na STARY JSON — dopiero potem usuwaj wartosc. Parser formatu
+Excela ma wlasne mapowanie po etykiecie i tez trzeba go poprawic osobno.
+
+---
+
+## 2026-07-26: `--target-platform android-arm64` nie przycina bibliotek natywnych wtyczek
+
+### Problem
+Po dodaniu OCR (ML Kit) APK urosl z 82 MB do 112 MB. Flaga
+`flutter build apk --target-platform android-arm64` zbila go tylko do 70 MB —
+w paczce nadal siedzialy biblioteki `armeabi-v7a` i `x86_64`. Flaga Fluttera
+przycina wylacznie biblioteki SILNIKA Fluttera; natywne `.so` z wtyczek przychodza
+z ich paczek AAR i jej nie respektuja.
+
+### Rozwiazanie
+Drugi filtr, na poziomie Gradle, w bloku `release` (`android/app/build.gradle.kts`):
+```kotlin
+ndk { abiFilters.clear(); abiFilters += "arm64-v8a" }
+```
+Efekt: 43 MB, czyli mniej niz przed dodaniem OCR. Filtr TYLKO w `release` — buildy
+debug zostaja pelne, wiec emulator x86 dziala normalnie.
+
+### Wniosek
+Sprawdzaj efekt, nie ufaj fladze: `Expand-Archive` na APK i policz katalogi
+`lib/<abi>/`. Kazdy taki APK nie zainstaluje sie na 32-bitowym telefonie.
+
+---
+
+## 2026-07-26: `bindService` nie obudzi apki w stanie „zatrzymana" bez `FLAG_INCLUDE_STOPPED_PACKAGES`
+
+### Problem
+Skan rachunku wymagal recznego uruchomienia apki-silnika przed pierwszym uzyciem.
+Android trzyma aplikacje w stanie *stopped* (swieza instalacja, „wymus zatrzymanie",
+uspienie nieuzywanej apki przez system) i **nie dopasowuje jej komponentow** do
+intencji. `bindService` nie zglaszal bledu — polaczenie po prostu nigdy nie
+dochodzilo do skutku.
+
+### Rozwiazanie
+`Intent(BIND_ACTION).setPackage(...).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)`
+plus **osobny limit czasu na samo polaczenie** (25 s), niezalezny od limitu pracy
+silnika (300 s) — inaczej nieudany bind wyglada jak kilkuminutowe zawieszenie.
+
+### Wniosek
+Kazde wiazanie do uslugi w INNEJ aplikacji potrzebuje tej flagi. A gdy praca trwa
+dziesiatki sekund, rozdzielaj limity: „nie moge sie polaczyc" i „silnik liczy za
+dlugo" to dwa rozne bledy i dwie rozne rady dla uzytkownika.
+
+---
+
 ## 2026-07-25: Flutter cache'uje `Image.file` po sciezce — podmiana w miejscu nie odswieza miniatury
 
 ### Problem
