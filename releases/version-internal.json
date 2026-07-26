@@ -1,9 +1,12 @@
 {
-  "releaseNotes": "- Karta 'Na rachunki' to teraz 'Planner' z opisem, co robi\n- 'Dodaj pozycje' zmienione na 'Dodaj pozycje do planu'",
-  "releaseDate": "2026-07-26T16:40:14Z",
-  "version": "0.10.26072608",
-  "versionCode": 1026072608,
+  "releaseNotes": "- Nowa kolejnosc zakladek: Budzet, Wplywy, Rachunki, Subskrypcje, Wydatki",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072609",
+  "versionCode": 1026072609,
   "changelog": [
+    {
+      "version": "0.10.26072609",
+      "notes": "- Nowa kolejnosc zakladek: Budzet, Wplywy, Rachunki, Subskrypcje, Wydatki"
+    },
     {
       "version": "0.10.26072608",
       "notes": "- Karta 'Na rachunki' to teraz 'Planner' z opisem, co robi\n- 'Dodaj pozycje' zmienione na 'Dodaj pozycje do planu'"
@@ -39,11 +42,8 @@
     {
       "version": "0.10.26072600",
       "notes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Mniejsza paczka aktualizacji: APK tylko pod 64-bitowe ARM"
-    },
-    {
-      "version": "0.10.26072502",
-      "notes": "- Szybka sciezka skanu: paragon fiskalny i zrzut platnosci telefonem czyta zwykly OCR w ~1-2 s\n- Data brana wprost z dokumentu (dzien tygodnia wskazuje rok) zamiast zgadywania przez model\n- Silnik AI wchodzi dopiero przy dokumencie o dowolnym ukladzie"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072608"
+  "releaseDate": "2026-07-26T18:05:32Z",
+  "version": "0.10.26072609"
 }

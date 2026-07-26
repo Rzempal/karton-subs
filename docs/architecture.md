@@ -167,9 +167,12 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ## Nawigacja (6 zakladek)
 
-Kolejnosc: Budzet | Rachunki | Subskrypcje | Wydatki | Wplywy | ⋮ Ustawienia
-(separator oddziela Ustawienia od piatki funkcyjnej; `GlassNavBar` liczy go
-dynamicznie). Pasek pokazuje etykiete TYLKO aktywnej pozycji (reszta to ikony),
+Kolejnosc: Budzet | Wplywy | Rachunki | Subskrypcje | Wydatki | ⋮ Ustawienia —
+przeglad, potem sciezka pieniedzy: skad przychodza (Wplywy) i gdzie wychodza
+(Rachunki, Subskrypcje, Wydatki). Separator oddziela Ustawienia od piatki
+funkcyjnej (`GlassNavBar` liczy go dynamicznie). Indeks zakladki Rachunki jest
+stala `_rachunkiTab` w `main.dart` — po „Udostepnij -> Zostaje" ladujemy wlasnie
+tam, wiec kolejna zmiana kolejnosci nie moze go rozjechac po cichu. Pasek pokazuje etykiete TYLKO aktywnej pozycji (reszta to ikony),
 a `FittedBox(scaleDown)` chroni pigulke od wyjscia za krawedz na waskim ekranie.
 
 Nazwy sekcji wg **[ADR-019](adr/ADR-019-podzial-sekcji-aplikacji.md)**: „Budzet" to

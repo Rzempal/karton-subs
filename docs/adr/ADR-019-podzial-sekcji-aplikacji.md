@@ -25,13 +25,15 @@ istnieją. Decyzja skorygowana na osobną zakładkę; szczegóły w punkcie 2.
 
 Sześć zakładek — każdy temat ma własną, nazwaną powierzchnię:
 
+Kolejność układa się w ścieżkę pieniędzy: przegląd → skąd przychodzą → gdzie wychodzą.
+
 | Zakładka | Znaczenie |
 |---|---|
 | **Budżet** (dawny „Dashboard") | Przegląd całości: bilans miesiąca, płatności, podsumowanie, plan |
-| **Rachunki** | Datowane wydatki jednorazowe (ADR-018) + **koperta „Na rachunki"** + skan AI |
+| **Wpływy** | Wpływy cykliczne (pensja) i jednorazowe (premia) |
+| **Rachunki** | Datowane wydatki jednorazowe (ADR-018) + **Planner** (plan kwoty na rachunki) + skan AI |
 | **Subskrypcje** | Bez zmian — świadomie oddzielone od kosztów stałych (koszty uznaniowe) |
 | **Wydatki** (dawny „Budżet") | Pozycje planowalne: koszty stałe, raty, przelew do domowego. Tytuł ekranu: „Wydatki cykliczne" |
-| **Wpływy** | Wpływy cykliczne (pensja) i jednorazowe (premia) |
 | **Ustawienia** | Bez zmian |
 
 ### 1. Koperta „Na rachunki" należy do Rachunków

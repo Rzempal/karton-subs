@@ -271,7 +271,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     for (final f in images) {
       scanCtrl.startScan(f.path, scope);
     }
-    setState(() => _currentIndex = 1); // zakladka Rachunki
+    setState(() => _currentIndex = _rachunkiTab);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -305,26 +305,33 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Kolejnosc zakladek: przeglad, potem sciezka pieniedzy (wplywy -> rachunki
+  /// -> subskrypcje -> wydatki cykliczne), na koncu ustawienia.
   static const _screens = [
     DashboardScreen(),
+    BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
     RachunkiScreen(),
     SubscriptionListScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.expenses),
-    BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
     SettingsScreen(),
   ];
 
   static const _navItems = [
     // Nazwy sekcji wg ADR-019: „Budżet" to przeglad calosci, a zarzadzanie
-    // pozycjami planowalnymi rozbite na „Wydatki cykliczne" (w pasku skrocone
-    // do „Wydatki" — pelny tytul jest na ekranie) i „Wplywy".
+    // pozycjami planowalnymi rozbite na „Wplywy" i „Wydatki cykliczne"
+    // (w pasku skrocone do „Wydatki" — pelny tytul jest na ekranie).
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
+    GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
     GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Rachunki'),
     GlassNavItem(icon: LucideIcons.repeat, label: 'Subskrypcje'),
     GlassNavItem(icon: LucideIcons.trendingDown, label: 'Wydatki'),
-    GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
+
+  /// Indeks zakladki „Rachunki" — tam ladujemy po „Udostepnij -> Zostaje".
+  /// Stala, a nie liczba w kodzie: kolejnosc zakladek juz sie zmieniala, a
+  /// magiczna „1" po cichu wskazywala wtedy zly ekran.
+  static const _rachunkiTab = 2;
 
   @override
   Widget build(BuildContext context) {
