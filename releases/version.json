@@ -1,9 +1,12 @@
 {
-  "releaseDate": "2026-07-26T21:51:22Z",
-  "versionCode": 1126072601,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072601",
-  "releaseNotes": "- Import backupu pyta, czy odtworzyc stan z pliku (domyslnie) czy scalic z obecnymi danymi\n- Poprawka: wczesniej import zawsze scalal, wiec pozycje usuniete w zrodle zostawaly i zawyzaly sumy\n- Planner (kwota na rachunki) wchodzi teraz do backupu\n- Przy eksporcie z haslem trzeba je powtorzyc - literowka oznaczala plik nie do odczytania\n- Podsumowanie po imporcie mowi, ile pozycji usunieto",
+  "version": "0.11.26072602",
+  "versionCode": 1126072602,
+  "releaseNotes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku",
   "changelog": [
+    {
+      "version": "0.11.26072602",
+      "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
+    },
     {
       "version": "0.11.26072601",
       "notes": "- Import backupu pyta, czy odtworzyc stan z pliku (domyslnie) czy scalic z obecnymi danymi\n- Poprawka: wczesniej import zawsze scalal, wiec pozycje usuniete w zrodle zostawaly i zawyzaly sumy\n- Planner (kwota na rachunki) wchodzi teraz do backupu\n- Przy eksporcie z haslem trzeba je powtorzyc - literowka oznaczala plik nie do odczytania\n- Podsumowanie po imporcie mowi, ile pozycji usunieto"
@@ -39,11 +42,8 @@
     {
       "version": "0.9.26062002",
       "notes": "bugs"
-    },
-    {
-      "version": "0.9.26062001",
-      "notes": "- Synchronizacja budzetu domowego (preview): wspoldzielenie miedzy telefonami przez kod QR + haslo (szyfrowanie E2E)\n- Modernizacja wyboru waluty"
     }
   ],
-  "version": "0.11.26072601"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1126072602",
+  "releaseDate": "2026-07-26T22:27:30Z"
 }

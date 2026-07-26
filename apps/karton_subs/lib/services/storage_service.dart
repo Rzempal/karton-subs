@@ -228,23 +228,43 @@ class StorageService {
     _log.info('Saved budget entry ($scope): ${entry.name}');
   }
 
-  /// Czysci zbiory objete backupem — do odtworzenia stanu z pliku („Zastap").
+  /// Czysci zbiory przed odtworzeniem stanu z backupu.
+  ///
+  /// Kazdy obszar ma wlasna flage i czyscimy TYLKO te, ktore dany plik potrafi
+  /// odtworzyc (starsze formaty nie maja wszystkich pol). Bez tego odtworzenie
+  /// ze starego pliku kasowaloby dane, ktorych nie ma czym wypelnic — tak
+  /// zginal Planner przy pierwszej wersji tej funkcji (ADR-021).
   ///
   /// Kategorie domyslne ZOSTAJA: eksport ich nie zapisuje (sa zawsze zasiane),
   /// wiec ich skasowanie osierocilo by pozycje, ktore sie do nich odwoluja.
-  Future<void> clearForRestore() async {
-    await _subscriptionsBox.clear();
-    await _budgetEntriesBox.clear();
-    await _householdBudgetEntriesBox.clear();
-    await _paymentDoneBox.clear();
-    for (final key in _categoriesBox.keys.toList()) {
-      if (defaultCategories.any((d) => d.id == key)) continue;
-      await _categoriesBox.delete(key);
+  Future<void> clearForRestore({
+    bool subscriptions = false,
+    bool categories = false,
+    bool budgetPersonal = false,
+    bool budgetHousehold = false,
+    bool paymentDone = false,
+    bool billsAllocation = false,
+  }) async {
+    if (subscriptions) await _subscriptionsBox.clear();
+    if (budgetPersonal) {
+      await _budgetEntriesBox.clear();
+      _budgetEntriesCache.clear();
     }
-    await setBillsAllocationItems(BudgetScope.personal, const []);
-    await setBillsAllocationItems(BudgetScope.household, const []);
-    _budgetEntriesCache.clear();
-    _householdBudgetEntriesCache.clear();
+    if (budgetHousehold) {
+      await _householdBudgetEntriesBox.clear();
+      _householdBudgetEntriesCache.clear();
+    }
+    if (paymentDone) await _paymentDoneBox.clear();
+    if (categories) {
+      for (final key in _categoriesBox.keys.toList()) {
+        if (defaultCategories.any((d) => d.id == key)) continue;
+        await _categoriesBox.delete(key);
+      }
+    }
+    if (billsAllocation) {
+      await setBillsAllocationItems(BudgetScope.personal, const []);
+      await setBillsAllocationItems(BudgetScope.household, const []);
+    }
     _log.info('Wyczyszczono dane przed odtworzeniem z backupu');
   }
 

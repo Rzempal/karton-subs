@@ -36,10 +36,16 @@ Przed importem pojawia się pytanie:
 Domyślnie „Odtwórz", bo tego znaczenia oczekuje się po słowie „backup". Pytanie pada
 **przed** hasłem — to decyzja o danych, nie detal techniczny.
 
-### 2. Czyszczenie obejmuje tylko to, co backup pokrywa
+### 2. Czyszczenie obejmuje tylko to, co KONKRETNY PLIK potrafi odtworzyć
 
-`StorageService.clearForRestore` czyści: subskrypcje, pozycje budżetu (oba zakresy),
-stan odhaczonych płatności, kategorie **niedomyślne** i Planner (oba zakresy).
+`StorageService.clearForRestore` przyjmuje flagę per obszar (subskrypcje, kategorie,
+budżet osobisty, budżet domowy, stan płatności, Planner), a `BackupService` ustawia
+je na podstawie **pól faktycznie obecnych w pliku**.
+
+To nie jest szczegół implementacyjny — pierwsza wersja tej funkcji czyściła wszystko
+bezwarunkowo i **odtworzenie ze starszego pliku (v5) skasowało Planner**, bo plik nie
+miał czym go wypełnić. Reguła: nigdy nie kasuj obszaru, którego źródło nie pokrywa.
+
 Kategorie domyślne zostają — eksport ich nie zapisuje (są zawsze zasiane), więc ich
 skasowanie osierociłoby pozycje, które się do nich odwołują.
 

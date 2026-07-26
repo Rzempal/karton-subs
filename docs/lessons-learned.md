@@ -19,12 +19,21 @@ Pytanie o tryb przed importem: **Odtworz stan z pliku** (domyslne, czysci dane o
 backupem) albo **Scal**. Podsumowanie po imporcie mowi wprost, ile pozycji usunieto.
 Planner dopisany do formatu (wersja 6). Szczegoly: ADR-021.
 
+### Pulapka w samej poprawce (regresja tego samego dnia)
+Pierwsza wersja trybu „Odtworz" czyscila WSZYSTKIE obszary bezwarunkowo. Odtworzenie
+ze **starszego pliku** (v5, bez pola Plannera) skasowalo wiec Planner i nie mialo czym
+go wypelnic — utrata danych wprost z poprawki, ktora miala chronic dane.
+
+Reguła: **nigdy nie kasuj obszaru, ktorego zrodlo nie pokrywa.** `clearForRestore` ma
+flage per obszar, a import ustawia je na podstawie pol faktycznie obecnych w pliku.
+
 ### Wniosek
 Jesli funkcja nazywa sie „backup", to jej import ma **odtwarzac stan**, a nie dokladac
 dane. Rozjazd miedzy nazwa a zachowaniem daje bledy, ktorych uzytkownik nie ma jak
 zauwazyc — tu ujawnil sie tylko dlatego, ze suma miesiaca „wygladala dziwnie".
 Przy kazdym rozszerzeniu modelu sprawdz, czy nowe pole trafia do eksportu: Planner
-przezyl w kodzie dwa ADR-y (012, 019), zanim ktos zauwazyl, ze go tam nie ma.
+przezyl w kodzie dwa ADR-y (012, 019), zanim ktos zauwazyl, ze go tam nie ma. A przy
+kazdej operacji „wyczysc i wgraj" sprawdz, co plik **naprawde** zawiera.
 
 ---
 

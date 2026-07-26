@@ -213,10 +213,26 @@ class BackupService {
     // Liczba pozycji usuniętych przy odtwarzaniu — do uczciwego podsumowania.
     var removed = 0;
     if (replace) {
-      removed = _storage.getSubscriptions().length +
-          _storage.getBudgetEntries(BudgetScope.personal).length +
-          _storage.getBudgetEntries(BudgetScope.household).length;
-      await _storage.clearForRestore();
+      // Czyścimy WYŁĄCZNIE obszary, które ten plik potrafi odtworzyć. Starsze
+      // formaty nie mają wszystkich pól, a kasowanie danych bez pokrycia
+      // w pliku to utrata bez powrotu (na tym poległ Planner — ADR-021).
+      final hasBudget = data['budgetEntries'] != null;
+      final hasHousehold = data['householdBudgetEntries'] != null;
+      if (hasBudget) {
+        removed += _storage.getBudgetEntries(BudgetScope.personal).length;
+      }
+      if (hasHousehold) {
+        removed += _storage.getBudgetEntries(BudgetScope.household).length;
+      }
+      removed += _storage.getSubscriptions().length;
+      await _storage.clearForRestore(
+        subscriptions: true, // obecne w każdej wersji formatu
+        categories: true, // obecne w każdej wersji formatu
+        budgetPersonal: hasBudget,
+        budgetHousehold: hasHousehold,
+        paymentDone: data['paymentDone'] != null,
+        billsAllocation: data['billsAllocation'] != null,
+      );
     }
 
     int subsImported = 0;
