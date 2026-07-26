@@ -1,5 +1,11 @@
 {
+  "versionCode": 1026072611,
+  "version": "0.10.26072611",
   "changelog": [
+    {
+      "version": "0.10.26072611",
+      "notes": "- Ikona 'i' przy tytule kazdej sekcji - tapniecie tlumaczy, po co ta sekcja jest i czym rozni sie od pozostalych"
+    },
     {
       "version": "0.10.26072610",
       "notes": "- Nowy cykl platnosci: wybrane miesiace roku (np. styczen, kwiecien, wrzesien)\n- Presety 'co 2 / 3 / 4 miesiace' i 'co pol roku' wypelniaja wybor jednym kliknieciem\n- Dziala tak samo w pozycjach budzetu i w subskrypcjach; Excel zapisuje 'miesiace: 1,4,9'"
@@ -35,15 +41,9 @@
     {
       "version": "0.10.26072602",
       "notes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie"
-    },
-    {
-      "version": "0.10.26072601",
-      "notes": "- Archiwum rachunkow ma wlasna sekcje w Ustawieniach (bylo w Asystencie AI)\n- Paczka aktualizacji schudla z 112 MB do 43 MB (APK tylko pod 64-bitowe ARM)"
     }
   ],
-  "versionCode": 1026072610,
-  "releaseNotes": "- Nowy cykl platnosci: wybrane miesiace roku (np. styczen, kwiecien, wrzesien)\n- Presety 'co 2 / 3 / 4 miesiace' i 'co pol roku' wypelniaja wybor jednym kliknieciem\n- Dziala tak samo w pozycjach budzetu i w subskrypcjach; Excel zapisuje 'miesiace: 1,4,9'",
-  "version": "0.10.26072610",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072610",
-  "releaseDate": "2026-07-26T19:29:46Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072611",
+  "releaseNotes": "- Ikona 'i' przy tytule kazdej sekcji - tapniecie tlumaczy, po co ta sekcja jest i czym rozni sie od pozostalych",
+  "releaseDate": "2026-07-26T20:41:21Z"
 }

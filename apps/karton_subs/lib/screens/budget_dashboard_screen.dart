@@ -8,6 +8,7 @@ import '../models/category.dart';
 import '../services/excel_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
@@ -209,7 +210,20 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(_onIncomes ? 'Wpływy' : 'Wydatki cykliczne'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                _onIncomes ? 'Wpływy' : 'Wydatki cykliczne',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SectionInfoBadge(
+              _onIncomes ? SectionInfo.incomes : SectionInfo.recurringExpenses,
+            ),
+          ],
+        ),
         centerTitle: false,
         actions: [
           const SyncNowButton(),

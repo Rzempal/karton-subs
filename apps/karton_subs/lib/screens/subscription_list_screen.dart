@@ -12,6 +12,7 @@ import '../services/excel_service.dart';
 import '../services/pdf_export_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
@@ -51,7 +52,13 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Subskrypcje'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text('Subskrypcje'),
+            SectionInfoBadge(SectionInfo.subscriptions),
+          ],
+        ),
         actions: [
           LabeledIconButton(
             icon: LucideIcons.fileSpreadsheet,

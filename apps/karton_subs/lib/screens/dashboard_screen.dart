@@ -10,6 +10,7 @@ import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_widgets.dart';
@@ -213,7 +214,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       appBar: AppBar(
         // „Budżet" = przeglad calosci (ADR-019). Ekran zarzadzania pozycjami
         // planowalnymi nazywa sie „Wydatki cykliczne".
-        title: const Text('Budżet'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Text('Budżet'),
+            SectionInfoBadge(SectionInfo.budget),
+          ],
+        ),
         centerTitle: false,
         actions: [
           const SyncNowButton(),
