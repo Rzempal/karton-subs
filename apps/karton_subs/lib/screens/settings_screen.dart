@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/app_config.dart';
 import '../controllers/bill_scan_controller.dart';
 import '../controllers/budget_controller.dart';
+import '../services/storage_service.dart';
 import '../services/sync_service.dart';
 import '../widgets/settings_widgets.dart';
 import '../widgets/update_inline_section.dart';
@@ -17,6 +18,7 @@ import 'dev_tools_screen.dart';
 import 'household_sync_screen.dart';
 import 'notifications_screen.dart';
 import 'payment_method_management_screen.dart';
+import 'receipt_archive_screen.dart';
 
 /// Ekran Ustawien — lista nawigacyjna do osobnych ekranow (kazda sekcja = ekran).
 /// Stateful: podtytul kafla „Asystent AI" odswieza sie po powrocie z podekranu.
@@ -32,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     // watch: podtytul aktualizuje sie od razu po zmianie przelacznika.
     final aiEnabled = context.watch<BillScanController>().aiAssistantEnabled;
+    final storage = context.read<StorageService>();
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Ustawienia')),
@@ -73,6 +76,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   builder: (_) => const AiAssistantScreen(),
                 ));
                 if (mounted) setState(() {}); // odśwież podtytuł Włączony/Wyłączony
+              },
+            ),
+            // Archiwum zdjęć: osobna sekcja, bo dotyczy każdego zatwierdzonego
+            // rachunku ze zdjęciem — także odczytanego szybką ścieżką OCR,
+            // bez udziału silnika AI (ADR-017).
+            ListTile(
+              leading: const Icon(LucideIcons.folderArchive),
+              title: const Text('Archiwum rachunków'),
+              subtitle: Text(ReceiptArchiveScreen.labelFor(
+                storage.getReceiptArchiveEnabled(),
+                storage.getReceiptArchiveSubfolder(),
+              )),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () async {
+                await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const ReceiptArchiveScreen(),
+                ));
+                if (mounted) setState(() {}); // odśwież podtytuł
               },
             ),
             _navTile(context,

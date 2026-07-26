@@ -3,7 +3,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/bill_scan_controller.dart';
 import '../services/ai_engine_service.dart';
-import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_widgets.dart';
 
@@ -11,6 +10,9 @@ import '../widgets/settings_widgets.dart';
 /// rachunków lokalnym silnikiem + link do uruchomienia albo pobrania apki
 /// silnika. Wyłączony asystent ukrywa opcje skanowania w menu „Dodaj rachunek"
 /// i ignoruje zdjęcia z systemowego „Udostępnij".
+///
+/// Archiwum zdjęć ma własną sekcję w Ustawieniach (`ReceiptArchiveScreen`) —
+/// dotyczy każdego zatwierdzonego rachunku, nie tylko odczytanego silnikiem.
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
 
@@ -22,66 +24,13 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   final _engine = AiEngineService();
 
   late bool _enabled;
-  late bool _archiveEnabled;
-  late String _archiveSubfolder;
   AiEngineStatus? _engineStatus;
 
   @override
   void initState() {
     super.initState();
-    final storage = context.read<StorageService>();
     _enabled = context.read<BillScanController>().aiAssistantEnabled;
-    _archiveEnabled = storage.getReceiptArchiveEnabled();
-    _archiveSubfolder = storage.getReceiptArchiveSubfolder();
     _refreshEngineStatus();
-  }
-
-  String get _archivePath => '/Pamięć wewnętrzna/Documents/$_archiveSubfolder';
-
-  Future<void> _setArchiveEnabled(bool value) async {
-    setState(() => _archiveEnabled = value);
-    await context.read<StorageService>().setReceiptArchiveEnabled(value);
-  }
-
-  Future<void> _editSubfolder() async {
-    final controller = TextEditingController(text: _archiveSubfolder);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Folder archiwum'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Podfolder w katalogu Documents:'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixText: 'Documents/',
-                hintText: 'Zostaje',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Anuluj'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Zapisz'),
-          ),
-        ],
-      ),
-    );
-    if (result != null && mounted) {
-      final storage = context.read<StorageService>();
-      await storage.setReceiptArchiveSubfolder(result);
-      setState(() => _archiveSubfolder = storage.getReceiptArchiveSubfolder());
-    }
   }
 
   Future<void> _refreshEngineStatus() async {
@@ -184,38 +133,6 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
               ),
             ),
           ],
-
-          // ── Archiwum rachunków ──────────────────────────────────────────
-          const SettingsSectionLabel('Archiwum rachunków'),
-          SettingsGroup(children: [
-            SwitchListTile(
-              title: const Text('Zapisuj zdjęcia rachunków'),
-              subtitle: const Text(
-                'Trwała kopia zdjęcia przy zatwierdzeniu rachunku',
-              ),
-              value: _archiveEnabled,
-              onChanged: _setArchiveEnabled,
-            ),
-            if (_archiveEnabled)
-              ListTile(
-                leading: const Icon(LucideIcons.folder),
-                title: const Text('Folder archiwum'),
-                subtitle: Text(_archivePath),
-                trailing: const Icon(LucideIcons.pencil),
-                onTap: _editSubfolder,
-              ),
-          ]),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              'Zdjęcia zatwierdzonych rachunków trafiają do wybranego folderu '
-              '(przeglądniesz je w Plikach lub Galerii). Archiwum jest lokalne '
-              '— nie wchodzi do kopii zapasowej ani synchronizacji domowej.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
         ],
       ),
     );
