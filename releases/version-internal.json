@@ -1,7 +1,9 @@
 {
-  "versionCode": 1026072611,
-  "version": "0.10.26072611",
   "changelog": [
+    {
+      "version": "0.10.26072612",
+      "notes": "- Opis sekcji w oknie z przyciskiem 'Rozumiem' zamiast znikajacej podpowiedzi\n- Tresc w punktach, wiekszym fontem - latwiejsza do przeczytania"
+    },
     {
       "version": "0.10.26072611",
       "notes": "- Ikona 'i' przy tytule kazdej sekcji - tapniecie tlumaczy, po co ta sekcja jest i czym rozni sie od pozostalych"
@@ -37,13 +39,11 @@
     {
       "version": "0.10.26072603",
       "notes": "- Dashboard: sortowanie (A-Z po nazwie / po dacie) i grupowanie po typie glownym - rachunki, subskrypcje, budzet\n- Oba przelaczniki dzialaja na sekcje Platnosci i Podsumowanie miesiaca"
-    },
-    {
-      "version": "0.10.26072602",
-      "notes": "- Podsumowanie miesiaca (wplywy i wydatki po dniach) jako osobna sekcja na dole zakladki Bilans miesiaca\n- Zniknal maly przycisk otwierajacy je w bottom sheecie"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072611",
-  "releaseNotes": "- Ikona 'i' przy tytule kazdej sekcji - tapniecie tlumaczy, po co ta sekcja jest i czym rozni sie od pozostalych",
-  "releaseDate": "2026-07-26T20:41:21Z"
+  "releaseDate": "2026-07-26T21:06:24Z",
+  "versionCode": 1026072612,
+  "version": "0.10.26072612",
+  "releaseNotes": "- Opis sekcji w oknie z przyciskiem 'Rozumiem' zamiast znikajacej podpowiedzi\n- Tresc w punktach, wiekszym fontem - latwiejsza do przeczytania",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1026072612"
 }
