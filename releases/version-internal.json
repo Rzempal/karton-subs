@@ -1,9 +1,29 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072616",
-  "versionCode": 1126072616,
-  "version": "0.11.26072616",
-  "releaseDate": "2026-07-26T23:36:02Z",
   "changelog": [
+    {
+      "version": "0.11.26072705",
+      "notes": "- Plan: Koszty roczne przeniesione na dol, pod podzial wg kategorii"
+    },
+    {
+      "version": "0.11.26072704",
+      "notes": "- Bilans miesiaca: nowa sekcja Rzeczywisty bilans miesiaca nad kalendarzem (pasek + rozpis: wplywy, koszty cykliczne z korektami, subskrypcje, rachunki)\n- Kalendarz nie powtarza juz kwoty bilansu\n- Przytrzymanie kwoty bilansu nadal otwiera rozbicie bilans vs plan"
+    },
+    {
+      "version": "0.11.26072703",
+      "notes": "- Saldo: subskrypcje jako osobna pozycja odejmowania (zamiast opisu w tym)\n- Saldo: rezerwa nazwana Zaplanowana na rachunki\n- Kwoty wg jednej reguly koloru: zielony wplywy i dodatnie saldo, czerwony koszty i deficyt\n- Nowy akordeon Koszty roczne: cykliczne, subskrypcje i rezerwa w skali roku"
+    },
+    {
+      "version": "0.11.26072702",
+      "notes": "- Plan: rachunki miesiaca tylko w Bilansie miesiaca (koniec dublowania)\n- Plan: koszt subskrypcji (miesiecznie, rocznie, ile aktywnych) w rozwinietej karcie Saldo\n- Saldo po rozwinieciu pokazuje matematyke: pasek proporcji + rozpis wplywy/koszty/Planner\n- Sekcja Szczegoly chowa sie, gdy nie ma limitu ani okresow probnych"
+    },
+    {
+      "version": "0.11.26072701",
+      "notes": "- Plan: jeden wykres trendu z trzema liniami (Cykliczne, Subskrypcje, Rachunki) i chipami do wlaczania\n- Plan: podzial wg kategorii laczy wszystkie strumienie wydatkow\n- Plan: karty szczegolowe w zwijanej sekcji Szczegoly"
+    },
+    {
+      "version": "0.11.26072700",
+      "notes": "- Budzet: zakladka Plan jako domyslna (Bilans miesiaca druga)\n- Rachunki: Planner, kalendarz i lista rozdzielone; wybor miesiaca po tapnieciu w nazwe, przycisk Dzisiaj\n- Planner zwijany, stan zapamietany\n- Skan rachunkow: wszystkie zdjecia zlecane od razu uslugom w tle (drugi skan nie ginie po wyjsciu z apki)"
+    },
     {
       "version": "0.11.26072616",
       "notes": "- Planner budzetu domowego jest teraz synchronizowany miedzy telefonami\n- Scalanie per pozycja: jednoczesna edycja na dwoch telefonach nie gubi zmian\n- Telefony moga aktualizowac sie w roznym czasie - starsza wersja nie kasuje Plannera nowszej"
@@ -19,31 +39,11 @@
     {
       "version": "0.11.26072613",
       "notes": "- Import backupu pyta: odtworzyc stan z pliku czy scalic z obecnymi danymi (wczesniej zawsze scalal po cichu)\n- Planner wchodzi do backupu (format v6)\n- Powtorzenie hasla przy eksporcie z haslem\n- Podsumowanie importu mowi, ile pozycji usunieto przy odtwarzaniu"
-    },
-    {
-      "version": "0.10.26072612",
-      "notes": "- Opis sekcji w oknie z przyciskiem 'Rozumiem' zamiast znikajacej podpowiedzi\n- Tresc w punktach, wiekszym fontem - latwiejsza do przeczytania"
-    },
-    {
-      "version": "0.10.26072611",
-      "notes": "- Ikona 'i' przy tytule kazdej sekcji - tapniecie tlumaczy, po co ta sekcja jest i czym rozni sie od pozostalych"
-    },
-    {
-      "version": "0.10.26072610",
-      "notes": "- Nowy cykl platnosci: wybrane miesiace roku (np. styczen, kwiecien, wrzesien)\n- Presety 'co 2 / 3 / 4 miesiace' i 'co pol roku' wypelniaja wybor jednym kliknieciem\n- Dziala tak samo w pozycjach budzetu i w subskrypcjach; Excel zapisuje 'miesiace: 1,4,9'"
-    },
-    {
-      "version": "0.10.26072609",
-      "notes": "- Nowa kolejnosc zakladek: Budzet, Wplywy, Rachunki, Subskrypcje, Wydatki"
-    },
-    {
-      "version": "0.10.26072608",
-      "notes": "- Karta 'Na rachunki' to teraz 'Planner' z opisem, co robi\n- 'Dodaj pozycje' zmienione na 'Dodaj pozycje do planu'"
-    },
-    {
-      "version": "0.10.26072607",
-      "notes": "- Wplywy maja wlasna zakladke w nawigacji (pod-zakladka byla zbyt schowana)\n- Pasek nawigacji: szesc pozycji, zabezpieczony przed wyjsciem za krawedz ekranu"
     }
   ],
-  "releaseNotes": "- Planner budzetu domowego jest teraz synchronizowany miedzy telefonami\n- Scalanie per pozycja: jednoczesna edycja na dwoch telefonach nie gubi zmian\n- Telefony moga aktualizowac sie w roznym czasie - starsza wersja nie kasuje Plannera nowszej"
+  "releaseNotes": "- Plan: Koszty roczne przeniesione na dol, pod podzial wg kategorii",
+  "releaseDate": "2026-07-27T17:17:01Z",
+  "version": "0.11.26072705",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072705",
+  "versionCode": 1126072705
 }

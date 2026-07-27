@@ -10,7 +10,6 @@ import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
-import 'gradient_amount.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 
@@ -73,6 +72,15 @@ class BudgetSummarySection extends StatelessWidget {
   final double income;
   final double expenses;
   final double subscriptionsExpense;
+
+  /// Liczba aktywnych subskrypcji — pokazywana po rozwinięciu razem z kosztem
+  /// miesięcznym i rocznym (dawny „hero" z osobnej sekcji statystyk).
+  final int subscriptionsCount;
+
+  /// Rezerwa „Na rachunki" (Planner) — trzeci składnik odejmowania. [expenses]
+  /// już ją zawiera; tutaj jest osobno, żeby rozpis pokazał ją jako własną
+  /// pozycję zamiast chować w kosztach cyklicznych.
+  final double allocation;
   final String currency;
   final bool compact;
   final VoidCallback onToggle;
@@ -86,6 +94,8 @@ class BudgetSummarySection extends StatelessWidget {
     required this.currency,
     required this.compact,
     required this.onToggle,
+    this.subscriptionsCount = 0,
+    this.allocation = 0,
   });
 
   @override
@@ -124,18 +134,18 @@ class BudgetSummarySection extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              // Kwota-bohater: gradient dla nadwyżki (sygnaturowy „wow");
-              // deficyt na czerwono — znaczenie ważniejsze niż efekt.
-              if (positive)
-                GradientAmount(amountText, semanticsLabel: 'Saldo $amountText')
-              else
-                Text(
-                  amountText,
-                  style: theme.textTheme.displayLarge?.copyWith(
-                    color: c.negative,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+              // Jedna reguła koloru w całej karcie: zielony = pieniądze, które
+              // przychodzą albo zostają, czerwony = które wychodzą. Kwota-bohater
+              // nie jest wyjątkiem — gradient akcentu (fiolet→turkus) nie niósł
+              // tej informacji.
+              Text(
+                amountText,
+                semanticsLabel: 'Saldo $amountText',
+                style: theme.textTheme.displayLarge?.copyWith(
+                  color: positive ? c.positive : c.negative,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
+              ),
               const SizedBox(height: 12),
               _InlineTrends(
                 income: income,
@@ -153,16 +163,19 @@ class BudgetSummarySection extends StatelessWidget {
                 firstChild: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (subscriptionsExpense > 0) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'w tym subskrypcje: '
-                        '${budgetNf.format(subscriptionsExpense)}${curLabelSuffix(currency)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: c.textMuted,
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: 16),
+                    _SurplusBreakdown(
+                      income: income,
+                      // [expenses] zawiera rezerwę „Zaplanowana na rachunki"
+                      // ORAZ subskrypcje, a obie są w rozpisie osobnymi
+                      // pozycjami — bez odjęcia policzylibyśmy je dwa razy
+                      // i suma nie zeszłaby się z saldem.
+                      recurring: expenses - allocation - subscriptionsExpense,
+                      subscriptions: subscriptionsExpense,
+                      allocation: allocation,
+                      surplus: surplus,
+                      currency: currency,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       'Plan: wpływy minus koszty stałe (cykliczne, subskrypcje) '
@@ -179,6 +192,548 @@ class BudgetSummarySection extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Skąd bierze się saldo: pasek proporcji (ile z wpływów zjadają koszty, ile
+/// zostaje) nad rozpisem składników jak na rachunku.
+///
+/// Pasek odpowiada na „jak dużo", rozpis na „z czego dokładnie" — same procenty
+/// nie pozwalają sprawdzić arytmetyki, a same liczby nie pokazują skali.
+/// Skala paska to `max(wpływy, koszty + rezerwa)`, więc przy deficycie pasek
+/// wypełnia się kosztami zamiast wychodzić poza szerokość karty.
+class _SurplusBreakdown extends StatelessWidget {
+  final double income;
+  final double recurring;
+  final double subscriptions;
+  final double allocation;
+  final double surplus;
+  final String currency;
+
+  const _SurplusBreakdown({
+    required this.income,
+    required this.recurring,
+    required this.subscriptions,
+    required this.allocation,
+    required this.surplus,
+    required this.currency,
+  });
+
+  // Segmenty paska rozróżnia jasność, nie znaczenie: wszystkie trzy to koszty,
+  // więc trzymają się czerwieni, a odcieniami odpowiadają wierszom rozpisu.
+  static Color _costColor(AppSemanticColors c) => c.negative;
+  static Color _subsColor(AppSemanticColors c) =>
+      c.negative.withValues(alpha: 0.7);
+  static Color _allocColor(AppSemanticColors c) =>
+      c.negative.withValues(alpha: 0.45);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    final scale = [
+      income,
+      recurring + subscriptions + allocation,
+    ].reduce((a, b) => a > b ? a : b);
+    final leftover = surplus > 0 ? surplus : 0.0;
+
+    String pct(double v) => income > 0 ? '${(v / income * 100).round()}%' : '—';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (scale > 0) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 10,
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  Widget seg(double value, Color color) => SizedBox(
+                    width: value <= 0 ? 0 : box.maxWidth * (value / scale),
+                    child: ColoredBox(color: color),
+                  );
+                  return Row(
+                    children: [
+                      seg(recurring, _costColor(c)),
+                      seg(subscriptions, _subsColor(c)),
+                      seg(allocation, _allocColor(c)),
+                      seg(leftover, c.positive),
+                      // Reszta paska (deficyt = 0) tłem, żeby zaokrąglenie
+                      // rogów obejmowało pełną szerokość.
+                      Expanded(child: ColoredBox(color: c.border)),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        _BreakdownRow(
+          label: 'Wpływy',
+          amount: income,
+          currency: currency,
+          sign: '',
+          color: c.positive,
+        ),
+        _BreakdownRow(
+          label: 'Koszty cykliczne',
+          amount: recurring,
+          currency: currency,
+          sign: '−',
+          dotColor: _costColor(c),
+          trailing: pct(recurring),
+          color: c.negative,
+        ),
+        if (subscriptions > 0)
+          _BreakdownRow(
+            label: 'Subskrypcje',
+            amount: subscriptions,
+            currency: currency,
+            sign: '−',
+            dotColor: _subsColor(c),
+            trailing: pct(subscriptions),
+            color: c.negative,
+          ),
+        if (allocation > 0)
+          _BreakdownRow(
+            label: 'Zaplanowana na rachunki',
+            amount: allocation,
+            currency: currency,
+            sign: '−',
+            dotColor: _allocColor(c),
+            trailing: pct(allocation),
+            color: c.negative,
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Divider(height: 1, color: c.border),
+        ),
+        _BreakdownRow(
+          label: 'Zostaje miesięcznie',
+          amount: surplus,
+          currency: currency,
+          sign: surplus < 0 ? '−' : '=',
+          dotColor: surplus > 0 ? c.positive : null,
+          trailing: surplus > 0 ? pct(surplus) : null,
+          emphasis: true,
+          color: surplus < 0 ? c.negative : c.positive,
+        ),
+      ],
+    );
+  }
+}
+
+/// „Rzeczywisty bilans miesiąca" — skąd bierze się bilans wybranego miesiąca.
+///
+/// Ten sam układ co karta „Saldo" na zakładce Plan (pasek proporcji + rozpis),
+/// ale na danych REALNYCH: koszty cykliczne z korektami kwot i ratami tego
+/// miesiąca, subskrypcje i rachunki faktycznie przypisane do miesiąca.
+/// Rachunki zbiorczo — pozycja po pozycji jest ich lista niżej na ekranie.
+class MonthBalanceSection extends StatelessWidget {
+  final DateTime month;
+  final MonthBalanceParts parts;
+
+  /// Saldo planu — punkt odniesienia dla bottom sheeta „bilans vs plan".
+  final double surplus;
+
+  /// Pozycje różniące bilans od planu (bottom sheet po przytrzymaniu kwoty).
+  final List<BalanceContribution> breakdown;
+  final String currency;
+  final bool compact;
+  final VoidCallback onToggle;
+
+  const MonthBalanceSection({
+    super.key,
+    required this.month,
+    required this.parts,
+    required this.surplus,
+    required this.breakdown,
+    required this.currency,
+    required this.compact,
+    required this.onToggle,
+  });
+
+  void _showBalanceBreakdown(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => _BalanceBreakdownSheet(
+        surplus: surplus,
+        balance: parts.balance,
+        items: breakdown,
+        currency: currency,
+        monthLabel: DateFormat('LLLL yyyy', 'pl').format(month),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final balance = parts.balance;
+    final positive = balance >= 0;
+    final amountText =
+        '${positive ? '' : '−'}${budgetNf.format(balance.abs())}'
+        '${curLabelSuffix(currency)}';
+    final scale = [
+      parts.income,
+      parts.costs,
+    ].reduce((a, b) => a > b ? a : b);
+    final leftover = balance > 0 ? balance : 0.0;
+
+    String pct(double v) =>
+        parts.income > 0 ? '${(v / parts.income * 100).round()}%' : '—';
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Rzeczywisty bilans miesiąca',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                    size: 20,
+                    color: c.textMuted,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onLongPress: () => _showBalanceBreakdown(context),
+                child: Text(
+                  amountText,
+                  semanticsLabel: 'Bilans miesiąca $amountText',
+                  style: theme.textTheme.displayLarge?.copyWith(
+                    color: positive ? c.positive : c.negative,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 180),
+                sizeCurve: Curves.easeInOut,
+                crossFadeState: compact
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    if (scale > 0) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          height: 10,
+                          child: LayoutBuilder(
+                            builder: (context, box) {
+                              Widget seg(double value, Color color) => SizedBox(
+                                width: value <= 0
+                                    ? 0
+                                    : box.maxWidth * (value / scale),
+                                child: ColoredBox(color: color),
+                              );
+                              return Row(
+                                children: [
+                                  seg(parts.recurring, c.negative),
+                                  seg(
+                                    parts.subscriptions,
+                                    c.negative.withValues(alpha: 0.7),
+                                  ),
+                                  seg(
+                                    parts.bills,
+                                    c.negative.withValues(alpha: 0.45),
+                                  ),
+                                  seg(leftover, c.positive),
+                                  Expanded(child: ColoredBox(color: c.border)),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _BreakdownRow(
+                      label: 'Wpływy',
+                      amount: parts.income,
+                      currency: currency,
+                      sign: '',
+                      color: c.positive,
+                    ),
+                    _BreakdownRow(
+                      label: 'Koszty cykliczne',
+                      amount: parts.recurring,
+                      currency: currency,
+                      sign: '−',
+                      dotColor: c.negative,
+                      trailing: pct(parts.recurring),
+                      color: c.negative,
+                    ),
+                    if (parts.subscriptions > 0)
+                      _BreakdownRow(
+                        label: 'Subskrypcje',
+                        amount: parts.subscriptions,
+                        currency: currency,
+                        sign: '−',
+                        dotColor: c.negative.withValues(alpha: 0.7),
+                        trailing: pct(parts.subscriptions),
+                        color: c.negative,
+                      ),
+                    if (parts.bills > 0)
+                      _BreakdownRow(
+                        label: 'Rachunki',
+                        amount: parts.bills,
+                        currency: currency,
+                        sign: '−',
+                        dotColor: c.negative.withValues(alpha: 0.45),
+                        trailing: pct(parts.bills),
+                        color: c.negative,
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Divider(height: 1, color: c.border),
+                    ),
+                    _BreakdownRow(
+                      label: 'Bilans miesiąca',
+                      amount: balance,
+                      currency: currency,
+                      sign: positive ? '=' : '−',
+                      dotColor: positive ? c.positive : null,
+                      trailing: positive ? pct(balance) : null,
+                      emphasis: true,
+                      color: positive ? c.positive : c.negative,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Realne kwoty tego miesiąca: koszty cykliczne razem '
+                      'z korektami i ratami, rachunki zbiorczo (lista niżej). '
+                      'Przytrzymaj kwotę, by zobaczyć, czym miesiąc różni się '
+                      'od planu.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                secondChild: const SizedBox(width: double.infinity),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Akordeon „Koszty roczne" — te same składniki kosztów co w rozpisie salda,
+/// przeliczone na rok (kwota/mies × 12).
+///
+/// Osobna sekcja, bo pytanie „ile mnie to kosztuje rocznie" pada rzadziej niż
+/// „ile zostaje w tym miesiącu", a mieszanie obu skal w jednej karcie kazałoby
+/// przy każdej kwocie sprawdzać, o który okres chodzi.
+class AnnualCostsSection extends StatelessWidget {
+  final double recurring;
+  final double subscriptions;
+  final int subscriptionsCount;
+  final double allocation;
+  final String currency;
+  final bool compact;
+  final VoidCallback onToggle;
+
+  const AnnualCostsSection({
+    super.key,
+    required this.recurring,
+    required this.subscriptions,
+    required this.subscriptionsCount,
+    required this.allocation,
+    required this.currency,
+    required this.compact,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final total = (recurring + subscriptions + allocation) * 12;
+    if (total <= 0) return const SizedBox.shrink();
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Koszty roczne',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                    size: 20,
+                    color: c.textMuted,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${budgetNf.format(total)}${curLabelSuffix(currency)}',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: c.negative,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 180),
+                sizeCurve: Curves.easeInOut,
+                crossFadeState: compact
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    _BreakdownRow(
+                      label: 'Koszty cykliczne',
+                      amount: recurring * 12,
+                      currency: currency,
+                      sign: '',
+                      color: c.negative,
+                    ),
+                    if (subscriptions > 0)
+                      _BreakdownRow(
+                        label: subscriptionsCount > 0
+                            ? 'Subskrypcje ($subscriptionsCount aktywne)'
+                            : 'Subskrypcje',
+                        amount: subscriptions * 12,
+                        currency: currency,
+                        sign: '',
+                        color: c.negative,
+                      ),
+                    if (allocation > 0)
+                      _BreakdownRow(
+                        label: 'Zaplanowana na rachunki',
+                        amount: allocation * 12,
+                        currency: currency,
+                        sign: '',
+                        color: c.negative,
+                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Kwoty miesięczne × 12 — koszty cykliczne i subskrypcje '
+                      'liczone dzisiejszym stanem, bez pozycji jednorazowych '
+                      'i realnych rachunków.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                secondChild: const SizedBox(width: double.infinity),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wiersz rozpisu: znak działania, nazwa składnika, kwota i udział w procentach.
+class _BreakdownRow extends StatelessWidget {
+  final String label;
+  final double amount;
+  final String currency;
+  final String sign;
+  final Color? dotColor;
+  final String? trailing;
+  final bool emphasis;
+  final Color? color;
+
+  const _BreakdownRow({
+    required this.label,
+    required this.amount,
+    required this.currency,
+    required this.sign,
+    this.dotColor,
+    this.trailing,
+    this.emphasis = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final style = (emphasis
+        ? theme.textTheme.titleSmall
+        : theme.textTheme.bodyMedium)?.copyWith(color: color);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 14,
+            child: Text(
+              sign,
+              style: theme.textTheme.bodyMedium?.copyWith(color: c.textMuted),
+            ),
+          ),
+          if (dotColor != null) ...[
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 6),
+          ] else
+            const SizedBox(width: 14),
+          Expanded(child: Text(label, style: style)),
+          if (trailing != null) ...[
+            Text(
+              trailing!,
+              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Text(
+            '${budgetNf.format(amount.abs())}${curLabelSuffix(currency)}',
+            style: style?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -228,13 +783,6 @@ class _InlineTrends extends StatelessWidget {
 /// Sekcja miesiąca: selektor + bilans + kalendarz przepływów + szczegóły dnia.
 class BudgetMonthSection extends StatelessWidget {
   final DateTime month;
-  final double balance;
-
-  /// Saldo planu (`monthlySurplus`) — punkt odniesienia dla rozbicia różnicy.
-  final double surplus;
-
-  /// Pozycje, które sprawiają, że bilans różni się od salda (bottom sheet).
-  final List<BalanceContribution> breakdown;
   final String currency;
   final Map<int, DayCashflow> calendar;
   final int? selectedDay;
@@ -248,9 +796,6 @@ class BudgetMonthSection extends StatelessWidget {
   const BudgetMonthSection({
     super.key,
     required this.month,
-    required this.balance,
-    required this.surplus,
-    required this.breakdown,
     required this.currency,
     required this.calendar,
     required this.selectedDay,
@@ -266,9 +811,6 @@ class BudgetMonthSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final positive = balance >= 0;
-    final balanceColor = positive ? c.positive : c.negative;
-    final sign = positive ? '' : '−';
 
     return Card(
       child: Padding(
@@ -312,35 +854,11 @@ class BudgetMonthSection extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  'Bilans miesiąca',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: c.textSecondary,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onLongPress: () => _showBalanceBreakdown(context),
-                  child: Text(
-                    '$sign${budgetNf.format(balance.abs())}${curLabelSuffix(currency)}',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: balanceColor,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              'Saldo skorygowane o ten miesiąc: pozycje jednorazowe i korekty '
-              'kwot. Przytrzymaj kwotę, by zobaczyć szczegóły.',
-              style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
-            ),
+            // Kwota bilansu i jej rozbicie mieszkają w sekcji „Rzeczywisty
+            // bilans miesiąca" nad kalendarzem — tutaj byłyby drugim miejscem
+            // na tę samą liczbę.
             if (!compact) ...[
+              const Divider(),
               const SizedBox(height: 12),
               CashflowCalendar(
                 monthStart: month,
@@ -359,21 +877,6 @@ class BudgetMonthSection extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  void _showBalanceBreakdown(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (_) => _BalanceBreakdownSheet(
-        surplus: surplus,
-        balance: balance,
-        items: breakdown,
-        currency: currency,
-        monthLabel: DateFormat('LLLL yyyy', 'pl').format(month),
       ),
     );
   }

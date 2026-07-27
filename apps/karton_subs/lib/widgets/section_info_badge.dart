@@ -13,8 +13,8 @@ class SectionInfo {
 
   static const budget = SectionInfo('Budżet — przegląd', [
     'Podsumowanie całości; pozycje dodajesz w pozostałych sekcjach',
-    '„Bilans miesiąca": kalendarz, płatności do odhaczenia, podsumowanie wpływów i wydatków',
     '„Plan": ile zostaje miesięcznie i jak przewidywania mają się do rzeczywistości',
+    '„Bilans miesiąca": kalendarz, płatności do odhaczenia, podsumowanie wpływów i wydatków',
   ]);
 
   static const incomes = SectionInfo('Wpływy', [

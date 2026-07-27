@@ -101,8 +101,8 @@ lib/
 ├── theme/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
-│   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Bilans miesiaca / Plan (ADR-011)
-│   ├── rachunki_screen.dart     # Rachunki: realny log oplat + koperta „Na rachunki" (ADR-011)
+│   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Plan (domyslna) / Bilans miesiaca (ADR-011)
+│   ├── rachunki_screen.dart     # Rachunki: Planner (koperta „Na rachunki") -> karta miesiaca -> lista oplat (ADR-011)
 │   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
 │   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
 │   ├── add_subscription_screen.dart # Formularz subskrypcji
@@ -122,9 +122,10 @@ lib/
 │   ├── subscription_card.dart   # Karta subskrypcji
 │   ├── budget_widgets.dart      # Wspolne widgety budzetu (BudgetSummarySection full/compact, flow/miesiac/karta)
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
-│   ├── spending_chart.dart      # Wykres trendu wydatkow
+│   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
+│   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
 │   ├── labeled_icon_button.dart # Akcja naglowka: ikona + etykieta (XLSX/PDF)
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (4 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
@@ -183,8 +184,8 @@ sortowanie, grupowanie i Excel.
 
 | Zakladka | Tresc |
 |----------|-------|
-| **Budzet** (przeglad) | Pod-zakladki **Bilans miesiaca** (domyslna: kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) i **Plan** (statystyki: segment Budzet / Subskrypcje / Rachunki — hero + trend 6 mies. + podzial na kategorie; predykcja vs rzeczywisty) — ADR-011 |
-| **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018): log oplaconych + zaplanowane na przyszla date, per miesiac + karta „Na rachunki" (plan vs realny); „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
+| **Budzet** (przeglad) | Pod-zakladki **Plan** (domyslna — statystyki calosci: podsumowanie + predykcja vs rzeczywisty, **jeden wykres trendu 6 mies. z trzema ROZLACZNYMI seriami** (Cykliczne bez subskrypcji / Subskrypcje / Rachunki) + chipy wlacz-wylacz i seria „Razem" (suma, linia przerywana, domyslnie wylaczona), **jeden podzial na kategorie** laczacy te trzy zrodla; koszt subskrypcji — miesiecznie, rocznie i liczba aktywnych — w rozwinietej karcie „Saldo" (subskrypcje sa czescia kosztow cyklicznych); zwijana sekcja „Szczegoly" (domyslnie zwinieta, chowana gdy pusta) trzyma tylko limit subskrypcji i koszty okresow probnych. Rachunki miesiaca sa wylacznie w „Bilansie miesiaca") i **Bilans miesiaca** (**„Rzeczywisty bilans miesiaca"** nad kalendarzem: kwota + pasek i rozpis realnych strumieni — wplywy − koszty cykliczne (z korektami i ratami) − subskrypcje − rachunki zbiorczo = bilans; przytrzymanie kwoty otwiera rozbicie „bilans vs plan". Karta kalendarza nie powtarza juz kwoty bilansu. Dalej kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) — ADR-011 |
+| **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018). Trzy czesci w kolejnosci: **Planner** (sam plan koperty „Na rachunki" — pozycje + suma, zwijany, stan trwaly), **karta miesiaca** (nawigacja strzalkami, tap w nazwe = wybor miesiaca `showMonthPicker` z przyciskiem „Dzisiaj", suma rachunkow miesiaca + pasek plan/realny) i **lista** rachunkow miesiaca. Podzial idzie po zaleznosciach: plan jest jeden dla wszystkich miesiecy, wykonanie liczy sie per miesiac. „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" w Budzecie); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
 | **Wydatki** (tytul: „Wydatki cykliczne") | Pozycje planowalne: koszty stale, raty, przelew wewnetrzny. Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
 | **Wplywy** | Wplywy cykliczne (pensja) i jednorazowe (premia); w budzecie domowym takze wklady czlonkow i lustro przelewu z osobistego. Ten sam widget co „Wydatki", tryb `incomes` |
@@ -315,7 +316,19 @@ BillScanParser (JSON -> pola) ──► PendingBillScan "done" (sekcja "Do zatwi
 **Praca w tle (ADR-016).** Rozpoznawanie prowadzi natywna usluga pierwszoplanowa
 Zostaje (`BillScanService`, powiadomienie „Rozpoznaje rachunek…"), nie warstwa
 Dart — inaczej wyjscie z apki konczylo sie ubiciem zbuforowanego procesu przez
-system (silnik zajmuje pamiec modelem) i utrata skanu. Wynik trafia do skrzynki
+system (silnik zajmuje pamiec modelem) i utrata skanu.
+
+**Kolejka rozpoznan jest po stronie uslugi, nie Dart.** `BillScanController`
+przepuszcza zdjecia przez szybka sciezke pojedynczo (OCR w procesie apki), ale
+nietrafione zleca uslugach OD RAZU i nie czeka na wynik — serializuje je
+`BillScanService` (ma wlasna kolejke). Powod: zlecenie musi wyjsc, gdy apka jest
+jeszcze na wierzchu, bo Android 12+ blokuje start uslugi pierwszoplanowej z tla.
+Wczesniej drugi skan ruszal dopiero po ~45 s (zwykle przy schowanym telefonie),
+dostawal odmowe i szedl sciezka awaryjna w procesie apki, skad system wymiatal
+go razem z procesem. `activeScanId` = pierwszy z listy zleconych (kolejnosc
+`ScanResultStore.inFlightIds()` odpowiada kolejnosci pracy uslugi), a limit czasu
+(`_watchdog`, 420 s) pilnuje tylko skanu aktualnie liczonego — liczenie go od
+zlecenia falszywie zabijaloby pozycje czekajace w kolejce. Wynik trafia do skrzynki
 `ScanResultStore` na dysku, wiec przezywa takze zniszczenie ekranu aplikacji;
 Dart oproznia skrzynke przy starcie i na ping z warstwy natywnej. Bindowanie do
 silnika uzywa `FLAG_INCLUDE_STOPPED_PACKAGES` — bez tego uspiona lub swiezo
@@ -330,8 +343,14 @@ wzorzec albo brak pewnej kwoty → dokument przejmuje silnik AI. Przy braku
 trafienia zdjecie jest jeszcze obracane (90/270/180 stopni) — paragony
 fotografuje sie w poprzek.
 
-**Rok w dacie.** Silnik nie ma zegara: gdy na dokumencie widnieje sam dzien
-i miesiac, model rok zmysla (zwykle rok poprzedni). Szybka sciezka bierze rok
+**Rok w dacie.** Silnik nie mial zegara: gdy na dokumencie widnieje sam dzien
+i miesiac, model rok zmyslal (zwykle rok poprzedni). Od wersji silnika z promptem
+`Prompts.billOcr(today)` model dostaje **dzisiejsza date z zegara telefonu**
+(silnik dziala na tym samym urzadzeniu, wiec interfejs AIDL zostaje bez zmian
+i klienci nie wymagaja przebudowy) wraz z regula: uzupelnij brakujacy rok, ale
+nigdy nie wstawiaj dzisiejszej daty jako zapchajdziury. Kotwica po stronie apki
+zostaje jako siatka bezpieczenstwa — prompt nie daje gwarancji, a starsze wersje
+silnika chodza dalej. Szybka sciezka bierze rok
 z dokumentu (paragon — data ISO; zrzut platnosci — dzien tygodnia jednoznacznie
 wskazuje rok). Dla wyniku z silnika `BillScanParser` dokłada rok wiarygodny
 wobec „dzisiaj": data spoza okna −9/+3 miesiecy zachowuje dzien i miesiac,
@@ -377,4 +396,4 @@ ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-07-25
+> **Ostatnia aktualizacja:** 2026-07-27

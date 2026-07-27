@@ -12,17 +12,15 @@ import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
-import '../widgets/aurora_segmented.dart';
+import '../services/analytics_service.dart' show MonthlyDataPoint;
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/sync_now_button.dart';
-import 'subscription_list_screen.dart' show SubscriptionStatsView;
-
-/// Domena statystyk na zakładce „Plan".
-enum _StatsDomain { budget, subscriptions, bills }
+import 'subscription_list_screen.dart'
+    show SubscriptionStatsView, SubscriptionStatsVariant;
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
 class DashboardScreen extends StatefulWidget {
@@ -43,9 +41,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   late bool _monthCompact;
   late bool _monthSummaryCompact;
   late bool _paymentsCompact;
-
-  /// Wybrana domena statystyk na zakładce „Plan".
-  _StatsDomain _statsDomain = _StatsDomain.budget;
+  late bool _planDetailsCompact;
+  late bool _annualCostsCompact;
+  late bool _monthBalanceCompact;
 
   /// Sortowanie i grupowanie sekcji miesiąca („Płatności", „Podsumowanie") —
   /// jak w Budżecie: stan widoku, nietrwały.
@@ -71,6 +69,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     _monthCompact = storage.getDashboardMonthCompact();
     _monthSummaryCompact = storage.getDashboardMonthSummaryCompact();
     _paymentsCompact = storage.getDashboardPaymentsCompact();
+    _planDetailsCompact = storage.getDashboardPlanDetailsCompact();
+    _annualCostsCompact = storage.getDashboardAnnualCostsCompact();
+    _monthBalanceCompact = storage.getDashboardMonthBalanceCompact();
   }
 
   @override
@@ -103,6 +104,27 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  void _toggleMonthBalance() {
+    setState(() => _monthBalanceCompact = !_monthBalanceCompact);
+    context.read<StorageService>().setDashboardMonthBalanceCompact(
+      _monthBalanceCompact,
+    );
+  }
+
+  void _toggleAnnualCosts() {
+    setState(() => _annualCostsCompact = !_annualCostsCompact);
+    context.read<StorageService>().setDashboardAnnualCostsCompact(
+      _annualCostsCompact,
+    );
+  }
+
+  void _togglePlanDetails() {
+    setState(() => _planDetailsCompact = !_planDetailsCompact);
+    context.read<StorageService>().setDashboardPlanDetailsCompact(
+      _planDetailsCompact,
+    );
+  }
+
   void _shiftMonth(int delta) {
     setState(() {
       _selectedMonth = DateTime(
@@ -124,20 +146,41 @@ class _DashboardScreenState extends State<DashboardScreen>
     return raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
   }
 
-  /// Statystyki budżetu (segment „Budżet" w Planie): saldo, predykcja, trend
-  /// wydatków, podział na kategorie.
-  List<Widget> _budgetStats(
+  /// Zakładka „Plan": jeden zestaw statystyk zamiast trzech osobnych podstron.
+  /// Wydatki rozbite na trzy ROZŁĄCZNE strumienie (cykliczne bez subskrypcji,
+  /// subskrypcje, rachunki), więc jeden wykres trendu i jeden podział na
+  /// kategorie pokazują całość, a nie trzy widoki tych samych pieniędzy.
+  List<Widget> _planStats(
     BudgetController budget,
     String currency,
     String monthKey,
   ) {
     final cats = context.read<StorageService>().getCategories();
+    final c = context.semanticColors;
+    final palette = AppColors.chartColors;
+    final recurring = budget.recurringExpenseTrend;
+    final subscriptions = budget.subscriptionsTrend;
+    final bills = budget.billsTrend;
+    // Suma liczona z tych samych serii, które widać na wykresie — inaczej
+    // „Razem" nie zgadzałoby się z tym, co użytkownik sam sobie zsumuje.
+    final total = [
+      for (var i = 0; i < recurring.length; i++)
+        MonthlyDataPoint(
+          month: recurring[i].month,
+          amount: recurring[i].amount +
+              (i < subscriptions.length ? subscriptions[i].amount : 0) +
+              (i < bills.length ? bills[i].amount : 0),
+        ),
+    ];
+
     return [
       BudgetSummarySection(
         surplus: budget.monthlySurplus,
         income: budget.monthlyIncome,
         expenses: budget.monthlyExpenses,
         subscriptionsExpense: budget.monthlySubscriptionsExpense,
+        subscriptionsCount: budget.activeSubscriptionsCount,
+        allocation: budget.billsAllocation ?? 0,
         currency: currency,
         compact: _summaryCompact,
         onToggle: _toggleSummary,
@@ -154,51 +197,68 @@ class _DashboardScreenState extends State<DashboardScreen>
         onNext: () => _shiftMonth(1),
       ),
       const SizedBox(height: 16),
-      SpendingChart(data: budget.budgetExpenseTrend, currencySymbol: currency),
+      SpendingChart.multi(
+        currencySymbol: currency,
+        series: [
+          ChartSeries(
+            label: 'Cykliczne',
+            data: recurring,
+            color: palette[0],
+          ),
+          ChartSeries(
+            label: 'Subskrypcje',
+            data: subscriptions,
+            color: palette[1],
+          ),
+          ChartSeries(label: 'Rachunki', data: bills, color: palette[2]),
+          // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
+          // składowe przy pierwszym spojrzeniu.
+          ChartSeries(
+            label: 'Razem',
+            data: total,
+            color: c.textSecondary,
+            dashed: true,
+            hiddenByDefault: true,
+          ),
+        ],
+      ),
       const SizedBox(height: 16),
       CategoryBreakdownChart(
-        categoryTotals: budget.expenseByCategory,
+        categoryTotals: budget.combinedExpenseByCategory(monthKey),
         categories: cats,
         currencySymbol: currency,
+      ),
+      const SizedBox(height: 16),
+      // Na końcu: skala roczna zamyka obraz planu, a codzienne pytania
+      // („ile zostaje", „na co idzie") są wyżej.
+      AnnualCostsSection(
+        // Te same składniki co w rozpisie salda, tylko w skali roku — koszty
+        // cykliczne bez subskrypcji i bez rezerwy, bo obie są osobno.
+        recurring: budget.monthlyExpenses -
+            (budget.billsAllocation ?? 0) -
+            budget.monthlySubscriptionsExpense,
+        subscriptions: budget.monthlySubscriptionsExpense,
+        subscriptionsCount: budget.activeSubscriptionsCount,
+        allocation: budget.billsAllocation ?? 0,
+        currency: currency,
+        compact: _annualCostsCompact,
+        onToggle: _toggleAnnualCosts,
       ),
     ];
   }
 
-  /// Statystyki rachunków (segment „Rachunki"): suma miesiąca, trend, kategorie.
-  List<Widget> _billsStats(
-    BudgetController budget,
-    String currency,
-    String monthKey,
-  ) {
-    final cats = context.read<StorageService>().getCategories();
-    final count = budget.billPayments
-        .where(
-          (e) =>
-              (e.month ??
-                  BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
-              monthKey,
-        )
-        .length;
-    return [
-      _MonthBillsCard(
-        total: budget.billsActualForMonth(monthKey),
-        count: count,
-        currency: currency,
-      ),
-      const SizedBox(height: 16),
-      SpendingChart(
-        data: budget.billsTrend,
-        currencySymbol: currency,
-        title: 'Trend rachunków',
-      ),
-      const SizedBox(height: 16),
-      CategoryBreakdownChart(
-        categoryTotals: budget.billsByCategory(monthKey),
-        categories: cats,
-        currencySymbol: currency,
-      ),
-    ];
-  }
+  /// Karty szczegółowe pod wspólnymi wykresami (sekcja zwijana): to, czego nie
+  /// pokazuje nic innego na tej zakładce — limit subskrypcji i koszty okresów
+  /// próbnych. Rachunki wybranego miesiąca mieszkają w „Bilansie miesiąca",
+  /// a koszt subskrypcji w karcie „Saldo".
+  List<Widget> _planDetails(BudgetController budget) => [
+    SubscriptionStatsView(
+      scopeFilter: budget.isHousehold
+          ? SubscriptionScope.household
+          : SubscriptionScope.personal,
+      variant: SubscriptionStatsVariant.planDetails,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           const SyncNowButton(),
           // Sortowanie i grupowanie dotyczą sekcji „Płatności" i „Podsumowanie
           // miesiąca", więc pokazujemy je tylko na zakładce „Bilans miesiąca".
-          if (_tab.index == 0 && MonthSummarySection.hasAny(calendar)) ...[
+          if (_tab.index == 1 && MonthSummarySection.hasAny(calendar)) ...[
             IconButton(
               tooltip: _flowSort == MonthFlowSort.byName
                   ? 'Sortuj: A→Z (nazwa)'
@@ -284,8 +344,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           TabBar(
             controller: _tab,
             tabs: const [
-              Tab(text: 'Bilans miesiąca'),
               Tab(text: 'Plan'),
+              Tab(text: 'Bilans miesiąca'),
             ],
           ),
           Expanded(
@@ -300,15 +360,47 @@ class _DashboardScreenState extends State<DashboardScreen>
                     : null,
                 controller: _tab,
                 children: [
-                  // ── „Bilans miesiąca" — realny wybrany miesiąc (domyślna) ──
+                  // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki),
+                  // zakładka domyślna: plan jest punktem wyjścia, a bilans
+                  // konkretnego miesiąca sprawdza się na drugim kroku ──
                   ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
                     children: [
-                      BudgetMonthSection(
+                      ..._planStats(budget, currency, monthKey),
+                      if (SubscriptionStatsView.hasPlanDetails(
+                        context,
+                        budget.isHousehold
+                            ? SubscriptionScope.household
+                            : SubscriptionScope.personal,
+                      )) ...[
+                        const SizedBox(height: 24),
+                        _DetailsSection(
+                          compact: _planDetailsCompact,
+                          onToggleCompact: _togglePlanDetails,
+                          children: _planDetails(budget),
+                        ),
+                      ],
+                    ],
+                  ),
+                  // ── „Bilans miesiąca" — realny wybrany miesiąc ──
+                  ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    children: [
+                      // Skąd bierze się bilans — nad kalendarzem, bo to on jest
+                      // odpowiedzią tej zakładki; kalendarz pokazuje rozkład
+                      // w czasie, nie sumę.
+                      MonthBalanceSection(
                         month: _selectedMonth,
-                        balance: budget.balanceForMonth(monthKey),
+                        parts: budget.monthBalanceParts(monthKey),
                         surplus: budget.monthlySurplus,
                         breakdown: budget.balanceBreakdownForMonth(monthKey),
+                        currency: currency,
+                        compact: _monthBalanceCompact,
+                        onToggle: _toggleMonthBalance,
+                      ),
+                      const SizedBox(height: 16),
+                      BudgetMonthSection(
+                        month: _selectedMonth,
                         currency: currency,
                         calendar: calendar,
                         selectedDay: _selectedDay,
@@ -364,59 +456,56 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ],
                     ],
                   ),
-                  // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki) ──
-                  ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                    children: [
-                      AuroraSegmented<_StatsDomain>(
-                        selected: _statsDomain,
-                        onChanged: (v) => setState(() => _statsDomain = v),
-                        segments: [
-                          const AuroraSegment(
-                            value: _StatsDomain.budget,
-                            label: 'Budżet',
-                            icon: LucideIcons.wallet,
-                          ),
-                          const AuroraSegment(
-                            value: _StatsDomain.subscriptions,
-                            label: 'Subskrypcje',
-                            icon: LucideIcons.repeat,
-                          ),
-                          AuroraSegment(
-                            value: _StatsDomain.bills,
-                            label: 'Rachunki',
-                            icon: lucide.LucideIcons.receiptText,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ...switch (_statsDomain) {
-                        _StatsDomain.budget => _budgetStats(
-                          budget,
-                          currency,
-                          monthKey,
-                        ),
-                        _StatsDomain.subscriptions => [
-                          SubscriptionStatsView(
-                            scopeFilter: budget.isHousehold
-                                ? SubscriptionScope.household
-                                : SubscriptionScope.personal,
-                          ),
-                        ],
-                        _StatsDomain.bills => _billsStats(
-                          budget,
-                          currency,
-                          monthKey,
-                        ),
-                      },
-                    ],
-                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// „Szczegóły" na zakładce Plan — karty, które dotyczą pojedynczego strumienia
+/// (rachunki miesiąca, subskrypcje). Domyślnie zwinięte: wspólne wykresy wyżej
+/// odpowiadają na pytanie „ile i na co", a to jest doczytanie na żądanie.
+class _DetailsSection extends StatelessWidget {
+  final bool compact;
+  final VoidCallback onToggleCompact;
+  final List<Widget> children;
+
+  const _DetailsSection({
+    required this.compact,
+    required this.onToggleCompact,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onToggleCompact,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Text('Szczegóły', style: theme.textTheme.titleMedium),
+                const Spacer(),
+                Icon(
+                  compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                  size: 20,
+                  color: context.semanticColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (!compact) ...[const SizedBox(height: 12), ...children],
+      ],
     );
   }
 }

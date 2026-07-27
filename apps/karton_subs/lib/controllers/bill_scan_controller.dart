@@ -36,23 +36,26 @@ class BillScanController extends ChangeNotifier {
 
   List<PendingBillScan> _items = [];
 
-  // Kolejka OCR: silnik robi jedno rozpoznanie naraz (wizja na CPU), więc
-  // skany są serializowane — nowe czekają w kolejce jako „processing", a
-  // przetwarzany jest tylko [_activeId]. Bez tego równoległe skany biłyby się
-  // o ten sam silnik i marnowały połączenia z usługą.
+  // Kolejka szybkiej ścieżki (zwykły OCR + reguły): działa w procesie apki,
+  // więc zdjęcia idą przez nią pojedynczo. Rozpoznawanie silnikiem NIE czeka
+  // w tej kolejce — zlecenia lecą do usługi natywnej od razu (patrz [_process]).
   final List<String> _queue = [];
   bool _draining = false;
-  String? _activeId;
 
-  /// Skany zlecone warstwie natywnej, na których wynik czeka kolejka.
-  final Map<String, Completer<void>> _awaiting = {};
+  /// Skany zlecone warstwie natywnej, w kolejności zlecenia. Usługa rozpoznaje
+  /// jeden naraz i w tej samej kolejności, więc pierwszy z listy to ten, który
+  /// właśnie idzie („Rozpoznaję…"), a reszta czeka („W kolejce…").
+  final List<String> _inFlight = [];
 
   /// Zapas ponad limity warstwy natywnej (25 s na połączenie + 300 s pracy):
-  /// gdyby usługa zginęła bez śladu, kolejka nie może stać w nieskończoność.
+  /// gdyby usługa zginęła bez śladu, pozycja nie może wisieć w nieskończoność.
   static const _watchdog = Duration(seconds: 420);
 
-  /// Id aktualnie rozpoznawanego skanu (reszta „processing" czeka w kolejce).
-  String? get activeScanId => _activeId;
+  /// Pilnowany jest TYLKO skan aktualnie rozpoznawany — patrz [_syncWatchdog].
+  final Map<String, Timer> _watchdogs = {};
+
+  /// Id aktualnie rozpoznawanego skanu (reszta zleconych czeka w kolejce usługi).
+  String? get activeScanId => _inFlight.isEmpty ? null : _inFlight.first;
 
   BillScanController(
     this._storage,
@@ -91,7 +94,13 @@ class BillScanController extends ChangeNotifier {
               : e,
         )
         .toList();
-    if (running.isNotEmpty) _activeId ??= running.first;
+    // Kolejność z warstwy natywnej jest kolejnością pracy usługi — przejmujemy
+    // ją w całości, żeby po restarcie ekranu „Rozpoznaję…" wskazywało ten sam
+    // skan, który faktycznie idzie.
+    _inFlight
+      ..clear()
+      ..addAll(snapshot.inFlight.where(known.contains));
+    _syncWatchdog();
     await _persist();
     notifyListeners();
   }
@@ -103,8 +112,35 @@ class BillScanController extends ChangeNotifier {
     for (final outcome in snapshot.results) {
       _applyOutcome(outcome);
     }
+    _syncWatchdog();
     await _persist();
     notifyListeners();
+  }
+
+  /// Limit czasu obowiązuje tylko skan, który usługa właśnie robi. Liczenie go
+  /// od chwili zlecenia byłoby błędem: przy kilku zdjęciach ostatnie czeka na
+  /// swoją kolej wiele minut, choć nic się nie zawiesiło.
+  void _syncWatchdog() {
+    final active = activeScanId;
+    for (final id in _watchdogs.keys.toList()) {
+      if (id != active) _watchdogs.remove(id)?.cancel();
+    }
+    if (active == null || _watchdogs.containsKey(active)) return;
+    _watchdogs[active] = Timer(_watchdog, () {
+      _watchdogs.remove(active);
+      if (_byId(active)?.status == PendingScanStatus.processing) {
+        unawaited(_fail(active, 'Rozpoznawanie nie odpowiada — ponów'));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    for (final t in _watchdogs.values) {
+      t.cancel();
+    }
+    _watchdogs.clear();
+    super.dispose();
   }
 
   /// Pozycje oczekujące (wszystkie zakresy; ekran filtruje po aktywnym).
@@ -210,7 +246,8 @@ class BillScanController extends ChangeNotifier {
     unawaited(_drainQueue());
   }
 
-  /// Przetwarza kolejkę pojedynczo: jeden aktywny OCR naraz.
+  /// Przepuszcza zdjęcia przez szybką ścieżkę pojedynczo (jeden OCR na miejscu
+  /// naraz), a nietrafione zleca usłudze — bez czekania na jej wynik.
   Future<void> _drainQueue() async {
     if (_draining) return;
     _draining = true;
@@ -220,14 +257,11 @@ class BillScanController extends ChangeNotifier {
         final item = _byId(id);
         // Pominięcie pozycji usuniętych/zmienionych w międzyczasie.
         if (item == null || item.status != PendingScanStatus.processing) continue;
-        _activeId = id;
-        notifyListeners(); // „W kolejce…" -> „Rozpoznaję…"
         // Powiadomienie postępu wystawia usługa natywna (jest jej warunkiem
         // pracy na pierwszym planie) — tutaj już go nie dublujemy.
         await _process(id);
       }
     } finally {
-      _activeId = null;
       _draining = false;
     }
   }
@@ -407,11 +441,11 @@ class BillScanController extends ChangeNotifier {
   Future<void> remove(String id) async {
     final item = _byId(id);
     if (item == null) return;
-    _queue.remove(id); // gdyby czekał jeszcze w kolejce OCR
-    // Gdy kasujemy właśnie rozpoznawaną pozycję, kolejka rusza dalej od razu
-    // (wynik z warstwy natywnej trafi w próżnię — nie ma już czego wypełniać).
-    _awaiting.remove(id)?.complete();
-    if (_activeId == id) _activeId = null;
+    _queue.remove(id); // gdyby czekał jeszcze na szybką ścieżkę
+    // Usługa może nadal liczyć skasowaną pozycję — jej wynik trafi w próżnię
+    // (nie ma już czego wypełniać), a nam zwalnia miejsce „Rozpoznaję…".
+    _inFlight.remove(id);
+    _syncWatchdog();
     _items = _items.where((e) => e.id != id).toList();
     final shared = _items.any((e) => e.imagePath == item.imagePath);
     if (!shared) {
@@ -425,9 +459,16 @@ class BillScanController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Zleca rozpoznanie warstwie natywnej i czeka na wynik — nie dlatego, że
-  /// wynik musi tu wrócić (przyjdzie skrzynką, choćby po ponownym otwarciu
-  /// aplikacji), tylko po to, by kolejny skan z kolejki nie ruszył równolegle.
+  /// Szybka ścieżka na miejscu, a gdy nie trafi — zlecenie do warstwy natywnej
+  /// i koniec: na wynik NIE czekamy tutaj.
+  ///
+  /// To jest sedno kolejkowania po stronie usługi: każde zlecenie wychodzi
+  /// wtedy, gdy aplikacja jest jeszcze na wierzchu, więc system pozwala
+  /// uruchomić usługę pierwszoplanową (Android 12+ blokuje jej start z tła).
+  /// Wcześniej drugi skan ruszał dopiero po ~45 s — zwykle już przy schowanym
+  /// telefonie — i lądował na ścieżce awaryjnej w procesie apki, skąd system
+  /// wymiatał go razem z procesem. Serializacją rozpoznań zajmuje się usługa,
+  /// która i tak ma własną kolejkę (ADR-016).
   Future<void> _process(String id) async {
     final item = _byId(id);
     if (item == null) return;
@@ -439,35 +480,25 @@ class BillScanController extends ChangeNotifier {
     if (quick != null) {
       final filled = _filled(item, quick);
       _replace(filled);
-      _activeId = null;
       unawaited(_notifications.showScanDone(id, filled.name));
       await _persist();
       notifyListeners();
       return;
     }
 
-    final completer = Completer<void>();
-    _awaiting[id] = completer;
     try {
       await _engine.startBillScan(scanId: id, imagePath: item.imagePath);
     } on AiEngineException catch (e) {
-      _awaiting.remove(id);
       await _fail(id, e.message);
       return;
     } catch (e, st) {
-      _awaiting.remove(id);
       _log.severe('Zlecenie rozpoznawania rachunku', e, st);
       await _fail(id, 'Błąd rozpoznawania — ponów');
       return;
     }
-    try {
-      await completer.future.timeout(_watchdog);
-    } on TimeoutException {
-      _awaiting.remove(id);
-      if (_byId(id)?.status == PendingScanStatus.processing) {
-        await _fail(id, 'Rozpoznawanie nie odpowiada — ponów');
-      }
-    }
+    _inFlight.add(id);
+    _syncWatchdog();
+    notifyListeners(); // „Rozpoznaję…" / „W kolejce…"
   }
 
   /// Próba odczytu regułami (zwykły OCR). Nigdy nie blokuje — każdy problem
@@ -484,8 +515,7 @@ class BillScanController extends ChangeNotifier {
   /// Wynik jednego skanu z warstwy natywnej — także taki, który przyszedł
   /// w czasie, gdy aplikacja była zamknięta.
   void _applyOutcome(ScanOutcome outcome) {
-    if (_activeId == outcome.scanId) _activeId = null;
-    _awaiting.remove(outcome.scanId)?.complete();
+    _inFlight.remove(outcome.scanId);
     final item = _byId(outcome.scanId);
     if (item == null) return; // pozycję skasowano w międzyczasie
 
@@ -532,7 +562,8 @@ class BillScanController extends ChangeNotifier {
   Future<void> _fail(String id, String message) async {
     final item = _byId(id);
     if (item == null) return;
-    if (_activeId == id) _activeId = null;
+    _inFlight.remove(id);
+    _syncWatchdog();
     _replace(
       item.copyWith(status: PendingScanStatus.error, errorMessage: message),
     );

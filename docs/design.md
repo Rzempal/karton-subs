@@ -360,7 +360,9 @@ class AppColors {
 |---------|-------------------|
 | Karta „Saldo: zostaje miesiecznie" | jedna karta: `GradientAmount` + linia wplywy/koszty (trending-up/down) zawsze widoczna; tap rozwija/zwija opis „jak liczone jest saldo" + przypis subskrypcji |
 | Karta Subskrypcje | `FrostCard`: header + „N aktywne"; Miesiecznie / Rocznie |
-| Karta miesiaca | prev/next; „Bilans miesiaca" (semantic); kalendarz 7 kol. Przytrzymanie kwoty bilansu → bottom sheet z rozbiciem roznicy „bilans − saldo" (jednorazowe, korekty kwot, korekty rat). Ikona listy przy etykiecie bilansu → bottom sheet „Podsumowanie miesiaca": pelne listy wplywow i wydatkow z kalendarza (sortowane wg dnia, sumy sekcji; realne platnosci po korektach) |
+| Karta „Saldo" (Plan) | Zwinieta: kwota-bohater + wiersz wplywy/koszty. Rozwinieta: **pasek proporcji** (koszty cykliczne / Planner / zostaje, skala = `max(wplywy, koszty+rezerwa)`) nad **rozpisem jak na rachunku** (wplywy − koszty cykliczne, z wcietym „w tym subskrypcje: mies. · rocznie · aktywnych" − Planner = zostaje; kolorowe kropki wiaza wiersze z paskiem, procenty liczone od wplywow). Deficyt: pasek wypelniaja koszty, suma na czerwono |
+| Karta „Rzeczywisty bilans miesiaca" | Nad kalendarzem. Zwinieta: kwota bilansu (zielona/czerwona). Rozwinieta: pasek proporcji (koszty cykliczne / subskrypcje / rachunki / zostaje) + rozpis realnych strumieni. Przytrzymanie kwoty → bottom sheet z rozbiciem roznicy „bilans − saldo" (jednorazowe, korekty kwot, korekty rat) |
+| Karta miesiaca (kalendarz) | prev/next + kalendarz 7 kol.; kwoty bilansu juz NIE powtarza (jest w sekcji wyzej) |
 | Kropki w kalendarzu | wplyw `--positive`, wydatek `--negative` |
 | Dzis / wybrany dzien | dzis = border `--accent-violet`; wybrany = tlo `--frost-2` |
 | Szczegoly dnia | lista pod kalendarzem (ikona kierunku + nazwa + kwota semantic) |

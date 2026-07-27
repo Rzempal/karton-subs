@@ -382,9 +382,40 @@ class _Card extends StatelessWidget {
 /// Statystyki subskrypcji — używane na zakładce „Plan" Dashboardu (segment
 /// Subskrypcje). Hero mies./rok, pasek limitu, trend, podział na kategorie, triale.
 /// Zwraca [Column] (osadzane w przewijanej liście Planu).
+/// Ile ze statystyk subskrypcji pokazać.
+enum SubscriptionStatsVariant {
+  /// Ekran „Subskrypcje": podsumowanie, limit, wykresy, okresy próbne.
+  full,
+
+  /// Zakładka „Plan" → „Szczegóły": tylko to, czego nie ma nigdzie indziej.
+  /// Koszt miesięczny i roczny wraz z liczbą subskrypcji pokazuje karta
+  /// „Saldo", a trend i kategorie — wspólne wykresy Planu.
+  planDetails,
+}
+
 class SubscriptionStatsView extends StatelessWidget {
   final SubscriptionScope scopeFilter;
-  const SubscriptionStatsView({super.key, required this.scopeFilter});
+  final SubscriptionStatsVariant variant;
+
+  const SubscriptionStatsView({
+    super.key,
+    required this.scopeFilter,
+    this.variant = SubscriptionStatsVariant.full,
+  });
+
+  /// Czy wariant [SubscriptionStatsVariant.planDetails] ma cokolwiek do
+  /// pokazania. Bez limitu i bez trwających okresów próbnych sekcja
+  /// „Szczegóły" byłaby samym nagłówkiem, który po rozwinięciu nic nie daje.
+  static bool hasPlanDetails(BuildContext context, SubscriptionScope scope) {
+    final storage = context.read<StorageService>();
+    final subs = storage
+        .getSubscriptions()
+        .where((s) => s.scope == scope)
+        .toList();
+    final limit = storage.getBudgetLimit();
+    final hasLimit = limit != null && limit > 0 && subs.any((s) => s.isActive);
+    return hasLimit || subs.any((s) => s.isTrialActive);
+  }
 
   static const _analytics = AnalyticsService();
 
@@ -426,15 +457,19 @@ class SubscriptionStatsView extends StatelessWidget {
             (a.trialDaysRemaining ?? 99).compareTo(b.trialDaysRemaining ?? 99),
       );
 
+    final full = variant == SubscriptionStatsVariant.full;
+
     return Column(
       children: [
-        _SummaryHero(
-          monthly: monthlyTotal,
-          yearly: yearly,
-          activeCount: activeCount,
-          currency: currencyLabel,
-        ),
-        const SizedBox(height: 16),
+        if (full) ...[
+          _SummaryHero(
+            monthly: monthlyTotal,
+            yearly: yearly,
+            activeCount: activeCount,
+            currency: currencyLabel,
+          ),
+          const SizedBox(height: 16),
+        ],
         if (budgetStatus != null) ...[
           BudgetProgressBar(
             status: budgetStatus,
@@ -442,13 +477,15 @@ class SubscriptionStatsView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        SpendingChart(data: trend, currencySymbol: currencyLabel),
-        const SizedBox(height: 16),
-        CategoryBreakdownChart(
-          categoryTotals: breakdown,
-          categories: categories,
-          currencySymbol: currencyLabel,
-        ),
+        if (full) ...[
+          SpendingChart(data: trend, currencySymbol: currencyLabel),
+          const SizedBox(height: 16),
+          CategoryBreakdownChart(
+            categoryTotals: breakdown,
+            categories: categories,
+            currencySymbol: currencyLabel,
+          ),
+        ],
         if (activeTrials.isNotEmpty) ...[
           const SizedBox(height: 16),
           _TrialCostsCard(trials: activeTrials, currencySymbol: currencyLabel),

@@ -86,6 +86,33 @@ enum BalanceContributionKind {
   billsAllocation, // rezerwa „Na rachunki" oddana z planu (+) — real liczy faktyczne rachunki
 }
 
+/// Bilans miesiąca rozłożony na strumienie (do sekcji „Rzeczywisty bilans
+/// miesiąca"). Wszystkie kwoty w walucie docelowej, koszty jako liczby dodatnie.
+class MonthBalanceParts {
+  /// Wpływy cykliczne + jednorazowe tego miesiąca + korekty kwot wpływów.
+  final double income;
+
+  /// Koszty cykliczne BEZ subskrypcji, z korektami kwot i ratami tego miesiąca.
+  final double recurring;
+
+  /// Subskrypcje (kwota/mies).
+  final double subscriptions;
+
+  /// Rachunki tego miesiąca — realne kwoty, zbiorczo.
+  final double bills;
+
+  const MonthBalanceParts({
+    required this.income,
+    required this.recurring,
+    required this.subscriptions,
+    required this.bills,
+  });
+
+  double get costs => recurring + subscriptions + bills;
+
+  double get balance => income - costs;
+}
+
 /// Pojedyncza pozycja, która sprawia, że bilans miesiąca różni się od salda.
 /// `delta` jest ze znakiem, w walucie docelowej; suma delt == bilans − saldo.
 class BalanceContribution {
@@ -259,6 +286,39 @@ class BudgetService {
     ];
   }
 
+  /// Trend samych kosztów cyklicznych budżetu (koszty stałe, raty) — BEZ
+  /// subskrypcji i BEZ rachunków. Razem z [subscriptionsTrend] i [billsTrend]
+  /// daje rozłączny podział całości wydatków (po ADR-018 „jednorazowy wydatek"
+  /// to dokładnie `billPayment`, więc trzy serie niczego nie gubią i niczego
+  /// nie liczą dwa razy).
+  ///
+  /// Linia jest płaska: historii zmian kosztów stałych nie ma w danych, więc
+  /// dzisiejsza baza jest rzutowana na wszystkie miesiące wykresu.
+  List<MonthlyDataPoint> recurringExpenseTrend(
+    List<BudgetEntry> entries, {
+    int months = 6,
+    Currency? target,
+  }) {
+    final base = monthlyBudgetExpenses(entries, target: target ?? Currency.PLN);
+    final now = _now;
+    return [
+      for (var i = months - 1; i >= 0; i--)
+        MonthlyDataPoint(
+          month: DateTime(now.year, now.month - i, 1),
+          amount: base,
+        ),
+    ];
+  }
+
+  /// Trend kosztu subskrypcji per miesiąc — w odróżnieniu od bazy cyklicznej
+  /// liczony historycznie (data startu i anulowania każdej subskrypcji).
+  List<MonthlyDataPoint> subscriptionsTrend(
+    List<Subscription> subs, {
+    int months = 6,
+    Currency? target,
+  }) =>
+      _analytics.getSpendingTrend(subs, months: months, target: target);
+
   /// Trend realnych rachunków (`billPayment`) per miesiąc — ostatnie [months].
   List<MonthlyDataPoint> billsTrend(
     List<BudgetEntry> entries, {
@@ -278,6 +338,38 @@ class BudgetService {
           );
         }()
     ];
+  }
+
+  /// Podział CAŁYCH miesięcznych wydatków wg kategorii: koszty cykliczne
+  /// budżetu + subskrypcje + rachunki wskazanego miesiąca. Trzy źródła są
+  /// rozłączne, więc to zwykła suma per kategoria.
+  ///
+  /// Uwaga na jednostki (reguła wyboru sekcji): cykliczne i subskrypcje wchodzą
+  /// kwotą uśrednioną na miesiąc, rachunki — realną kwotą wybranego miesiąca.
+  /// Tak samo liczy je plan „zostaje miesięcznie" i bilans miesiąca.
+  ///
+  /// Pozycje bez kategorii z obu światów (`budget_other` z budżetu,
+  /// `cat_other` z subskrypcji) lądują pod jednym kluczem — inaczej wykres
+  /// pokazywałby dwa kawałki „Inne".
+  Map<String, double> combinedExpenseBreakdownByCategory(
+    List<BudgetEntry> entries,
+    List<Subscription> subs,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final out = <String, double>{};
+    void addAll(Map<String, double> src) {
+      for (final e in src.entries) {
+        final key = e.key == 'budget_other' ? 'cat_other' : e.key;
+        out[key] = (out[key] ?? 0) + e.value;
+      }
+    }
+
+    addAll(expenseBreakdownByCategory(entries, target: t));
+    addAll(_analytics.getCategoryBreakdown(subs, target: t));
+    addAll(billsBreakdownByCategory(entries, monthKey, target: t));
+    return out;
   }
 
   /// Podział realnych rachunków danego miesiąca wg kategorii (wykres kołowy).
@@ -356,6 +448,57 @@ class BudgetService {
       oneTimeTotalForMonth(entries, monthKey, target: target) +
       overrideDeltaForMonth(entries, monthKey, target: target) -
       installmentDeltaForMonth(entries, monthKey, target: target);
+
+  /// Bilans miesiąca rozbity na cztery strumienie — tyle, ile potrzeba, by
+  /// odpowiedzieć „skąd się wziął ten bilans", bez wyliczania pojedynczych
+  /// pozycji. Zawsze zachodzi: `income − recurring − subscriptions − bills`
+  /// = [balanceForMonth] dla tego samego miesiąca (jest na to test).
+  MonthBalanceParts monthBalanceParts(
+    List<BudgetEntry> entries,
+    List<Subscription> subs,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+
+    // Korekty kwot (ADR-008) trafiają do tego strumienia, którego dotyczą —
+    // inaczej „koszty cykliczne" pokazywałyby plan, a nie realny miesiąc.
+    double incomeOverride = 0;
+    double recurringOverride = 0;
+    double billOverride = 0;
+    for (final e in entries.where(
+      (e) => e.isActive && e.monthOverrides != null,
+    )) {
+      final ov = e.overrideForMonth(monthKey);
+      if (ov?.amount == null) continue;
+      final d = _currency.convert(ov!.amount! - e.amount, e.currency, t);
+      if (e.isIncome) {
+        incomeOverride += d;
+      } else if (e.type == BudgetEntryType.billPayment) {
+        billOverride += d;
+      } else {
+        recurringOverride += d;
+      }
+    }
+
+    final income = monthlyIncome(entries, target: t) +
+        oneTimeIncomeTotalForMonth(entries, monthKey, target: t) +
+        incomeOverride;
+    // Raty: surplus liczy stan „teraz", ten miesiąc może mieć inny (delta).
+    final recurring = monthlyBudgetExpenses(entries, target: t) +
+        recurringOverride +
+        installmentDeltaForMonth(entries, monthKey, target: t);
+    final subscriptions = monthlySubscriptionsExpense(subs, target: t);
+    final bills =
+        oneTimeTotalForMonth(entries, monthKey, target: t) + billOverride;
+
+    return MonthBalanceParts(
+      income: income,
+      recurring: recurring,
+      subscriptions: subscriptions,
+      bills: bills,
+    );
+  }
 
   /// Rozbicie różnicy „bilans − saldo" danego miesiąca na pojedyncze pozycje
   /// (ADR-008). Suma `delta` zwróconych pozycji jest równa

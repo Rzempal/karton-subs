@@ -12,6 +12,7 @@ import '../models/budget_entry.dart';
 import '../models/pending_bill_scan.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
@@ -21,15 +22,20 @@ import '../widgets/budget_widgets.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/gradient_amount.dart';
 import '../widgets/image_preview_dialog.dart';
+import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import 'add_bill_payment_screen.dart';
 
 /// Ekran „Rachunki" — datowane wydatki jednorazowe ([BudgetEntryType.billPayment]):
 /// log opłaconych oraz pozycje zaplanowane na przyszłą datę (ADR-018).
 ///
-/// Dla wybranego miesiąca: karta „Na rachunki" (plan/koperta vs realnie wydane)
-/// oraz lista rachunków tego miesiąca. Rachunki zasilają bilans miesiąca, a nie
-/// plan „zostaje/mies" (ADR-008). Zakres (osobisty/domowy) jak w reszcie aplikacji.
+/// Trzy części, w tej kolejności: **Planner** (plan koperty „Na rachunki" — nie
+/// zależy od miesiąca), **miesiąc** (wybór miesiąca + realne rachunki wobec
+/// planu) i **lista** rachunków tego miesiąca. Podział idzie po tym, co od
+/// czego zależy: plan jest jeden, wykonanie liczy się per miesiąc.
+///
+/// Rachunki zasilają bilans miesiąca, a nie plan „zostaje/mies" (ADR-008).
+/// Zakres (osobisty/domowy) jak w reszcie aplikacji.
 class RachunkiScreen extends StatefulWidget {
   const RachunkiScreen({super.key});
 
@@ -39,16 +45,37 @@ class RachunkiScreen extends StatefulWidget {
 
 class _RachunkiScreenState extends State<RachunkiScreen> {
   late DateTime _month; // pierwszy dzień wybranego miesiąca
+  late bool _plannerCompact;
+
+  DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    final now = Subscription.devDateOverride ?? DateTime.now();
+    final now = _today;
     _month = DateTime(now.year, now.month);
+    _plannerCompact = context.read<StorageService>().getBillsPlannerCompact();
   }
 
   void _shiftMonth(int delta) =>
       setState(() => _month = DateTime(_month.year, _month.month + delta));
+
+  /// Skok na dowolny miesiąc bez klikania strzałkami (np. rachunki sprzed roku).
+  Future<void> _pickMonth() async {
+    final picked = await showMonthPicker(
+      context,
+      initialMonth: _month,
+      today: _today,
+    );
+    if (picked != null && mounted) {
+      setState(() => _month = DateTime(picked.year, picked.month));
+    }
+  }
+
+  void _togglePlanner() {
+    setState(() => _plannerCompact = !_plannerCompact);
+    context.read<StorageService>().setBillsPlannerCompact(_plannerCompact);
+  }
 
   Future<void> _openAdd(BudgetController ctrl) async {
     await Navigator.of(context).push(
@@ -286,89 +313,83 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                 onChanged: ctrl.setScope,
               ),
             ),
-          // Karta „Na rachunki" + lista objęte swipe zakresu; wiersze listy to
-          // Dismissible (swipe = usuń), więc karta jest pewną strefą flicku.
+          // Planner, miesiąc i lista objęte swipe zakresu; wiersze listy to
+          // Dismissible (swipe = usuń), więc karty są pewną strefą flicku.
+          // Wszystko w jednej przewijanej liście: rozwinięty Planner nie może
+          // spychać rachunków poza ekran na stałe.
           Expanded(
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
-              child: Column(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: _AllocationCard(
-                      monthKey: monthKey,
-                      month: _month,
-                      onPrev: () => _shiftMonth(-1),
-                      onNext: () => _shiftMonth(1),
+                  _PlannerCard(
+                    compact: _plannerCompact,
+                    onToggleCompact: _togglePlanner,
+                  ),
+                  const SizedBox(height: 8),
+                  _MonthCard(
+                    monthKey: monthKey,
+                    month: _month,
+                    onPrev: () => _shiftMonth(-1),
+                    onNext: () => _shiftMonth(1),
+                    onPickMonth: _pickMonth,
+                  ),
+                  const SizedBox(height: 12),
+                  // Sekcja „Do zatwierdzenia" — skany silnika AI.
+                  if (pending.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Do zatwierdzenia',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
-                  ),
-                  Expanded(
-                    child: (items.isEmpty && pending.isEmpty)
-                        ? _EmptyState(month: _month)
-                        : ListView(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 112),
-                            children: [
-                              // Sekcja „Do zatwierdzenia" — skany silnika AI.
-                              if (pending.isNotEmpty) ...[
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Text(
-                                    'Do zatwierdzenia',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelLarge
-                                        ?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                  ),
-                                ),
-                                for (final p in pending) ...[
-                                  _PendingScanCard(
-                                    item: p,
-                                    isActive: scanCtrl.activeScanId == p.id,
-                                    onApprove: () => _approveScan(p),
-                                    onEdit: () => _editScan(p),
-                                    onReject: () => _rejectScan(p),
-                                    onCrop: () => _cropScan(p),
-                                    onRetry: () => context
-                                        .read<BillScanController>()
-                                        .retry(p.id),
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-                                const SizedBox(height: 8),
-                              ],
-                              for (var i = 0; i < items.length; i++) ...[
-                                if (i > 0) const SizedBox(height: 8),
-                                Dismissible(
-                                  key: ValueKey(items[i].id),
-                                  direction: DismissDirection.endToStart,
-                                  background: Container(
-                                    alignment: Alignment.centerRight,
-                                    padding: const EdgeInsets.only(right: 20),
-                                    child: Icon(
-                                      LucideIcons.trash2,
-                                      color: AppColors.negative,
-                                    ),
-                                  ),
-                                  confirmDismiss: (_) =>
-                                      _confirmDelete(items[i]),
-                                  onDismissed: (_) {
-                                    final id = items[i].id;
-                                    context
-                                        .read<BillScanController>()
-                                        .deletePhotoFor(id);
-                                    context.read<BudgetController>().delete(id);
-                                  },
-                                  child: BudgetEntryCard(
-                                    entry: items[i],
-                                    onTap: () => _openEdit(items[i]),
-                                  ),
-                                ),
-                              ],
-                            ],
+                    for (final p in pending) ...[
+                      _PendingScanCard(
+                        item: p,
+                        isActive: scanCtrl.activeScanId == p.id,
+                        onApprove: () => _approveScan(p),
+                        onEdit: () => _editScan(p),
+                        onReject: () => _rejectScan(p),
+                        onCrop: () => _cropScan(p),
+                        onRetry: () =>
+                            context.read<BillScanController>().retry(p.id),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 8),
+                  ],
+                  if (items.isEmpty)
+                    _EmptyState(month: _month)
+                  else
+                    for (var i = 0; i < items.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 8),
+                      Dismissible(
+                        key: ValueKey(items[i].id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: Icon(
+                            LucideIcons.trash2,
+                            color: AppColors.negative,
                           ),
-                  ),
+                        ),
+                        confirmDismiss: (_) => _confirmDelete(items[i]),
+                        onDismissed: (_) {
+                          final id = items[i].id;
+                          context.read<BillScanController>().deletePhotoFor(id);
+                          context.read<BudgetController>().delete(id);
+                        },
+                        child: BudgetEntryCard(
+                          entry: items[i],
+                          onTap: () => _openEdit(items[i]),
+                        ),
+                      ),
+                    ],
                 ],
               ),
             ),
@@ -544,18 +565,105 @@ class _PendingScanCard extends StatelessWidget {
   }
 }
 
-/// Karta „Na rachunki" — plan (koperta) vs realnie wydane w wybranym miesiącu.
-class _AllocationCard extends StatelessWidget {
+/// Karta „Planner" — sam plan koperty „Na rachunki": z czego się składa i ile
+/// razem wynosi. Plan jest JEDEN dla wszystkich miesięcy (ADR-012), dlatego
+/// nie ma tu nawigacji po miesiącach — wykonanie planu pokazuje [_MonthCard].
+///
+/// Edycja siedzi tutaj, a nie w „Wydatkach cyklicznych", bo to plan dla tej
+/// samej puli, którą ten ekran realnie loguje (ADR-019).
+class _PlannerCard extends StatelessWidget {
+  final bool compact;
+  final VoidCallback onToggleCompact;
+
+  const _PlannerCard({required this.compact, required this.onToggleCompact});
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = context.watch<BudgetController>();
+    final theme = Theme.of(context);
+    final cur = ctrl.targetCurrencyLabel;
+    final alloc = ctrl.billsAllocation;
+
+    return FrostCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Planner',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Zaplanuj kwotę w budżecie przeznaczoną na rachunki',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: compact ? 'Rozwiń Planner' : 'Zwiń Planner',
+                icon: Icon(
+                  compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                ),
+                onPressed: onToggleCompact,
+              ),
+            ],
+          ),
+          // Po zwinięciu zostaje sama suma planu — nagłówek bez liczby nie
+          // niósłby żadnej informacji.
+          if (compact)
+            Text(
+              alloc == null
+                  ? 'Plan jeszcze pusty'
+                  : 'Plan: ${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
+              style: theme.textTheme.bodyMedium,
+            )
+          else ...[
+            const Divider(height: 24),
+            BillsAllocationItems(
+              items: ctrl.billsAllocationItems.toList()
+                ..sort(
+                  (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                ),
+              currency: cur,
+              onAdd: () => showBillsAllocationItemEditor(context),
+              onEdit: (it) =>
+                  showBillsAllocationItemEditor(context, existing: it),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Karta miesiąca — wybór miesiąca i wykonanie planu w tym miesiącu: suma
+/// rachunków wobec kwoty z Plannera.
+class _MonthCard extends StatelessWidget {
   final String monthKey;
   final DateTime month;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+  final VoidCallback onPickMonth;
 
-  const _AllocationCard({
+  const _MonthCard({
     required this.monthKey,
     required this.month,
     required this.onPrev,
     required this.onNext,
+    required this.onPickMonth,
   });
 
   @override
@@ -578,36 +686,40 @@ class _AllocationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Planner',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Zaplanuj kwotę w budżecie przeznaczoną na rachunki',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          // Selektor miesiąca.
           Row(
             children: [
               IconButton(
                 visualDensity: VisualDensity.compact,
+                tooltip: 'Poprzedni miesiąc',
                 icon: const Icon(LucideIcons.chevronLeft),
                 onPressed: onPrev,
               ),
+              // Tap w nazwę = wybór miesiąca: skok o rok wstecz strzałkami to
+              // dwanaście tapnięć.
               Expanded(
-                child: Text(
-                  monthLabel,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleSmall,
+                child: InkWell(
+                  onTap: onPickMonth,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(monthLabel, style: theme.textTheme.titleSmall),
+                        const SizedBox(width: 6),
+                        Icon(
+                          LucideIcons.calendarDays,
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
+                tooltip: 'Następny miesiąc',
                 icon: const Icon(LucideIcons.chevronRight),
                 onPressed: onNext,
               ),
@@ -630,8 +742,9 @@ class _AllocationCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (alloc == null)
             Text(
-              'Dodaj pozycje planu poniżej, by porównać plan z realnymi '
-              'wydatkami. Zaplanowana kwota pomniejsza „zostaje miesięcznie".',
+              'Dodaj pozycje planu w „Plannerze" powyżej, by porównać plan '
+              'z realnymi wydatkami. Zaplanowana kwota pomniejsza „zostaje '
+              'miesięcznie".',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -666,17 +779,6 @@ class _AllocationCard extends StatelessWidget {
               ],
             ),
           ],
-          // Skład koperty — edycja tutaj, bo to plan dla tej samej puli, którą
-          // ten ekran realnie loguje (ADR-019).
-          const Divider(height: 24),
-          BillsAllocationItems(
-            items: ctrl.billsAllocationItems.toList()
-              ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
-            currency: cur,
-            onAdd: () => showBillsAllocationItemEditor(context),
-            onEdit: (it) =>
-                showBillsAllocationItemEditor(context, existing: it),
-          ),
         ],
       ),
     );

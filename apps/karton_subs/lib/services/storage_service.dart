@@ -639,4 +639,39 @@ class StorageService {
 
   Future<void> setDashboardAutoPaymentsCompact(bool value) async =>
       _settingsBox.put('dashboardAutoPaymentsCompact', value);
+
+  /// Sekcja „Rzeczywisty bilans miesiąca" — domyślnie ROZWINIĘTA: to główne
+  /// pytanie tej zakładki, a rozpis tłumaczy kwotę pod nim.
+  bool getDashboardMonthBalanceCompact() =>
+      _settingsBox.get('dashboardMonthBalanceCompact', defaultValue: false)
+          as bool;
+
+  Future<void> setDashboardMonthBalanceCompact(bool value) async =>
+      _settingsBox.put('dashboardMonthBalanceCompact', value);
+
+  /// Akordeon „Koszty roczne" (Plan) — domyślnie ZWINIĘTY: skala roczna to
+  /// doczytanie, codzienne pytanie dotyczy miesiąca.
+  bool getDashboardAnnualCostsCompact() =>
+      _settingsBox.get('dashboardAnnualCostsCompact', defaultValue: true)
+          as bool;
+
+  Future<void> setDashboardAnnualCostsCompact(bool value) async =>
+      _settingsBox.put('dashboardAnnualCostsCompact', value);
+
+  /// Sekcja „Szczegóły" na zakładce Plan — domyślnie ZWINIĘTA: wspólne wykresy
+  /// nad nią pokazują całość, a karty pojedynczych strumieni to doczytanie.
+  bool getDashboardPlanDetailsCompact() =>
+      _settingsBox.get('dashboardPlanDetailsCompact', defaultValue: true)
+          as bool;
+
+  Future<void> setDashboardPlanDetailsCompact(bool value) async =>
+      _settingsBox.put('dashboardPlanDetailsCompact', value);
+
+  /// Sekcja „Planner" na ekranie Rachunków — domyślnie rozwinięta, bo plan
+  /// bywa edytowany. Zwinięcie oddaje miejsce liście rachunków miesiąca.
+  bool getBillsPlannerCompact() =>
+      _settingsBox.get('billsPlannerCompact', defaultValue: false) as bool;
+
+  Future<void> setBillsPlannerCompact(bool value) async =>
+      _settingsBox.put('billsPlannerCompact', value);
 }

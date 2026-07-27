@@ -189,6 +189,10 @@ class BudgetController extends ChangeNotifier {
     billsAllocation: _alloc,
   );
 
+  /// Bilans miesiąca rozbity na strumienie (sekcja „Rzeczywisty bilans").
+  MonthBalanceParts monthBalanceParts(String monthKey) =>
+      _budget.monthBalanceParts(all, _subsForScope, monthKey, target: _target);
+
   double balanceForMonth(String monthKey) => _budget.balanceForMonth(
     all,
     _subsForScope,
@@ -440,6 +444,18 @@ class BudgetController extends ChangeNotifier {
   List<MonthlyDataPoint> get budgetExpenseTrend =>
       _budget.expenseTrend(all, _subsForScope, target: _target);
 
+  /// Liczba aktywnych subskrypcji aktywnego zakresu (podsumowanie w karcie
+  /// „Saldo" — subskrypcje są częścią kosztów cyklicznych).
+  int get activeSubscriptionsCount =>
+      _subsForScope.where((s) => s.isActive).length;
+
+  /// Rozłączne serie wspólnego wykresu trendu (suma trzech = całość wydatków).
+  List<MonthlyDataPoint> get recurringExpenseTrend =>
+      _budget.recurringExpenseTrend(all, target: _target);
+
+  List<MonthlyDataPoint> get subscriptionsTrend =>
+      _budget.subscriptionsTrend(_subsForScope, target: _target);
+
   List<MonthlyDataPoint> get billsTrend =>
       _budget.billsTrend(all, target: _target);
 
@@ -448,6 +464,16 @@ class BudgetController extends ChangeNotifier {
 
   Map<String, double> billsByCategory(String monthKey) =>
       _budget.billsBreakdownByCategory(all, monthKey, target: _target);
+
+  /// Podział całych wydatków miesiąca wg kategorii: cykliczne + subskrypcje
+  /// + rachunki tego miesiąca (jeden wykres zamiast trzech osobnych).
+  Map<String, double> combinedExpenseByCategory(String monthKey) =>
+      _budget.combinedExpenseBreakdownByCategory(
+        all,
+        _subsForScope,
+        monthKey,
+        target: _target,
+      );
 
   /// Mapa „nazwa metody platnosci → automatyczna?" (do koloru/listy Platnosci).
   Map<String, bool> get _autoByPayment => {
