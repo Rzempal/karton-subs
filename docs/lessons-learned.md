@@ -611,3 +611,39 @@ przejscie zoom na fade-through** (domyslne przenikanie pokazuje oba ekrany naraz
 warstwy sa wymagane — sama naprawa tla nie wystarczy. Bledy przechodza `analyze`/`test`,
 **weryfikacja wizualna na urzadzeniu obowiazkowa** (potrzebna byla klatka nagrania, by zdiagnozowac
 druga warstwe). Ta sama estetyka = ten sam bug w kazdej takiej aplikacji (dotyczy tez APPteczki).
+
+---
+
+## 2026-07-27: Reguly odczytu dokumentow — liczby, ktore udaja co innego
+
+### Problem
+Przy dopisywaniu wzorca faktury do `ReceiptTextParser` dwie reguly wygladaly
+poprawnie, a na prawdziwych dokumentach dawaly zla kwote:
+
+1. **Data udajaca kwote.** Wzorzec kwoty `(\d[\d\s]*[,.]\d{2})` dopasowuje sie do
+   `15.09.2023` jako `15,09`. Przy sumie dokumentu wygrywala „kwota" kilkunastu
+   zlotych.
+2. **Etykieta naglowka kolumny.** „wartosc brutto" w zestawieniu VAT stoi NAD
+   kolumna, pod ktora ida kolejno netto, podatek i brutto. Okno kilku linii od
+   takiej etykiety konczy sie na podatku — reguła podstawiala kwote NETTO
+   (24 642,88 zamiast 30 310,74, czyli dokladnie brutto/1,23).
+3. **Etykieta bez wartosci.** „Razem do zaplaty:" bywa w osobnej linii, a nad nia
+   konczy sie tabela VAT — szukanie kwoty wstecz podstawialo podatek (322,00).
+
+### Rozwiazanie
+- Daty wycinane z linii PRZED szukaniem kwot (`replaceAll(_dmyDate/_isoDate)`).
+- Suma opierana na „Razem" (etykieta stojaca przy liczbach podsumowania), nie na
+  naglowkach kolumn; z okna brana NAJWIEKSZA kwota, bo brutto >= netto >= VAT.
+- Etykiety platnosci przeszukiwane tylko w przod; etykiety sumy w obie strony
+  (uklad dwukolumnowy potrafi postawic wartosc nad etykieta).
+
+### Wniosek
+Reguly na tekscie z OCR **weryfikuj na surowym tekscie prawdziwych dokumentow**,
+nie na przepisanym z reki — bledy siedza w rzeczach, ktorych sie nie wymysli
+(kolejnosc kolumn, etykieta pod wartoscia, zero na oplaconej fakturze). Kazda
+kwota, ktora „prawie pasuje", to kandydat na podatek albo netto: przy sumach
+bierz maksimum z okna, a nie pierwsze trafienie.
+
+**Przy okazji, o piaskownicy:** zanim wrzucisz realne dokumenty do repo, sprawdz
+`.gitignore`. `docs/_sandbox/` byl ignorowany, ale `_sandbox/` w korzeniu juz nie —
+faktury z danymi osobowymi czekaly na pierwszy `git add .`.

@@ -75,3 +75,24 @@ bieżący). Parser przyjmuje przy okazji zapisy nie-ISO („12.03.2026", „12.0
   bieżącego roku — trzeba ją wtedy poprawić ręcznie przed zatwierdzeniem. Docelowo
   właściwe miejsce naprawy to prompt silnika (podanie modelowi dzisiejszej daty w repo
   `karton-ai`) — wymaga osobnego wdrożenia produkcyjnego silnika i dotyka też APPteczki.
+
+## Uzupełnienie (2026-07-27): kolejka rozpoznań należy do usługi, nie do Darta
+
+Pierwotnie kolejkę trzymała warstwa Dart: `BillScanController` czekał na wynik
+jednego skanu, zanim zlecił następny. Usługa miała własną kolejkę, ale nigdy nie
+było w niej więcej niż jednej pozycji — i to psuło dokładnie ten scenariusz, dla
+którego powstała usługa. Drugi skan ruszał po ~45 s, czyli zwykle przy schowanym
+już telefonie, więc Android 12+ odmawiał startu usługi pierwszoplanowej z tła
+i zlecenie lądowało na ścieżce awaryjnej w procesie apki, skąd system wymiatał
+je razem z procesem.
+
+Teraz Dart przepuszcza zdjęcia przez szybką ścieżkę pojedynczo (OCR na miejscu),
+ale **nietrafione zleca usłudze od razu i nie czeka na wynik** — serializacją
+zajmuje się `BillScanService`. Dzięki temu każde zlecenie wychodzi, gdy apka jest
+jeszcze na wierzchu. `activeScanId` to pierwszy z listy zleconych (kolejność
+`ScanResultStore.inFlightIds()` odpowiada kolejności pracy usługi), a limit czasu
+pilnuje wyłącznie skanu aktualnie liczonego — liczony od zlecenia zabijałby
+pozycje, które po prostu czekają w kolejce.
+
+Ścieżka awaryjna w `AiEngineBridge` zostaje, ale wraca do roli prawdziwego
+wyjątku (np. zlecenie z „Udostępnij", gdy apka nie zdążyła wyjść na wierzch).

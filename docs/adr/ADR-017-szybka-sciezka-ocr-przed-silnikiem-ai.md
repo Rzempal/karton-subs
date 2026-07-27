@@ -63,3 +63,30 @@ rozpoznanie jest tańsze niż zła kwota w budżecie.
 - Testy regułowe opierają się na tekstach z realnych dokumentów właściciela
   (`test/receipt_text_parser_test.dart`) — nowy typ dokumentu = nowy przypadek
   testowy z jego surowym tekstem.
+
+## Rozszerzenie (2026-07-27): trzeci wzorzec — faktura
+
+Skoro szybka ścieżka jest domyślną (a silnik tylko wspomaga — patrz korekta
+decyzji 3 w ADR-013), zakres reguł przestał być wygodą, a stał się granicą
+tego, co apka potrafi sama. Doszedł więc wzorzec **faktury**, oparty na
+etykietach dokumentu, nie na pozycji tekstu:
+
+- **Kwota:** „Pozostało / Razem / Kwota do zapłaty", „Należność" — szukane
+  TYLKO w przód, bo nad tą etykietą kończy się tabela VAT i spojrzenie wstecz
+  podstawiało kwotę podatku. Gdy brak takiej etykiety albo wynosi 0,00
+  (dokument już opłacony) — suma przy „Razem", z okna brana NAJWIĘKSZA kwota,
+  bo obok stoją netto i podatek.
+- **Data:** termin płatności → data wystawienia → data sprzedaży; szukana
+  w obie strony, bo w układzie dwukolumnowym etykieta bywa POD wartością.
+- **Wystawca:** linia przy „Sprzedawca" (pod nią, a gdy tam są dane rejestrowe
+  — nad); adresy odpadają po kodzie pocztowym i numerze na końcu linii.
+
+Dwie pułapki warte zapamiętania (obie kosztowały błędny odczyt na prawdziwym
+dokumencie): daty w formacie `15.09.2023` pasują do wzorca kwoty jako `15,09`,
+więc są wycinane z linii przed szukaniem liczb; a „wartość brutto" to nagłówek
+KOLUMNY w zestawieniu VAT, pod którym idą kolejno netto, podatek i brutto —
+oparcie sumy na tej etykiecie podstawiało kwotę netto.
+
+Zweryfikowane na trzech prawdziwych fakturach właściciela (kwota, data
+i wystawca trafione w każdej); dokumenty zostają lokalnie, testy odwzorowują
+ich układ na danych zmienionych.

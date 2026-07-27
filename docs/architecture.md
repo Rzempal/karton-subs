@@ -205,7 +205,8 @@ miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 
 ## Domena Budzet domowy (rownolegla warstwa)
 
-> **ADR:** [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md)
+> **ADR:** [ADR-023 Rozlaczne strumienie wydatkow](adr/ADR-023-rozlaczne-strumienie-wydatkow.md)
+> | [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md)
 > | [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
 > | [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
 > | [ADR-008 Rachunek zmienny: surplus (plan) vs bilans miesiaca (realny)](adr/ADR-008-rachunek-zmienny-surplus-vs-bilans.md)
