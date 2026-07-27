@@ -346,8 +346,20 @@ zainstalowana apka silnika wymagala recznego uruchomienia przed pierwszym skanem
 **Szybka sciezka (ADR-017).** Zanim ruszy silnik, zdjecie czyta zwykly OCR
 tekstowy (`TextOcrService`, model ML Kit wbudowany w APK — bez Google Play
 Services i bez sieci) i reguly (`ReceiptTextParser`). Paragon fiskalny
-(`SUMA PLN`, data ISO) i zrzut platnosci telefonem (kwota `X,XX zl`, „sobota,
-25 lip") sa odczytane w ~1-2 s, z data wzieta wprost z dokumentu. Nietrafiony
+(`SUMA PLN`, data ISO), zrzut platnosci telefonem (kwota `X,XX zl`, „sobota,
+25 lip") oraz **faktura** sa odczytane w ~1-2 s, z data wzieta wprost
+z dokumentu.
+
+Reguly faktury opieraja sie na ETYKIETACH, nie na pozycji tekstu: kwota z
+„Pozostalo/Razem do zaplaty" (szukana tylko w przod — nad ta etykieta stoi ogon
+tabeli VAT), a gdy jej nie ma albo wynosi 0,00 (dokument juz oplacony) — suma
+przy „Razem" (z okna bierzemy NAJWIEKSZA kwote, bo obok stoja netto i podatek).
+Data: termin platnosci, potem data wystawienia, potem data sprzedazy; szukana
+w obie strony, bo w ukladzie dwukolumnowym etykieta bywa POD wartoscia.
+Wystawca: linia przy „Sprzedawca" (pod nia, a gdy tam sa dane rejestrowe — nad).
+Daty sa wycinane przed szukaniem kwot, bo „15.09.2023" pasuje do wzorca kwoty
+jako „15,09". Regul NIE opieramy na naglowku „wartosc brutto" — to etykieta
+kolumny, pod ktora ida kolejno netto, podatek i brutto. Nietrafiony
 wzorzec albo brak pewnej kwoty → dokument przejmuje silnik AI. Przy braku
 trafienia zdjecie jest jeszcze obracane (90/270/180 stopni) — paragony
 fotografuje sie w poprzek.

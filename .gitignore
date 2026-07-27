@@ -39,6 +39,9 @@ apps/*/build/
 *.xlsx
 apps/karton_subs/tool/gen_import_xlsx.dart
 docs/_sandbox/
+# Piaskownica w korzeniu repo — realne dokumenty (faktury, paragony) do testow
+# regul odczytu. NIGDY nie commitowac: zawieraja dane osobowe.
+_sandbox/
 
 # Flutter — generated files
 pubspec.lock

@@ -21,7 +21,9 @@ class ReceiptTextParser {
         .where((l) => l.isNotEmpty)
         .toList();
     if (lines.isEmpty) return null;
-    return _fiscalReceipt(lines, today) ?? _paymentScreenshot(lines, today);
+    return _fiscalReceipt(lines, today) ??
+        _paymentScreenshot(lines, today) ??
+        _invoice(lines);
   }
 
   // ── Paragon fiskalny ──────────────────────────────────────────────────────
@@ -244,6 +246,165 @@ class ReceiptTextParser {
       if (statusBar.hasMatch(line)) continue;
       if (RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]{3,}').firstMatch(line) == null) continue;
       return _shorten(line);
+    }
+    return null;
+  }
+
+  // ── Faktura (media, usługi, sklepy) ───────────────────────────────────────
+  //
+  // Faktury nie mają jednego układu, ale mają stałe ETYKIETY — i to na nich
+  // opieramy odczyt, nie na pozycji tekstu. Trzy rzeczy, które psują naiwną
+  // regułę (wszystkie zaobserwowane na prawdziwych dokumentach):
+  //   1. etykieta bywa PO wartości („15-01-2022" / „Data wystawienia:") — układ
+  //      dwukolumnowy rozjeżdża się przy odczycie, więc patrzymy w obie strony;
+  //   2. „Pozostało do zapłaty" bywa 0,00 na fakturze już opłaconej — zero
+  //      odrzucamy i schodzimy do sumy dokumentu;
+  //   3. przy „RAZEM" stoją obok siebie netto, VAT i brutto — z okna bierzemy
+  //      NAJWIĘKSZĄ kwotę, bo brutto jest zawsze największe z tej trójki.
+
+  /// Bez tego dokument nie jest fakturą — nie zgadujemy na przypadkowym tekście.
+  static final _invoiceAnchor = RegExp(r'faktur|\bNIP\b', caseSensitive: false);
+
+  /// Etykiety kwoty do zapłaty (pierwszeństwo — mówią wprost, ile płacimy).
+  static final _payLabel = RegExp(
+    r'(pozosta[łl]o\s+do\s+zap[łl]aty|razem\s+do\s+zap[łl]aty'
+    r'|kwota\s+do\s+zap[łl]aty|do\s+zap[łl]aty|nale[żz]no[śs][ćc])',
+    caseSensitive: false,
+  );
+
+  /// Etykiety sumy dokumentu — używane, gdy nie ma kwoty „do zapłaty".
+  ///
+  /// Świadomie BEZ „wartość brutto": to nagłówek kolumny w zestawieniu VAT,
+  /// pod którym stoją kolejno netto, podatek i brutto — okno wokół takiego
+  /// nagłówka kończy się na podatku i podstawia kwotę netto jako sumę.
+  /// „Razem" stoi przy samych liczbach podsumowania.
+  static final _totalLabel = RegExp(
+    r'(razem|suma\s+brutto)',
+    caseSensitive: false,
+  );
+
+  static final _dueLabel =
+      RegExp(r'termin\s+p[łl]atno[śs]ci|p[łl]atne\s+do', caseSensitive: false);
+  static final _issueLabel =
+      RegExp(r'data\s+wystawienia', caseSensitive: false);
+  static final _saleLabel = RegExp(
+    r'data\s+(sprzeda[żz]y|dostawy|wykonania)',
+    caseSensitive: false,
+  );
+  static final _sellerLabel = RegExp(r'sprzedawca', caseSensitive: false);
+
+  static ParsedBill? _invoice(List<String> lines) {
+    if (!lines.any(_invoiceAnchor.hasMatch)) return null;
+
+    // „Do zapłaty" szukamy tylko w przód: nad tą etykietą stoi zwykle ogon
+    // tabeli VAT, więc spojrzenie wstecz podstawiłoby kwotę podatku.
+    final amount =
+        _amountNearLabel(lines, _payLabel, window: 2, backwards: false) ??
+            _amountNearLabel(lines, _totalLabel, window: 3, pickLargest: true);
+    if (amount == null) return null;
+
+    // Termin płatności przed datą wystawienia: rachunek obciąża ten miesiąc,
+    // w którym trzeba go zapłacić.
+    final date = _dateNearLabel(lines, _dueLabel) ??
+        _dateNearLabel(lines, _issueLabel) ??
+        _dateNearLabel(lines, _saleLabel);
+
+    return ParsedBill(
+      name: _sellerName(lines),
+      amount: amount,
+      currency: 'PLN',
+      date: date,
+    );
+  }
+
+  /// Kwota przy etykiecie: najpierw ogon tej samej linii, potem [window] linii
+  /// w dół i w górę. [pickLargest] wybiera największą z okna (brutto vs netto
+  /// vs VAT); bez niej wygrywa pierwsza znaleziona.
+  static double? _amountNearLabel(
+    List<String> lines,
+    RegExp label, {
+    required int window,
+    bool pickLargest = false,
+    bool backwards = true,
+  }) {
+    for (var i = 0; i < lines.length; i++) {
+      final match = label.firstMatch(lines[i]);
+      if (match == null) continue;
+
+      final candidates = <double>[
+        ..._amountsIn(lines[i].substring(match.end)),
+        for (var j = i + 1; j <= i + window && j < lines.length; j++)
+          ..._amountsIn(lines[j]),
+        if (backwards)
+          for (var j = i - 1; j >= i - window && j >= 0; j--)
+            ..._amountsIn(lines[j]),
+      ];
+      if (candidates.isEmpty) continue;
+      if (!pickLargest) return candidates.first;
+      return candidates.reduce((a, b) => a > b ? a : b);
+    }
+    return null;
+  }
+
+  /// Wszystkie dodatnie kwoty w linii (zera odpadają — „zapłacono 0,00").
+  ///
+  /// Daty wycinamy przed szukaniem: „15.09.2023" pasuje do wzorca kwoty jako
+  /// „15.09" i przy sumie dokumentu udawałoby kilkanaście złotych.
+  static List<double> _amountsIn(String s) => _amount
+      .allMatches(s.replaceAll(_dmyDate, ' ').replaceAll(_isoDate, ' '))
+      .map((m) => _toDouble(m.group(1)!))
+      .whereType<double>()
+      .toList();
+
+  /// Data przy etykiecie — też w obie strony, bo kolumny rozjeżdżają odczyt.
+  static DateTime? _dateNearLabel(List<String> lines, RegExp label) {
+    for (var i = 0; i < lines.length; i++) {
+      final match = label.firstMatch(lines[i]);
+      if (match == null) continue;
+      for (final candidate in [
+        lines[i].substring(match.end),
+        if (i + 1 < lines.length) lines[i + 1],
+        if (i - 1 >= 0) lines[i - 1],
+        if (i + 2 < lines.length) lines[i + 2],
+      ]) {
+        final date = _dateFromLines([candidate], DateTime.now());
+        if (date != null) return date;
+      }
+    }
+    return null;
+  }
+
+  /// Nazwa sprzedawcy: pierwsza sensowna linia pod etykietą „Sprzedawca",
+  /// a gdy tam są tylko dane rejestrowe (NIP, REGON, telefon) — nad nią.
+  /// Adresy odpadają po kodzie pocztowym i po numerze na końcu linii.
+  static String? _sellerName(List<String> lines) {
+    final index = lines.indexWhere(_sellerLabel.hasMatch);
+    if (index < 0) return null;
+
+    bool usable(String line) {
+      if (RegExp(
+        r'^\s*(NIP|REGON|Tel|Telefon|E-?mail|Klient|Nabywca|Sprzedawca'
+        r'|ul\.|al\.|os\.)',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        return false;
+      }
+      if (RegExp(r'\d{2}-\d{3}').hasMatch(line)) return false; // kod pocztowy
+      if (RegExp(r'\d+\s*[a-zA-Z]?(/\d+)?$').hasMatch(line)) return false; // adres
+      return RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]{3,}').hasMatch(line);
+    }
+
+    // Ogon tej samej linii („Sprzedawca: Firma sp. z o.o.") ma pierwszeństwo.
+    final tail = lines[index]
+        .substring(_sellerLabel.firstMatch(lines[index])!.end)
+        .replaceFirst(RegExp(r'^\s*:\s*'), '');
+    if (usable(tail)) return _shorten(tail);
+
+    for (var j = index + 1; j <= index + 3 && j < lines.length; j++) {
+      if (usable(lines[j])) return _shorten(lines[j]);
+    }
+    for (var j = index - 1; j >= index - 3 && j >= 0; j--) {
+      if (usable(lines[j])) return _shorten(lines[j]);
     }
     return null;
   }

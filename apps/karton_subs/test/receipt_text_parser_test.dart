@@ -166,8 +166,114 @@ inny tekst
     });
   });
 
-  group('Dokument spoza wzorcow', () {
-    test('faktura za prad -> null (idzie do silnika AI)', () {
+  // Faktury nie maja jednego ukladu, ale maja stale etykiety. Teksty ponizej
+  // odwzoruja uklady trzech PRAWDZIWYCH faktur wlasciciela (dane zmienione),
+  // razem z pulapkami, ktore w nich siedza: etykieta po wartosci, „pozostalo
+  // do zaplaty 0,00" na dokumencie juz oplaconym i tabela netto/VAT/brutto.
+  group('Faktura', () {
+    test('kwota z etykiety „Pozostalo do zaplaty", data z terminu platnosci', () {
+      const raw = '''
+Dokument nr FVS/14/03/2025
+Sprzedawca:
+Instalacje Termika Sp. z o.o.
+ul. Przykladowa 29
+41-800 Zabrze
+NIP: PL0000000000
+Data wystawienia: 2025-03-28
+Termin płatności: 2025-03-31 (3 dni)
+Sposób płatności: Przelew na rachunek bankowy
+RAZEM
+15 203,25
+3 496,75
+18 700,00
+Zapłacono: 0,00 PLN
+Pozostało do zapłaty: 18 700,00 PLN
+''';
+      final bill = ReceiptTextParser.parse(raw, now: _now);
+      expect(bill, isNotNull);
+      expect(bill!.amount, closeTo(18700.00, 0.001));
+      // Termin platnosci ma pierwszenstwo przed data wystawienia.
+      expect(bill.date, DateTime(2025, 3, 31));
+      expect(bill.name, 'Instalacje Termika Sp. z o.o.');
+    });
+
+    test('„Razem do zaplaty" bez kwoty -> suma dokumentu (brutto, nie VAT)', () {
+      const raw = '''
+Nabywca
+Jan Kowalski
+Skorpiona 11b
+41-818 Zabrze
+STALMET Dawid Nowak
+Spoldzielcza 10
+42-772 Gwozdziany
+Sprzedawca
+NIP PL0000000000
+Tel. 000000000
+REGON 000000000
+Data sprzedaży: 14.09.2023
+Faktura nr: FV/3/09/2023
+Data wystawienia: 15.09.2023
+RAZEM:
+4 347,00
+4 025,00
+322,00
+Razem do zapłaty:
+Słownie:
+cztery tysiace trzysta czterdziesci siedem zl
+4 347,00 PLN  Wpłacono 4 347,00 PLN Pozostało do zapłaty 0,00 PLN
+''';
+      final bill = ReceiptTextParser.parse(raw, now: _now);
+      expect(bill, isNotNull);
+      // NIE 322,00 (VAT) i NIE 4 025,00 (netto) — brutto jest najwieksze.
+      expect(bill!.amount, closeTo(4347.00, 0.001));
+      expect(bill.date, DateTime(2023, 9, 15));
+      // Pod etykieta sa tylko dane rejestrowe — nazwa stoi nad nia.
+      expect(bill.name, 'STALMET Dawid Nowak');
+    });
+
+    test('etykieta PO wartosci (uklad dwukolumnowy) — kwota i data z linii wyzej', () {
+      const raw = '''
+Hurtownia Wykonczen Anna Nowak
+Przykladowa 5, 41-700 Miasto
+NIP: 000-000-00-00
+Miasto
+Miejsce wystawienia:
+15-01-2022
+Data wystawienia:
+Sprzedawca:
+Klient:
+Hurtownia Wykonczen Anna Nowak
+NOWAK ANNA
+Faktura pro forma  27/01/2022 oryginał
+kwota VAT
+według stawki VAT
+wartość netto
+wartość brutto
+Podstawowy podatek VAT 23%
+ 24 642,88
+ 5 667,86
+ 30 310,74
+Razem:
+ 5 667,86
+ 30 310,74
+ 24 642,88
+trzydziesci tysiecy trzysta dziesiec  PLN 74/100
+Słownie:
+ 30 310,74
+Razem:
+15-01-2022
+Termin realizacji:
+''';
+      final bill = ReceiptTextParser.parse(raw, now: _now);
+      expect(bill, isNotNull);
+      // NIE 24 642,88 — to netto spod naglowka „wartosc brutto" w zestawieniu
+      // VAT, gdzie wartosci ida kolumna: netto, podatek, brutto.
+      expect(bill!.amount, closeTo(30310.74, 0.001));
+      expect(bill.date, DateTime(2022, 1, 15));
+      expect(bill.name, 'Hurtownia Wykonczen Anna Nowak');
+    });
+
+    test('faktura za prad: kwota „Do zaplaty" i termin platnosci', () {
       const raw = '''
 ENERGA-OBRÓT S.A.
 Faktura VAT nr 12345/2026
@@ -175,8 +281,31 @@ Za energię elektryczną
 Do zapłaty: 184,32 zł
 Termin płatności: 2026-08-01
 ''';
+      final bill = ReceiptTextParser.parse(raw, now: _now);
+      expect(bill, isNotNull);
+      expect(bill!.amount, closeTo(184.32, 0.001));
+      expect(bill.date, DateTime(2026, 8, 1));
+    });
+
+    test('dokument bez zadnej kwoty -> null (sprawe przejmuje silnik)', () {
+      const raw = '''
+Faktura VAT nr 7/2026
+Sprzedawca: Firma Testowa
+Termin płatności: 2026-08-01
+''';
       expect(ReceiptTextParser.parse(raw, now: _now), isNull);
     });
+
+    test('tekst bez znamion faktury -> null', () {
+      const raw = '''
+Notatka sluzbowa
+Razem: 120,00
+''';
+      expect(ReceiptTextParser.parse(raw, now: _now), isNull);
+    });
+  });
+
+  group('Dokument spoza wzorcow', () {
 
     test('pusty tekst -> null', () {
       expect(ReceiptTextParser.parse('', now: _now), isNull);
