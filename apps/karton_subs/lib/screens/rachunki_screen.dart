@@ -88,36 +88,15 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  /// Skan rachunku lokalnym silnikiem AI: zdjęcie (aparat/galeria) → pozycja
-  /// „Do zatwierdzenia" z OCR w tle. Zero chmury — silnik działa na telefonie.
+  /// Skan rachunku ze zdjęcia (aparat/galeria) → pozycja „Do zatwierdzenia".
+  ///
+  /// Odczyt robi sama aplikacja (model OCR wbudowany w APK, ADR-017), więc
+  /// działa zawsze — bez sieci i bez dodatkowych aplikacji. Asystent AI
+  /// (osobna apka z modelem językowym) tylko dokłada się do dokumentów,
+  /// których reguły nie ogarnęły. Zero chmury na obu ścieżkach.
   Future<void> _scanBill(ImageSource source) async {
     final scanCtrl = context.read<BillScanController>();
     final budgetCtrl = context.read<BudgetController>();
-
-    final status = await scanCtrl.engineStatus();
-    if (!mounted) return;
-    if (!status.usable) {
-      final msg = !status.installed
-          ? 'Do skanowania rachunków potrzebna jest apka „Lokalny Silnik AI" '
-                '(rozpoznawanie działa w całości na telefonie, bez chmury). '
-                'Zainstaluj ją i spróbuj ponownie.'
-          : 'Apka „Lokalny Silnik AI" nie ma pobranego modelu. Otwórz ją '
-                'i użyj przycisku „Pobierz model", potem spróbuj ponownie.';
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Silnik AI niedostępny'),
-          content: Text(msg),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
 
     // Zmniejszenie zdjęcia po stronie apki: OCR nie potrzebuje pełnych 12 MP,
     // a mniejszy plik to szybszy przelot przez usługę i mniejsza miniatura.
@@ -136,7 +115,13 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
 
     await scanCtrl.startScan(imagePath, budgetCtrl.scope);
     if (mounted) {
-      _snack('Rozpoznaję rachunek w tle (ok. 1 min) — pojawi się w „Do zatwierdzenia".');
+      // Czas zależy od ścieżki: własny odczyt to sekundy, silnik ~minuta.
+      _snack(
+        scanCtrl.aiAssistantEnabled
+            ? 'Odczytuję rachunek — trudniejsze dokumenty biorę silnikiem '
+                  '(ok. 1 min). Pojawi się w „Do zatwierdzenia".'
+            : 'Odczytuję rachunek — pojawi się w „Do zatwierdzenia".',
+      );
     }
   }
 
@@ -286,21 +271,18 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
             primary: true,
             onTap: () => _openAdd(ctrl),
           ),
-          // Skan wymaga lokalnego silnika AI — opcje widoczne tylko przy
-          // włączonym Asystencie AI (Ustawienia -> Asystent AI). Flaga z
-          // watchowanego kontrolera => przełączenie od razu przebudowuje menu.
-          if (scanCtrl.aiAssistantEnabled) ...[
-            AuroraAddAction(
-              icon: LucideIcons.camera,
-              label: 'Zeskanuj (aparat)',
-              onTap: () => _scanBill(ImageSource.camera),
-            ),
-            AuroraAddAction(
-              icon: LucideIcons.image,
-              label: 'Zeskanuj (galeria)',
-              onTap: () => _scanBill(ImageSource.gallery),
-            ),
-          ],
+          // Skan jest zwykłą funkcją apki — odczyt robi model wbudowany w APK,
+          // więc nie zależy od Asystenta AI ani od żadnej innej aplikacji.
+          AuroraAddAction(
+            icon: LucideIcons.camera,
+            label: 'Zeskanuj (aparat)',
+            onTap: () => _scanBill(ImageSource.camera),
+          ),
+          AuroraAddAction(
+            icon: LucideIcons.image,
+            label: 'Zeskanuj (galeria)',
+            onTap: () => _scanBill(ImageSource.gallery),
+          ),
         ],
       ),
       body: Column(
@@ -438,7 +420,7 @@ class _PendingScanCard extends StatelessWidget {
           ? 'Lokalny silnik AI pracuje w tle (ok. 1 min)'
           : 'Czeka na swoją kolej rozpoznania';
     } else if (failed) {
-      title = 'Nie udało się rozpoznać';
+      title = 'Uzupełnij ręcznie';
       subtitle = item.errorMessage ?? 'Spróbuj ponownie';
     } else {
       title = item.name ?? 'Rozpoznany rachunek';
@@ -522,6 +504,15 @@ class _PendingScanCard extends StatelessWidget {
               ),
             )
           else if (failed) ...[
+            // Edycja jest tu ważniejsza niż ponowienie: zdjęcie już mamy,
+            // więc rachunek da się dokończyć ręcznie także wtedy, gdy żaden
+            // automat go nie odczytał.
+            IconButton(
+              tooltip: 'Uzupełnij ręcznie',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(LucideIcons.pencil),
+              onPressed: onEdit,
+            ),
             IconButton(
               tooltip: 'Ponów',
               visualDensity: VisualDensity.compact,

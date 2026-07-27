@@ -156,9 +156,6 @@ class BillScanController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Stan lokalnego silnika AI (zainstalowany / model pobrany).
-  Future<AiEngineStatus> engineStatus() => _engine.status();
-
   /// Przyjmuje zdjęcie rachunku: kopiuje do katalogu apki, dodaje pozycję
   /// „processing" i odpala OCR w tle. Wraca od razu (nie czeka na silnik).
   Future<void> startScan(String sourcePath, BudgetScope scope) async {
@@ -475,7 +472,8 @@ class BillScanController extends ChangeNotifier {
 
     // Szybka ścieżka: zwykły OCR + reguły. Typowy paragon fiskalny i zrzut
     // płatności telefonem są odczytane w ~1–2 s, z datą wziętą wprost
-    // z dokumentu. Nietrafiony wzorzec oddaje sprawę silnikowi AI (~45 s).
+    // z dokumentu. Model OCR jest wbudowany w APK, więc ta ścieżka działa
+    // ZAWSZE — bez sieci, bez apki silnika i bez żadnego opt-inu (ADR-017).
     final quick = await _quickRead(item);
     if (quick != null) {
       final filled = _filled(item, quick);
@@ -483,6 +481,33 @@ class BillScanController extends ChangeNotifier {
       unawaited(_notifications.showScanDone(id, filled.name));
       await _persist();
       notifyListeners();
+      return;
+    }
+
+    // Silnik AI to WSPOMAGANIE dla dokumentów o dowolnym układzie (faktury),
+    // a nie warunek skanowania. Bez niego pozycja czeka na ręczne uzupełnienie
+    // — ze zdjęciem, które i tak trafi do archiwum po zatwierdzeniu.
+    if (!aiAssistantEnabled) {
+      await _fail(
+        id,
+        'Nie odczytano automatycznie — uzupełnij ręcznie (Edytuj). '
+        'Faktury i nietypowe rachunki czyta Asystent AI '
+        '(Ustawienia → Asystent AI).',
+      );
+      return;
+    }
+    final engine = await _engine.status();
+    if (!engine.usable) {
+      await _fail(
+        id,
+        !engine.installed
+            ? 'Nie odczytano automatycznie — uzupełnij ręcznie (Edytuj). '
+                  'Do trudniejszych dokumentów potrzebna jest apka '
+                  '„Lokalny Silnik AI".'
+            : 'Nie odczytano automatycznie — uzupełnij ręcznie (Edytuj). '
+                  'Silnik nie ma pobranego modelu — otwórz apkę „Lokalny '
+                  'Silnik AI" i pobierz go.',
+      );
       return;
     }
 

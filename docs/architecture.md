@@ -287,6 +287,15 @@ Zero chmury: zdjecie rachunku idzie do apki-silnika NA TYM SAMYM telefonie
 (usluga AIDL, straznik podpisu). Klienci — takze build dev Zostaje — binduja
 wylacznie pakiet PRODUKCYJNY silnika `app.michalrapala.ai_engine`.
 
+**Skan NIE jest opcja, silnik jest.** Odczyt paragonow i potwierdzen platnosci
+robi model OCR wbudowany w APK (ADR-017), wiec skanowanie dziala zawsze — bez
+sieci, bez apki silnika i bez zadnego opt-inu (menu „Dodaj", „Udostepnij ->
+Zostaje"). Przelacznik **Asystent AI** (`aiAssistantEnabled`, domyslnie OFF)
+decyduje wylacznie o tym, czy dokument nierozpoznany regulami idzie do silnika.
+Przy wylaczonym asystencie (albo braku modelu) taka pozycja konczy jako
+„Uzupelnij recznie" — zostaje w „Do zatwierdzenia" ze zdjeciem i przyciskiem
+edycji, wiec rachunek da sie dokonczyc bez zadnego automatu.
+
 ```
 Zdjecie (aparat / galeria)          Udostepnij -> Zostaje
   │  ReceiptCropService.crop:         │  bez przerywania (fire-and-forget)

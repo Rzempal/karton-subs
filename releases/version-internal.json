@@ -1,5 +1,10 @@
 {
+  "releaseDate": "2026-07-27T17:28:11Z",
   "changelog": [
+    {
+      "version": "0.11.26072706",
+      "notes": "- Skan rachunkow dziala zawsze, niezaleznie od Asystenta AI (odczyt robi model wbudowany w apke)\n- Asystent AI to teraz wspomaganie silnikiem dla trudniejszych dokumentow\n- Nierozpoznany dokument czeka jako Uzupelnij recznie, z przyciskiem edycji\n- Udostepnij -> Zostaje przyjmuje zdjecia bez wlaczonego Asystenta"
+    },
     {
       "version": "0.11.26072705",
       "notes": "- Plan: Koszty roczne przeniesione na dol, pod podzial wg kategorii"
@@ -35,15 +40,10 @@
     {
       "version": "0.11.26072614",
       "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje juz danych, ktorych ten plik nie zawiera (Planner)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
-    },
-    {
-      "version": "0.11.26072613",
-      "notes": "- Import backupu pyta: odtworzyc stan z pliku czy scalic z obecnymi danymi (wczesniej zawsze scalal po cichu)\n- Planner wchodzi do backupu (format v6)\n- Powtorzenie hasla przy eksporcie z haslem\n- Podsumowanie importu mowi, ile pozycji usunieto przy odtwarzaniu"
     }
   ],
-  "releaseNotes": "- Plan: Koszty roczne przeniesione na dol, pod podzial wg kategorii",
-  "releaseDate": "2026-07-27T17:17:01Z",
-  "version": "0.11.26072705",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072705",
-  "versionCode": 1126072705
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1126072706",
+  "versionCode": 1126072706,
+  "releaseNotes": "- Skan rachunkow dziala zawsze, niezaleznie od Asystenta AI (odczyt robi model wbudowany w apke)\n- Asystent AI to teraz wspomaganie silnikiem dla trudniejszych dokumentow\n- Nierozpoznany dokument czeka jako Uzupelnij recznie, z przyciskiem edycji\n- Udostepnij -> Zostaje przyjmuje zdjecia bez wlaczonego Asystenta",
+  "version": "0.11.26072706"
 }

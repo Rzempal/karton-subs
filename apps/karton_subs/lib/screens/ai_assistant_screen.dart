@@ -6,10 +6,13 @@ import '../services/ai_engine_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_widgets.dart';
 
-/// Ustawienia Asystenta AI (wzorzec z APPteczki): przełącznik skanowania
-/// rachunków lokalnym silnikiem + link do uruchomienia albo pobrania apki
-/// silnika. Wyłączony asystent ukrywa opcje skanowania w menu „Dodaj rachunek"
-/// i ignoruje zdjęcia z systemowego „Udostępnij".
+/// Ustawienia Asystenta AI: przełącznik WSPOMAGANIA skanu lokalnym silnikiem
+/// + link do uruchomienia albo pobrania apki silnika.
+///
+/// Samo skanowanie rachunków nie ma tu przełącznika — odczyt robi model OCR
+/// wbudowany w APK (ADR-017), więc działa zawsze, tak jak każda inna funkcja
+/// apki. Wyłączony asystent oznacza tylko tyle, że dokumenty nierozpoznane
+/// regułami czekają na ręczne uzupełnienie zamiast iść do silnika.
 ///
 /// Archiwum zdjęć ma własną sekcję w Ustawieniach (`ReceiptArchiveScreen`) —
 /// dotyczy każdego zatwierdzonego rachunku, nie tylko odczytanego silnikiem.
@@ -56,10 +59,27 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 112),
         children: [
+          // Skan rachunków jest zwykłą funkcją apki i nie ma tu przełącznika —
+          // ten ekran dotyczy WYŁĄCZNIE wspomagania silnikiem.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              'Skanowanie rachunków ze zdjęć działa zawsze — apka odczytuje '
+              'paragony i potwierdzenia płatności własnym mechanizmem, bez '
+              'sieci i bez dodatkowych aplikacji.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
           SettingsGroup(children: [
             SwitchListTile(
-              title: const Text('Rozpoznawanie rachunków ze zdjęć'),
-              subtitle: const Text('Wymaga aplikacji „Lokalny Silnik AI”'),
+              title: const Text('Wspomaganie silnikiem AI'),
+              subtitle: const Text(
+                'Dokumenty, których apka nie odczyta sama (faktury, nietypowe '
+                'układy), trafiają do aplikacji „Lokalny Silnik AI”',
+              ),
+              isThreeLine: true,
               value: _enabled,
               onChanged: _setEnabled,
             ),
@@ -98,12 +118,14 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Text(
               _enabled
-                  ? 'Silnik rozpoznaje rachunek ze zdjęcia (kwota, wystawca, '
-                        'termin płatności) — w pełni lokalnie, bez chmury. '
-                        'Wymaga jednorazowego pobrania modelu (~3,7 GB) '
-                        'w aplikacji „Lokalny Silnik AI”.'
-                  : 'Tryb bez AI: rachunki dodajesz ręcznie przyciskiem „+” '
-                        'na ekranie Rachunki.',
+                  ? 'Silnik czyta rachunek ze zdjęcia (kwota, wystawca, termin '
+                        'płatności) — w pełni lokalnie, bez chmury. Wymaga '
+                        'jednorazowego pobrania modelu (~3,7 GB) w aplikacji '
+                        '„Lokalny Silnik AI”. Rozpoznanie trwa ok. minuty.'
+                  : 'Bez silnika: paragony i potwierdzenia płatności apka '
+                        'odczyta sama w kilka sekund, a dokumenty, których nie '
+                        'rozpozna, czekają w „Do zatwierdzenia” do ręcznego '
+                        'uzupełnienia.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,
               ),

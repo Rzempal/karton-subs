@@ -255,17 +255,8 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
         })
         .toList();
     if (images.isEmpty) return;
-    // Skan wymaga wlaczonego Asystenta AI (Ustawienia -> Asystent AI).
-    if (!context.read<BillScanController>().aiAssistantEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Włącz Asystenta AI (Ustawienia → Asystent AI), aby skanować rachunki.',
-          ),
-        ),
-      );
-      return;
-    }
+    // Bez bramki: odczyt rachunku robi model wbudowany w apke (ADR-017),
+    // wiec „Udostepnij -> Zostaje" dziala niezaleznie od Asystenta AI.
     final scanCtrl = context.read<BillScanController>();
     final scope = context.read<BudgetController>().scope;
     for (final f in images) {

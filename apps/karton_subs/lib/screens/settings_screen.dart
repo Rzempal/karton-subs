@@ -69,7 +69,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ListTile(
               leading: const Icon(LucideIcons.sparkles),
               title: const Text('Asystent AI'),
-              subtitle: Text(aiEnabled ? 'Włączony' : 'Wyłączony'),
+              // Skan działa zawsze — ten kafel mówi tylko o wspomaganiu
+              // trudniejszych dokumentów lokalnym silnikiem.
+              subtitle: Text(
+                aiEnabled
+                    ? 'Wspomaganie silnikiem: włączone'
+                    : 'Wspomaganie silnikiem: wyłączone',
+              ),
               trailing: const Icon(LucideIcons.chevronRight),
               onTap: () async {
                 await Navigator.of(context).push(MaterialPageRoute(

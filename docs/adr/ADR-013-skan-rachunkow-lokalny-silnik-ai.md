@@ -33,12 +33,24 @@ silnika (`app.michalrapala.ai_engine.dev`, osobna apka) służy tylko do testów
 samego silnika. Nowe metody AIDL docierają do klientów dopiero z produkcyjnym
 deployem silnika.
 
-### 3. Funkcja jest opt-in: przełącznik „Asystent AI" w Ustawieniach
+### 3. Opt-in dotyczy SILNIKA, nie skanowania
 
-Wzorzec z APPteczki: kafel „Asystent AI" (domyślnie **wyłączony**) z przełącznikiem
-„Rozpoznawanie rachunków ze zdjęć" i linkiem do uruchomienia (albo pobrania APK)
-apki silnika. Wyłączony asystent ukrywa opcje skanowania w menu „Dodaj rachunek"
-i ignoruje zdjęcia z systemowego „Udostępnij" (podpowiedź, gdzie włączyć).
+Pierwotnie (wzorzec z APPteczki) jeden przełącznik „Asystent AI" rządził całym
+skanowaniem: wyłączony ukrywał opcje w menu „Dodaj rachunek" i odrzucał zdjęcia
+z systemowego „Udostępnij".
+
+**Skorygowane po wprowadzeniu ADR-017.** Odkąd odczyt paragonów i potwierdzeń
+płatności robi model OCR wbudowany w APK, ta bramka zamykała działającą,
+lokalną funkcję za pytaniem o zewnętrzną aplikację z modelem językowym — czyli
+o coś, czego ta funkcja w ogóle nie potrzebuje.
+
+Dziś: **skanowanie działa zawsze** (zwykła funkcja apki, bez przełącznika),
+a przełącznik „Asystent AI" (domyślnie **wyłączony**) decyduje wyłącznie o tym,
+czy dokument nierozpoznany regułami trafia do silnika. Bez silnika taka pozycja
+kończy jako „Uzupełnij ręcznie" — zostaje w „Do zatwierdzenia" ze zdjęciem
+i przyciskiem edycji, więc rachunek da się dokończyć bez żadnego automatu.
+Ekran „Asystent AI" mówi to wprost i trzyma link do pobrania/uruchomienia apki
+silnika.
 
 ### 4. OCR w tle + pozycje „Do zatwierdzenia" (nie pełny automat, nie modal)
 
