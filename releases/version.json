@@ -1,6 +1,14 @@
 {
-  "releaseNotes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja",
+  "version": "0.15.26080100",
+  "releaseNotes": "- Wiecej miejsca na tresc: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- Przelacznik Osobisty/Domowy na samej gorze, wspolny dla calej aplikacji\n- Sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- Opis sekcji (ikona i) obok przelacznika zakresu",
+  "releaseDate": "2026-08-01T00:13:15Z",
+  "versionCode": 1526080100,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1526080100",
   "changelog": [
+    {
+      "version": "0.15.26080100",
+      "notes": "- Wiecej miejsca na tresc: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- Przelacznik Osobisty/Domowy na samej gorze, wspolny dla calej aplikacji\n- Sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- Opis sekcji (ikona i) obok przelacznika zakresu"
+    },
     {
       "version": "0.14.26073102",
       "notes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja"
@@ -36,14 +44,6 @@
     {
       "version": "0.10.26062500",
       "notes": "- Dashboard: sekcja Saldo zostaje miesiecznie scalona w jedna karte z opisem jak liczone jest saldo\n- Bilans miesiaca: lepszy opis + przytrzymanie kwoty pokazuje rozbicie roznicy wzgledem salda\n- Budzet: filtr czasu (rok i miesiac) obok kategorii i typow"
-    },
-    {
-      "version": "0.9.26062401",
-      "notes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu: zaznaczone chipy oraz obramowanie paska nawigacji w trybie jasnym"
     }
-  ],
-  "releaseDate": "2026-07-31T23:52:00Z",
-  "version": "0.14.26073102",
-  "versionCode": 1426073102,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1426073102"
+  ]
 }
