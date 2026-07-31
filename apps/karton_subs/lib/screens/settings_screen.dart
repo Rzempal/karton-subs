@@ -15,6 +15,7 @@ import 'backup_screen.dart';
 import 'budget_mode_screen.dart';
 import 'category_management_screen.dart';
 import 'currency_screen.dart';
+import 'data_export_screen.dart';
 import 'dev_tools_screen.dart';
 import 'household_sync_screen.dart';
 import 'notifications_screen.dart';
@@ -63,6 +64,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: LucideIcons.bell,
                 title: 'Powiadomienia',
                 screen: const NotificationsScreen()),
+            // Kategorie i metody płatności to słowniki, którymi użytkownik
+            // opisuje SWÓJ budżet — bliżej im do personalizacji niż do sekcji
+            // „Dane", gdzie mieszkają kopie, synchronizacja i eksport.
+            _navTile(context,
+                icon: LucideIcons.tag,
+                title: 'Zarządzaj kategoriami',
+                screen: const CategoryManagementScreen()),
+            _navTile(context,
+                icon: LucideIcons.creditCard,
+                title: 'Metody płatności',
+                screen: const PaymentMethodManagementScreen()),
           ]),
 
           const SettingsSectionLabel('Dane'),
@@ -103,14 +115,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (mounted) setState(() {}); // odśwież podtytuł
               },
             ),
-            _navTile(context,
-                icon: LucideIcons.tag,
-                title: 'Zarządzaj kategoriami',
-                screen: const CategoryManagementScreen()),
-            _navTile(context,
-                icon: LucideIcons.creditCard,
-                title: 'Metody płatności',
-                screen: const PaymentMethodManagementScreen()),
             Consumer<SyncService>(
               builder: (_, sync, _) => ListTile(
                 leading: const Icon(LucideIcons.users),
@@ -130,8 +134,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _navTile(context,
                 icon: LucideIcons.databaseBackup,
                 title: 'Backup',
-                subtitle: 'Eksport i import danych',
+                subtitle: 'Kopia zapasowa i odtwarzanie',
                 screen: const BackupScreen()),
+            // Eksport do plików: wcześniej ikony XLSX/PDF w paskach ekranów.
+            // Robi się go raz na jakiś czas, a zabierał miejsce przy codziennej
+            // pracy — i był rozrzucony po dwóch ekranach.
+            _navTile(context,
+                icon: LucideIcons.fileSpreadsheet,
+                title: 'Eksport danych',
+                subtitle: 'Arkusz XLSX i raport PDF',
+                screen: const DataExportScreen()),
           ]),
 
           const SettingsSectionLabel('Aplikacja'),

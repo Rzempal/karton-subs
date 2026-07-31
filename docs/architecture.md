@@ -112,6 +112,7 @@ lib/
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
+│   ├── data_export_screen.dart  # Eksport XLSX (subskrypcje, budzet) i PDF — Ustawienia -> Dane
 │   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
 ├── widgets/
 │   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
@@ -128,7 +129,7 @@ lib/
 │   ├── category_breakdown_chart.dart # Podzial na kategorie (pie)
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
-│   ├── labeled_icon_button.dart # Akcja naglowka: ikona + etykieta (XLSX/PDF)
+│   ├── sync_refresh.dart        # Przeciagnij w dol = synchronizacja (RefreshIndicator)
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (4 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
 ```
@@ -191,7 +192,7 @@ sortowanie, grupowanie i Excel.
 | **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" w Budzecie); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
 | **Wydatki** (tytul: „Wydatki cykliczne") | Pozycje planowalne: koszty stale, raty, przelew wewnetrzny. Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
 | **Wplywy** | Wplywy cykliczne (pensja) i jednorazowe (premia); w budzecie domowym takze wklady czlonkow i lustro przelewu z osobistego. Ten sam widget co „Wydatki", tryb `incomes` |
-| **Ustawienia** | **Wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), **Asystent AI** (opt-in skanowania rachunkow silnikiem + link do apki silnika), **Archiwum rachunkow** (osobna sekcja: zapis zdjec zatwierdzonych rachunkow do `Documents/<podfolder>`), kategorie, metody platnosci, waluta, limit, powiadomienia, backup `.zostaje`, **aktualizacje OTA inline** (sprawdz/instaluj bez osobnego ekranu); karty frost |
+| **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Asystent AI** (opt-in wspomagania skanu silnikiem), **Archiwum rachunkow** (zapis zdjec do `Documents/<podfolder>`), **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport danych** (XLSX subskrypcji i budzetu, raport PDF — wczesniej ikony w paskach ekranow; eksport to nie kopia zapasowa, plikow nie da sie wczytac z powrotem). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
 **Tryb budzetu (ADR-014):** globalny zakres w `BudgetController` ma tryb (`budgetMode`,
 lokalny). `both` = przelacznik zakresu na kartach + swipe zmienia zakres (`ScopeSwipeArea`).

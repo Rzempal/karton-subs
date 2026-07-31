@@ -9,7 +9,7 @@ import '../models/category.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart';
 import '../services/excel_service.dart';
-import '../services/pdf_export_service.dart';
+
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/section_info_badge.dart';
@@ -21,7 +21,6 @@ import '../widgets/budget_progress_bar.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/gradient_amount.dart';
 import '../widgets/import_summary_dialog.dart';
-import '../widgets/labeled_icon_button.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/subscription_card.dart';
@@ -35,7 +34,6 @@ class SubscriptionListScreen extends StatefulWidget {
 }
 
 class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
-  static const _pdfService = PdfExportService();
 
   String? _filterCategoryId;
   bool _showInactive = false;
@@ -59,22 +57,9 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
             SectionInfoBadge(SectionInfo.subscriptions),
           ],
         ),
-        actions: [
-          LabeledIconButton(
-            icon: LucideIcons.fileSpreadsheet,
-            label: 'XLSX',
-            tooltip: 'Eksportuj do Excela',
-            busy: _isBusy,
-            onPressed: _exportExcel,
-          ),
-          LabeledIconButton(
-            icon: LucideIcons.fileText,
-            label: 'PDF',
-            tooltip: 'Eksportuj PDF',
-            onPressed: _isBusy ? null : _exportPdf,
-          ),
-          const SizedBox(width: 4),
-        ],
+        // Eksport XLSX/PDF przeniesiony do Ustawień → Dane → „Eksport danych":
+        // robi się go rzadko, a w pasku zabierał miejsce przy codziennej pracy.
+        actions: const [SizedBox(width: 4)],
       ),
       floatingActionButtonLocation: kAuroraFabLocation,
       floatingActionButton: AuroraAddMenu(
@@ -150,31 +135,10 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
     MaterialPageRoute(builder: (_) => AddSubscriptionScreen(existing: sub)),
   );
 
-  Future<void> _exportExcel() async {
-    setState(() => _isBusy = true);
-    try {
-      await context.read<ExcelService>().exportToFile();
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
-  Future<void> _exportPdf() async {
-    try {
-      final storage = context.read<StorageService>();
-      await _pdfService.sharePdf(
-        storage.getSubscriptions(),
-        storage.getCategories(),
-        storage.getCurrency(),
-      );
-    } catch (e) {
-      if (mounted) _showError('Błąd eksportu PDF: $e');
-    }
-  }
-
   Future<void> _importExcel() async {
+    // Straznik podwojnego uruchomienia: import trwa, a menu „Dodaj" nie blokuje
+    // sie samo — drugie tapniecie wciagneloby te same pozycje po raz drugi.
+    if (_isBusy) return;
     setState(() => _isBusy = true);
     try {
       final excel = context.read<ExcelService>();

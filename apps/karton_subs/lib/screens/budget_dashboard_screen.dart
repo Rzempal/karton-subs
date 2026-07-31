@@ -14,7 +14,6 @@ import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
-import '../widgets/labeled_icon_button.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_refresh.dart';
 import 'add_budget_entry_screen.dart';
@@ -265,13 +264,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               ),
             ),
           ],
-          LabeledIconButton(
-            icon: LucideIcons.fileSpreadsheet,
-            label: 'XLSX',
-            tooltip: 'Eksportuj budżet do Excela',
-            busy: _isBusy,
-            onPressed: _exportExcel,
-          ),
+          // Eksport XLSX przeniesiony do Ustawień → Dane → „Eksport danych".
           const SizedBox(width: 4),
         ],
       ),
@@ -479,18 +472,10 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     );
   }
 
-  Future<void> _exportExcel() async {
-    setState(() => _isBusy = true);
-    try {
-      await context.read<ExcelService>().exportBudgetToFile();
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
   Future<void> _importExcel() async {
+    // Straznik podwojnego uruchomienia: import trwa, a menu „Dodaj" nie blokuje
+    // sie samo — drugie tapniecie wciagneloby te same pozycje po raz drugi.
+    if (_isBusy) return;
     setState(() => _isBusy = true);
     try {
       final excel = context.read<ExcelService>();
