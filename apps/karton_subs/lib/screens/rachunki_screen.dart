@@ -136,25 +136,25 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   /// wiąże z nim zdjęcie (podgląd + archiwum) i usuwa pozycję oczekującą.
   Future<void> _editScan(PendingBillScan item) async {
     final scanCtrl = context.read<BillScanController>();
-    final result =
-        await Navigator.of(context).push<({BudgetEntry entry, String? imagePath})>(
-      MaterialPageRoute(
-        builder: (_) => AddBillPaymentScreen(
-          scope: item.scope,
-          initialName: item.name,
-          initialAmount: item.amount,
-          initialDate: item.date,
-          initialCategoryId: scanCtrl.suggestCategoryId(item),
-          initialCurrency: item.currency != null
-              ? Currency.values.firstWhere(
-                  (c) => c.name == item.currency,
-                  orElse: () => Currency.PLN,
-                )
-              : null,
-          initialImagePath: item.imagePath,
-        ),
-      ),
-    );
+    final result = await Navigator.of(context)
+        .push<({BudgetEntry entry, String? imagePath})>(
+          MaterialPageRoute(
+            builder: (_) => AddBillPaymentScreen(
+              scope: item.scope,
+              initialName: item.name,
+              initialAmount: item.amount,
+              initialDate: item.date,
+              initialCategoryId: scanCtrl.suggestCategoryId(item),
+              initialCurrency: item.currency != null
+                  ? Currency.values.firstWhere(
+                      (c) => c.name == item.currency,
+                      orElse: () => Currency.PLN,
+                    )
+                  : null,
+              initialImagePath: item.imagePath,
+            ),
+          ),
+        );
     if (result == null) return;
     final entry = result.entry;
     final archiveError = await scanCtrl.finalizeApproval(
@@ -248,8 +248,9 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
         .toList();
     // Pozycje oczekujące aktywnego zakresu (niezależne od wybranego miesiąca —
     // wiszą, dopóki nie zostaną zatwierdzone albo odrzucone).
-    final pending =
-        scanCtrl.pending.where((p) => p.scope == ctrl.scope).toList();
+    final pending = scanCtrl.pending
+        .where((p) => p.scope == ctrl.scope)
+        .toList();
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -287,77 +288,85 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
               enabled: ctrl.scopeSelectable,
               child: SyncRefresh(
                 child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  _PlannerCard(
-                    compact: _plannerCompact,
-                    onToggleCompact: _togglePlanner,
-                  ),
-                  const SizedBox(height: 8),
-                  _MonthCard(
-                    monthKey: monthKey,
-                    month: _month,
-                    onPrev: () => _shiftMonth(-1),
-                    onNext: () => _shiftMonth(1),
-                    onPickMonth: _pickMonth,
-                  ),
-                  const SizedBox(height: 12),
-                  // Sekcja „Do zatwierdzenia" — skany silnika AI.
-                  if (pending.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        'Do zatwierdzenia',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: AppColors.textSecondary,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    _PlannerCard(
+                      compact: _plannerCompact,
+                      onToggleCompact: _togglePlanner,
+                    ),
+                    const SizedBox(height: 8),
+                    _MonthCard(
+                      monthKey: monthKey,
+                      month: _month,
+                      onPrev: () => _shiftMonth(-1),
+                      onNext: () => _shiftMonth(1),
+                      onPickMonth: _pickMonth,
+                    ),
+                    const SizedBox(height: 12),
+                    // Sekcja „Do zatwierdzenia" — skany silnika AI.
+                    if (pending.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Do zatwierdzenia',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                       ),
-                    ),
-                    for (final p in pending) ...[
-                      _PendingScanCard(
-                        item: p,
-                        isActive: scanCtrl.activeScanId == p.id,
-                        onApprove: () => _approveScan(p),
-                        onEdit: () => _editScan(p),
-                        onReject: () => _rejectScan(p),
-                        onCrop: () => _cropScan(p),
-                        onRetry: () =>
-                            context.read<BillScanController>().retry(p.id),
-                      ),
+                      for (final p in pending) ...[
+                        _PendingScanCard(
+                          item: p,
+                          isActive: scanCtrl.activeScanId == p.id,
+                          onApprove: () => _approveScan(p),
+                          onEdit: () => _editScan(p),
+                          onReject: () => _rejectScan(p),
+                          onCrop: () => _cropScan(p),
+                          onRetry: () =>
+                              context.read<BillScanController>().retry(p.id),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       const SizedBox(height: 8),
                     ],
-                    const SizedBox(height: 8),
-                  ],
-                  if (items.isEmpty)
-                    _EmptyState(month: _month)
-                  else
-                    for (var i = 0; i < items.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 8),
-                      Dismissible(
-                        key: ValueKey(items[i].id),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: Icon(
-                            LucideIcons.trash2,
-                            color: AppColors.negative,
+                    if (items.isEmpty)
+                      _EmptyState(month: _month)
+                    else
+                      for (var i = 0; i < items.length; i++) ...[
+                        // Separator zamiast odstepu: wiersze tworza jedna liste,
+                        // a nie ciag osobnych kart.
+                        if (i > 0)
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: context.semanticColors.border,
+                          ),
+                        Dismissible(
+                          key: ValueKey(items[i].id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: Icon(
+                              LucideIcons.trash2,
+                              color: AppColors.negative,
+                            ),
+                          ),
+                          confirmDismiss: (_) => _confirmDelete(items[i]),
+                          onDismissed: (_) {
+                            final id = items[i].id;
+                            context.read<BillScanController>().deletePhotoFor(
+                              id,
+                            );
+                            context.read<BudgetController>().delete(id);
+                          },
+                          child: BudgetEntryCard(
+                            entry: items[i],
+                            onTap: () => _openEdit(items[i]),
                           ),
                         ),
-                        confirmDismiss: (_) => _confirmDelete(items[i]),
-                        onDismissed: (_) {
-                          final id = items[i].id;
-                          context.read<BillScanController>().deletePhotoFor(id);
-                          context.read<BudgetController>().delete(id);
-                        },
-                        child: BudgetEntryCard(
-                          entry: items[i],
-                          onTap: () => _openEdit(items[i]),
-                        ),
-                      ),
-                    ],
-                ],
+                      ],
+                  ],
                 ),
               ),
             ),
@@ -395,8 +404,8 @@ class _PendingScanCard extends StatelessWidget {
     final theme = Theme.of(context);
     final processing = item.status == PendingScanStatus.processing;
     final failed = item.status == PendingScanStatus.error;
-    final canApprove = item.status == PendingScanStatus.done &&
-        (item.amount ?? 0) > 0;
+    final canApprove =
+        item.status == PendingScanStatus.done && (item.amount ?? 0) > 0;
 
     final String title;
     final String subtitle;
@@ -462,8 +471,9 @@ class _PendingScanCard extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -497,8 +507,7 @@ class _PendingScanCard extends StatelessWidget {
               icon: Icon(LucideIcons.x, color: AppColors.negative),
               onPressed: onReject,
             ),
-          ]
-          else if (failed) ...[
+          ] else if (failed) ...[
             // Edycja jest tu ważniejsza niż ponowienie: zdjęcie już mamy,
             // więc rachunek da się dokończyć ręcznie także wtedy, gdy żaden
             // automat go nie odczytał.
@@ -621,7 +630,8 @@ class _PlannerCard extends StatelessWidget {
             BillsAllocationItems(
               items: ctrl.billsAllocationItems.toList()
                 ..sort(
-                  (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+                  (a, b) =>
+                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
                 ),
               currency: cur,
               onAdd: () => showBillsAllocationItemEditor(context),

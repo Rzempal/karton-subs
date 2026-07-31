@@ -1677,6 +1677,7 @@ class BudgetEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
+    final storage = context.read<StorageService>();
     final color = entry.isIncome ? c.positive : c.negative;
     final sign = entry.isIncome ? '+' : '−';
     final dimmed = !entry.isActive;
@@ -1686,118 +1687,166 @@ class BudgetEntryCard extends StatelessWidget {
         ? '$sign${budgetNf.format(entry.amount)}${curLabelSuffix(cur)}'
         : '$sign${budgetNf.format(entry.amount)}${curLabelSuffix(cur)}/${budgetCycleSuffix(entry.cycle)}';
 
-    final overrideCount = entry.monthOverrides?.length ?? 0;
-    final overrideSuffix = overrideCount > 0 ? ' · korekt: $overrideCount' : '';
-    final subtitle = entry.isOneTime
-        ? '${budgetTypeLabel(entry.type)} · ${entry.month ?? ''}'
-              '${dimmed ? ' · wstrzymane' : ''}'
-        : '${budgetTypeLabel(entry.type)}$overrideSuffix'
-              '${dimmed ? ' · wstrzymane' : ''}';
-
     final category = entry.categoryId != null
-        ? context.read<StorageService>().getCategory(entry.categoryId!)
+        ? storage.getCategory(entry.categoryId!)
         : null;
 
-    // Metoda płatności — pokazywana tylko tam, gdzie ją zdefiniowano (typy, które
-    // pozwalają ją ustawić). Ikona ⚡/✋ = automatyczna/manualna.
+    // Metoda płatności — ikona ⚡/✋ = automatyczna/manualna.
     final method = entry.paymentMethod;
     final methodAuto =
         method != null &&
-        context.read<StorageService>().getPaymentMethods().any(
+        storage.getPaymentMethods().any(
           (p) => p.name == method && p.isAutomatic,
         );
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-        side: BorderSide(color: c.border),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.tile),
-        child: Opacity(
-          opacity: dimmed ? 0.5 : 1.0,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Icon(
-                  entry.isIncome
-                      ? LucideIcons.trendingUp
-                      : LucideIcons.trendingDown,
-                  size: 20,
-                  color: color,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(entry.name, style: theme.textTheme.bodyMedium),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: c.textMuted,
+    // Druga linia: typ · data · metoda. Data tylko tam, gdzie coś znaczy —
+    // pozycja jednorazowa ma swój miesiąc, cykliczna datę startu cyklu.
+    final date = entry.isOneTime
+        ? entry.month
+        : (entry.startDate != null
+              ? DateFormat('yyyy-MM-dd').format(entry.startDate!)
+              : null);
+    final overrideCount = entry.monthOverrides?.length ?? 0;
+    final details = [
+      budgetTypeLabel(entry.type),
+      ?date,
+      if (overrideCount > 0) 'korekt: $overrideCount',
+      if (dimmed) 'wstrzymane',
+    ].join(' · ');
+
+    return InkWell(
+      onTap: onTap,
+      child: Opacity(
+        opacity: dimmed ? 0.5 : 1.0,
+        child: Padding(
+          // Ciasny wiersz zamiast karty: lista rachunkow potrafi miec
+          // kilkadziesiat pozycji, a kazda ramka i cien kosztowaly pionowy
+          // ekran. Pozycje rozdziela cienki separator (patrz [BudgetEntryList]).
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                entry.isIncome
+                    ? LucideIcons.trendingUp
+                    : LucideIcons.trendingDown,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Linia 1: nazwa + kategoria (kropka w kolorze kategorii).
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            entry.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium,
+                          ),
                         ),
-                      ),
-                      if (category != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: category.color,
-                                shape: BoxShape.circle,
-                              ),
+                        if (category != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: category.color,
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
                               category.name,
-                              style: theme.textTheme.labelMedium?.copyWith(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
                                 color: category.color,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
-                      if (method != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              methodAuto ? LucideIcons.zap : LucideIcons.hand,
-                              size: 13,
+                    ),
+                    const SizedBox(height: 2),
+                    // Linia 2: typ · data · metoda płatności.
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            details,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
                               color: c.textMuted,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
+                          ),
+                        ),
+                        if (method != null) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            methodAuto ? LucideIcons.zap : LucideIcons.hand,
+                            size: 12,
+                            color: c.textMuted,
+                          ),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
                               method,
-                              style: theme.textTheme.labelMedium?.copyWith(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
                                 color: c.textMuted,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  amountLine,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: color,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                amountLine,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Lista pozycji budzetu rozdzielona cienkim separatorem (styl listy
+/// maklerskiej): bez ramek i cieni, ktore przy kilkudziesieciu wierszach
+/// zjadaly ekran i rozbijaly je wzrokowo na osobne wyspy.
+class BudgetEntryList extends StatelessWidget {
+  final List<Widget> rows;
+
+  const BudgetEntryList({super.key, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) Divider(height: 1, thickness: 1, color: c.border),
+          rows[i],
+        ],
+      ],
     );
   }
 }

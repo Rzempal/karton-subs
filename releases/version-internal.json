@@ -1,6 +1,13 @@
 {
-  "versionCode": 1526080103,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080104",
+  "version": "0.15.26080104",
+  "releaseNotes": "- smuklejsze listy: pozycje bez ramek, rozdzielone separatorem\n- kazda pozycja w dwoch liniach: nazwa i kategoria, pod spodem typ, data i sposob platnosci",
+  "versionCode": 1526080104,
   "changelog": [
+    {
+      "version": "0.15.26080104",
+      "notes": "- smuklejsze listy: pozycje bez ramek, rozdzielone separatorem\n- kazda pozycja w dwoch liniach: nazwa i kategoria, pod spodem typ, data i sposob platnosci"
+    },
     {
       "version": "0.15.26080103",
       "notes": "- sortowanie i grupowanie w paskach filtrow zamiast osobnej linii ikon\n- grupowanie na koncu filtra kategorii, sortowanie na koncu filtra typow\n- na Wplywach sortowanie przy filtrze typu"
@@ -36,14 +43,7 @@
     {
       "version": "0.12.26073101",
       "notes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)"
-    },
-    {
-      "version": "0.12.26073100",
-      "notes": "- brak podwojnych wysylek kopii przy szybkim przelaczaniu aplikacji\n- odstep 30 minut przed ponowieniem nieudanej kopii\n- pliki z kosza nie wracaja na liste kopii"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080103",
-  "releaseNotes": "- sortowanie i grupowanie w paskach filtrow zamiast osobnej linii ikon\n- grupowanie na koncu filtra kategorii, sortowanie na koncu filtra typow\n- na Wplywach sortowanie przy filtrze typu",
-  "version": "0.15.26080103",
-  "releaseDate": "2026-08-01T01:17:32Z"
+  "releaseDate": "2026-08-01T01:24:10Z"
 }

@@ -531,10 +531,8 @@ class _Section extends StatelessWidget {
     this.groupByCategory = false,
   });
 
-  Widget _card(BudgetEntry e) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: BudgetEntryCard(entry: e, onTap: () => onTap(e)),
-  );
+  Widget _row(BudgetEntry e) =>
+      BudgetEntryCard(entry: e, onTap: () => onTap(e));
 
   @override
   Widget build(BuildContext context) {
@@ -612,10 +610,10 @@ class _Section extends StatelessWidget {
             ),
           ),
         );
-        children.addAll(groups[k]!.map(_card));
+        children.add(BudgetEntryList(rows: groups[k]!.map(_row).toList()));
       }
     } else {
-      children.addAll(entries.map(_card));
+      children.add(BudgetEntryList(rows: entries.map(_row).toList()));
     }
     children.add(const SizedBox(height: 16));
 
