@@ -1,6 +1,9 @@
 {
-  "releaseDate": "2026-07-31T22:10:26Z",
   "changelog": [
+    {
+      "version": "0.13.26073104",
+      "notes": "- synchronizacja przez przeciagniecie listy w dol (zamiast przycisku w pasku)\n- gest dziala na Budzecie, Rachunkach, Wydatkach cyklicznych i Wplywach"
+    },
     {
       "version": "0.13.26073103",
       "notes": "- dociete zdjecie zapisanego rachunku trafia tez do archiwum (stara wersja jest usuwana)"
@@ -36,14 +39,11 @@
     {
       "version": "0.11.26072706",
       "notes": "- Skan rachunkow dziala zawsze, niezaleznie od Asystenta AI (odczyt robi model wbudowany w apke)\n- Asystent AI to teraz wspomaganie silnikiem dla trudniejszych dokumentow\n- Nierozpoznany dokument czeka jako Uzupelnij recznie, z przyciskiem edycji\n- Udostepnij -> Zostaje przyjmuje zdjecia bez wlaczonego Asystenta"
-    },
-    {
-      "version": "0.11.26072705",
-      "notes": "- Plan: Koszty roczne przeniesione na dol, pod podzial wg kategorii"
     }
   ],
-  "releaseNotes": "- dociete zdjecie zapisanego rachunku trafia tez do archiwum (stara wersja jest usuwana)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1326073103",
-  "versionCode": 1326073103,
-  "version": "0.13.26073103"
+  "releaseNotes": "- synchronizacja przez przeciagniecie listy w dol (zamiast przycisku w pasku)\n- gest dziala na Budzecie, Rachunkach, Wydatkach cyklicznych i Wplywach",
+  "versionCode": 1326073104,
+  "version": "0.13.26073104",
+  "releaseDate": "2026-07-31T22:44:40Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1326073104"
 }

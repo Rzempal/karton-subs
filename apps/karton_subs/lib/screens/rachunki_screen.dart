@@ -24,6 +24,7 @@ import '../widgets/gradient_amount.dart';
 import '../widgets/image_preview_dialog.dart';
 import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
+import '../widgets/sync_refresh.dart';
 import 'add_bill_payment_screen.dart';
 
 /// Ekran „Rachunki" — datowane wydatki jednorazowe ([BudgetEntryType.billPayment]):
@@ -302,8 +303,10 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
           Expanded(
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
-              child: ListView(
+              child: SyncRefresh(
+                child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
                   _PlannerCard(
                     compact: _plannerCompact,
@@ -373,6 +376,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                       ),
                     ],
                 ],
+                ),
               ),
             ),
           ),

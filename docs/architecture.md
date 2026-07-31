@@ -269,6 +269,15 @@ i nagrobki (scalanie per pozycja). Brak sekcji w paczce = BRAK INFORMACJI (lokal
 Planner zostaje), pusta lista w paczce = „Planner jest pusty". Planner osobisty zostaje
 lokalny.
 
+**Uruchomienie synchronizacji:** standardowy gest **przeciagnij w dol**
+(`SyncRefresh` = `RefreshIndicator`) na listach Budzetu, Rachunkow, Wydatkow
+cyklicznych i Wplywow — zastapil przycisk „Synchronizuj teraz" w pasku, o ktorym
+trzeba bylo wiedziec. Gest dziala takze BEZ sparowania (przelicza dane lokalne),
+zeby pociagniecie listy nigdy nie wygladalo na zepsuta apke; komunikat pokazuje
+sie tylko po realnej synchronizacji. Listy maja `AlwaysScrollableScrollPhysics`,
+inaczej gest znika, gdy tresc nie wypelnia ekranu. Poza gestem sync leci
+automatycznie (start aplikacji, powrot do niej, zmiana w budzecie domowym).
+
 **Synchronizacja domowego (ADR-009):** box `household_budget_entries` jest opcjonalnie
 synchronizowany miedzy urzadzeniami przez relay E2E (Supabase) — bez kont, parowanie
 QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmiana

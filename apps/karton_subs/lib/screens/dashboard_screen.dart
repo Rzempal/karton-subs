@@ -18,7 +18,7 @@ import '../widgets/category_breakdown_chart.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
-import '../widgets/sync_now_button.dart';
+import '../widgets/sync_refresh.dart';
 import 'subscription_list_screen.dart'
     show SubscriptionStatsView, SubscriptionStatsVariant;
 
@@ -283,7 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
         centerTitle: false,
         actions: [
-          const SyncNowButton(),
+          // Synchronizację uruchamia gest „przeciągnij w dół" na liście poniżej.
           // Sortowanie i grupowanie dotyczą sekcji „Płatności" i „Podsumowanie
           // miesiąca", więc pokazujemy je tylko na zakładce „Bilans miesiąca".
           if (_tab.index == 1 && MonthSummarySection.hasAny(calendar)) ...[
@@ -363,8 +363,12 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki),
                   // zakładka domyślna: plan jest punktem wyjścia, a bilans
                   // konkretnego miesiąca sprawdza się na drugim kroku ──
-                  ListView(
+                  SyncRefresh(
+                    child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
+                    // ekranu (np. swiezy budzet bez pozycji).
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       ..._planStats(budget, currency, monthKey),
                       if (SubscriptionStatsView.hasPlanDetails(
@@ -381,10 +385,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ],
                     ],
+                    ),
                   ),
                   // ── „Bilans miesiąca" — realny wybrany miesiąc ──
-                  ListView(
+                  SyncRefresh(
+                    child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                    // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
+                    // ekranu (np. swiezy budzet bez pozycji).
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       // Skąd bierze się bilans — nad kalendarzem, bo to on jest
                       // odpowiedzią tej zakładki; kalendarz pokazuje rozkład
@@ -455,6 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                       ],
                     ],
+                    ),
                   ),
                 ],
               ),

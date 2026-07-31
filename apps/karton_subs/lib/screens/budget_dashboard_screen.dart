@@ -16,7 +16,7 @@ import '../widgets/budget_widgets.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/labeled_icon_button.dart';
 import '../widgets/scope_swipe_area.dart';
-import '../widgets/sync_now_button.dart';
+import '../widgets/sync_refresh.dart';
 import 'add_budget_entry_screen.dart';
 
 /// Sortowanie listy budżetu.
@@ -226,7 +226,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         ),
         centerTitle: false,
         actions: [
-          const SyncNowButton(),
+          // Synchronizacje uruchamia gest „przeciagnij w dol" na liscie.
           if (!isEmpty) ...[
             IconButton(
               tooltip: _sort == _BudgetSort.alpha
@@ -340,21 +340,30 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           Expanded(
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
-              child: (filteredEmpty && !isEmpty)
-                  ? const _FilteredEmpty()
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
-                      children: _sections(
-                        ctrl,
-                        buckets,
-                        expensesTitle,
-                        // Koperta „Na rachunki" należy do wydatków — na ekranie
-                        // Wpływy nie ma czego nią pomniejszać.
-                        showAlloc: noFilter && !_onIncomes,
-                        isEmpty: isEmpty,
-                        byCategory: _grouping == _BudgetGrouping.byCategory,
+              child: SyncRefresh(
+                child: (filteredEmpty && !isEmpty)
+                    // AlwaysScrollable: pusty stan też musi dać się pociągnąć,
+                    // inaczej gest odświeżania znika akurat wtedy, gdy
+                    // użytkownik podejrzewa, że czegoś brakuje.
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [_FilteredEmpty()],
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: _sections(
+                          ctrl,
+                          buckets,
+                          expensesTitle,
+                          // Koperta „Na rachunki" należy do wydatków — na ekranie
+                          // Wpływy nie ma czego nią pomniejszać.
+                          showAlloc: noFilter && !_onIncomes,
+                          isEmpty: isEmpty,
+                          byCategory: _grouping == _BudgetGrouping.byCategory,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ],
