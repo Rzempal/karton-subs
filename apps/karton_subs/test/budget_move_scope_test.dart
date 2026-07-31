@@ -1,8 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
-// hive_flutter re-eksportuje hive; wprost `hive` nie jest zalezoscia projektu.
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:karton_subs/controllers/budget_controller.dart';
 import 'package:karton_subs/controllers/subscription_controller.dart';
 import 'package:karton_subs/models/budget_entry.dart';
@@ -11,6 +7,8 @@ import 'package:karton_subs/models/subscription.dart'
 import 'package:karton_subs/services/notification_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
 
+import 'support/hive_test_env.dart';
+
 // Przenoszenie rachunku miedzy budzetem osobistym a domowym.
 //
 // Sedno sprawy to NAGROBEK: budzet domowy kasuje pozycje przez `deleted`, bo
@@ -18,11 +16,10 @@ import 'package:karton_subs/services/storage_service.dart';
 // wyjelo rekord, najblizsza synchronizacja przywrocilaby go z serwera —
 // rachunek bylby w obu budzetach naraz i liczyl sie podwojnie.
 //
-// Test uzywa PRAWDZIWEGO Hive na katalogu tymczasowym: `moveToScope` to same
-// efekty uboczne w magazynie (dwa pudelka, mapa zdjec, klucze odhaczen), wiec
-// atrapa sprawdzalaby atrape.
+// Test uzywa PRAWDZIWEGO Hive na katalogu tymczasowym (`support/hive_test_env`):
+// `moveToScope` to same efekty uboczne w magazynie (dwa pudelka, mapa zdjec,
+// klucze odhaczen), wiec atrapa sprawdzalaby atrape.
 
-late Directory _tmp;
 late StorageService _storage;
 late BudgetController _budget;
 
@@ -45,31 +42,11 @@ BudgetEntry _bill({
     );
 
 void main() {
-  // Hive otwieramy RAZ: zamykanie go miedzy testami zostawia w cache pudelka
-  // oznaczone jako zamkniete i kolejny test wywala sie na „Box has already
-  // been closed". Izolacje daje czyszczenie danych w setUp.
-  setUpAll(() async {
-    _tmp = await Directory.systemTemp.createTemp('zostaje_test_');
-    Hive.init(_tmp.path);
-    _storage = StorageService();
-    await _storage.initForTests();
-  });
-
-  tearDownAll(() async {
-    await Hive.close();
-    await _tmp.delete(recursive: true);
-  });
+  setUpAll(() async => _storage = await setUpHiveStorage());
+  tearDownAll(tearDownHiveStorage);
 
   setUp(() async {
-    await _storage.clearForRestore(
-      subscriptions: true,
-      budgetPersonal: true,
-      budgetHousehold: true,
-      paymentDone: true,
-    );
-    for (final id in _storage.getReceiptPhotoPaths().keys.toList()) {
-      await _storage.removeReceiptPhotoPath(id);
-    }
+    await resetStorage(_storage);
     _budget = BudgetController(
       _storage,
       SubscriptionController(_storage, const NotificationService()),
