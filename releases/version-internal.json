@@ -1,5 +1,11 @@
 {
+  "releaseNotes": "- wiecej miejsca: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- przelacznik Osobisty/Domowy na samej gorze, wspolny dla wszystkich ekranow\n- sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- opis sekcji (ikona i) obok przelacznika zakresu",
+  "version": "0.14.26080100",
   "changelog": [
+    {
+      "version": "0.14.26080100",
+      "notes": "- wiecej miejsca: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- przelacznik Osobisty/Domowy na samej gorze, wspolny dla wszystkich ekranow\n- sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- opis sekcji (ikona i) obok przelacznika zakresu"
+    },
     {
       "version": "0.13.26073105",
       "notes": "- kategorie i metody platnosci przeniesione do sekcji Personalizacja\n- eksport XLSX i PDF w Ustawieniach (Dane -> Eksport danych) zamiast ikon w paskach ekranow"
@@ -35,15 +41,9 @@
     {
       "version": "0.12.26072708",
       "notes": "- Rownolegle z wydaniem PROD 0.12.26072700 (te same zmiany)"
-    },
-    {
-      "version": "0.11.26072707",
-      "notes": "- Skan faktur bez silnika AI: kwota z Do zaplaty lub sumy dokumentu, data z terminu platnosci, wystawca spod etykiety Sprzedawca\n- Reguly odporne na uklad dwukolumnowy, zerowe Pozostalo do zaplaty i tabele netto/VAT/brutto"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1326073105",
-  "releaseNotes": "- kategorie i metody platnosci przeniesione do sekcji Personalizacja\n- eksport XLSX i PDF w Ustawieniach (Dane -> Eksport danych) zamiast ikon w paskach ekranow",
-  "releaseDate": "2026-07-31T23:40:07Z",
-  "versionCode": 1326073105,
-  "version": "0.13.26073105"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1426080100",
+  "versionCode": 1426080100,
+  "releaseDate": "2026-08-01T00:04:58Z"
 }

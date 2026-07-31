@@ -10,11 +10,11 @@ import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../services/analytics_service.dart' show MonthlyDataPoint;
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
+import '../widgets/flow_view_controls.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
@@ -271,76 +271,12 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        // „Budżet" = przeglad calosci (ADR-019). Ekran zarzadzania pozycjami
-        // planowalnymi nazywa sie „Wydatki cykliczne".
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('Budżet'),
-            SectionInfoBadge(SectionInfo.budget),
-          ],
-        ),
-        centerTitle: false,
-        actions: [
-          // Synchronizację uruchamia gest „przeciągnij w dół" na liście poniżej.
-          // Sortowanie i grupowanie dotyczą sekcji „Płatności" i „Podsumowanie
-          // miesiąca", więc pokazujemy je tylko na zakładce „Bilans miesiąca".
-          if (_tab.index == 1 && MonthSummarySection.hasAny(calendar)) ...[
-            IconButton(
-              tooltip: _flowSort == MonthFlowSort.byName
-                  ? 'Sortuj: A→Z (nazwa)'
-                  : 'Sortuj: po dacie',
-              icon: Icon(
-                _flowSort == MonthFlowSort.byName
-                    ? LucideIcons.arrowDownAZ
-                    : LucideIcons.arrowDown01,
-              ),
-              onPressed: () => setState(
-                () => _flowSort = _flowSort == MonthFlowSort.byName
-                    ? MonthFlowSort.byDate
-                    : MonthFlowSort.byName,
-              ),
-            ),
-            IconButton(
-              isSelected: _flowGrouping == MonthFlowGrouping.byType,
-              tooltip: _flowGrouping == MonthFlowGrouping.byType
-                  ? 'Grupowanie po typie (włączone)'
-                  : 'Grupuj po typie: rachunki / subskrypcje / budżet',
-              // Aktywny stan = wypełniona pigułka (widoczna też w motywie mono,
-              // gdzie akcent jest bezbarwny) + ikona w kolorze akcentu.
-              style: _flowGrouping == MonthFlowGrouping.byType
-                  ? IconButton.styleFrom(
-                      backgroundColor: context.semanticColors.primary
-                          .withValues(alpha: 0.25),
-                      foregroundColor: context.semanticColors.primary,
-                    )
-                  : null,
-              icon: const Icon(LucideIcons.layers),
-              onPressed: () => setState(
-                () => _flowGrouping = _flowGrouping == MonthFlowGrouping.byType
-                    ? MonthFlowGrouping.none
-                    : MonthFlowGrouping.byType,
-              ),
-            ),
-          ],
-          const SizedBox(width: 4),
-        ],
-      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: const _UpdateBanner(),
           ),
-          if (budget.scopeSelectable)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: BudgetScopeToggle(
-                scope: budget.scope,
-                onChanged: budget.setScope,
-              ),
-            ),
           TabBar(
             controller: _tab,
             tabs: const [
@@ -434,6 +370,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                               budget.setPaymentsDone(items, done),
                           sort: _flowSort,
                           grouping: _flowGrouping,
+                          viewControls: FlowViewControls(
+                            sort: _flowSort,
+                            grouping: _flowGrouping,
+                            onSortChanged: (v) =>
+                                setState(() => _flowSort = v),
+                            onGroupingChanged: (v) =>
+                                setState(() => _flowGrouping = v),
+                          ),
                         ),
                       ],
                       const SizedBox(height: 24),
@@ -461,6 +405,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                           onToggleCompact: _toggleMonthSummary,
                           sort: _flowSort,
                           grouping: _flowGrouping,
+                          viewControls: FlowViewControls(
+                            sort: _flowSort,
+                            grouping: _flowGrouping,
+                            onSortChanged: (v) =>
+                                setState(() => _flowSort = v),
+                            onGroupingChanged: (v) =>
+                                setState(() => _flowGrouping = v),
+                          ),
                         ),
                       ],
                     ],

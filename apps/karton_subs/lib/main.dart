@@ -33,6 +33,8 @@ import 'config/app_config.dart';
 import 'theme/app_theme.dart';
 import 'widgets/aurora_background.dart';
 import 'widgets/glass_nav_bar.dart';
+import 'widgets/section_info_badge.dart';
+import 'widgets/workspace_top_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -386,6 +388,18 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   /// magiczna „1" po cichu wskazywala wtedy zly ekran.
   static const _rachunkiTab = 2;
 
+  /// Opis sekcji dla wspolnego paska — kolejnosc jak w [_screens].
+  /// Ustawienia (ostatnia zakladka) opisu nie maja: to nie jest sekcja budzetu,
+  /// a i zakres nie ma tam czego przelaczac.
+  static SectionInfo? _sectionInfoFor(int index) => switch (index) {
+    0 => SectionInfo.budget,
+    1 => SectionInfo.incomes,
+    2 => SectionInfo.bills,
+    3 => SectionInfo.subscriptions,
+    4 => SectionInfo.recurringExpenses,
+    _ => null,
+  };
+
   @override
   Widget build(BuildContext context) {
     // Zaleznosc od motywu: zmiana palety przebudowuje shell (nawigacja),
@@ -398,11 +412,29 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
       backgroundColor: Colors.transparent,
       // Treść przewija się za pływającym paskiem nawigacji.
       extendBody: true,
-      body: KeyedSubtree(
-        key: ValueKey(themeId),
-        child: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
+      // SafeArea u gory, bo ekrany nie maja juz wlasnych paskow tytulu —
+      // bez tego tresc wchodzilaby pod pasek stanu telefonu.
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Zakres i opis sekcji: jeden pasek dla calej aplikacji zamiast
+            // paska tytulu + przelacznika na kazdym ekranie z osobna.
+            WorkspaceTopBar(
+              info: _sectionInfoFor(_currentIndex),
+              // Ustawienia to ostatnia zakladka — zakresu tam nie ma czego tyczyc.
+              showScope: _currentIndex != _screens.length - 1,
+            ),
+            Expanded(
+              child: KeyedSubtree(
+                key: ValueKey(themeId),
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: _screens,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: GlassNavBar(

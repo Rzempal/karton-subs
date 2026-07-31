@@ -1098,6 +1098,10 @@ class MonthSummarySection extends StatelessWidget {
   final MonthFlowSort sort;
   final MonthFlowGrouping grouping;
 
+  /// Sterowanie widokiem (sortowanie/grupowanie) w naglowku sekcji — tam, gdzie
+  /// dziala. `null` = sekcja bez kontrolek.
+  final Widget? viewControls;
+
   const MonthSummarySection({
     super.key,
     required this.month,
@@ -1107,6 +1111,7 @@ class MonthSummarySection extends StatelessWidget {
     required this.onToggleCompact,
     this.sort = MonthFlowSort.byDate,
     this.grouping = MonthFlowGrouping.none,
+    this.viewControls,
   });
 
   /// Czy miesiąc ma cokolwiek do podsumowania (inaczej sekcja się nie pokazuje).
@@ -1153,13 +1158,23 @@ class MonthSummarySection extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  onPressed: onToggleCompact,
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(
-                    compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
-                  ),
-                  tooltip: compact ? 'Rozwiń podsumowanie' : 'Zwiń podsumowanie',
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ?viewControls,
+                    IconButton(
+                      onPressed: onToggleCompact,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        compact
+                            ? LucideIcons.chevronDown
+                            : LucideIcons.chevronUp,
+                      ),
+                      tooltip: compact
+                          ? 'Rozwiń podsumowanie'
+                          : 'Zwiń podsumowanie',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1313,6 +1328,10 @@ class MonthPaymentsSection extends StatelessWidget {
   final MonthFlowSort sort;
   final MonthFlowGrouping grouping;
 
+  /// Sterowanie widokiem (sortowanie/grupowanie) w naglowku sekcji — tam, gdzie
+  /// dziala. `null` = sekcja bez kontrolek.
+  final Widget? viewControls;
+
   const MonthPaymentsSection({
     super.key,
     required this.month,
@@ -1325,6 +1344,7 @@ class MonthPaymentsSection extends StatelessWidget {
     required this.onSetAll,
     this.sort = MonthFlowSort.byDate,
     this.grouping = MonthFlowGrouping.none,
+    this.viewControls,
   });
 
   /// Czy miesiąc ma jakiekolwiek płatności (manualne lub automatyczne).
@@ -1384,6 +1404,7 @@ class MonthPaymentsSection extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    ?viewControls,
                     Text(
                       '$done/$total',
                       style: theme.textTheme.labelMedium?.copyWith(

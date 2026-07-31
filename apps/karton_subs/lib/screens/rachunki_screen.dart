@@ -14,7 +14,6 @@ import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/bills_allocation_editor.dart';
@@ -254,15 +253,6 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('Rachunki'),
-            SectionInfoBadge(SectionInfo.bills),
-          ],
-        ),
-      ),
       floatingActionButtonLocation: kAuroraFabLocation,
       floatingActionButton: AuroraAddMenu(
         actions: [
@@ -288,14 +278,6 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       ),
       body: Column(
         children: [
-          if (ctrl.scopeSelectable)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: BudgetScopeToggle(
-                scope: ctrl.scope,
-                onChanged: ctrl.setScope,
-              ),
-            ),
           // Planner, miesiąc i lista objęte swipe zakresu; wiersze listy to
           // Dismissible (swipe = usuń), więc karty są pewną strefą flicku.
           // Wszystko w jednej przewijanej liście: rozwinięty Planner nie może

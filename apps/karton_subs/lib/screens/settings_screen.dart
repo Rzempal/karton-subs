@@ -39,7 +39,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final storage = context.read<StorageService>();
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Ustawienia')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 112),
         children: [

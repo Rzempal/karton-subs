@@ -4,7 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
-import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/subscription.dart';
 import '../services/analytics_service.dart';
@@ -12,11 +11,9 @@ import '../services/excel_service.dart';
 
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
-import '../widgets/aurora_segmented.dart';
 import '../widgets/budget_progress_bar.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/gradient_amount.dart';
@@ -49,18 +46,6 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
         : SubscriptionScope.personal;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('Subskrypcje'),
-            SectionInfoBadge(SectionInfo.subscriptions),
-          ],
-        ),
-        // Eksport XLSX/PDF przeniesiony do Ustawień → Dane → „Eksport danych":
-        // robi się go rzadko, a w pasku zabierał miejsce przy codziennej pracy.
-        actions: const [SizedBox(width: 4)],
-      ),
       floatingActionButtonLocation: kAuroraFabLocation,
       floatingActionButton: AuroraAddMenu(
         actions: [
@@ -79,32 +64,6 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       ),
       body: Column(
         children: [
-          // Zakres (Osobiste/Domowe) — segment jak na Dashboardzie i w Budzecie.
-          // Tryb jednozakresowy chowa go (jeden zakres na sztywno).
-          if (budget.scopeSelectable)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: AuroraSegmented<SubscriptionScope>(
-                selected: scopeFilter,
-                onChanged: (v) => budget.setScope(
-                  v == SubscriptionScope.household
-                      ? BudgetScope.household
-                      : BudgetScope.personal,
-                ),
-                segments: const [
-                  AuroraSegment(
-                    value: SubscriptionScope.personal,
-                    label: 'Osobiste',
-                    icon: LucideIcons.user,
-                  ),
-                  AuroraSegment(
-                    value: SubscriptionScope.household,
-                    label: 'Domowe',
-                    icon: LucideIcons.home,
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: ScopeSwipeArea(
               enabled: budget.scopeSelectable,

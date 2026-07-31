@@ -130,6 +130,8 @@ lib/
 │   ├── budget_progress_bar.dart # Pasek limitu budzetu
 │   ├── month_picker_dialog.dart # Wybor miesiaca (rok + siatka 12 miesiecy, „Dzisiaj")
 │   ├── sync_refresh.dart        # Przeciagnij w dol = synchronizacja (RefreshIndicator)
+│   ├── workspace_top_bar.dart   # Wspolny pasek: zakres Osobisty/Domowy + opis sekcji
+│   ├── flow_view_controls.dart  # Sortowanie i grupowanie w naglowkach sekcji miesiaca
 │   └── import_summary_dialog.dart # Wspolny dialog podsumowania importu Excel
 └── main.dart                    # Entry point, provider setup (4 zakladki, GlassNavBar; AuroraBackground raz w MaterialApp.builder)
 ```
@@ -170,6 +172,16 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 ---
 
 ## Nawigacja (6 zakladek)
+
+**Bez paskow tytulu.** Ekrany robocze nie maja `AppBar` — nazwa sekcji stoi
+w pigulce nawigacji na dole, wiec pasek ja tylko dublowal. Zamiast niego jeden
+`WorkspaceTopBar` w powloce: przelacznik zakresu (globalny, wiec nie powtarza sie
+juz na kazdym ekranie) i ikona „i" z opisem sekcji. Akcje kontekstowe zeszly do
+miejsc, na ktore dzialaja: sortowanie i grupowanie sekcji miesiaca do naglowkow
+„Platnosci" i „Podsumowanie miesiaca" (`FlowViewControls`), a sortowanie listy
+pozycji — nad te liste. Podekrany Ustawien zachowuja `AppBar` (przycisk powrotu).
+Powloka opakowuje tresc w `SafeArea(bottom: false)` — bez paska tytulu nic innego
+nie chroni jej przed paskiem stanu telefonu.
 
 Kolejnosc: Budzet | Wplywy | Rachunki | Subskrypcje | Wydatki | ⋮ Ustawienia —
 przeglad, potem sciezka pieniedzy: skad przychodza (Wplywy) i gdzie wychodza

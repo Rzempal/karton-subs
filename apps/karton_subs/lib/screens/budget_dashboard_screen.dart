@@ -8,7 +8,6 @@ import '../models/category.dart';
 import '../services/excel_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/section_info_badge.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
@@ -208,66 +207,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                _onIncomes ? 'Wpływy' : 'Wydatki cykliczne',
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SectionInfoBadge(
-              _onIncomes ? SectionInfo.incomes : SectionInfo.recurringExpenses,
-            ),
-          ],
-        ),
-        centerTitle: false,
-        actions: [
-          // Synchronizacje uruchamia gest „przeciagnij w dol" na liscie.
-          if (!isEmpty) ...[
-            IconButton(
-              tooltip: _sort == _BudgetSort.alpha
-                  ? 'Sortuj: A→Z'
-                  : 'Sortuj: kwota malejąco',
-              icon: Icon(
-                _sort == _BudgetSort.alpha
-                    ? LucideIcons.arrowDownAZ
-                    : LucideIcons.arrowDown10,
-              ),
-              onPressed: () => setState(
-                () => _sort = _sort == _BudgetSort.alpha
-                    ? _BudgetSort.amountDesc
-                    : _BudgetSort.alpha,
-              ),
-            ),
-            IconButton(
-              isSelected: _grouping == _BudgetGrouping.byCategory,
-              tooltip: _grouping == _BudgetGrouping.byCategory
-                  ? 'Grupowanie wydatków po kategoriach (włączone)'
-                  : 'Grupuj wydatki po kategoriach',
-              // Aktywny stan = wypełniona pigułka (widoczna też w motywie mono,
-              // gdzie akcent jest bezbarwny) + ikona w kolorze akcentu.
-              style: _grouping == _BudgetGrouping.byCategory
-                  ? IconButton.styleFrom(
-                      backgroundColor: context.semanticColors.primary
-                          .withValues(alpha: 0.25),
-                      foregroundColor: context.semanticColors.primary,
-                    )
-                  : null,
-              icon: const Icon(LucideIcons.layers),
-              onPressed: () => setState(
-                () => _grouping = _grouping == _BudgetGrouping.byCategory
-                    ? _BudgetGrouping.byType
-                    : _BudgetGrouping.byCategory,
-              ),
-            ),
-          ],
-          // Eksport XLSX przeniesiony do Ustawień → Dane → „Eksport danych".
-          const SizedBox(width: 4),
-        ],
-      ),
       floatingActionButtonLocation: kAuroraFabLocation,
       floatingActionButton: AuroraAddMenu(
         actions: [
@@ -298,12 +237,58 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ),
       body: Column(
         children: [
-          if (ctrl.scopeSelectable)
+          // Sortowanie i grupowanie stoja przy liscie, na ktora dzialaja —
+          // wczesniej byly w pasku tytulu, daleko od skutku.
+          if (!isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: BudgetScopeToggle(
-                scope: ctrl.scope,
-                onChanged: ctrl.setScope,
+              padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      expensesTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: _sort == _BudgetSort.alpha
+                        ? 'Sortuj: A→Z'
+                        : 'Sortuj: kwota malejąco',
+                    icon: Icon(
+                      _sort == _BudgetSort.alpha
+                          ? LucideIcons.arrowDownAZ
+                          : LucideIcons.arrowDown10,
+                      size: 18,
+                    ),
+                    onPressed: () => setState(
+                      () => _sort = _sort == _BudgetSort.alpha
+                          ? _BudgetSort.amountDesc
+                          : _BudgetSort.alpha,
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    isSelected: _grouping == _BudgetGrouping.byCategory,
+                    tooltip: _grouping == _BudgetGrouping.byCategory
+                        ? 'Podgrupy po kategoriach (włączone)'
+                        : 'Grupuj wydatki po kategoriach',
+                    style: _grouping == _BudgetGrouping.byCategory
+                        ? IconButton.styleFrom(
+                            backgroundColor: context.semanticColors.primary
+                                .withValues(alpha: 0.25),
+                            foregroundColor: context.semanticColors.primary,
+                          )
+                        : null,
+                    icon: const Icon(LucideIcons.layers, size: 18),
+                    onPressed: () => setState(
+                      () => _grouping = _grouping == _BudgetGrouping.byCategory
+                          ? _BudgetGrouping.byType
+                          : _BudgetGrouping.byCategory,
+                    ),
+                  ),
+                ],
               ),
             ),
           if (!isEmpty && filterCategories.isNotEmpty)
