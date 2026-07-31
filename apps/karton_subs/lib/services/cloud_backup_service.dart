@@ -60,6 +60,7 @@ class CloudBackupService {
 
   static const String _prefsLastBackup = 'cloud_backup_last_at';
   static const String _prefsEnabled = 'cloud_backup_enabled';
+  static const String _prefsLastFailed = 'cloud_backup_last_failed_at';
 
   static final CloudBackupService instance = CloudBackupService._();
   CloudBackupService._();
@@ -75,14 +76,36 @@ class CloudBackupService {
   /// przelaczenie aplikacji (np. udostepnienie zdjecia rachunku i powrot)
   /// przepuszcza druga probe przez kontrole daty — dwie kopie tego samego dnia
   /// i podwojny transfer.
+  ///
+  /// **Wylacznie w pamieci — nigdy w ustawieniach.** Gdyby system ubil proces
+  /// w trakcie wysylki (a robi to chetnie, gdy aplikacja jest w tle), trwala
+  /// flaga zostalaby ustawiona na zawsze i zablokowala kopie. Utrata jej przy
+  /// restarcie jest nieszkodliwa, bo restart i tak przerywa wysylke.
   bool _uploadInProgress = false;
 
-  /// Kiedy ostatnia wysylka sie nie udala. Automat nie ponawia czesciej niz
-  /// [_retryAfterFailure]: bez tego kazdy powrot do aplikacji bez zasiegu
-  /// oznaczal zbudowanie pelnej zaszyfrowanej migawki (odczyt bazy + PBKDF2
-  /// 100k iteracji + AES) tylko po to, zeby przewrocic sie na sieci.
-  DateTime? _lastFailedUploadAt;
+  /// Ile czeka automat po nieudanej wysylce. Bez tego kazdy powrot do
+  /// aplikacji bez zasiegu oznaczal zbudowanie pelnej zaszyfrowanej migawki
+  /// (odczyt bazy + PBKDF2 100k iteracji + AES) tylko po to, zeby przewrocic
+  /// sie na sieci. Znacznik trzymamy w ustawieniach (a nie w pamieci, jak
+  /// [_uploadInProgress]): restart aplikacji bez zasiegu nie ma powodu placic
+  /// za kolejna migawke, a to jedna liczba obok istniejacego „ostatnia kopia".
   static const Duration _retryAfterFailure = Duration(minutes: 30);
+
+  Future<DateTime?> _lastFailedUploadAt() async {
+    final prefs = await SharedPreferences.getInstance();
+    final millis = prefs.getInt(_prefsLastFailed);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  /// `null` czysci znacznik (po udanej wysylce).
+  Future<void> _setLastFailedUploadAt(DateTime? at) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (at == null) {
+      await prefs.remove(_prefsLastFailed);
+    } else {
+      await prefs.setInt(_prefsLastFailed, at.millisecondsSinceEpoch);
+    }
+  }
 
   String? get accountEmail => _account?.email;
 
@@ -223,10 +246,10 @@ class CloudBackupService {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_prefsLastBackup, now.millisecondsSinceEpoch);
-      _lastFailedUploadAt = null;
+      await _setLastFailedUploadAt(null);
       _log.info('Kopia w chmurze zapisana (${bytes.length} B)');
     } catch (_) {
-      _lastFailedUploadAt = now;
+      await _setLastFailedUploadAt(now);
       rethrow;
     } finally {
       _uploadInProgress = false;
@@ -244,7 +267,9 @@ class CloudBackupService {
 
     // Po nieudanej probie odczekaj — inaczej kazdy powrot do aplikacji bez
     // zasiegu placi za pelne szyfrowanie migawki, zeby polec na sieci.
-    final failedAt = _lastFailedUploadAt;
+    // Sprawdzenie stoi PRZED wznowieniem sesji i przed zbudowaniem migawki,
+    // wiec odrzucona proba nie kosztuje juz nic.
+    final failedAt = await _lastFailedUploadAt();
     if (failedAt != null && now.difference(failedAt) < _retryAfterFailure) {
       return;
     }

@@ -1,5 +1,11 @@
 {
+  "releaseNotes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226073101",
   "changelog": [
+    {
+      "version": "0.12.26073101",
+      "notes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)"
+    },
     {
       "version": "0.12.26073100",
       "notes": "- brak podwojnych wysylek kopii przy szybkim przelaczaniu aplikacji\n- odstep 30 minut przed ponowieniem nieudanej kopii\n- pliki z kosza nie wracaja na liste kopii"
@@ -35,15 +41,9 @@
     {
       "version": "0.11.26072703",
       "notes": "- Saldo: subskrypcje jako osobna pozycja odejmowania (zamiast opisu w tym)\n- Saldo: rezerwa nazwana Zaplanowana na rachunki\n- Kwoty wg jednej reguly koloru: zielony wplywy i dodatnie saldo, czerwony koszty i deficyt\n- Nowy akordeon Koszty roczne: cykliczne, subskrypcje i rezerwa w skali roku"
-    },
-    {
-      "version": "0.11.26072702",
-      "notes": "- Plan: rachunki miesiaca tylko w Bilansie miesiaca (koniec dublowania)\n- Plan: koszt subskrypcji (miesiecznie, rocznie, ile aktywnych) w rozwinietej karcie Saldo\n- Saldo po rozwinieciu pokazuje matematyke: pasek proporcji + rozpis wplywy/koszty/Planner\n- Sekcja Szczegoly chowa sie, gdy nie ma limitu ani okresow probnych"
     }
   ],
-  "versionCode": 1226073100,
-  "version": "0.12.26073100",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226073100",
-  "releaseNotes": "- brak podwojnych wysylek kopii przy szybkim przelaczaniu aplikacji\n- odstep 30 minut przed ponowieniem nieudanej kopii\n- pliki z kosza nie wracaja na liste kopii",
-  "releaseDate": "2026-07-31T18:47:16Z"
+  "releaseDate": "2026-07-31T19:21:24Z",
+  "version": "0.12.26073101",
+  "versionCode": 1226073101
 }
