@@ -56,6 +56,29 @@ class AiEngineService {
     }
   }
 
+  /// Kasuje zdjęcie z publicznego archiwum (`Documents/[subfolder]/[filename]`).
+  /// Zwraca `true`, gdy plik faktycznie zniknął; `false` = nie było czego kasować.
+  ///
+  /// Potrzebne przy podmianie zdjęcia zapisanego rachunku: MediaStore nie
+  /// nadpisuje po nazwie, tylko dokłada „nazwa (1).jpg", więc stara wersja
+  /// musi zniknąć przed zapisaniem nowej.
+  Future<bool> deleteArchivedReceipt({
+    required String subfolder,
+    required String filename,
+  }) async {
+    try {
+      final removed = await _channel.invokeMethod<bool>(
+        'deleteArchivedReceipt',
+        {'subfolder': subfolder, 'filename': filename},
+      );
+      return removed ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
   /// Stan silnika na urządzeniu (zainstalowany / model pobrany / w pamięci).
   Future<AiEngineStatus> status() async {
     try {

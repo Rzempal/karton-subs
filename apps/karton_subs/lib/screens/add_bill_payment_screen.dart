@@ -158,9 +158,18 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     final cropped = await ReceiptCropService.crop(current);
     if (!mounted || cropped == current) return; // anulowane
     if (_isEditing) {
+      // Nazwa, kwota i data idą razem ze zdjęciem: z nich powstaje nazwa pliku
+      // w archiwum, więc bez nich nie da się podmienić właściwej kopii.
+      final existing = widget.existing!;
       final persisted = await context
           .read<BillScanController>()
-          .replaceReceiptPhoto(widget.existing!.id, cropped);
+          .replaceReceiptPhoto(
+            existing.id,
+            cropped,
+            name: existing.name,
+            amount: existing.amount,
+            date: existing.startDate ?? existing.dataDodania,
+          );
       if (!mounted || persisted == null) return;
       setState(() => _photoPath = persisted);
     } else {

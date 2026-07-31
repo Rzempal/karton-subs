@@ -320,7 +320,7 @@ class BillScanController extends ChangeNotifier {
   }) async {
     await _linkPhoto(entryId, imagePath);
     if (_storage.getReceiptArchiveEnabled()) {
-      return _archive(imagePath, name, amount, date);
+      return _archive(entryId, imagePath, name, amount, date);
     }
     return null;
   }
@@ -330,9 +330,17 @@ class BillScanController extends ChangeNotifier {
   /// odświeżenie miniatury (Flutter cache'uje obraz po ścieżce). Zwraca nową
   /// ścieżkę albo null przy błędzie.
   ///
-  /// Uwaga: dotyczy tylko podglądu w apce. Publiczne archiwum w `Documents`
-  /// zapisane przy zatwierdzeniu nie jest tu ruszane.
-  Future<String?> replaceReceiptPhoto(String entryId, String croppedPath) async {
+  /// Gdy podane są [name], [amount] i [date], odświeża też **publiczne
+  /// archiwum**: kasuje wcześniej zapisany plik i wstawia dociętą wersję.
+  /// Wcześniej archiwum zostawało z nieprzyciętym zdjęciem — czyli dokładnie
+  /// tym, którego użytkownik nie chciał.
+  Future<String?> replaceReceiptPhoto(
+    String entryId,
+    String croppedPath, {
+    String? name,
+    double? amount,
+    DateTime? date,
+  }) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final receiptsDir = Directory('${dir.path}/receipts');
@@ -347,6 +355,16 @@ class BillScanController extends ChangeNotifier {
         } catch (_) {
           // Brak pliku nie jest problemem.
         }
+      }
+      // Archiwum tylko przy włączonej opcji i gdy znamy dane do nazwy pliku.
+      // Błąd archiwizacji nie przerywa podmiany podglądu — zdjęcie w apce jest
+      // już docięte, a archiwum to kopia dodatkowa.
+      if (_storage.getReceiptArchiveEnabled() &&
+          name != null &&
+          amount != null &&
+          date != null) {
+        final error = await _archive(entryId, dest, name, amount, date);
+        if (error != null) _log.warning('Odświeżenie archiwum: $error');
       }
       return dest;
     } catch (e, st) {
@@ -384,11 +402,19 @@ class BillScanController extends ChangeNotifier {
       }
       await _storage.removeReceiptPhotoPath(entryId);
     }
+    // Plik w publicznym archiwum ZOSTAJE — to trwały ślad, którego usunięcie
+    // rachunku nie powinno kasować. Czyścimy tylko pamięć o nazwie, bo bez
+    // rachunku nie ma już czego podmieniać.
+    await _storage.removeArchivedReceiptName(entryId);
   }
 
   /// Zapisuje zdjęcie zatwierdzonego rachunku do publicznego archiwum.
   /// Zwraca komunikat błędu (do snackbara) albo null przy sukcesie.
+  /// Zapisuje zdjęcie do publicznego archiwum i zapamiętuje nazwę pliku pod
+  /// [entryId] — bez tego nie da się potem podmienić właściwego pliku, bo nazwa
+  /// zawiera datę, nazwę i kwotę rachunku (te mogły się zmienić).
   Future<String?> _archive(
+    String entryId,
     String sourcePath,
     String name,
     double amount,
@@ -402,6 +428,18 @@ class BillScanController extends ChangeNotifier {
       final namePart = _sanitize(name);
       final amountPart = amount.toStringAsFixed(2);
       final filename = '${dateStr}_${namePart}_$amountPart.$safeExt';
+
+      // Stara wersja musi zniknąć PRZED zapisem nowej: MediaStore nie nadpisuje
+      // po nazwie, tylko dokłada „nazwa (1).jpg" — w archiwum zostałyby dwa
+      // zdjęcia tego samego rachunku, w tym jedno nieaktualne.
+      final previous = _storage.getArchivedReceiptName(entryId);
+      if (previous != null) {
+        await _engine.deleteArchivedReceipt(
+          subfolder: _storage.getReceiptArchiveSubfolder(),
+          filename: previous,
+        );
+      }
+
       final saved = await _engine.archiveReceipt(
         imagePath: sourcePath,
         subfolder: _storage.getReceiptArchiveSubfolder(),
@@ -411,6 +449,7 @@ class BillScanController extends ChangeNotifier {
         _log.warning('Archiwizacja rachunku nie powiodła się');
         return 'Nie udało się zapisać zdjęcia do archiwum';
       }
+      await _storage.setArchivedReceiptName(entryId, filename);
       return null;
     } catch (e, st) {
       _log.warning('Archiwizacja rachunku: $e', e, st);

@@ -601,6 +601,40 @@ class StorageService {
       _settingsBox.put('receiptArchiveEnabled', value);
 
   /// Podfolder w Documents dla archiwum (domyślnie „Zostaje").
+  // ── Nazwy plikow w publicznym archiwum (per rachunek) ──────────────────────
+  //
+  // Zapamietujemy, pod jaka nazwa rachunek lezy w `Documents/<podfolder>`, bo
+  // przy podmianie docietego zdjecia trzeba usunac STARY plik — MediaStore nie
+  // nadpisuje po nazwie, tylko dokłada „nazwa (1).jpg". Nazwa zawiera date,
+  // nazwe i kwote, wiec po edycji rachunku nie da sie jej odtworzyc.
+
+  Map<String, String> getArchivedReceiptNames() {
+    final raw = _settingsBox.get('archivedReceiptNames');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        return (jsonDecode(raw) as Map).map((k, v) => MapEntry('$k', '$v'));
+      } catch (e) {
+        _log.warning('Nie udalo sie odczytac archivedReceiptNames: $e');
+      }
+    }
+    return {};
+  }
+
+  String? getArchivedReceiptName(String entryId) =>
+      getArchivedReceiptNames()[entryId];
+
+  Future<void> setArchivedReceiptName(String entryId, String filename) async {
+    final map = getArchivedReceiptNames()..[entryId] = filename;
+    await _settingsBox.put('archivedReceiptNames', jsonEncode(map));
+  }
+
+  Future<void> removeArchivedReceiptName(String entryId) async {
+    final map = getArchivedReceiptNames();
+    if (map.remove(entryId) != null) {
+      await _settingsBox.put('archivedReceiptNames', jsonEncode(map));
+    }
+  }
+
   // ── „Udostepnij -> Zostaje": juz obsluzone udostepnienia ───────────────────
   //
   // Android przy wznowieniu zadania z listy ostatnich potrafi PONOWIC pierwotny

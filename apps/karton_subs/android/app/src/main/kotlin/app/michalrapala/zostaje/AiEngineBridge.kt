@@ -79,6 +79,11 @@ class AiEngineBridge(private val context: Context) {
                 call.argument<String>("filename"),
                 result,
             )
+            "deleteArchivedReceipt" -> deleteArchivedReceipt(
+                call.argument<String>("subfolder"),
+                call.argument<String>("filename"),
+                result,
+            )
             else -> result.notImplemented()
         }
     }
@@ -114,6 +119,52 @@ class AiEngineBridge(private val context: Context) {
         } catch (t: Throwable) {
             result.error("ARCHIVE_ERROR", t.message ?: "Blad zapisu do archiwum", null)
         }
+    }
+
+    /**
+     * Kasuje plik z publicznego archiwum. Uzywane, gdy zdjecie juz zapisanego
+     * rachunku zostalo dociete: MediaStore nie nadpisuje po nazwie (tworzy
+     * "nazwa (1).jpg"), wiec stara wersja musi zniknac, zanim wejdzie nowa.
+     *
+     * Kasujemy WYLACZNIE pliki wlasnego autorstwa - Android 10+ i tak nie
+     * pozwala aplikacji ruszyc cudzych bez zgody uzytkownika.
+     * `false` = nie bylo czego kasowac (to nie blad).
+     */
+    private fun deleteArchivedReceipt(
+        subfolder: String?,
+        filename: String?,
+        result: MethodChannel.Result,
+    ) {
+        if (filename.isNullOrBlank()) {
+            result.error("BAD_INPUT", "Brak nazwy pliku do usuniecia", null)
+            return
+        }
+        val folder = (subfolder ?: "Zostaje").trim().trim('/').ifBlank { "Zostaje" }
+        try {
+            val deleted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                deleteViaMediaStore(folder, filename)
+            } else {
+                @Suppress("DEPRECATION")
+                val base =
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+                File(File(base, folder), filename).let { it.exists() && it.delete() }
+            }
+            result.success(deleted)
+        } catch (t: Throwable) {
+            result.error("ARCHIVE_ERROR", t.message ?: "Blad usuwania z archiwum", null)
+        }
+    }
+
+    private fun deleteViaMediaStore(folder: String, filename: String): Boolean {
+        val relPath = "${Environment.DIRECTORY_DOCUMENTS}/$folder/"
+        val collection = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        val removed = context.contentResolver.delete(
+            collection,
+            "${MediaStore.MediaColumns.RELATIVE_PATH}=? AND " +
+                "${MediaStore.MediaColumns.DISPLAY_NAME}=?",
+            arrayOf(relPath, filename),
+        )
+        return removed > 0
     }
 
     private fun archiveViaMediaStore(src: File, folder: String, filename: String): String {

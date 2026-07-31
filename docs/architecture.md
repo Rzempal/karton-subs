@@ -421,8 +421,17 @@ Crop jest takze w **formularzu edycji** rachunku (`AddBillPaymentScreen`, tap w
 miniature). Dwie sciezki zapisu: dla skanu przed zatwierdzeniem docieta sciezka
 wraca z formularza (rekord `entry`+`imagePath`) i trafia do prywatnej kopii oraz
 archiwum przy `finalizeApproval`; dla juz zapisanego rachunku podmieniana jest
-od razu prywatna kopia (`BillScanController.replaceReceiptPhoto`, ma `entryId`) —
-publiczne archiwum zapisane wczesniej zostaje bez zmian.
+prywatna kopia (`BillScanController.replaceReceiptPhoto`) **i odswiezane
+publiczne archiwum**.
+
+**Podmiana w archiwum wymaga pamieci o nazwie pliku.** Nazwa to
+`RRRR-MM-DD_Nazwa_Kwota.jpg`, a MediaStore nie nadpisuje po nazwie — dokłada
+„nazwa (1).jpg". Dlatego przy kazdej archiwizacji zapamietujemy nazwe pod
+`entryId` (`archivedReceiptNames` w ustawieniach) i przy nastepnej kasujemy
+stary plik PRZED zapisem nowego (natywne `deleteArchivedReceipt`). Bez tej mapy
+nie dalo by sie trafic we wlasciwy plik, bo po edycji rachunku nazwa jest inna.
+Blad archiwizacji nie cofa dociecia — archiwum to kopia dodatkowa. Usuniecie
+rachunku czysci mape, ale **nie kasuje pliku z archiwum**: to trwaly slad.
 
 Poniewaz `startScan` kopiuje zdjecie raz, a OCR, prywatna kopia i archiwum biora
 ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
