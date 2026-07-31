@@ -8,6 +8,15 @@ class Category {
   final int order;
   final bool excludeFromGhostAnalysis;
 
+  /// Znacznik ostatniej zmiany — rozstrzyga scalanie przy synchronizacji
+  /// budżetu domowego (ostatnia zmiana wygrywa, ADR-025).
+  ///
+  /// `null` = kategoria sprzed wprowadzenia synchronizacji słowników albo
+  /// wpis domyślny; liczy się wtedy jak epoka zero, czyli przegrywa z każdą
+  /// realną zmianą. Pole musi być nullowalne, bo [DateTime] nie jest `const`,
+  /// a domyślne kategorie są stałymi.
+  final DateTime? updatedAt;
+
   const Category({
     required this.id,
     required this.name,
@@ -15,6 +24,7 @@ class Category {
     required this.iconName,
     required this.order,
     this.excludeFromGhostAnalysis = false,
+    this.updatedAt,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -25,6 +35,9 @@ class Category {
       iconName: json['iconName'] as String,
       order: json['order'] as int,
       excludeFromGhostAnalysis: json['excludeFromGhostAnalysis'] as bool? ?? false,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
     );
   }
 
@@ -35,6 +48,7 @@ class Category {
         'iconName': iconName,
         'order': order,
         'excludeFromGhostAnalysis': excludeFromGhostAnalysis,
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       };
 
   Color get color {
@@ -49,6 +63,7 @@ class Category {
     String? iconName,
     int? order,
     bool? excludeFromGhostAnalysis,
+    DateTime? updatedAt,
   }) {
     return Category(
       id: id ?? this.id,
@@ -57,6 +72,7 @@ class Category {
       iconName: iconName ?? this.iconName,
       order: order ?? this.order,
       excludeFromGhostAnalysis: excludeFromGhostAnalysis ?? this.excludeFromGhostAnalysis,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

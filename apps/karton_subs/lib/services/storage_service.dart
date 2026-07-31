@@ -128,9 +128,14 @@ class StorageService {
 
   Category? getCategory(String id) => _categoriesCache[id];
 
-  Future<void> saveCategory(Category cat) async {
-    await _categoriesBox.put(cat.id, jsonEncode(cat.toJson()));
-    _categoriesCache[cat.id] = cat;
+  /// Zapisuje kategorię. [stamp] ustawia znacznik zmiany (`updatedAt`) — tak
+  /// zapisuje UI. Scalanie synchronizacji woła ze `stamp: false`, żeby zachować
+  /// znacznik ze źródła: przestemplowanie sprawiłoby, że wpis odebrany z drugiego
+  /// telefonu od razu wygrywałby jako „najnowszy" i scalanie by się zapętliło.
+  Future<void> saveCategory(Category cat, {bool stamp = true}) async {
+    final toSave = stamp ? cat.copyWith(updatedAt: DateTime.now()) : cat;
+    await _categoriesBox.put(toSave.id, jsonEncode(toSave.toJson()));
+    _categoriesCache[toSave.id] = toSave;
   }
 
   Future<void> deleteCategory(String id) async {
@@ -172,9 +177,11 @@ class StorageService {
 
   PaymentMethod? getPaymentMethod(String id) => _paymentMethodsCache[id];
 
-  Future<void> savePaymentMethod(PaymentMethod pm) async {
-    await _paymentMethodsBox.put(pm.id, jsonEncode(pm.toJson()));
-    _paymentMethodsCache[pm.id] = pm;
+  /// Zapisuje metodę płatności. [stamp] jak w [saveCategory].
+  Future<void> savePaymentMethod(PaymentMethod pm, {bool stamp = true}) async {
+    final toSave = stamp ? pm.copyWith(updatedAt: DateTime.now()) : pm;
+    await _paymentMethodsBox.put(toSave.id, jsonEncode(toSave.toJson()));
+    _paymentMethodsCache[toSave.id] = toSave;
   }
 
   Future<void> deletePaymentMethod(String id) async {

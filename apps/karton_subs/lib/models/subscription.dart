@@ -416,11 +416,17 @@ class PaymentMethod {
   /// Wpływa na kolor na kalendarzu (auto = żółty) i listę „Płatności".
   final bool isAutomatic;
 
+  /// Znacznik ostatniej zmiany — rozstrzyga scalanie przy synchronizacji
+  /// budżetu domowego (ADR-025). `null` = wpis sprzed tej funkcji albo
+  /// domyślny; liczy się jak epoka zero.
+  final DateTime? updatedAt;
+
   const PaymentMethod({
     required this.id,
     required this.name,
     this.order = 0,
     this.isAutomatic = false,
+    this.updatedAt,
   });
 
   PaymentMethod copyWith({
@@ -428,12 +434,14 @@ class PaymentMethod {
     String? name,
     int? order,
     bool? isAutomatic,
+    DateTime? updatedAt,
   }) =>
       PaymentMethod(
         id: id ?? this.id,
         name: name ?? this.name,
         order: order ?? this.order,
         isAutomatic: isAutomatic ?? this.isAutomatic,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 
   factory PaymentMethod.fromJson(Map<String, dynamic> json) => PaymentMethod(
@@ -441,6 +449,9 @@ class PaymentMethod {
         name: json['name'] as String,
         order: (json['order'] as num?)?.toInt() ?? 0,
         isAutomatic: json['isAutomatic'] as bool? ?? false,
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.tryParse(json['updatedAt'] as String)
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -448,6 +459,7 @@ class PaymentMethod {
         'name': name,
         'order': order,
         'isAutomatic': isAutomatic,
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       };
 }
 

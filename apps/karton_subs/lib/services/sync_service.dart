@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'dart:io' show SocketException;
-import 'package:flutter/foundation.dart';
+// hide Category: foundation ma własną adnotację o tej nazwie, która przesłania
+// model kategorii (ten sam zabieg co w backup_service.dart).
+import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
+import '../models/category.dart';
+import '../models/subscription.dart' show PaymentMethod;
 import 'app_logger.dart';
 import 'storage_service.dart';
 import 'sync_crypto_service.dart';
@@ -127,6 +131,13 @@ class SyncService extends ChangeNotifier {
   final List<BillsAllocationItem> Function() _readAllocation;
   final Future<void> Function(List<BillsAllocationItem>) _writeAllocation;
 
+  /// Słowniki (kategorie, metody płatności) — ADR-025. Czytane w całości,
+  /// wysyłane w części (tylko wpisy używane przez budżet domowy).
+  final List<Category> Function() _readCategories;
+  final Future<void> Function(List<Category>) _writeCategories;
+  final List<PaymentMethod> Function() _readPaymentMethods;
+  final Future<void> Function(List<PaymentMethod>) _writePaymentMethods;
+
   final SyncStore _store;
   final SyncCryptoService _crypto;
   final http.Client _http;
@@ -149,6 +160,10 @@ class SyncService extends ChangeNotifier {
     Future<void> Function(List<BudgetEntry>)? writeHousehold,
     List<BillsAllocationItem> Function()? readAllocation,
     Future<void> Function(List<BillsAllocationItem>)? writeAllocation,
+    List<Category> Function()? readCategories,
+    Future<void> Function(List<Category>)? writeCategories,
+    List<PaymentMethod> Function()? readPaymentMethods,
+    Future<void> Function(List<PaymentMethod>)? writePaymentMethods,
   })  : _readHousehold = readHousehold ??
             (() => storage.getBudgetEntries(BudgetScope.household)),
         _writeHousehold = writeHousehold ??
@@ -161,6 +176,21 @@ class SyncService extends ChangeNotifier {
                   BudgetScope.household,
                   items,
                 )),
+        _readCategories = readCategories ?? storage.getCategories,
+        _writeCategories = writeCategories ??
+            ((cats) async {
+              // stamp: false — znacznik pochodzi ze scalania, nie z tej chwili.
+              for (final c in cats) {
+                await storage.saveCategory(c, stamp: false);
+              }
+            }),
+        _readPaymentMethods = readPaymentMethods ?? storage.getPaymentMethods,
+        _writePaymentMethods = writePaymentMethods ??
+            ((pms) async {
+              for (final p in pms) {
+                await storage.savePaymentMethod(p, stamp: false);
+              }
+            }),
         _store = store ?? const SecureSyncStore(),
         _crypto = crypto ?? SyncCryptoService(),
         _http = httpClient ?? http.Client(),
@@ -240,10 +270,20 @@ class SyncService extends ChangeNotifier {
           ? localAlloc
           : SyncMerge.mergeAllocation(localAlloc, remoteSnapshot.allocation!);
 
+      // Słowniki (ADR-025): dokładamy to, czego druga osoba u siebie nie ma,
+      // i ujednolicamy kategorie o tej samej nazwie. Bez tego pozycje trafiają
+      // do niej ze wskazaniem na nieistniejącą kategorię (znika z karty)
+      // i na nieznaną metodę płatności (automatyczna udaje manualną).
+      final dictsChanged = await _mergeDictionaries(remoteSnapshot.dictionaries);
+      final aliases = SyncMerge.categoryAliases(_readCategories());
+      merged = SyncMerge.applyCategoryAliases(merged, aliases);
+      mergedAlloc =
+          SyncMerge.applyCategoryAliasesToAllocation(mergedAlloc, aliases);
+
       final localSig = _signature(local);
       final mergedSig = _signature(merged);
       final allocChanged = _allocSignature(localAlloc) != _allocSignature(mergedAlloc);
-      var changed = localSig != mergedSig || allocChanged;
+      var changed = localSig != mergedSig || allocChanged || dictsChanged;
       if (localSig != mergedSig) {
         await _writeHousehold(merged);
       }
@@ -260,11 +300,19 @@ class SyncService extends ChangeNotifier {
           : _allocSignature(mergedAlloc) !=
               _allocSignature(remoteSnapshot.allocation!);
 
+      // Słowniki do wysłania: tylko te, których używa budżet domowy.
+      var dictsToPush = _usedDictionaries(merged, mergedAlloc);
+      final dictsNeedPush = remoteSnapshot.dictionaries == null
+          ? !dictsToPush.isEmpty
+          : _dictSignature(dictsToPush) !=
+              _dictSignature(remoteSnapshot.dictionaries!);
+
       // Skrót: jeśli po scaleniu nic się nie różni od serwera, push zbędny —
       // unikamy zbędnego bicia wersji i ping-pongu między urządzeniami.
       if (remote != null &&
           mergedSig == _signature(remoteEntries) &&
-          !allocNeedsPush) {
+          !allocNeedsPush &&
+          !dictsNeedPush) {
         await _store.saveVersion(remote.version);
         _log.info('Sync OK (no change, v${remote.version})');
         return SyncResult(SyncOutcome.ok, changedLocal: changed);
@@ -273,7 +321,11 @@ class SyncService extends ChangeNotifier {
       // 2) Push z compare-and-swap; przy konflikcie scal ponownie i ponów.
       for (var attempt = 0; attempt < _maxPushAttempts; attempt++) {
         final cipher = _crypto.encryptEnvelope(
-          SyncMerge.encodeSnapshot(merged, allocation: mergedAlloc),
+          SyncMerge.encodeSnapshot(
+            merged,
+            allocation: mergedAlloc,
+            dictionaries: dictsToPush,
+          ),
           p.key,
         );
         final res = await _push(p.householdId, cipher, expectedVersion);
@@ -292,6 +344,16 @@ class SyncService extends ChangeNotifier {
               SyncMerge.mergeAllocation(mergedAlloc, theirs.allocation!);
           await _writeAllocation(mergedAlloc);
         }
+        if (theirs.dictionaries != null) {
+          await _mergeDictionaries(theirs.dictionaries);
+          final retryAliases = SyncMerge.categoryAliases(_readCategories());
+          merged = SyncMerge.applyCategoryAliases(merged, retryAliases);
+          mergedAlloc = SyncMerge.applyCategoryAliasesToAllocation(
+            mergedAlloc,
+            retryAliases,
+          );
+        }
+        dictsToPush = _usedDictionaries(merged, mergedAlloc);
         expectedVersion = res.version;
         await _writeHousehold(merged);
         changed = true;
@@ -373,6 +435,70 @@ class SyncService extends ChangeNotifier {
   String _allocSignature(List<BillsAllocationItem> items) {
     final sorted = [...items]..sort((a, b) => a.id.compareTo(b.id));
     return jsonEncode([for (final e in sorted) e.toJson()]);
+  }
+
+  String _dictSignature(SyncDictionaries d) {
+    final cats = [...d.categories]..sort((a, b) => a.id.compareTo(b.id));
+    final pms = [...d.paymentMethods]..sort((a, b) => a.id.compareTo(b.id));
+    return jsonEncode({
+      'c': [for (final c in cats) c.toJson()],
+      'p': [for (final p in pms) p.toJson()],
+    });
+  }
+
+  /// Słowniki, których faktycznie używa budżet domowy — tylko one opuszczają
+  /// telefon (ADR-025). Kategoria widoczna wyłącznie w budżecie osobistym albo
+  /// w subskrypcjach zostaje prywatna, mimo że słownik jest wspólny.
+  SyncDictionaries _usedDictionaries(
+    List<BudgetEntry> entries,
+    List<BillsAllocationItem> allocation,
+  ) {
+    final categoryIds = <String>{
+      for (final e in entries)
+        if (e.categoryId != null) e.categoryId!,
+      for (final a in allocation)
+        if (a.categoryId != null) a.categoryId!,
+    };
+    // Metody płatności pozycje trzymają po NAZWIE (jak subskrypcje).
+    final methodNames = <String>{
+      for (final e in entries)
+        if (e.paymentMethod != null) e.paymentMethod!.trim().toLowerCase(),
+      for (final a in allocation)
+        if (a.paymentMethod != null) a.paymentMethod!.trim().toLowerCase(),
+    };
+    return SyncDictionaries(
+      categories: [
+        for (final c in _readCategories())
+          if (categoryIds.contains(c.id)) c,
+      ],
+      paymentMethods: [
+        for (final p in _readPaymentMethods())
+          if (methodNames.contains(p.name.trim().toLowerCase())) p,
+      ],
+    );
+  }
+
+  /// Wciela słowniki z paczki do lokalnych. Zwraca `true`, gdy coś się zmieniło
+  /// (do sygnalizacji `changedLocal`). Brak sekcji = starsza aplikacja po
+  /// drugiej stronie → nic nie ruszamy.
+  Future<bool> _mergeDictionaries(SyncDictionaries? remote) async {
+    if (remote == null || remote.isEmpty) return false;
+
+    final localCats = _readCategories();
+    final mergedCats = SyncMerge.mergeCategories(localCats, remote.categories);
+    final catsChanged = _dictSignature(SyncDictionaries(categories: localCats)) !=
+        _dictSignature(SyncDictionaries(categories: mergedCats));
+    if (catsChanged) await _writeCategories(mergedCats);
+
+    final localPms = _readPaymentMethods();
+    final mergedPms =
+        SyncMerge.mergePaymentMethods(localPms, remote.paymentMethods);
+    final pmsChanged =
+        _dictSignature(SyncDictionaries(paymentMethods: localPms)) !=
+            _dictSignature(SyncDictionaries(paymentMethods: mergedPms));
+    if (pmsChanged) await _writePaymentMethods(mergedPms);
+
+    return catsChanged || pmsChanged;
   }
 }
 
