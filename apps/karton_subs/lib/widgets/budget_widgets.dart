@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
+import 'subscription_card.dart' show categoryIcon;
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 
@@ -1724,12 +1725,16 @@ class BudgetEntryCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Ikona kategorii, gdy pozycja ja ma — niesie wiecej informacji
+              // niz strzalka kierunku, ktora i tak powtarza kolor kwoty.
               Icon(
-                entry.isIncome
-                    ? LucideIcons.trendingUp
-                    : LucideIcons.trendingDown,
+                category != null
+                    ? categoryIcon(category.iconName)
+                    : (entry.isIncome
+                          ? LucideIcons.trendingUp
+                          : LucideIcons.trendingDown),
                 size: 18,
-                color: color,
+                color: category?.color ?? color,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1737,15 +1742,9 @@ class BudgetEntryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Linia 1: nazwa, kategoria i KWOTA. Kwota stoi tutaj,
-                    // a nie z boku obu linii — dzieki temu druga linia ma cala
-                    // szerokosc wiersza na typ, date i sposob platnosci.
+                    // Linia 1: nazwa i kwota — nazwa ma cala reszte szerokosci.
                     Row(
                       children: [
-                        // Nazwa bierze cale wolne miejsce; kategoria zajmuje
-                        // tylko tyle, ile potrzebuje (z gornym limitem).
-                        // Wczesniej obie byly elastyczne po rowno, wiec nazwa
-                        // skracala sie mimo zapasu obok krotkiej kategorii.
                         Expanded(
                           child: Text(
                             entry.name,
@@ -1754,36 +1753,6 @@ class BudgetEntryCard extends StatelessWidget {
                             style: theme.textTheme.bodyMedium,
                           ),
                         ),
-                        if (category != null) ...[
-                          const SizedBox(width: 8),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 110),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 7,
-                                  height: 7,
-                                  decoration: BoxDecoration(
-                                    color: category.color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    category.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: category.color,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                         const SizedBox(width: 10),
                         Text(
                           amountLine,
@@ -1796,7 +1765,8 @@ class BudgetEntryCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Linia 2 na pelnej szerokosci: typ · data · metoda.
+                    // Linia 2: typ · data · metoda platnosci, a na koncu
+                    // kategoria — tu jest wiecej miejsca niz przy nazwie.
                     Row(
                       children: [
                         Flexible(
@@ -1824,6 +1794,19 @@ class BudgetEntryCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: c.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (category != null) ...[
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              '· ${category.name}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: category.color,
                               ),
                             ),
                           ),
