@@ -1,9 +1,10 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1326073101",
-  "releaseDate": "2026-07-31T22:37:13Z",
-  "versionCode": 1326073101,
-  "releaseNotes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)",
+  "releaseNotes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja",
   "changelog": [
+    {
+      "version": "0.14.26073102",
+      "notes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja"
+    },
     {
       "version": "0.13.26073101",
       "notes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)"
@@ -39,11 +40,10 @@
     {
       "version": "0.9.26062401",
       "notes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu: zaznaczone chipy oraz obramowanie paska nawigacji w trybie jasnym"
-    },
-    {
-      "version": "0.9.26062400",
-      "notes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu zaznaczonych chipow"
     }
   ],
-  "version": "0.13.26073101"
+  "releaseDate": "2026-07-31T23:52:00Z",
+  "version": "0.14.26073102",
+  "versionCode": 1426073102,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1426073102"
 }
