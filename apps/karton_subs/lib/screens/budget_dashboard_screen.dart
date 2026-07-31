@@ -239,68 +239,62 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ),
       body: Column(
         children: [
-          // Sortowanie i grupowanie stoja przy liscie, na ktora dzialaja —
-          // wczesniej byly w pasku tytulu, daleko od skutku.
-          if (!isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: _sort == _BudgetSort.alpha
-                        ? 'Sortuj: A→Z'
-                        : 'Sortuj: kwota malejąco',
-                    icon: Icon(
-                      _sort == _BudgetSort.alpha
-                          ? LucideIcons.arrowDownAZ
-                          : LucideIcons.arrowDown10,
-                      size: 18,
-                    ),
-                    onPressed: () => setState(
-                      () => _sort = _sort == _BudgetSort.alpha
-                          ? _BudgetSort.amountDesc
-                          : _BudgetSort.alpha,
-                    ),
-                  ),
-                  // Wplywy nie maja kategorii, wiec nie ma czego grupowac.
-                  if (!_onIncomes)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      isSelected: _grouping == _BudgetGrouping.byCategory,
-                      tooltip: _grouping == _BudgetGrouping.byCategory
-                          ? 'Podgrupy po kategoriach (włączone)'
-                          : 'Grupuj wydatki po kategoriach',
-                      style: _grouping == _BudgetGrouping.byCategory
-                          ? IconButton.styleFrom(
-                              backgroundColor: context.semanticColors.primary
-                                  .withValues(alpha: 0.25),
-                              foregroundColor: context.semanticColors.primary,
-                            )
-                          : null,
-                      icon: const Icon(LucideIcons.layers, size: 18),
-                      onPressed: () => setState(
-                        () =>
-                            _grouping = _grouping == _BudgetGrouping.byCategory
-                            ? _BudgetGrouping.byType
-                            : _BudgetGrouping.byCategory,
-                      ),
-                    ),
-                ],
+          // Sortowanie i grupowanie siedza na koncu paskow filtrow, ktorych
+          // dotycza (wzorzec „pokaz ukryte" z Subskrypcji): grupowanie przy
+          // kategoriach, sortowanie przy typach. Osobny wiersz ikon byl czwarta
+          // linia nad lista i nie mowil, na co dziala.
+          if (!isEmpty && filterCategories.isNotEmpty)
+            _FilterRow(
+              filters: _CategoryFilter(
+                categories: filterCategories,
+                selected: activeCat,
+                onSelect: (id) => setState(() => _filterCategoryId = id),
+              ),
+              action: IconButton(
+                visualDensity: VisualDensity.compact,
+                isSelected: _grouping == _BudgetGrouping.byCategory,
+                tooltip: _grouping == _BudgetGrouping.byCategory
+                    ? 'Podgrupy po kategoriach (włączone)'
+                    : 'Grupuj wydatki po kategoriach',
+                style: _grouping == _BudgetGrouping.byCategory
+                    ? IconButton.styleFrom(
+                        backgroundColor: context.semanticColors.primary
+                            .withValues(alpha: 0.25),
+                        foregroundColor: context.semanticColors.primary,
+                      )
+                    : null,
+                icon: const Icon(LucideIcons.layers, size: 18),
+                onPressed: () => setState(
+                  () => _grouping = _grouping == _BudgetGrouping.byCategory
+                      ? _BudgetGrouping.byType
+                      : _BudgetGrouping.byCategory,
+                ),
               ),
             ),
-          if (!isEmpty && filterCategories.isNotEmpty)
-            _CategoryFilter(
-              categories: filterCategories,
-              selected: activeCat,
-              onSelect: (id) => setState(() => _filterCategoryId = id),
-            ),
           if (!isEmpty && filterTypes.isNotEmpty)
-            _TypeFilter(
-              types: filterTypes,
-              selected: activeType,
-              onSelect: (tp) => setState(() => _filterType = tp),
+            _FilterRow(
+              filters: _TypeFilter(
+                types: filterTypes,
+                selected: activeType,
+                onSelect: (tp) => setState(() => _filterType = tp),
+              ),
+              action: IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: _sort == _BudgetSort.alpha
+                    ? 'Sortuj: A→Z'
+                    : 'Sortuj: kwota malejąco',
+                icon: Icon(
+                  _sort == _BudgetSort.alpha
+                      ? LucideIcons.arrowDownAZ
+                      : LucideIcons.arrowDown10,
+                  size: 18,
+                ),
+                onPressed: () => setState(
+                  () => _sort = _sort == _BudgetSort.alpha
+                      ? _BudgetSort.amountDesc
+                      : _BudgetSort.alpha,
+                ),
+              ),
             ),
           if (!isEmpty && availableYears.isNotEmpty)
             _TimeFilter(
@@ -628,6 +622,25 @@ class _Section extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: children,
+    );
+  }
+}
+
+/// Pasek filtrow z akcja przyklejona na koncu — chipy przewijaja sie poziomo,
+/// akcja zostaje na widoku (wzorzec „pokaz ukryte" z ekranu Subskrypcje).
+class _FilterRow extends StatelessWidget {
+  final Widget filters;
+  final Widget action;
+
+  const _FilterRow({required this.filters, required this.action});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: filters),
+        Padding(padding: const EdgeInsets.only(right: 8), child: action),
+      ],
     );
   }
 }
