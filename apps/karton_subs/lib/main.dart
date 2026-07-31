@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show File;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -266,18 +267,40 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   /// czysci je, by nie wrocily przy kolejnym sprawdzeniu.
   void _checkSharedMedia() {
     ReceiveSharingIntent.instance.getInitialMedia().then((files) {
+      // reset() ZAWSZE, takze przy pustej liscie i gdy nic nie przyjelismy —
+      // inaczej ten sam intent wraca przy kolejnym wznowieniu.
+      ReceiveSharingIntent.instance.reset();
       if (files.isEmpty) return;
       _onSharedMedia(files);
-      ReceiveSharingIntent.instance.reset();
     });
+  }
+
+  /// „Podpis" udostepnionego pliku: sciezka + rozmiar + czas modyfikacji.
+  /// Sama sciezka nie wystarcza — katalog udostepnien bywa recyklingowany.
+  String _shareSignature(SharedMediaFile f) {
+    try {
+      final stat = File(f.path).statSync();
+      return '${f.path}|${stat.size}|${stat.modified.millisecondsSinceEpoch}';
+    } catch (_) {
+      return f.path;
+    }
   }
 
   /// Udostepnione zdjecia -> skan rachunku w tle + przejscie na Rachunki.
   void _onSharedMedia(List<SharedMediaFile> files) {
     if (!mounted) return;
-    // Dedup: to samo zdjecie moze przyjsc strumieniem i przez getInitialMedia.
+    final storage = context.read<StorageService>();
+    // Dedup dwupoziomowy:
+    // 1) w pamieci — to samo zdjecie potrafi przyjsc strumieniem i przez
+    //    getInitialMedia w tej samej sesji;
+    // 2) TRWALY (Hive) — Android ponawia pierwotny intent ACTION_SEND przy
+    //    wznowieniu zadania z listy ostatnich, wiec bez tego ten sam rachunek
+    //    wracal do kolejki po KAZDYM uruchomieniu aplikacji.
     final now = DateTime.now();
     _recentShares.removeWhere((_, t) => now.difference(t) > const Duration(seconds: 30));
+    final handled = storage.getHandledShares().toList();
+    final handledSet = handled.toSet();
+    final accepted = <String>[];
     final images = files
         .where((f) => f.type == SharedMediaType.image)
         .where((f) {
@@ -285,11 +308,15 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
           if (seen != null && now.difference(seen) < const Duration(seconds: 10)) {
             return false; // duplikat tego samego udostepnienia
           }
+          final signature = _shareSignature(f);
+          if (handledSet.contains(signature)) return false; // juz przyjete
           _recentShares[f.path] = now;
+          accepted.add(signature);
           return true;
         })
         .toList();
     if (images.isEmpty) return;
+    unawaited(storage.setHandledShares([...handled, ...accepted]));
     // Bez bramki: odczyt rachunku robi model wbudowany w apke (ADR-017),
     // wiec „Udostepnij -> Zostaje" dziala niezaleznie od Asystenta AI.
     final scanCtrl = context.read<BillScanController>();

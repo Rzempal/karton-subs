@@ -568,6 +568,38 @@ class StorageService {
       _settingsBox.put('receiptArchiveEnabled', value);
 
   /// Podfolder w Documents dla archiwum (domyślnie „Zostaje").
+  // ── „Udostepnij -> Zostaje": juz obsluzone udostepnienia ───────────────────
+  //
+  // Android przy wznowieniu zadania z listy ostatnich potrafi PONOWIC pierwotny
+  // intent ACTION_SEND, wiec `getInitialMedia()` oddaje to samo zdjecie przy
+  // kolejnych startach aplikacji. Bez trwalej pamieci co juz przyjelismy, ten
+  // sam rachunek dokladal sie do kolejki po kazdym uruchomieniu.
+  //
+  // Klucz to „podpis" pliku (sciezka + rozmiar + czas modyfikacji), nie sama
+  // sciezka: katalog udostepnien bywa recyklingowany pod te sama nazwe.
+
+  /// Podpisy ostatnio obsluzonych udostepnien (najnowsze na koncu).
+  List<String> getHandledShares() {
+    final raw = _settingsBox.get('handledShares');
+    if (raw is String && raw.isNotEmpty) {
+      try {
+        return (jsonDecode(raw) as List).map((e) => '$e').toList();
+      } catch (e) {
+        _log.warning('Failed to parse handledShares: $e');
+      }
+    }
+    return const [];
+  }
+
+  /// Zapisuje podpisy; trzymamy ostatnie [max] — to zabezpieczenie przed
+  /// powtorka, nie historia.
+  Future<void> setHandledShares(List<String> signatures, {int max = 30}) {
+    final trimmed = signatures.length > max
+        ? signatures.sublist(signatures.length - max)
+        : signatures;
+    return _settingsBox.put('handledShares', jsonEncode(trimmed));
+  }
+
   String getReceiptArchiveSubfolder() =>
       _settingsBox.get('receiptArchiveSubfolder', defaultValue: 'Zostaje') as String;
 

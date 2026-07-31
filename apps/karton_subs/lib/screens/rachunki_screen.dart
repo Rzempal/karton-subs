@@ -494,7 +494,7 @@ class _PendingScanCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          if (processing)
+          if (processing) ...[
             const Padding(
               padding: EdgeInsets.all(8),
               child: SizedBox(
@@ -502,7 +502,16 @@ class _PendingScanCard extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-            )
+            ),
+            // Wyjście awaryjne: gdy rozpoznawanie z jakiegoś powodu utknie,
+            // pozycja bez żadnego przycisku byłaby nie do usunięcia.
+            IconButton(
+              tooltip: 'Odrzuć',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(LucideIcons.x, color: AppColors.negative),
+              onPressed: onReject,
+            ),
+          ]
           else if (failed) ...[
             // Edycja jest tu ważniejsza niż ponowienie: zdjęcie już mamy,
             // więc rachunek da się dokończyć ręcznie także wtedy, gdy żaden

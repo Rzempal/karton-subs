@@ -70,6 +70,20 @@ class CloudBackupService {
   /// Nieudane wznowienie sesji nie jest ponawiane az do restartu aplikacji.
   bool _restoreFailedThisRun = false;
 
+  /// Czy trwa wysylka (reczna albo automatyczna). Znacznik „ostatnia kopia"
+  /// zapisuje sie dopiero PO udanym wyslaniu, wiec bez tej flagi szybkie
+  /// przelaczenie aplikacji (np. udostepnienie zdjecia rachunku i powrot)
+  /// przepuszcza druga probe przez kontrole daty — dwie kopie tego samego dnia
+  /// i podwojny transfer.
+  bool _uploadInProgress = false;
+
+  /// Kiedy ostatnia wysylka sie nie udala. Automat nie ponawia czesciej niz
+  /// [_retryAfterFailure]: bez tego kazdy powrot do aplikacji bez zasiegu
+  /// oznaczal zbudowanie pelnej zaszyfrowanej migawki (odczyt bazy + PBKDF2
+  /// 100k iteracji + AES) tylko po to, zeby przewrocic sie na sieci.
+  DateTime? _lastFailedUploadAt;
+  static const Duration _retryAfterFailure = Duration(minutes: 30);
+
   String? get accountEmail => _account?.email;
 
   bool get isConnected => _account != null;
@@ -198,16 +212,25 @@ class CloudBackupService {
     required String recoveryCode,
     required DateTime now,
   }) async {
-    final api = await _driveApi();
-    final stamp = now.toIso8601String().split('.').first.replaceAll(':', '-');
+    _uploadInProgress = true;
+    try {
+      final api = await _driveApi();
+      final stamp = now.toIso8601String().split('.').first.replaceAll(':', '-');
 
-    await _create(api, '$_snapshotPrefix$stamp.zostaje', bytes);
-    await _writeRecoveryCode(api, recoveryCode);
-    await _pruneOldSnapshots(api);
+      await _create(api, '$_snapshotPrefix$stamp.zostaje', bytes);
+      await _writeRecoveryCode(api, recoveryCode);
+      await _pruneOldSnapshots(api);
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_prefsLastBackup, now.millisecondsSinceEpoch);
-    _log.info('Kopia w chmurze zapisana (${bytes.length} B)');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_prefsLastBackup, now.millisecondsSinceEpoch);
+      _lastFailedUploadAt = null;
+      _log.info('Kopia w chmurze zapisana (${bytes.length} B)');
+    } catch (_) {
+      _lastFailedUploadAt = now;
+      rethrow;
+    } finally {
+      _uploadInProgress = false;
+    }
   }
 
   /// Automat: kopia najwyzej raz na dobe, po cichu. Wolane przy starcie
@@ -217,6 +240,14 @@ class CloudBackupService {
     required DateTime now,
   }) async {
     if (!await isEnabled()) return;
+    if (_uploadInProgress) return;
+
+    // Po nieudanej probie odczekaj — inaczej kazdy powrot do aplikacji bez
+    // zasiegu placi za pelne szyfrowanie migawki, zeby polec na sieci.
+    final failedAt = _lastFailedUploadAt;
+    if (failedAt != null && now.difference(failedAt) < _retryAfterFailure) {
+      return;
+    }
 
     // Date sprawdzamy PRZED dotknieciem konta Google - gdy kopia jest swieza,
     // aplikacja nie kontaktuje sie z Google w ogole.
@@ -285,6 +316,8 @@ class CloudBackupService {
     final api = await _driveApi();
     final response = await api.files.list(
       spaces: _folder,
+      // Bez tego filtra plik z kosza wracalby na liste jako „kopia".
+      q: 'trashed = false',
       orderBy: 'createdTime desc',
       $fields: 'files(id,name,createdTime,size)',
       pageSize: 50,
@@ -376,7 +409,7 @@ class CloudBackupService {
   Future<drive.File?> _findByName(drive.DriveApi api, String name) async {
     final response = await api.files.list(
       spaces: _folder,
-      q: "name = '$name'",
+      q: "name = '$name' and trashed = false",
       $fields: 'files(id,name)',
       pageSize: 1,
     );

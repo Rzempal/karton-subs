@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-07-30T15:58:17.452Z">
+<session xmlns="http://winscp.net/schema/session/1.0" name="host361978@host361978.hostido.net.pl" start="2026-07-31T16:47:17.969Z">
   <rm>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
     <result success="true" />
@@ -12,18 +12,18 @@
   </upload>
   <touch>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/zostaje-dev_latest.apk" />
-    <modification value="2026-07-30T15:58:14.000Z" />
+    <modification value="2026-07-31T16:47:14.000Z" />
     <result success="true" />
   </touch>
   <upload>
     <filename value="C:\Users\rzemp\GitHub\karton-subs\releases\version-internal.json" />
     <destination value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <size value="2987" />
+    <size value="3047" />
     <result success="true" />
   </upload>
   <touch>
     <filename value="/home/host361978/domains/michalrapala.app/public_html/releases/karton-subs/internal/version-internal.json" />
-    <modification value="2026-07-30T15:58:16.000Z" />
+    <modification value="2026-07-31T16:47:16.000Z" />
     <result success="true" />
   </touch>
 </session>
