@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
 import '../controllers/bill_scan_controller.dart';
 import '../controllers/budget_controller.dart';
@@ -136,6 +137,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SettingsSectionLabel('Aplikacja'),
           SettingsGroup(children: [
             const UpdateInlineSection(),
+            _linkTile(
+              icon: LucideIcons.shield,
+              title: 'Polityka prywatności',
+              subtitle: 'Co zostaje na telefonie, a co nie',
+              url: AppConfig.privacyPolicyUrl,
+            ),
             if (AppConfig.isInternal)
               _navTile(context,
                   icon: LucideIcons.wrench,
@@ -143,6 +150,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   screen: const DevToolsScreen()),
           ]),
         ],
+      ),
+    );
+  }
+
+  /// Pozycja otwierajaca adres w przegladarce systemowej.
+  Widget _linkTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String url,
+  }) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(LucideIcons.externalLink, size: 16),
+      onTap: () => launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
       ),
     );
   }

@@ -82,7 +82,9 @@ lib/
 │   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
-│   ├── backup_crypto_service.dart # E2E encryption (AES-256-GCM)
+│   ├── backup_crypto_service.dart # Szyfrowanie kopii (AES-256-GCM) + kod odzyskiwania (ADR-024)
+│   ├── cloud_backup_service.dart # Kopia w ukrytym folderze na Dysku Google, automat raz na dobe (ADR-024)
+│   ├── recovery_key_vault.dart  # Sejf na kod odzyskiwania w koncie Google (Block Store)
 │   ├── storage_service.dart     # Hive + cache + CRUD
 │   ├── analytics_service.dart   # Obliczenia subskrypcji: totale, trendy, breakdown
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
@@ -273,6 +275,17 @@ QR + haslo. Serwer jest slepy (szyfrowanie end-to-end). Scalanie „ostatnia zmi
 wygrywa" per pozycja (`updatedAt`) + nagrobki (`deleted`). Osobisty zostaje lokalny.
 Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 [security.md](security.md).
+
+**Slowniki w paczce (ADR-025):** kategorie i metody platnosci jada jako sekcja
+opcjonalna `dictionaries` — bez nich pozycja u drugiej osoby wskazywala na
+nieistniejaca kategorie (znikala z karty, wpadala do „Inne"), a platnosc
+automatyczna udawala manualna (metoda jest wskazywana po NAZWIE, wiec brak wpisu
+= brak `isAutomatic`). Jada **tylko wpisy uzywane przez budzet domowy** —
+slownik jest wspoldzielony z osobistym i subskrypcjami, wiec prywatne kategorie
+nie opuszczaja telefonu. Scalanie LWW po nowym polu `updatedAt` (brak = epoka
+zero), **bez usuwania zdalnego**; metody dopasowywane po nazwie, a kategorie
+o tej samej nazwie kanonizowane do mniejszego `id` (wybor niezalezny od
+telefonu, wiec pozycje nie przepinaja sie w kolko).
 
 ---
 

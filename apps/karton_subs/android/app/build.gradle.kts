@@ -74,4 +74,6 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Sejf na kod odzyskiwania kopii - kod wedruje na nowy telefon z kontem Google
+    implementation("com.google.android.gms:play-services-auth-blockstore:16.4.0")
 }

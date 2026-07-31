@@ -17,7 +17,9 @@ import 'screens/subscription_list_screen.dart';
 import 'screens/budget_dashboard_screen.dart';
 import 'services/ai_engine_service.dart';
 import 'services/app_logger.dart';
+import 'models/budget_entry.dart';
 import 'services/backup_service.dart';
+import 'services/cloud_backup_service.dart';
 import 'services/excel_service.dart';
 import 'services/storage_service.dart';
 import 'services/sync_service.dart';
@@ -206,12 +208,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     // Synchronizacja budzetu domowego przy starcie (jesli sparowane).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _checkSharedMedia(); // udostepnienie z zimnego startu
-      final sync = context.read<SyncService>();
-      if (!sync.isPaired) return;
-      final result = await sync.syncNow();
-      if (result.changedLocal && mounted) {
-        context.read<BudgetController>().refresh();
-      }
+      await _syncThenMaybeBackup();
     });
     // "Udostepnij -> Zostaje": zdjecie z galerii systemowej -> skan.
     // Strumien lapie udostepnienia do juz dzialajacej apki; getInitialMedia
@@ -224,7 +221,45 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Udostepnienie do apki w tle wznawia ja - sprawdzamy oczekujace media.
-    if (state == AppLifecycleState.resumed) _checkSharedMedia();
+    if (state == AppLifecycleState.resumed) {
+      _checkSharedMedia();
+      _syncThenMaybeBackup();
+    }
+  }
+
+  /// Scalanie budzetu domowego, a po nim kopia w chmurze (jesli czas na nia).
+  /// Kolejnosc ma znaczenie: kopia zrobiona przed scaleniem zapisalaby
+  /// w chmurze uboższą migawkę (telefon po dluzszym offline).
+  Future<void> _syncThenMaybeBackup() async {
+    final sync = context.read<SyncService>();
+    if (sync.isPaired) {
+      final result = await sync.syncNow();
+      if (result.changedLocal && mounted) {
+        context.read<BudgetController>().refresh();
+      }
+    }
+    if (mounted) _maybeCloudBackup();
+  }
+
+  /// Kopia na koncie Google - najwyzej raz na dobe, po cichu i bez okien.
+  ///
+  /// Pusty budzet NIGDY nie jedzie do chmury: kopia bez subskrypcji i bez
+  /// pozycji budzetu nie ma wartosci, a nadpisalaby te dobra po wyczyszczeniu
+  /// danych albo na swiezej instalacji, zanim uzytkownik zdazy cokolwiek
+  /// przywrocic.
+  void _maybeCloudBackup() {
+    final storage = context.read<StorageService>();
+    final hasData =
+        storage.getSubscriptions().isNotEmpty ||
+        storage.getBudgetEntries(BudgetScope.personal).isNotEmpty ||
+        storage.getBudgetEntries(BudgetScope.household).isNotEmpty;
+    if (!hasData) return;
+
+    final backup = context.read<BackupService>();
+    CloudBackupService.instance.maybeBackupDaily(
+      backup.buildEncryptedSnapshot,
+      now: DateTime.now(),
+    );
   }
 
   /// Odczytuje ewentualne udostepnione media (zimny start / wznowienie) i

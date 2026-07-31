@@ -1,9 +1,13 @@
 {
-  "releaseNotes": "- Rownolegle z wydaniem PROD 0.12.26072700 (te same zmiany)",
-  "version": "0.12.26072708",
-  "releaseDate": "2026-07-27T20:06:49Z",
-  "versionCode": 1226072708,
   "changelog": [
+    {
+      "version": "0.12.26073000",
+      "notes": "- link do polityki prywatnosci w Ustawieniach"
+    },
+    {
+      "version": "0.12.26072900",
+      "notes": "- kopia zapasowa na koncie Google (ukryty folder na Dysku)\n- kod odzyskiwania zamiast klucza urzadzenia, chowany w sejfie konta\n- przywracanie z chmury bez wpisywania kodu"
+    },
     {
       "version": "0.12.26072708",
       "notes": "- Rownolegle z wydaniem PROD 0.12.26072700 (te same zmiany)"
@@ -35,15 +39,11 @@
     {
       "version": "0.11.26072701",
       "notes": "- Plan: jeden wykres trendu z trzema liniami (Cykliczne, Subskrypcje, Rachunki) i chipami do wlaczania\n- Plan: podzial wg kategorii laczy wszystkie strumienie wydatkow\n- Plan: karty szczegolowe w zwijanej sekcji Szczegoly"
-    },
-    {
-      "version": "0.11.26072700",
-      "notes": "- Budzet: zakladka Plan jako domyslna (Bilans miesiaca druga)\n- Rachunki: Planner, kalendarz i lista rozdzielone; wybor miesiaca po tapnieciu w nazwe, przycisk Dzisiaj\n- Planner zwijany, stan zapamietany\n- Skan rachunkow: wszystkie zdjecia zlecane od razu uslugom w tle (drugi skan nie ginie po wyjsciu z apki)"
-    },
-    {
-      "version": "0.11.26072616",
-      "notes": "- Planner budzetu domowego jest teraz synchronizowany miedzy telefonami\n- Scalanie per pozycja: jednoczesna edycja na dwoch telefonach nie gubi zmian\n- Telefony moga aktualizowac sie w roznym czasie - starsza wersja nie kasuje Plannera nowszej"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226072708"
+  "versionCode": 1226073000,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226073000",
+  "version": "0.12.26073000",
+  "releaseNotes": "- link do polityki prywatnosci w Ustawieniach",
+  "releaseDate": "2026-07-30T17:58:16Z"
 }

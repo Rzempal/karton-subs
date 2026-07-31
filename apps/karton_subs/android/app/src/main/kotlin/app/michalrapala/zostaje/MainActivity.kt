@@ -18,6 +18,12 @@ class MainActivity : FlutterActivity() {
         // Kanal w obie strony: warstwa natywna zglasza gotowe wyniki skanow.
         bridge.attach(channel)
         this.bridge = bridge
+
+        // Sejf na kod odzyskiwania kopii - kod wedruje na nowy telefon
+        // razem z kontem Google (Block Store).
+        val keyVault = KeyVaultBridge(applicationContext)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, KeyVaultBridge.CHANNEL)
+            .setMethodCallHandler(keyVault::handle)
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {

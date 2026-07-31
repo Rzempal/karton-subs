@@ -647,3 +647,34 @@ bierz maksimum z okna, a nie pierwsze trafienie.
 **Przy okazji, o piaskownicy:** zanim wrzucisz realne dokumenty do repo, sprawdz
 `.gitignore`. `docs/_sandbox/` byl ignorowany, ale `_sandbox/` w korzeniu juz nie —
 faktury z danymi osobowymi czekaly na pierwszy `git add .`.
+
+---
+
+## 2026-07-31: Pytanie o haslo na podstawie typu pliku, a nie proby odszyfrowania
+
+### Kontekst
+Import kopii pytal o haslo wtedy, gdy plik mial typ `password` (`needsPassword`
+liczone z naglowka). Dzialalo, dopoki „bez hasla" znaczylo „klucz urzadzenia".
+
+### Blad
+Po wprowadzeniu kodu odzyskiwania (ADR-024) kopie z WLASNEGO telefonu tez maja
+typ `password` — bo kod jest technicznie haslem, tylko wygenerowanym za
+uzytkownika. Efekt: aplikacja pytala o haslo do kopii, ktora potrafi otworzyc
+sama, a uzytkownik nie mial czego wpisac.
+
+### Rozwiazanie
+`BackupService.needsPasswordPrompt()`: najpierw **cicha proba** odszyfrowania
+lokalnym kodem, i dopiero jej niepowodzenie uzasadnia pytanie.
+
+```dart
+Future<bool> needsPasswordPrompt(BackupFileInfo fileInfo) async {
+  if (!fileInfo.needsPassword) return false;
+  return !await _opensWithLocalCode(fileInfo.format as EncryptedBackup);
+}
+```
+
+### Wniosek
+Decyzja „czy zapytac uzytkownika" nie moze wynikac z **metadanych** pliku, tylko
+z tego, czy aplikacja faktycznie potrafi go otworzyc. Naglowek mowi „czym to
+zaszyfrowano", a nie „czy mam do tego klucz". Ta sama pulapka czeka wszedzie,
+gdzie UI pyta o sekret na podstawie deklaracji formatu zamiast realnej proby.

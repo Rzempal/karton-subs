@@ -32,6 +32,7 @@ Po sparowaniu (QR + haslo) zmiany przeplywaja przez **skrzynke relay w chmurze**
 | Gdzie jest klucz | Wylacznie na urzadzeniach (wyprowadzany z hasla). Nigdy na serwerze |
 | Dostep do skrzynki | Po sekretnym `household_id` (z kodu QR), nie po koncie |
 | Zakres | Tylko budzet domowy. Osobiste dane sie nie synchronizuja |
+| Slowniki (ADR-025) | W paczce jada **tylko kategorie i metody platnosci uzywane przez pozycje domowe**. Slownik jest wspoldzielony z budzetem osobistym i subskrypcjami, wiec nazwa kategorii uzywanej wylacznie prywatnie NIE opuszcza telefonu |
 
 **Swiadomy wyjatek od „zero cloud":** wlaczenie synchronizacji oznacza, ze serwer relay
 posredniczy w przesylaniu zaszyfrowanych paczek. Serwer nie odczytuje tresci, ale widzi
@@ -84,12 +85,32 @@ Referencja: `reference-code/services/backup_crypto_service.dart`
 [4B Magic] [1B Version] [1B KeyType] [16B Salt] [12B IV] [NB Ciphertext] [16B GCM Auth Tag]
 ```
 
-### Dwa tryby szyfrowania
+### Tryby szyfrowania ([ADR-024](adr/ADR-024-kopia-w-chmurze-google-i-kod-odzyskiwania.md))
 
 | Tryb | Klucz | Przenosnosc | Uzycie |
 |------|-------|-------------|--------|
-| Device Key | Android Keystore / iOS Keychain | Tylko to urzadzenie | Automatyczny backup |
+| Kod odzyskiwania | 20 znakow, PBKDF2-SHA256 (100k) | Przenoszalny | **Domyslny eksport** i kopia w chmurze |
 | Password | PBKDF2-SHA256 (100k iteracji) | Przenoszalny | Udostepnianie, migracja |
+| Device Key | Android Keystore / iOS Keychain | Tylko to urzadzenie | **Tylko ODCZYT** starych plikow |
+
+Kod odzyskiwania jest technicznie haslem (typ pliku `password`), wiec format sie
+nie zmienil. Zastapil klucz urzadzenia, bo tamten ginal razem z telefonem — czyli
+w jedynym scenariuszu, przed ktorym kopia ma chronic. Import probuje **cicho**
+lokalnego kodu przed zapytaniem o haslo.
+
+### Kopia na koncie Google — NIE jest E2E
+
+| Aspekt | Opis |
+|--------|------|
+| **Co jedzie** | Ten sam zaszyfrowany plik `.zostaje` co kopia lokalna. **Bez zdjec rachunkow** |
+| **Dokad** | Prywatna przestrzen aplikacji na Dysku (`appDataFolder`) — niewidoczna w interfejsie Dysku |
+| **Sekret** | Kod odzyskiwania lezy **obok** kopii. Google technicznie ma klucz i szyfrogram — **swiadomy kompromis** na rzecz odzyskiwalnosci ([ADR-024](adr/ADR-024-kopia-w-chmurze-google-i-kod-odzyskiwania.md)) |
+| **Sciezka prywatna** | Pozostaje: eksport „Eksportuj z haslem" i synchronizacja domowa (E2E) |
+| **Zakres OAuth** | `drive.appdata` — niewrazliwy, bez weryfikacji Google. Wiecej uprawnien nie prosimy |
+| **Sejf na kod** | Block Store (uslugi Google Play), wymaga Androida 9+ i blokady ekranu |
+| **Klucz podpisu APK** | Identyfikatory OAuth wisza na SHA-1 `debug.keystore` — utrata pliku zrywa polaczenie z Dyskiem u wszystkich |
+
+Prywatnosc opisana dla uzytkownika: [privacy-policy.md](privacy-policy.md) pkt 5.
 
 ### Algorytm
 

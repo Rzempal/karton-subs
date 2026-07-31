@@ -11,6 +11,12 @@ class AppConfig {
   static const String _baseReleasesUrl =
       'https://michalrapala.app/releases/karton-subs';
 
+  /// Opublikowana polityka prywatnosci — wersja obowiazujaca.
+  /// Ten sam adres jest wskazany w ekranie zgody OAuth (Google Cloud) i bedzie
+  /// potrzebny w Play Console. `docs/privacy-policy.md` to tylko kopia robocza.
+  static const String privacyPolicyUrl =
+      'https://www.michalrapala.com/aplikacje/zostaje/privacy';
+
   static String get versionJsonUrl => isInternal
       ? '$_baseReleasesUrl/internal/version-internal.json'
       : '$_baseReleasesUrl/version.json';

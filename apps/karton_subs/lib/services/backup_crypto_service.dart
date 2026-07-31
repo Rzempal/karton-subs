@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart';
 
+import 'recovery_key_vault.dart';
+
 /// Typ klucza szyfrowania w pliku .subkarton v2
 enum BackupKeyType {
   device(0x01),
@@ -60,9 +62,15 @@ class BackupCryptoService {
 
   // Unikalny alias dla karton-subs (oddzielony od APPteczka)
   static const _deviceKeyAlias = 'karton_subs_backup_device_key';
+  static const _recoveryCodeAlias = 'karton_subs_backup_recovery_code';
   static const _secureStorage = FlutterSecureStorage();
 
+  /// Alfabet kodu odzyskiwania — bez znakow mylacych (0/O, 1/I/L).
+  static const _codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  static const _codeLength = 20; // ~99 bitow entropii
+
   final _random = Random.secure();
+  final _vault = RecoveryKeyVault();
 
   BackupFormat detectFormat(Uint8List bytes) {
     if (bytes.isNotEmpty && bytes[0] == 0x7B) {
@@ -110,6 +118,79 @@ class BackupCryptoService {
   String decryptWithPassword(EncryptedBackup backup, String password) {
     final key = _deriveKey(password, backup.salt);
     return _decrypt(backup, key);
+  }
+
+  // ==================== KOD ODZYSKIWANIA ====================
+
+  /// Szyfruje kodem odzyskiwania. Plik uzywa istniejacego typu `password` —
+  /// kod JEST haslem, tylko wygenerowanym i przechowanym za uzytkownika.
+  Future<Uint8List> encryptWithRecoveryCode(String jsonString) async {
+    final code = await getOrCreateRecoveryCode();
+    return encryptWithPassword(jsonString, code);
+  }
+
+  /// Zwraca kod odzyskiwania; generuje przy pierwszym uzyciu.
+  ///
+  /// Kolejnosc szukania: magazyn tego telefonu -> sejf konta Google (kod
+  /// z poprzedniego telefonu) -> dopiero nowy kod. Kod znaleziony lokalnie
+  /// NIGDY nie jest nadpisywany tym z sejfu — inaczej kopie zrobione na tym
+  /// telefonie przestalyby sie otwierac.
+  Future<String> getOrCreateRecoveryCode() async {
+    final local = await getRecoveryCode();
+    if (local != null) {
+      await _vault.saveRecoveryCode(local); // sejf mogl byc pusty (aktualizacja)
+      return local;
+    }
+
+    final fromVault = await _vault.readRecoveryCode();
+    if (fromVault != null) {
+      await _secureStorage.write(key: _recoveryCodeAlias, value: fromVault);
+      return fromVault;
+    }
+
+    final code = List.generate(
+      _codeLength,
+      (_) => _codeAlphabet[_random.nextInt(_codeAlphabet.length)],
+    ).join();
+    await _secureStorage.write(key: _recoveryCodeAlias, value: code);
+    await _vault.saveRecoveryCode(code);
+    return code;
+  }
+
+  /// Zapisany kod albo null, gdy jeszcze nie wygenerowany.
+  Future<String?> getRecoveryCode() =>
+      _secureStorage.read(key: _recoveryCodeAlias);
+
+  /// Przyjmuje kod pobrany z kopii w chmurze — tylko gdy telefon nie ma
+  /// jeszcze wlasnego. Zwraca kod obowiazujacy po tej operacji.
+  Future<String> adoptRecoveryCode(String code) async {
+    final local = await getRecoveryCode();
+    if (local != null) return local;
+
+    await _secureStorage.write(key: _recoveryCodeAlias, value: code);
+    await _vault.saveRecoveryCode(code);
+    return code;
+  }
+
+  /// Czy kod jest zapisany na koncie Google, czyli przetrwa wymiane telefonu.
+  Future<bool> isCodeBackedUpToAccount() => _vault.isCloudBackupAvailable();
+
+  /// Postac do pokazania: XXXXX-XXXXX-XXXXX-XXXXX.
+  static String formatRecoveryCode(String code) {
+    final groups = <String>[];
+    for (var i = 0; i < code.length; i += 5) {
+      groups.add(code.substring(i, i + 5 > code.length ? code.length : i + 5));
+    }
+    return groups.join('-');
+  }
+
+  /// Normalizuje tekst wpisany przez uzytkownika do postaci kanonicznej kodu.
+  /// Zwraca null, gdy tekst nie wyglada na kod odzyskiwania (wtedy to haslo).
+  static String? normalizeRecoveryCodeCandidate(String input) {
+    final cleaned = input.toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
+    if (cleaned.length != _codeLength) return null;
+    if (!RegExp('^[$_codeAlphabet]+\$').hasMatch(cleaned)) return null;
+    return cleaned;
   }
 
   Future<Uint8List> _getOrCreateDeviceKey() async {

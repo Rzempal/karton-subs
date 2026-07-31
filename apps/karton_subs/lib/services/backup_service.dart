@@ -74,13 +74,22 @@ class BackupService {
 
   // ── Eksport ────────────────────────────────────────────────────────────────
 
-  /// Eksportuje zaszyfrowany backup (kluczem urządzenia) i udostępnia przez system share sheet.
-  Future<void> exportWithDeviceKey() async {
+  /// Eksportuje backup zaszyfrowany kodem odzyskiwania i udostępnia go
+  /// przez systemowe okno wysyłania.
+  ///
+  /// Zastąpiło szyfrowanie kluczem urządzenia: tamten klucz ginął razem
+  /// z telefonem, czyli w jedynym scenariuszu, przed którym kopia ma chronić.
+  /// Odczyt starych plików z kluczem urządzenia zostaje bez zmian.
+  Future<void> exportWithRecoveryCode() async {
     final json = _buildJsonPayload();
-    final encrypted = await _crypto.encryptWithDeviceKey(json);
+    final encrypted = await _crypto.encryptWithRecoveryCode(json);
     await _shareFile(encrypted);
-    _log.info('Backup wyeksportowany (device key)');
+    _log.info('Backup wyeksportowany (kod odzyskiwania)');
   }
+
+  /// Bajty kopii bez zapisywania do pliku — dla kopii na koncie Google.
+  Future<Uint8List> buildEncryptedSnapshot() =>
+      _crypto.encryptWithRecoveryCode(_buildJsonPayload());
 
   /// Eksportuje zaszyfrowany backup (hasłem użytkownika).
   Future<void> exportWithPassword(String password) async {
@@ -141,10 +150,7 @@ class BackupService {
       jsonString = format.jsonString;
     } else if (format is EncryptedBackup) {
       if (format.keyType == BackupKeyType.password) {
-        if (password == null || password.isEmpty) {
-          throw const FormatException('Ten backup wymaga hasła');
-        }
-        jsonString = _crypto.decryptWithPassword(format, password);
+        jsonString = await _decryptPasswordBackup(format, password);
       } else {
         jsonString = await _crypto.decryptWithDeviceKey(format);
       }
@@ -153,6 +159,52 @@ class BackupService {
     }
 
     return await _applyJsonPayload(jsonString, replace: replace);
+  }
+
+  /// Czy trzeba pytać użytkownika o hasło. Kopie zrobione na tym telefonie
+  /// otwierają się kodem odzyskiwania, więc pytanie byłoby zbędne.
+  Future<bool> needsPasswordPrompt(BackupFileInfo fileInfo) async {
+    if (!fileInfo.needsPassword) return false;
+    return !await _opensWithLocalCode(fileInfo.format as EncryptedBackup);
+  }
+
+  Future<bool> _opensWithLocalCode(EncryptedBackup backup) async {
+    final code = await _crypto.getRecoveryCode();
+    if (code == null) return false;
+    try {
+      _crypto.decryptWithPassword(backup, code);
+      return true;
+    } on FormatException {
+      return false;
+    }
+  }
+
+  /// Kolejność: kod odzyskiwania z tego telefonu (cicho) → podane hasło →
+  /// to samo hasło potraktowane jak kod wpisany luźno (małe litery, spacje).
+  Future<String> _decryptPasswordBackup(
+    EncryptedBackup backup,
+    String? password,
+  ) async {
+    final code = await _crypto.getRecoveryCode();
+    if (code != null) {
+      try {
+        return _crypto.decryptWithPassword(backup, code);
+      } on FormatException {
+        // Kopia z innego telefonu — potrzebne hasło albo cudzy kod.
+      }
+    }
+
+    if (password == null || password.isEmpty) {
+      throw const FormatException('Ten backup wymaga hasła lub kodu odzyskiwania');
+    }
+
+    try {
+      return _crypto.decryptWithPassword(backup, password);
+    } on FormatException {
+      final asCode = BackupCryptoService.normalizeRecoveryCodeCandidate(password);
+      if (asCode != null) return _crypto.decryptWithPassword(backup, asCode);
+      rethrow;
+    }
   }
 
   /// Legacy: otwiera file picker + importuje (dla kompatybilności).
