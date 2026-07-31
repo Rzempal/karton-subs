@@ -1,7 +1,10 @@
 {
-  "releaseNotes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226073101",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1226073102",
   "changelog": [
+    {
+      "version": "0.12.26073102",
+      "notes": "- przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- zdjecie i odhaczenie platnosci ida razem z przeniesiona pozycja"
+    },
     {
       "version": "0.12.26073101",
       "notes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)"
@@ -37,13 +40,10 @@
     {
       "version": "0.11.26072704",
       "notes": "- Bilans miesiaca: nowa sekcja Rzeczywisty bilans miesiaca nad kalendarzem (pasek + rozpis: wplywy, koszty cykliczne z korektami, subskrypcje, rachunki)\n- Kalendarz nie powtarza juz kwoty bilansu\n- Przytrzymanie kwoty bilansu nadal otwiera rozbicie bilans vs plan"
-    },
-    {
-      "version": "0.11.26072703",
-      "notes": "- Saldo: subskrypcje jako osobna pozycja odejmowania (zamiast opisu w tym)\n- Saldo: rezerwa nazwana Zaplanowana na rachunki\n- Kwoty wg jednej reguly koloru: zielony wplywy i dodatnie saldo, czerwony koszty i deficyt\n- Nowy akordeon Koszty roczne: cykliczne, subskrypcje i rezerwa w skali roku"
     }
   ],
-  "releaseDate": "2026-07-31T19:21:24Z",
-  "version": "0.12.26073101",
-  "versionCode": 1226073101
+  "version": "0.12.26073102",
+  "versionCode": 1226073102,
+  "releaseNotes": "- przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- zdjecie i odhaczenie platnosci ida razem z przeniesiona pozycja",
+  "releaseDate": "2026-07-31T20:14:55Z"
 }

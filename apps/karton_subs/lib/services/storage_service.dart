@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
@@ -34,9 +35,21 @@ class StorageService {
   final Map<String, BudgetEntry> _householdBudgetEntriesCache = {};
   bool _initialized = false;
 
+  /// Otwiera pudełka na już zainicjalizowanym Hive — do testów, które robią
+  /// `Hive.init(katalogTymczasowy)`. Produkcyjne [init] różni się wyłącznie
+  /// `initFlutter()`, którego w teście nie ma jak wywołać (potrzebuje wtyczki
+  /// od ścieżek).
+  @visibleForTesting
+  Future<void> initForTests() => _openBoxes();
+
   Future<void> init() async {
     if (_initialized) return;
     await Hive.initFlutter();
+    await _openBoxes();
+  }
+
+  Future<void> _openBoxes() async {
+    if (_initialized) return;
     _subscriptionsBox = await Hive.openBox<String>('subscriptions');
     _categoriesBox = await Hive.openBox<String>('categories');
     _paymentMethodsBox = await Hive.openBox<String>('payment_methods');
@@ -354,6 +367,26 @@ class StorageService {
     } else {
       await _paymentDoneBox.delete(key);
     }
+  }
+
+  /// Przepina odhaczenia płatności na nowy klucz — przy przeniesieniu rachunku
+  /// między budżetami zmienia się i zakres, i `id`, a klucz zawiera oba
+  /// (`zakres|id|data`). Bez tego zapłacony rachunek wróciłby na listę
+  /// „Płatności" do odhaczenia. Zwraca liczbę przeniesionych wpisów.
+  Future<int> movePaymentDone(String fromPrefix, String toPrefix) async {
+    final moved = <String, bool>{};
+    for (final key in _paymentDoneBox.keys.toList()) {
+      final k = '$key';
+      if (!k.startsWith(fromPrefix)) continue;
+      if (_paymentDoneBox.get(key) == true) {
+        moved['$toPrefix${k.substring(fromPrefix.length)}'] = true;
+      }
+      await _paymentDoneBox.delete(key);
+    }
+    for (final e in moved.entries) {
+      await _paymentDoneBox.put(e.key, e.value);
+    }
+    return moved.length;
   }
 
   /// Wszystkie odhaczone płatności (do backupu). Klucz → true.

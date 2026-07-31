@@ -683,6 +683,60 @@ class BudgetController extends ChangeNotifier {
     );
   }
 
+  /// Przenosi pozycję do drugiego budżetu (osobisty ↔ domowy). Zwraca `null`
+  /// przy powodzeniu albo komunikat, dlaczego się nie da.
+  ///
+  /// Zakres nie jest polem pozycji, tylko wynika z pudełka, w którym leży —
+  /// przeniesienie to zapis w nowym i usunięcie ze starego. Trzy rzeczy, które
+  /// muszą pójść razem z nią:
+  ///
+  /// 1. **Nagrobek przy wyjściu z domowego.** Domowy kasuje przez `deleted`,
+  ///    więc zwykłe wyjęcie rekordu skończyłoby się przywróceniem pozycji
+  ///    z serwera przy najbliższej synchronizacji — i liczeniem jej w obu
+  ///    budżetach naraz.
+  /// 2. **Zdjęcie rachunku**, trzymane poza pozycją (mapa po `id`).
+  /// 3. **Odhaczenie płatności**, którego klucz zawiera zakres ORAZ `id`.
+  ///
+  /// Nowe `id` jest celowe: nagrobek zostaje przy starym, więc pozycja nie ma
+  /// jak się z nim zderzyć, gdyby kiedyś wróciła.
+  Future<String?> moveToScope(String id) async {
+    final from = _scope;
+    final to = from == BudgetScope.personal
+        ? BudgetScope.household
+        : BudgetScope.personal;
+
+    final entry = _storage.getBudgetEntry(id, from);
+    if (entry == null) return 'Nie znaleziono pozycji do przeniesienia.';
+    // Przelew między budżetami to PARA (pozycja + lustro spięte linkId) —
+    // przeniesienie jednej strony rozspoiłoby ją z drugą.
+    if (entry.linkId != null) {
+      return 'Przelewu między budżetami nie da się przenieść — usuń go '
+          'i dodaj w docelowym budżecie.';
+    }
+
+    final newId = _uuid.v4();
+    final moved = entry.copyWith(
+      id: newId,
+      updatedAt: DateTime.now(),
+      deleted: false,
+    );
+    await _storage.saveBudgetEntry(moved, to);
+    await _removeOrTombstone(entry, from);
+
+    final photo = _storage.getReceiptPhotoPath(id);
+    if (photo != null) {
+      await _storage.setReceiptPhotoPath(newId, photo);
+      await _storage.removeReceiptPhotoPath(id);
+    }
+    await _storage.movePaymentDone('${from.name}|$id|', '${to.name}|$newId|');
+
+    _log.info('Przeniesiono pozycję $id ($from) -> $newId ($to)');
+    // Domowy jest po stronie zmiany zawsze: albo tam trafia pozycja, albo
+    // zostaje w nim nagrobek do wysłania.
+    _notifyMutation(touchedHousehold: true);
+    return null;
+  }
+
   /// Usuwa pozycję: domowy zostawia **nagrobek** (deleted=true), by usunięcie
   /// propagowało się przy synchronizacji; osobisty kasuje twardo (brak sync).
   Future<void> _removeOrTombstone(BudgetEntry entry, BudgetScope scope) async {

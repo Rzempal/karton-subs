@@ -252,6 +252,61 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// Przenosi rachunek do drugiego budżetu. Zdjęcie i odhaczenie płatności idą
+  /// razem z nim; szczegóły w [BudgetController.moveToScope].
+  Future<void> _moveToOtherScope() async {
+    final ctrl = context.read<BudgetController>();
+    final toHousehold = ctrl.scope == BudgetScope.personal;
+    final target = toHousehold ? 'domowego' : 'osobistego';
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Przenieść do budżetu $target?'),
+        content: Text(
+          toHousehold
+              // Domowy jest synchronizowany — mówimy wprost, że rachunek
+              // zobaczy druga osoba.
+              ? '„${widget.existing!.name}" zniknie z Twojego budżetu '
+                    'osobistego i pojawi się w domowym — także na telefonie '
+                    'drugiej osoby po synchronizacji.'
+              : '„${widget.existing!.name}" zniknie z budżetu domowego '
+                    '(również u drugiej osoby) i trafi do Twojego osobistego.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Przenieś'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() => _isSubmitting = true);
+    final error = await ctrl.moveToScope(widget.existing!.id);
+    if (!mounted) return;
+    if (error != null) {
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    // Po przeniesieniu pokazujemy budżet, w którym rachunek teraz jest —
+    // inaczej użytkownik wraca na listę, na której go nie ma.
+    ctrl.setScope(
+      toHousehold ? BudgetScope.household : BudgetScope.personal,
+    );
+    Navigator.of(context).pop(true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Przeniesiono do budżetu $target.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = context.read<StorageService>().getCategories();
@@ -452,6 +507,22 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
               onPressed: _isSubmitting ? null : _submit,
               child: Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj rachunek'),
             ),
+            // Przeniesienie tylko przy edycji i tylko wtedy, gdy oba budżety są
+            // w użyciu — w trybie jednozakresowym nie ma dokąd przenosić.
+            if (_isEditing &&
+                context.watch<BudgetController>().scopeSelectable) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _isSubmitting ? null : _moveToOtherScope,
+                icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
+                label: Text(
+                  context.read<BudgetController>().scope ==
+                          BudgetScope.personal
+                      ? 'Przenieś do budżetu domowego'
+                      : 'Przenieś do budżetu osobistego',
+                ),
+              ),
+            ],
           ],
         ),
       ),

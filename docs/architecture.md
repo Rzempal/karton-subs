@@ -276,6 +276,17 @@ wygrywa" per pozycja (`updatedAt`) + nagrobki (`deleted`). Osobisty zostaje loka
 Patrz [ADR-009](adr/ADR-009-synchronizacja-budzetu-domowego-relay-e2e.md) i
 [security.md](security.md).
 
+**Przeniesienie rachunku miedzy budzetami:** `BudgetController.moveToScope`
+przenosi pozycje osobisty ↔ domowy (akcja w formularzu edycji rachunku, tylko
+gdy oba budzety sa w uzyciu). Zakres nie jest polem pozycji, tylko wynika
+z pudelka, wiec przeniesienie = zapis w nowym + usuniecie ze starego. Trzy
+rzeczy jada razem z pozycja: **nagrobek** przy wyjsciu z domowego (bez niego
+synchronizacja przywroci pozycje z serwera i policzy ja w obu budzetach),
+**zdjecie rachunku** (mapa po `id`) i **odhaczenie platnosci** (klucz zawiera
+zakres ORAZ `id`). Pozycja dostaje NOWE `id` — nagrobek zostaje przy starym,
+wiec nie ma jak sie z nia zderzyc, gdyby wrocila. Przelewy miedzy budzetami
+(`householdTransfer` z `linkId`) sa odrzucane: to para pozycja + lustro.
+
 **Slowniki w paczce (ADR-025):** kategorie i metody platnosci jada jako sekcja
 opcjonalna `dictionaries` — bez nich pozycja u drugiej osoby wskazywala na
 nieistniejaca kategorie (znikala z karty, wpadala do „Inne"), a platnosc
