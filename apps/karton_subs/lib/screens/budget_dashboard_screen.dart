@@ -268,26 +268,29 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                           : _BudgetSort.alpha,
                     ),
                   ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    isSelected: _grouping == _BudgetGrouping.byCategory,
-                    tooltip: _grouping == _BudgetGrouping.byCategory
-                        ? 'Podgrupy po kategoriach (włączone)'
-                        : 'Grupuj wydatki po kategoriach',
-                    style: _grouping == _BudgetGrouping.byCategory
-                        ? IconButton.styleFrom(
-                            backgroundColor: context.semanticColors.primary
-                                .withValues(alpha: 0.25),
-                            foregroundColor: context.semanticColors.primary,
-                          )
-                        : null,
-                    icon: const Icon(LucideIcons.layers, size: 18),
-                    onPressed: () => setState(
-                      () => _grouping = _grouping == _BudgetGrouping.byCategory
-                          ? _BudgetGrouping.byType
-                          : _BudgetGrouping.byCategory,
+                  // Wplywy nie maja kategorii, wiec nie ma czego grupowac.
+                  if (!_onIncomes)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      isSelected: _grouping == _BudgetGrouping.byCategory,
+                      tooltip: _grouping == _BudgetGrouping.byCategory
+                          ? 'Podgrupy po kategoriach (włączone)'
+                          : 'Grupuj wydatki po kategoriach',
+                      style: _grouping == _BudgetGrouping.byCategory
+                          ? IconButton.styleFrom(
+                              backgroundColor: context.semanticColors.primary
+                                  .withValues(alpha: 0.25),
+                              foregroundColor: context.semanticColors.primary,
+                            )
+                          : null,
+                      icon: const Icon(LucideIcons.layers, size: 18),
+                      onPressed: () => setState(
+                        () =>
+                            _grouping = _grouping == _BudgetGrouping.byCategory
+                            ? _BudgetGrouping.byType
+                            : _BudgetGrouping.byCategory,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -415,6 +418,16 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     return out;
   }
 
+  /// Typy nalezace do TEJ sekcji. Wplywy maja wlasny ekran (ADR-019), wiec
+  /// przy nich nie ma po co pokazywac kosztow ani rat.
+  List<BudgetEntryType> get _sectionTypes => _onIncomes
+      ? const [BudgetEntryType.income, BudgetEntryType.oneTimeIncome]
+      : const [
+          BudgetEntryType.recurringCost,
+          BudgetEntryType.installment,
+          BudgetEntryType.householdTransfer,
+        ];
+
   Future<void> _openAdd({BudgetEntryType? initialType, String? initialName}) {
     final ctrl = context.read<BudgetController>();
     return Navigator.of(context).push(
@@ -423,6 +436,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           scope: ctrl.scope,
           initialType: initialType,
           initialName: initialName,
+          allowedTypes: _sectionTypes,
         ),
       ),
     );
@@ -452,7 +466,11 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     }
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddBudgetEntryScreen(existing: e, scope: ctrl.scope),
+        builder: (_) => AddBudgetEntryScreen(
+          existing: e,
+          scope: ctrl.scope,
+          allowedTypes: _sectionTypes,
+        ),
       ),
     );
   }
@@ -497,7 +515,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ),
     );
   }
-
 }
 
 class _Section extends StatelessWidget {
@@ -938,4 +955,3 @@ class _AllocationSummaryRow extends StatelessWidget {
     );
   }
 }
-

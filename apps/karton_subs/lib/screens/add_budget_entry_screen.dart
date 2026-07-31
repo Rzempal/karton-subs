@@ -23,12 +23,20 @@ class AddBudgetEntryScreen extends StatefulWidget {
   /// (przelew do domowego tylko w osobistym).
   final BudgetScope scope;
 
+  /// Typy do wyboru, zawężone do sekcji, z której otwarto formularz.
+  /// Odkąd wpływy mają własny ekran (ADR-019), pokazywanie przy nich „Kosztu
+  /// cyklicznego" czy „Raty" tylko zaśmiecało wybór — a zmiana typu i tak
+  /// przeniosłaby pozycję na inny ekran, poza zasięg wzroku.
+  /// `null` = wszystkie typy (wejście spoza sekcji).
+  final List<BudgetEntryType>? allowedTypes;
+
   const AddBudgetEntryScreen({
     super.key,
     this.existing,
     this.initialType,
     this.initialName,
     this.scope = BudgetScope.personal,
+    this.allowedTypes,
   });
 
   @override
@@ -91,13 +99,25 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
   /// Wydatki jednorazowe NIE są tu obecne: to ten sam byt co rachunek, więc
   /// mają jedno miejsce dodawania — ekran „Rachunki" (ADR-018).
-  List<BudgetEntryType> get _availableTypes => [
-    BudgetEntryType.income,
-    BudgetEntryType.recurringCost,
-    BudgetEntryType.installment,
-    BudgetEntryType.oneTimeIncome,
-    if (widget.scope == BudgetScope.personal) BudgetEntryType.householdTransfer,
-  ];
+  List<BudgetEntryType> get _availableTypes {
+    final inScope = [
+      BudgetEntryType.income,
+      BudgetEntryType.recurringCost,
+      BudgetEntryType.installment,
+      BudgetEntryType.oneTimeIncome,
+      if (widget.scope == BudgetScope.personal)
+        BudgetEntryType.householdTransfer,
+    ];
+    final allowed = widget.allowedTypes;
+    if (allowed == null) return inScope;
+
+    final list = inScope.where(allowed.contains).toList();
+    // Edytowana pozycja musi zostac na liscie, nawet jesli jej typ nie nalezy
+    // do sekcji (stare dane) — inaczej zaden chip nie bylby zaznaczony.
+    final current = widget.existing?.type;
+    if (current != null && !list.contains(current)) list.insert(0, current);
+    return list;
+  }
 
   @override
   void initState() {
@@ -748,8 +768,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     // (zachowuje się jak miesięczny, zamiast gubić pozycję w kalendarzu).
     final effCycleMonths = effCycle == BillingCycle.monthsOfYear && !_isOneTime
         ? (_cycleMonths.isEmpty
-            ? CycleMonthsPicker.everyN(2, (effStartDate ?? _oneTimeDate).month)
-            : _cycleMonths)
+              ? CycleMonthsPicker.everyN(
+                  2,
+                  (effStartDate ?? _oneTimeDate).month,
+                )
+              : _cycleMonths)
         : null;
 
     try {
@@ -867,7 +890,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       parts.add('dzień ${DateFormat('d MMM', 'pl').format(ov.date!)}');
     }
     if (ov.amount != null) {
-      parts.add('${ov.amount!.toStringAsFixed(2)}${curLabelSuffix(_currency.label)}');
+      parts.add(
+        '${ov.amount!.toStringAsFixed(2)}${curLabelSuffix(_currency.label)}',
+      );
     }
     return parts.isEmpty ? 'bez zmian' : parts.join(' · ');
   }
@@ -922,7 +947,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                 controller: amountCtrl,
                 decoration: InputDecoration(
                   labelText:
-                    'Kwota — opcjonalnie${_currency == appDefaultCurrency ? '' : ' (${_currency.label})'}',
+                      'Kwota — opcjonalnie${_currency == appDefaultCurrency ? '' : ' (${_currency.label})'}',
                   hintText: 'puste = kwota bazowa',
                 ),
                 keyboardType: const TextInputType.numberWithOptions(

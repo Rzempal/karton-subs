@@ -1,7 +1,11 @@
 {
-  "releaseNotes": "- wiecej miejsca: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- przelacznik Osobisty/Domowy na samej gorze, wspolny dla wszystkich ekranow\n- sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- opis sekcji (ikona i) obok przelacznika zakresu",
-  "version": "0.14.26080100",
+  "releaseDate": "2026-08-01T00:19:29Z",
+  "releaseNotes": "- formularz pokazuje tylko typy z tej sekcji (Wplywy: wplyw i wplyw jednorazowy)\n- grupowanie po kategoriach znika na ekranie Wplywy (nie maja kategorii)",
   "changelog": [
+    {
+      "version": "0.15.26080101",
+      "notes": "- formularz pokazuje tylko typy z tej sekcji (Wplywy: wplyw i wplyw jednorazowy)\n- grupowanie po kategoriach znika na ekranie Wplywy (nie maja kategorii)"
+    },
     {
       "version": "0.14.26080100",
       "notes": "- wiecej miejsca: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- przelacznik Osobisty/Domowy na samej gorze, wspolny dla wszystkich ekranow\n- sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- opis sekcji (ikona i) obok przelacznika zakresu"
@@ -37,13 +41,9 @@
     {
       "version": "0.12.26072900",
       "notes": "- kopia zapasowa na koncie Google (ukryty folder na Dysku)\n- kod odzyskiwania zamiast klucza urzadzenia, chowany w sejfie konta\n- przywracanie z chmury bez wpisywania kodu"
-    },
-    {
-      "version": "0.12.26072708",
-      "notes": "- Rownolegle z wydaniem PROD 0.12.26072700 (te same zmiany)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1426080100",
-  "versionCode": 1426080100,
-  "releaseDate": "2026-08-01T00:04:58Z"
+  "version": "0.15.26080101",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080101",
+  "versionCode": 1526080101
 }
