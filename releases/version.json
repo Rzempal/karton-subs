@@ -1,7 +1,13 @@
 {
-  "releaseDate": "2026-07-31T20:44:22Z",
-  "releaseNotes": "- Kopia zapasowa na koncie Google: automat raz na dobe, kod odzyskiwania zamiast klucza urzadzenia\n- Przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- Budzet domowy: kategorie i metody platnosci trafiaja na drugi telefon razem z pozycjami\n- Poprawka: udostepniony rachunek nie dodaje sie ponownie przy kazdym uruchomieniu aplikacji\n- Poprawka: pozycje w trakcie rozpoznawania mozna odrzucic",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1326073101",
+  "releaseDate": "2026-07-31T22:37:13Z",
+  "versionCode": 1326073101,
+  "releaseNotes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)",
   "changelog": [
+    {
+      "version": "0.13.26073101",
+      "notes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)"
+    },
     {
       "version": "0.13.26073100",
       "notes": "- Kopia zapasowa na koncie Google: automat raz na dobe, kod odzyskiwania zamiast klucza urzadzenia\n- Przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- Budzet domowy: kategorie i metody platnosci trafiaja na drugi telefon razem z pozycjami\n- Poprawka: udostepniony rachunek nie dodaje sie ponownie przy kazdym uruchomieniu aplikacji\n- Poprawka: pozycje w trakcie rozpoznawania mozna odrzucic"
@@ -37,13 +43,7 @@
     {
       "version": "0.9.26062400",
       "notes": "- Nowy system motywow: tryb jasny/ciemny/systemowy x kolor (Purple Green, Laguna Ocean, Mono, Material You)\n- Ustawienia podzielone na osobne ekrany (Wyglad, Dane, Aplikacja)\n- Poprawki kontrastu zaznaczonych chipow"
-    },
-    {
-      "version": "0.9.26062100",
-      "notes": "- Baner dostepnej aktualizacji na Dashboardzie"
     }
   ],
-  "versionCode": 1326073100,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1326073100",
-  "version": "0.13.26073100"
+  "version": "0.13.26073101"
 }
