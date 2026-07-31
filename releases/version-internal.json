@@ -1,7 +1,14 @@
 {
-  "releaseDate": "2026-08-01T00:19:29Z",
-  "releaseNotes": "- formularz pokazuje tylko typy z tej sekcji (Wplywy: wplyw i wplyw jednorazowy)\n- grupowanie po kategoriach znika na ekranie Wplywy (nie maja kategorii)",
+  "version": "0.15.26080102",
+  "releaseDate": "2026-08-01T01:00:46Z",
+  "releaseNotes": "- filtr kategorii znika na ekranie Wplywy (kategorie liczone z pozycji tego ekranu)\n- zniknal blednie pokazywany naglowek Wydatki stale nad lista wplywow",
+  "versionCode": 1526080102,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080102",
   "changelog": [
+    {
+      "version": "0.15.26080102",
+      "notes": "- filtr kategorii znika na ekranie Wplywy (kategorie liczone z pozycji tego ekranu)\n- zniknal blednie pokazywany naglowek Wydatki stale nad lista wplywow"
+    },
     {
       "version": "0.15.26080101",
       "notes": "- formularz pokazuje tylko typy z tej sekcji (Wplywy: wplyw i wplyw jednorazowy)\n- grupowanie po kategoriach znika na ekranie Wplywy (nie maja kategorii)"
@@ -37,13 +44,6 @@
     {
       "version": "0.12.26073000",
       "notes": "- link do polityki prywatnosci w Ustawieniach"
-    },
-    {
-      "version": "0.12.26072900",
-      "notes": "- kopia zapasowa na koncie Google (ukryty folder na Dysku)\n- kod odzyskiwania zamiast klucza urzadzenia, chowany w sejfie konta\n- przywracanie z chmury bez wpisywania kodu"
     }
-  ],
-  "version": "0.15.26080101",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080101",
-  "versionCode": 1526080101
+  ]
 }

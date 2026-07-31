@@ -127,11 +127,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final isEmpty = rawBuckets.every((b) => b.$2.isEmpty);
 
     // Kategorie użyte w wydatkach (pasek filtra kategorii).
+    // Kategorie do filtra bierzemy z pozycji WIDOCZNYCH na tym ekranie.
+    // Liczone ze sztywnej listy wydatkow pokazywaly sie takze na Wplywach,
+    // gdzie wybor kategorii czyscil liste do zera (wplywy kategorii nie maja).
     final usedCatIds = <String>{
-      for (final e in ctrl.recurringExpenses)
-        if (e.categoryId != null) e.categoryId!,
-      for (final e in ctrl.internalTransfers)
-        if (e.categoryId != null) e.categoryId!,
+      for (final b in rawBuckets)
+        for (final e in b.$2)
+          if (e.categoryId != null) e.categoryId!,
     };
     final filterCategories = context
         .read<StorageService>()
@@ -244,13 +246,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      expensesTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+                  const Spacer(),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     tooltip: _sort == _BudgetSort.alpha
