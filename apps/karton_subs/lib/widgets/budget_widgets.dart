@@ -380,10 +380,7 @@ class MonthBalanceSection extends StatelessWidget {
     final amountText =
         '${positive ? '' : '−'}${budgetNf.format(balance.abs())}'
         '${curLabelSuffix(currency)}';
-    final scale = [
-      parts.income,
-      parts.costs,
-    ].reduce((a, b) => a > b ? a : b);
+    final scale = [parts.income, parts.costs].reduce((a, b) => a > b ? a : b);
     final leftover = balance > 0 ? balance : 0.0;
 
     String pct(double v) =>
@@ -692,9 +689,9 @@ class _BreakdownRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final style = (emphasis
-        ? theme.textTheme.titleSmall
-        : theme.textTheme.bodyMedium)?.copyWith(color: color);
+    final style =
+        (emphasis ? theme.textTheme.titleSmall : theme.textTheme.bodyMedium)
+            ?.copyWith(color: color);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -880,7 +877,6 @@ class BudgetMonthSection extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Treść bottom sheeta „dlaczego bilans ≠ saldo": saldo planu → pozycje
@@ -1072,14 +1068,17 @@ List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
 }
 
 /// Podpis podgrupy typu głównego (wewnątrz sekcji).
-Widget _kindLabel(ThemeData theme, AppSemanticColors c, CalendarItemKind kind) =>
-    Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 2),
-      child: Text(
-        kind.label,
-        style: theme.textTheme.labelSmall?.copyWith(color: c.textMuted),
-      ),
-    );
+Widget _kindLabel(
+  ThemeData theme,
+  AppSemanticColors c,
+  CalendarItemKind kind,
+) => Padding(
+  padding: const EdgeInsets.only(top: 8, bottom: 2),
+  child: Text(
+    kind.label,
+    style: theme.textTheme.labelSmall?.copyWith(color: c.textMuted),
+  ),
+);
 
 /// Sekcja „Podsumowanie miesiąca": pełne listy wpływów i wydatków z kalendarza
 /// przepływów, posortowane wg dnia, z sumami. Kwoty to realne płatności miesiąca
@@ -1133,8 +1132,10 @@ class MonthSummarySection extends StatelessWidget {
     }
     if (incomes.isEmpty && expenses.isEmpty) return const SizedBox.shrink();
     if (sort == MonthFlowSort.byName) {
-      int byName(({int day, CalendarItem item}) a, ({int day, CalendarItem item}) b) =>
-          a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase());
+      int byName(
+        ({int day, CalendarItem item}) a,
+        ({int day, CalendarItem item}) b,
+      ) => a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase());
       incomes.sort(byName);
       expenses.sort(byName);
     }
@@ -1198,7 +1199,13 @@ class MonthSummarySection extends StatelessWidget {
               ],
               if (expenses.isNotEmpty) ...[
                 if (incomes.isNotEmpty) const Divider(height: 24),
-                _sectionHeader(theme, c, 'Wydatki', expenseTotal, income: false),
+                _sectionHeader(
+                  theme,
+                  c,
+                  'Wydatki',
+                  expenseTotal,
+                  income: false,
+                ),
                 ..._rows(theme, c, expenses),
               ],
             ],
@@ -1576,13 +1583,7 @@ class _PayRow {
   /// Typ główny (rachunek / subskrypcja / budżet) — do grupowania podgrupami.
   final CalendarItemKind kind;
 
-  const _PayRow(
-    this.name,
-    this.amount,
-    this.date,
-    this.sourceId,
-    this.kind,
-  );
+  const _PayRow(this.name, this.amount, this.date, this.sourceId, this.kind);
 }
 
 class _DayDetail extends StatelessWidget {
@@ -1719,9 +1720,6 @@ class BudgetEntryCard extends StatelessWidget {
       child: Opacity(
         opacity: dimmed ? 0.5 : 1.0,
         child: Padding(
-          // Ciasny wiersz zamiast karty: lista rachunkow potrafi miec
-          // kilkadziesiat pozycji, a kazda ramka i cien kosztowaly pionowy
-          // ekran. Pozycje rozdziela cienki separator (patrz [BudgetEntryList]).
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -1739,10 +1737,16 @@ class BudgetEntryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Linia 1: nazwa + kategoria (kropka w kolorze kategorii).
+                    // Linia 1: nazwa, kategoria i KWOTA. Kwota stoi tutaj,
+                    // a nie z boku obu linii — dzieki temu druga linia ma cala
+                    // szerokosc wiersza na typ, date i sposob platnosci.
                     Row(
                       children: [
-                        Flexible(
+                        // Nazwa bierze cale wolne miejsce; kategoria zajmuje
+                        // tylko tyle, ile potrzebuje (z gornym limitem).
+                        // Wczesniej obie byly elastyczne po rowno, wiec nazwa
+                        // skracala sie mimo zapasu obok krotkiej kategorii.
+                        Expanded(
                           child: Text(
                             entry.name,
                             maxLines: 1,
@@ -1752,30 +1756,47 @@ class BudgetEntryCard extends StatelessWidget {
                         ),
                         if (category != null) ...[
                           const SizedBox(width: 8),
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: category.color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              category.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: category.color,
-                              ),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 110),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: BoxDecoration(
+                                    color: category.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    category.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: category.color,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
+                        const SizedBox(width: 10),
+                        Text(
+                          amountLine,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Linia 2: typ · data · metoda płatności.
+                    // Linia 2 na pelnej szerokosci: typ · data · metoda.
                     Row(
                       children: [
                         Flexible(
@@ -1810,15 +1831,6 @@ class BudgetEntryCard extends StatelessWidget {
                       ],
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                amountLine,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],

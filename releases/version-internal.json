@@ -1,9 +1,13 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080104",
-  "version": "0.15.26080104",
-  "releaseNotes": "- smuklejsze listy: pozycje bez ramek, rozdzielone separatorem\n- kazda pozycja w dwoch liniach: nazwa i kategoria, pod spodem typ, data i sposob platnosci",
-  "versionCode": 1526080104,
+  "version": "0.15.26080105",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080105",
+  "versionCode": 1526080105,
+  "releaseNotes": "- kwota przeniesiona do linii z nazwa, dzieki czemu typ, data i sposob platnosci maja cala szerokosc\n- nazwa pozycji nie skraca sie juz przy krotkiej kategorii",
   "changelog": [
+    {
+      "version": "0.15.26080105",
+      "notes": "- kwota przeniesiona do linii z nazwa, dzieki czemu typ, data i sposob platnosci maja cala szerokosc\n- nazwa pozycji nie skraca sie juz przy krotkiej kategorii"
+    },
     {
       "version": "0.15.26080104",
       "notes": "- smuklejsze listy: pozycje bez ramek, rozdzielone separatorem\n- kazda pozycja w dwoch liniach: nazwa i kategoria, pod spodem typ, data i sposob platnosci"
@@ -39,11 +43,7 @@
     {
       "version": "0.12.26073102",
       "notes": "- przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- zdjecie i odhaczenie platnosci ida razem z przeniesiona pozycja"
-    },
-    {
-      "version": "0.12.26073101",
-      "notes": "- odstep po nieudanej kopii przezywa restart aplikacji (znacznik w ustawieniach)"
     }
   ],
-  "releaseDate": "2026-08-01T01:24:10Z"
+  "releaseDate": "2026-08-01T01:35:58Z"
 }
