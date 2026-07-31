@@ -1703,11 +1703,12 @@ class BudgetEntryCard extends StatelessWidget {
 
     // Druga linia: typ · data · metoda. Data tylko tam, gdzie coś znaczy —
     // pozycja jednorazowa ma swój miesiąc, cykliczna datę startu cyklu.
-    final date = entry.isOneTime
-        ? entry.month
-        : (entry.startDate != null
-              ? DateFormat('yyyy-MM-dd').format(entry.startDate!)
-              : null);
+    // Jeden format daty dla wszystkich pozycji: pelna data pozycji, a gdy jej
+    // nie ma (stare rekordy) — sam miesiac. Rachunki mialy wczesniej „2026-07",
+    // wiec ta sama lista pokazywala dwa rozne formaty.
+    final date = entry.startDate != null
+        ? DateFormat('yyyy-MM-dd').format(entry.startDate!)
+        : entry.month;
     final overrideCount = entry.monthOverrides?.length ?? 0;
     final details = [
       budgetTypeLabel(entry.type),
@@ -1765,53 +1766,37 @@ class BudgetEntryCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Linia 2: typ · data · metoda platnosci, a na koncu
-                    // kategoria — tu jest wiecej miejsca niz przy nazwie.
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            details,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: c.textMuted,
-                            ),
-                          ),
+                    // Linia 2 jako JEDEN ciag: typ · data · metoda · kategoria.
+                    // Osobne elastyczne czesci dzielily szerokosc po rowno,
+                    // wiec data urywala sie mimo wolnego miejsca obok.
+                    Text.rich(
+                      TextSpan(
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: c.textMuted,
                         ),
-                        if (method != null) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            methodAuto ? LucideIcons.zap : LucideIcons.hand,
-                            size: 12,
-                            color: c.textMuted,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              method,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
+                        children: [
+                          TextSpan(text: details),
+                          if (method != null) ...[
+                            const TextSpan(text: ' · '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Icon(
+                                methodAuto ? LucideIcons.zap : LucideIcons.hand,
+                                size: 12,
                                 color: c.textMuted,
                               ),
                             ),
-                          ),
-                        ],
-                        if (category != null) ...[
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              '· ${category.name}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: category.color,
-                              ),
+                            TextSpan(text: ' $method'),
+                          ],
+                          if (category != null)
+                            TextSpan(
+                              text: ' · ${category.name}',
+                              style: TextStyle(color: category.color),
                             ),
-                          ),
                         ],
-                      ],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

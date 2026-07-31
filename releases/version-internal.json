@@ -1,8 +1,10 @@
 {
-  "releaseNotes": "- kategoria przeniesiona do drugiej linii, na koniec opisu\n- pozycja z kategoria pokazuje jej ikone zamiast strzalki kierunku",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080106",
-  "versionCode": 1526080106,
+  "versionCode": 1526080107,
   "changelog": [
+    {
+      "version": "0.15.26080107",
+      "notes": "- druga linia pozycji wykorzystuje cala szerokosc (koniec urywania daty)\n- rachunki maja ten sam format daty co reszta: RRRR-MM-DD"
+    },
     {
       "version": "0.15.26080106",
       "notes": "- kategoria przeniesiona do drugiej linii, na koniec opisu\n- pozycja z kategoria pokazuje jej ikone zamiast strzalki kierunku"
@@ -38,12 +40,10 @@
     {
       "version": "0.13.26073104",
       "notes": "- synchronizacja przez przeciagniecie listy w dol (zamiast przycisku w pasku)\n- gest dziala na Budzecie, Rachunkach, Wydatkach cyklicznych i Wplywach"
-    },
-    {
-      "version": "0.13.26073103",
-      "notes": "- dociete zdjecie zapisanego rachunku trafia tez do archiwum (stara wersja jest usuwana)"
     }
   ],
-  "releaseDate": "2026-08-01T01:45:33Z",
-  "version": "0.15.26080106"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080107",
+  "releaseNotes": "- druga linia pozycji wykorzystuje cala szerokosc (koniec urywania daty)\n- rachunki maja ten sam format daty co reszta: RRRR-MM-DD",
+  "version": "0.15.26080107",
+  "releaseDate": "2026-08-01T01:59:37Z"
 }
