@@ -467,14 +467,56 @@ class BudgetController extends ChangeNotifier {
       _subsForScope.where((s) => s.isActive).length;
 
   /// Rozłączne serie wspólnego wykresu trendu (suma trzech = całość wydatków).
-  List<MonthlyDataPoint> get recurringExpenseTrend =>
-      _budget.recurringExpenseTrend(all, target: _target);
+  /// [view] wybiera ujęcie: plan (kwoty bazowe + koperta) albo rzeczywistość
+  /// (kwoty miesiąca z korektami + realne rachunki) — ADR-028.
+  List<MonthlyDataPoint> recurringExpenseTrend(ExpenseView view) =>
+      _budget.recurringExpenseTrend(all, view: view, target: _target);
 
-  List<MonthlyDataPoint> get subscriptionsTrend =>
-      _budget.subscriptionsTrend(_subsForScope, target: _target);
+  List<MonthlyDataPoint> subscriptionsTrend(ExpenseView view) =>
+      _budget.subscriptionsTrend(_subsForScope, view: view, target: _target);
 
-  List<MonthlyDataPoint> get billsTrend =>
-      _budget.billsTrend(all, target: _target);
+  List<MonthlyDataPoint> billsTrend(ExpenseView view) => _budget.billsTrend(
+    all,
+    view: view,
+    billsAllocation: billsAllocation ?? 0,
+    target: _target,
+  );
+
+  /// Początek ewidencji aktywnego zakresu („YYYY-MM") — `null` = cały rok.
+  String? get trackingStartMonth => _storage.getTrackingStartMonth(_scope);
+
+  Future<void> setTrackingStartMonth(String? monthKey) async {
+    await _storage.setTrackingStartMonth(_scope, monthKey);
+    notifyListeners();
+  }
+
+  /// Podsumowanie roku: ile z planu na te miesiące już wydano (ADR-029).
+  /// Miesiące przed początkiem ewidencji nie liczą się po żadnej ze stron.
+  YearExpenseSummary yearExpenseSummary(int year, ExpenseView view) {
+    final start = trackingStartMonth;
+    var fromMonth = 1;
+    if (start != null && start.length >= 7) {
+      final startYear = int.tryParse(start.substring(0, 4)) ?? year;
+      if (startYear == year) {
+        fromMonth = int.tryParse(start.substring(5, 7)) ?? 1;
+      } else if (startYear > year) {
+        fromMonth = 13; // ewidencja zaczyna się dopiero po tym roku
+      }
+    }
+    return _budget.yearExpenseSummary(
+      all,
+      _subsForScope,
+      year,
+      view: view,
+      fromMonth: fromMonth,
+      billsAllocation: _alloc,
+      target: _target,
+    );
+  }
+
+  /// Ile brakuje do okrągłej kwoty (10/100/1000) — dla „Uzupełnij do pełnej
+  /// kwoty" w Plannerze. Bazy: sam plan albo wszystkie koszty miesięczne.
+  double roundUpGap(double total, int step) => _budget.roundUpGap(total, step);
 
   Map<String, double> get expenseByCategory =>
       _budget.expenseBreakdownByCategory(all, target: _target);
@@ -483,14 +525,19 @@ class BudgetController extends ChangeNotifier {
       _budget.billsBreakdownByCategory(all, monthKey, target: _target);
 
   /// Podział całych wydatków miesiąca wg kategorii: cykliczne + subskrypcje
-  /// + rachunki tego miesiąca (jeden wykres zamiast trzech osobnych).
-  Map<String, double> combinedExpenseByCategory(String monthKey) =>
-      _budget.combinedExpenseBreakdownByCategory(
-        all,
-        _subsForScope,
-        monthKey,
-        target: _target,
-      );
+  /// + trzeci strumień zależny od ujęcia — koperta „Na rachunki" (plan) albo
+  /// realne rachunki tego miesiąca (rzeczywistość), ADR-028.
+  Map<String, double> combinedExpenseByCategory(
+    String monthKey,
+    ExpenseView view,
+  ) => _budget.combinedExpenseBreakdownByCategory(
+    all,
+    _subsForScope,
+    monthKey,
+    view: view,
+    allocationItems: billsAllocationItems,
+    target: _target,
+  );
 
   /// Mapa „nazwa metody platnosci → automatyczna?" (do koloru/listy Platnosci).
   Map<String, bool> get _autoByPayment => {

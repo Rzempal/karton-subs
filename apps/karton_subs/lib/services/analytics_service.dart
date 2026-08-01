@@ -54,32 +54,45 @@ class AnalyticsService {
     return breakdown;
   }
 
+  /// Koszt subskrypcji w KONKRETNYM miesiącu — historycznie, z dat startu
+  /// i anulowania. Subskrypcja liczy się, jeśli zaczęła się nie później niż
+  /// z końcem tego miesiąca i nie była wtedy jeszcze anulowana.
+  double getMonthlyTotalForMonth(
+    List<Subscription> subs,
+    DateTime month, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final first = DateTime(month.year, month.month, 1);
+    final endOfMonth = DateTime(month.year, month.month + 1, 0);
+    double total = 0;
+    for (final sub in subs) {
+      final startedBefore = !sub.startDate.isAfter(endOfMonth);
+      final wasActive = sub.isActive ||
+          (sub.cancelledDate != null && !sub.cancelledDate!.isBefore(first));
+      if (startedBefore && wasActive) {
+        total += _monthly(sub, t);
+      }
+    }
+    return total;
+  }
+
   List<MonthlyDataPoint> getSpendingTrend(
     List<Subscription> subs, {
     int months = 6,
     Currency? target,
   }) {
-    final t = target ?? Currency.PLN;
     final now = _now;
-    final points = <MonthlyDataPoint>[];
-
-    for (int i = months - 1; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i, 1);
-      final endOfMonth = DateTime(month.year, month.month + 1, 0);
-
-      double total = 0;
-      for (final sub in subs) {
-        final startedBefore = !sub.startDate.isAfter(endOfMonth);
-        final wasActive = sub.isActive ||
-            (sub.cancelledDate != null && !sub.cancelledDate!.isBefore(month));
-        if (startedBefore && wasActive) {
-          total += _monthly(sub, t);
-        }
-      }
-      points.add(MonthlyDataPoint(month: month, amount: total));
-    }
-
-    return points;
+    return [
+      for (int i = months - 1; i >= 0; i--)
+        () {
+          final month = DateTime(now.year, now.month - i, 1);
+          return MonthlyDataPoint(
+            month: month,
+            amount: getMonthlyTotalForMonth(subs, month, target: target),
+          );
+        }(),
+    ];
   }
 
   BudgetStatus? getBudgetStatus(

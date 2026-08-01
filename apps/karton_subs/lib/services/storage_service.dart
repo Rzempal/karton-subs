@@ -773,6 +773,59 @@ class StorageService {
   Future<void> setDashboardPlanDetailsCompact(bool value) async =>
       _settingsBox.put('dashboardPlanDetailsCompact', value);
 
+  /// Początek ewidencji budżetu („YYYY-MM", per zakres) — od kiedy dane w tej
+  /// aplikacji są kompletne. Miesiące wcześniejsze nie wchodzą do podsumowania
+  /// rocznego ani do planu, z którym się je porównuje: budżet prowadzony od
+  /// lipca wygladalby inaczej na wykonanym w połowie tylko dlatego, że przez
+  /// pół roku nie było czego zapisywać. `null` = cały rok.
+  String? getTrackingStartMonth(BudgetScope scope) {
+    final v = _settingsBox.get('trackingStartMonth|${scope.name}');
+    return v is String && v.isNotEmpty ? v : null;
+  }
+
+  Future<void> setTrackingStartMonth(BudgetScope scope, String? monthKey) async {
+    final key = 'trackingStartMonth|${scope.name}';
+    if (monthKey == null) {
+      await _settingsBox.delete(key);
+    } else {
+      await _settingsBox.put(key, monthKey);
+    }
+  }
+
+  /// Ujęcie wykresów na zakładce „Plan" (`plan` / `actual`, ADR-028) — osobno
+  /// dla trendu i dla podziału na kategorie. Osobno, bo oba widoki służą do
+  /// PORÓWNYWANIA: jeden wspólny przełącznik odbierałby możliwość zestawienia
+  /// planowego trendu z realnym podziałem. Domyślnie plan — tak nazywa się
+  /// zakładka, a rzeczywistość jest doczytaniem.
+  String getPlanTrendView() =>
+      _settingsBox.get('planTrendView', defaultValue: 'plan') as String;
+
+  Future<void> setPlanTrendView(String value) async =>
+      _settingsBox.put('planTrendView', value);
+
+  String getPlanCategoriesView() =>
+      _settingsBox.get('planCategoriesView', defaultValue: 'plan') as String;
+
+  Future<void> setPlanCategoriesView(String value) async =>
+      _settingsBox.put('planCategoriesView', value);
+
+  /// Podsumowanie roczne — ujęcie i zwinięcie. Domyślnie `actual`: cała sekcja
+  /// odpowiada na pytanie „ile już wydaliśmy", a plan jest tu tłem porównania.
+  String getPlanYearView() =>
+      _settingsBox.get('planYearView', defaultValue: 'actual') as String;
+
+  Future<void> setPlanYearView(String value) async =>
+      _settingsBox.put('planYearView', value);
+
+  /// Sekcja „Podsumowanie roczne" — domyślnie ZWINIĘTA: dwanaście wierszy to
+  /// doczytanie, a nagłówek z paskiem odpowiada na pytanie od razu.
+  bool getDashboardAnnualSummaryCompact() =>
+      _settingsBox.get('dashboardAnnualSummaryCompact', defaultValue: true)
+          as bool;
+
+  Future<void> setDashboardAnnualSummaryCompact(bool value) async =>
+      _settingsBox.put('dashboardAnnualSummaryCompact', value);
+
   /// Zwinięte sekcje list „Wydatki" i „Wpływy" (klucze sekcji, nie tytuły).
   /// Jedna lista zamiast flagi na sekcję — sekcji przybywa (subskrypcje,
   /// ADR-027), a każda nowa nie musi dokładać własnego ustawienia.

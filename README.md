@@ -17,6 +17,14 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   trend, podzial wg kategorii, triale i limit sa w zakladce "Budzet"
 - **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (rachunki),
   koszty cykliczne i wieksze wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie"
+- **Plan vs Realne:** wykres trendu i podzial wg kategorii maja przelacznik ujecia —
+  plan (kwoty zalozone + koperta „Na rachunki") albo realne kwoty miesiaca z korektami
+  i faktycznymi rachunkami (ADR-028)
+- **Podsumowanie roczne:** ile z rocznego planu juz wydano, miesiac po miesiacu
+  i narastajaco; **poczatek ewidencji** sprawia, ze budzet zaczety w polowie roku
+  porownuje sie z planem na te miesiace, a nie na dwanascie (ADR-029)
+- **Planner** („Na rachunki"): osobny ekran dostepny z „Rachunkow" i z „Wydatkow",
+  z akcja „Uzupelnij do pelnej kwoty" (domkniecie planu do 10 / 100 / 1000)
 - **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
 - **Budzet osobisty i domowy:** osobny wspolny budzet (wklady czlonkow, przelew z osobistego);
   subskrypcje z przynaleznoscia osobista/domowa

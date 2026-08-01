@@ -4,6 +4,38 @@
 
 ---
 
+## 2026-08-01: Usuwajac widget platformy, sprawdz, co robil ZA CIEBIE
+
+### Problem
+Po usunieciu paskow tytulu (ADR-026) na jasnym motywie pasek stanu telefonu
+potrafil pokazywac **biale ikony na bialym tle** — godzina i bateria nie do
+odczytania. Objaw byl kapryśny („czasem"), wiec dlugo wygladal na blad systemu,
+a nie aplikacji.
+
+Przyczyna: `AppBar` — poza rysowaniem paska tytulu — **ustawia styl ikon paskow
+systemowych** (`SystemUiOverlayStyle`). Gdy zniknal ostatni `AppBar` z ekranow
+roboczych, nikt juz nie mowil systemowi, czy ikony maja byc ciemne czy biale;
+zostawal stan po ostatnim ekranie, ktory to ustawil (podekran Ustawien) albo
+motyw okna Androida. Stad „czasem".
+
+### Rozwiazanie
+Deklaracja stylu **raz dla calej aplikacji**: `AnnotatedRegion` w
+`MaterialApp.builder`, liczona z jasnosci aktywnej palety. Deklaratywnie, nie
+przez `SystemChrome`: ekran z wlasnym `AppBar` nadpisuje styl na czas swojego
+zycia, a po powrocie znow obowiazuje deklaracja z powloki. Do tego ten sam styl
+w `appBarTheme.systemOverlayStyle` i `windowLightStatusBar` w `styles.xml`
+(klatka startowa, zanim Flutter cokolwiek narysuje).
+
+### Wniosek
+Widgety platformowe (`AppBar`, `Scaffold`, `SafeArea`) niosa **efekty uboczne
+poza swoim pikselem**. Przy usuwaniu takiego widgetu wypisz, co jeszcze robil —
+tu byly dwie rzeczy: odstep od paska stanu (zalatwione `SafeArea` juz w ADR-026)
+i kolor ikon systemowych (znalezione dopiero z realnego uzycia, dwa wydania
+pozniej). Objaw „czasem dziala" prawie zawsze znaczy: **ktos inny ustawia ten
+stan globalnie i kolejnosc ekranow decyduje o wyniku.**
+
+---
+
 ## 2026-07-26: „Import backupu" domyslnie SCALAL zamiast odtwarzac — ciche zawyzenie sum
 
 ### Problem

@@ -23,12 +23,17 @@ class BillsAllocationItems extends StatelessWidget {
   final VoidCallback onAdd;
   final ValueChanged<BillsAllocationItem> onEdit;
 
+  /// „Uzupełnij do pełnej kwoty" — dopisanie pozycji domykającej sumę do
+  /// okrągłej wartości. `null` = akcja niedostępna.
+  final VoidCallback? onFillToRound;
+
   const BillsAllocationItems({
     super.key,
     required this.items,
     required this.currency,
     required this.onAdd,
     required this.onEdit,
+    this.onFillToRound,
   });
 
   @override
@@ -61,18 +66,33 @@ class BillsAllocationItems extends StatelessWidget {
                   : null,
               onTap: () => onEdit(it),
             ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(LucideIcons.plus, size: 16),
-            label: const Text('Dodaj pozycję do planu'),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        // Wrap, nie Row: na wąskim ekranie druga akcja schodzi do nowej linii
+        // zamiast urywać się przy krawędzi.
+        Wrap(
+          spacing: 16,
+          children: [
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(LucideIcons.plus, size: 16),
+              label: const Text('Dodaj pozycję do planu'),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
-          ),
+            if (onFillToRound != null)
+              TextButton.icon(
+                onPressed: onFillToRound,
+                icon: const Icon(LucideIcons.target, size: 16),
+                label: const Text('Uzupełnij do pełnej kwoty'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -159,12 +179,14 @@ class _AllocItemRow extends StatelessWidget {
 Future<void> showBillsAllocationItemEditor(
   BuildContext context, {
   BillsAllocationItem? existing,
+  String? initialName,
+  double? initialAmount,
 }) async {
   final ctrl = context.read<BudgetController>();
   final storage = context.read<StorageService>();
-  final nameC = TextEditingController(text: existing?.name ?? '');
+  final nameC = TextEditingController(text: existing?.name ?? initialName ?? '');
   final amountC = TextEditingController(
-    text: existing != null ? existing.amount.toStringAsFixed(2) : '',
+    text: (initialAmount ?? existing?.amount)?.toStringAsFixed(2) ?? '',
   );
   String? method = existing?.paymentMethod;
   String? categoryId = existing?.categoryId;

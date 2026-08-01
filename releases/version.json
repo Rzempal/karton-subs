@@ -1,8 +1,12 @@
 {
-  "versionCode": 1726080102,
-  "version": "0.17.26080102",
-  "releaseDate": "2026-08-01T12:28:58Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1826080103",
+  "releaseNotes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca",
+  "versionCode": 1826080103,
   "changelog": [
+    {
+      "version": "0.18.26080103",
+      "notes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca"
+    },
     {
       "version": "0.17.26080102",
       "notes": "- Subskrypcje sa teraz sekcja Wydatkow — koniec osobnej zakladki (5 zakladek zamiast 6)\n- Sekcje listy zwijane tapnieciem w naglowek; suma sekcji zostaje widoczna\n- Pokaz ukryte przy filtrze lat odslania wstrzymane pozycje i anulowane subskrypcje\n- Planner ma wlasny ekran — wejscie z Rachunkow i z Wydatkow\n- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- Czytelne ikony paska stanu w jasnym motywie"
@@ -38,12 +42,8 @@
     {
       "version": "0.11.26072602",
       "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
-    },
-    {
-      "version": "0.11.26072601",
-      "notes": "- Import backupu pyta, czy odtworzyc stan z pliku (domyslnie) czy scalic z obecnymi danymi\n- Poprawka: wczesniej import zawsze scalal, wiec pozycje usuniete w zrodle zostawaly i zawyzaly sumy\n- Planner (kwota na rachunki) wchodzi teraz do backupu\n- Przy eksporcie z haslem trzeba je powtorzyc - literowka oznaczala plik nie do odczytania\n- Podsumowanie po imporcie mowi, ile pozycji usunieto"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1726080102",
-  "releaseNotes": "- Subskrypcje sa teraz sekcja Wydatkow — koniec osobnej zakladki (5 zakladek zamiast 6)\n- Sekcje listy zwijane tapnieciem w naglowek; suma sekcji zostaje widoczna\n- Pokaz ukryte przy filtrze lat odslania wstrzymane pozycje i anulowane subskrypcje\n- Planner ma wlasny ekran — wejscie z Rachunkow i z Wydatkow\n- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- Czytelne ikony paska stanu w jasnym motywie"
+  "version": "0.18.26080103",
+  "releaseDate": "2026-08-01T15:00:19Z"
 }

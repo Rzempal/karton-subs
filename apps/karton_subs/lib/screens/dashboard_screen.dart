@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
@@ -12,10 +11,13 @@ import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../services/analytics_service.dart' show MonthlyDataPoint;
+import '../services/budget_service.dart' show ExpenseView;
+import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
 import '../widgets/flow_view_controls.dart';
 import '../widgets/frost_card.dart';
+import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/sync_refresh.dart';
@@ -49,6 +51,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   MonthFlowSort _flowSort = MonthFlowSort.byDate;
   MonthFlowGrouping _flowGrouping = MonthFlowGrouping.none;
 
+  /// Ujęcie obu wykresów „Planu" — osobno dla trendu i kategorii (ADR-028),
+  /// stan trwały. Podsumowanie roczne ma własne (ADR-029).
+  late ExpenseView _trendView;
+  late ExpenseView _categoriesView;
+  late ExpenseView _yearView;
+  late bool _annualSummaryCompact;
+
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
@@ -71,6 +80,90 @@ class _DashboardScreenState extends State<DashboardScreen>
     _planDetailsCompact = storage.getDashboardPlanDetailsCompact();
     _annualCostsCompact = storage.getDashboardAnnualCostsCompact();
     _monthBalanceCompact = storage.getDashboardMonthBalanceCompact();
+    _trendView = _parseView(storage.getPlanTrendView());
+    _categoriesView = _parseView(storage.getPlanCategoriesView());
+    _yearView = _parseView(storage.getPlanYearView());
+    _annualSummaryCompact = storage.getDashboardAnnualSummaryCompact();
+  }
+
+  static ExpenseView _parseView(String s) =>
+      s == ExpenseView.actual.name ? ExpenseView.actual : ExpenseView.plan;
+
+  void _setTrendView(ExpenseView v) {
+    setState(() => _trendView = v);
+    context.read<StorageService>().setPlanTrendView(v.name);
+  }
+
+  void _setCategoriesView(ExpenseView v) {
+    setState(() => _categoriesView = v);
+    context.read<StorageService>().setPlanCategoriesView(v.name);
+  }
+
+  void _setYearView(ExpenseView v) {
+    setState(() => _yearView = v);
+    context.read<StorageService>().setPlanYearView(v.name);
+  }
+
+  void _toggleAnnualSummary() {
+    setState(() => _annualSummaryCompact = !_annualSummaryCompact);
+    context.read<StorageService>().setDashboardAnnualSummaryCompact(
+      _annualSummaryCompact,
+    );
+  }
+
+  /// Początek ewidencji: od kiedy dane w aplikacji są kompletne. „Cały rok"
+  /// czyści ustawienie — budżet prowadzony od pierwszego stycznia go nie
+  /// potrzebuje.
+  Future<void> _pickTrackingStart(BudgetController budget) async {
+    final current = budget.trackingStartMonth;
+    final initial = current != null && current.length >= 7
+        ? DateTime(
+            int.parse(current.substring(0, 4)),
+            int.parse(current.substring(5, 7)),
+          )
+        : DateTime(_selectedMonth.year, 1);
+
+    // Wynik jako string („YYYY-MM" albo pusty = cały rok), nie DateTime ze
+    // sztuczną datą: null z dialogu znaczy „anulowano" i musi być odróżnialne
+    // od „wyczyść ustawienie".
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: const Text('Początek ewidencji'),
+        content: const Text(
+          'Od którego miesiąca dane w aplikacji są kompletne? Wcześniejsze '
+          'miesiące zostaną puste i nie wejdą do planu, z którym porównuje się '
+          'podsumowanie roczne.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx),
+            child: const Text('Anuluj'),
+          ),
+          if (current != null)
+            TextButton(
+              onPressed: () => Navigator.pop(dctx, ''),
+              child: const Text('Cały rok'),
+            ),
+          FilledButton(
+            onPressed: () async {
+              final m = await showMonthPicker(
+                dctx,
+                initialMonth: initial,
+                today: _today,
+              );
+              if (m != null && dctx.mounted) {
+                Navigator.pop(dctx, BudgetEntry.monthKeyOf(m));
+              }
+            },
+            child: const Text('Wybierz miesiąc'),
+          ),
+        ],
+      ),
+    );
+
+    if (picked == null || !mounted) return;
+    await budget.setTrackingStartMonth(picked.isEmpty ? null : picked);
   }
 
   @override
@@ -157,9 +250,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     final cats = context.read<StorageService>().getCategories();
     final c = context.semanticColors;
     final palette = AppColors.chartColors;
-    final recurring = budget.recurringExpenseTrend;
-    final subscriptions = budget.subscriptionsTrend;
-    final bills = budget.billsTrend;
+    final recurring = budget.recurringExpenseTrend(_trendView);
+    final subscriptions = budget.subscriptionsTrend(_trendView);
+    final bills = budget.billsTrend(_trendView);
     // Suma liczona z tych samych serii, które widać na wykresie — inaczej
     // „Razem" nie zgadzałoby się z tym, co użytkownik sam sobie zsumuje.
     final total = [
@@ -198,6 +291,10 @@ class _DashboardScreenState extends State<DashboardScreen>
       const SizedBox(height: 16),
       SpendingChart.multi(
         currencySymbol: currency,
+        trailing: _ViewToggle(
+          value: _trendView,
+          onChanged: _setTrendView,
+        ),
         series: [
           ChartSeries(
             label: 'Cykliczne',
@@ -223,9 +320,22 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
       const SizedBox(height: 16),
       CategoryBreakdownChart(
-        categoryTotals: budget.combinedExpenseByCategory(monthKey),
+        categoryTotals: budget.combinedExpenseByCategory(
+          monthKey,
+          _categoriesView,
+        ),
         categories: cats,
         currencySymbol: currency,
+        // W ujęciu realnym liczby dotyczą KONKRETNEGO miesiąca (tego z karty
+        // predykcji wyżej) — bez tego dopisku wykres wyglądałby jak plan.
+        // Miesiąc skrócony („sie 2026"), żeby tytuł został w jednej linii.
+        subtitle: _categoriesView == ExpenseView.actual
+            ? DateFormat('LLL y', 'pl_PL').format(_selectedMonth)
+            : null,
+        trailing: _ViewToggle(
+          value: _categoriesView,
+          onChanged: _setCategoriesView,
+        ),
       ),
       const SizedBox(height: 16),
       // Na końcu: skala roczna zamyka obraz planu, a codzienne pytania
@@ -242,6 +352,18 @@ class _DashboardScreenState extends State<DashboardScreen>
         currency: currency,
         compact: _annualCostsCompact,
         onToggle: _toggleAnnualCosts,
+      ),
+      const SizedBox(height: 16),
+      // Plan roczny od drugiej strony: ile z niego już wydano (ADR-029).
+      // Stoi tuż pod „Kosztami rocznymi", bo to ta sama skala i te same
+      // składniki — raz jako założenie, raz jako wykonanie.
+      AnnualSummarySection(
+        summary: budget.yearExpenseSummary(_selectedMonth.year, _yearView),
+        currency: currency,
+        compact: _annualSummaryCompact,
+        onToggle: _toggleAnnualSummary,
+        trailing: _ViewToggle(value: _yearView, onChanged: _setYearView),
+        onEditStart: () => _pickTrackingStart(budget),
       ),
     ];
   }
@@ -378,21 +500,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      _MonthBillsCard(
-                        total: budget.billsActualForMonth(monthKey),
-                        count: budget.billPayments
-                            .where(
-                              (e) =>
-                                  (e.month ??
-                                      BudgetEntry.monthKeyOf(
-                                        e.startDate ?? e.dataDodania,
-                                      )) ==
-                                  monthKey,
-                            )
-                            .length,
-                        currency: currency,
-                      ),
+                      // Karta „Rachunki miesiąca" zniknęła: te same rachunki
+                      // stoją pozycja po pozycji w „Podsumowaniu miesiąca"
+                      // poniżej, a ich suma jest w rozpisie bilansu wyżej.
                       if (MonthSummarySection.hasAny(calendar)) ...[
                         const SizedBox(height: 24),
                         MonthSummarySection(
@@ -602,8 +712,43 @@ class _Kv extends StatelessWidget {
   }
 }
 
-/// Predykcja (plan) vs rzeczywistość (realny bilans) bieżącego miesiąca.
-/// Plan = „zostaje/mies" − koperta „Na rachunki"; realny = bilans miesiąca
+/// Przełącznik ujęcia wykresu: **Plan** (kwoty założone, rachunki = koperta)
+/// ↔ **Realne** (kwoty miesiąca z korektami, rachunki faktyczne) — ADR-028.
+///
+/// Dwa chipy, a nie segment: mieszczą się w nagłówku karty, a styl jest ten sam
+/// co filtry list. Każdy wykres ma własny przełącznik, bo oba służą do
+/// porównywania — wspólny odbierałby możliwość zestawienia planu z realnym.
+class _ViewToggle extends StatelessWidget {
+  final ExpenseView value;
+  final ValueChanged<ExpenseView> onChanged;
+
+  const _ViewToggle({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AuroraChip(
+          label: 'Plan',
+          selected: value == ExpenseView.plan,
+          onTap: () => onChanged(ExpenseView.plan),
+        ),
+        const SizedBox(width: 6),
+        AuroraChip(
+          label: 'Realne',
+          selected: value == ExpenseView.actual,
+          onTap: () => onChanged(ExpenseView.actual),
+        ),
+      ],
+    );
+  }
+}
+
+/// „Plan vs Realne" dla wybranego miesiąca — ta sama para pojęć, co przełączniki
+/// wykresów (ADR-028), więc i ta sama nazwa.
+///
+/// Plan = „zostaje/mies" − koperta „Na rachunki"; realne = bilans miesiąca
 /// (z faktycznymi rachunkami i pozycjami jednorazowymi). Patrz ADR-008.
 class _PredictionCard extends StatelessWidget {
   final String monthLabel;
@@ -642,7 +787,7 @@ class _PredictionCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Predykcja vs rzeczywistość',
+                  'Plan vs Realne',
                   style: theme.textTheme.titleMedium,
                 ),
               ),
@@ -701,7 +846,7 @@ class _PredictionCard extends StatelessWidget {
           if (allocation == null) ...[
             const SizedBox(height: 8),
             Text(
-              'Ustaw kopertę „Na rachunki" na ekranie Rachunki, aby doprecyzować predykcję.',
+              'Ustaw kopertę „Na rachunki" w Plannerze, aby doprecyzować plan.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: c.textSecondary,
               ),
@@ -713,59 +858,3 @@ class _PredictionCard extends StatelessWidget {
   }
 }
 
-/// Kompaktowe podsumowanie rachunków (realnych) wybranego miesiąca — na
-/// zakładce „Bilans miesiąca". Szczegóły i dodawanie na zakładce „Rachunki".
-class _MonthBillsCard extends StatelessWidget {
-  final double total;
-  final int count;
-  final String currency;
-  const _MonthBillsCard({
-    required this.total,
-    required this.count,
-    required this.currency,
-  });
-
-  static String _plural(int n) {
-    if (n == 1) return 'rachunek';
-    final last = n % 10, last2 = n % 100;
-    if (last >= 2 && last <= 4 && (last2 < 10 || last2 >= 20)) {
-      return 'rachunki';
-    }
-    return 'rachunków';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-    return FrostCard(
-      child: Row(
-        children: [
-          Icon(lucide.LucideIcons.receiptText, size: 18, color: c.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Rachunki miesiąca', style: theme.textTheme.titleSmall),
-                Text(
-                  count == 0 ? 'Brak rachunków' : '$count ${_plural(count)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: c.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${budgetNf.format(total)}${curLabelSuffix(currency)}',
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: c.negative,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

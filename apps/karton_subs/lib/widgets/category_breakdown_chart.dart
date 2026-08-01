@@ -12,11 +12,20 @@ class CategoryBreakdownChart extends StatelessWidget {
   final List<Category> categories;
   final String currencySymbol;
 
+  /// Dopisek przy tytule — np. miesiąc, gdy wykres pokazuje realne kwoty
+  /// konkretnego miesiąca, a nie uśredniony plan.
+  final String? subtitle;
+
+  /// Akcja przy tytule (np. przełącznik plan/rzeczywistość).
+  final Widget? trailing;
+
   const CategoryBreakdownChart({
     super.key,
     required this.categoryTotals,
     required this.categories,
     required this.currencySymbol,
+    this.subtitle,
+    this.trailing,
   });
 
   // Paleta wykresów Aurora (shade 400) — fallback gdy kategoria nie ma koloru.
@@ -39,7 +48,24 @@ class CategoryBreakdownChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Podział wg kategorii', style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  // „Kategorie", nie „Podział wg kategorii": z dopiskiem
+                  // miesiąca i przełącznikiem obok dłuższy tytuł łamał się na
+                  // dwie linie. Co to za podział, mówi legenda pod spodem.
+                  child: Text(
+                    subtitle == null ? 'Kategorie' : 'Kategorie — $subtitle',
+                    style: theme.textTheme.titleMedium,
+                    // Twardy limit: przy powiększonej czcionce systemowej
+                    // nawet krótki tytuł potrafi się złamać.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ?trailing,
+              ],
+            ),
             const SizedBox(height: 20),
             SizedBox(
               height: 200,

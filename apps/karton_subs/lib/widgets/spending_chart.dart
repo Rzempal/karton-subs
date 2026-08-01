@@ -38,12 +38,17 @@ class SpendingChart extends StatefulWidget {
   final String currencySymbol;
   final String title;
 
+  /// Akcja przy tytule (np. przełącznik plan/rzeczywistość) — steruje tym, CO
+  /// wykres pokazuje, więc stoi w jego nagłówku, a nie w pasku ekranu.
+  final Widget? trailing;
+
   /// Jedna seria — bez chipów (dotychczasowe użycie).
   SpendingChart({
     super.key,
     required List<MonthlyDataPoint> data,
     required this.currencySymbol,
     this.title = 'Trend wydatków',
+    this.trailing,
   }) : series = [ChartSeries(label: title, data: data)];
 
   /// Kilka serii na jednym wykresie + chipy do włączania i wyłączania linii.
@@ -52,6 +57,7 @@ class SpendingChart extends StatefulWidget {
     required this.series,
     required this.currencySymbol,
     this.title = 'Trend wydatków',
+    this.trailing,
   });
 
   @override
@@ -109,7 +115,19 @@ class _SpendingChartState extends State<SpendingChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.title, style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ?widget.trailing,
+              ],
+            ),
             const SizedBox(height: 20),
             SizedBox(
               height: 200,

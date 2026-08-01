@@ -5,6 +5,7 @@
 // Model czasu: hybryda — rdzeń uśredniony (kwoty/mies) + wydatki jednorazowe
 // przypięte do konkretnego miesiąca.
 
+import '../models/bills_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../utils/cycle_math.dart';
@@ -126,6 +127,69 @@ class BalanceContribution {
   });
 }
 
+/// Ujęcie wydatków na wykresach zakładki „Plan" (ADR-028).
+///
+/// Te same pozycje dają dwie różne liczby i mieszanie ich w jednym widoku
+/// (tak było wcześniej) daje sumę, która nie odpowiada ani planowi, ani
+/// żadnemu realnemu miesiącowi.
+enum ExpenseView {
+  /// Jak budżet zakłada, że wygląda miesiąc: kwoty bazowe uśrednione na
+  /// miesiąc, raty w oknie spłaty, a zamiast rachunków — koperta „Na rachunki".
+  plan,
+
+  /// Co faktycznie wyszło w danym miesiącu: kwoty z korektami tego miesiąca,
+  /// tylko pozycje, które wtedy istniały, i realne rachunki (`billPayment`).
+  ///
+  /// Dla miesięcy wstecz to ODTWORZENIE, nie zapis: aplikacja nie trzyma
+  /// historii zmian kwot, tylko korekty miesięczne i daty. Bieżący miesiąc
+  /// liczy się dokładnie tak samo jak „Bilans miesiąca".
+  actual,
+}
+
+/// Jeden miesiąc w podsumowaniu rocznym. `null` = miesiąc poza ewidencją
+/// (przed jej początkiem) albo jeszcze nienadeszły — pusty, a nie zerowy.
+class YearMonthExpense {
+  final int month; // 1–12
+  final double? amount;
+  final double? cumulative;
+
+  const YearMonthExpense({
+    required this.month,
+    required this.amount,
+    required this.cumulative,
+  });
+}
+
+/// Rok w jednym miejscu: ile wydano narastająco wobec planu na te miesiące.
+class YearExpenseSummary {
+  final int year;
+
+  /// Pierwszy miesiąc objęty ewidencją (1–12).
+  final int fromMonth;
+  final List<YearMonthExpense> months;
+
+  /// Suma miesięcy z danymi (narastająco na koniec roku / na dziś).
+  final double spent;
+
+  /// Plan za miesiące od [fromMonth] do grudnia.
+  final double planned;
+
+  /// Planowany koszt jednego miesiąca — do wiersza porównawczego.
+  final double plannedMonthly;
+
+  const YearExpenseSummary({
+    required this.year,
+    required this.fromMonth,
+    required this.months,
+    required this.spent,
+    required this.planned,
+    required this.plannedMonthly,
+  });
+
+  /// Wykonanie planu (0–…): 1.0 = dokładnie plan. `null` gdy planu brak.
+  double? get progress => planned <= 0 ? null : spent / planned;
+}
+
 class BudgetService {
   static const _currency = CurrencyService();
   static const _analytics = AnalyticsService();
@@ -133,6 +197,43 @@ class BudgetService {
 
   double _monthly(BudgetEntry e, Currency target) =>
       _currency.convert(e.monthlyAmount, e.currency, target);
+
+  /// Czy pozycja cykliczna istniała w danym miesiącu (ujęcie „rzeczywistość").
+  /// Brak daty startu = brak informacji — liczymy ją jak dziś, bo alternatywą
+  /// byłoby ciche wyzerowanie starszych pozycji na całym wykresie.
+  bool _existsInMonth(BudgetEntry e, String monthKey) {
+    if (e.isInstallment) return e.isInstallmentActiveInMonth(monthKey);
+    final start = e.startDate;
+    if (start == null) return true;
+    return BudgetEntry.monthKeyOf(start).compareTo(monthKey) <= 0;
+  }
+
+  /// Korekta kwoty na dany miesiąc (ADR-008) jako różnica wobec kwoty bazowej.
+  double _overrideDelta(BudgetEntry e, String monthKey, Currency t) {
+    final ov = e.overrideForMonth(monthKey);
+    if (ov?.amount == null) return 0;
+    return _currency.convert(ov!.amount! - e.amount, e.currency, t);
+  }
+
+  /// Realne koszty cykliczne danego miesiąca — BEZ subskrypcji i BEZ rachunków.
+  /// Różni się od [monthlyBudgetExpenses] tym, że bierze korekty tego miesiąca
+  /// i liczy tylko pozycje, które wtedy istniały (raty w oknie spłaty).
+  double recurringExpensesForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    return entries
+        .where(
+          (e) =>
+              e.isActive &&
+              e.isExpense &&
+              !e.isOneTime &&
+              _existsInMonth(e, monthKey),
+        )
+        .fold(0.0, (sum, e) => sum + _monthly(e, t) + _overrideDelta(e, monthKey, t));
+  }
 
   /// Czy pozycja wchodzi do biezacych kosztow/mies. Rata liczy sie tylko gdy
   /// aktywna w biezacym miesiacu (po ostatniej racie znika z surplus) — ADR-008.
@@ -292,61 +393,197 @@ class BudgetService {
   /// to dokładnie `billPayment`, więc trzy serie niczego nie gubią i niczego
   /// nie liczą dwa razy).
   ///
-  /// Linia jest płaska: historii zmian kosztów stałych nie ma w danych, więc
-  /// dzisiejsza baza jest rzutowana na wszystkie miesiące wykresu.
+  /// W ujęciu [ExpenseView.plan] linia jest płaska: plan nie zmienia się
+  /// z miesiąca na miesiąc, a historii zmian kosztów stałych nie ma w danych.
+  /// W [ExpenseView.actual] każdy miesiąc liczy się osobno — z korektami kwot
+  /// i bez pozycji, które wtedy jeszcze nie istniały.
   List<MonthlyDataPoint> recurringExpenseTrend(
     List<BudgetEntry> entries, {
-    int months = 6,
-    Currency? target,
-  }) {
-    final base = monthlyBudgetExpenses(entries, target: target ?? Currency.PLN);
-    final now = _now;
-    return [
-      for (var i = months - 1; i >= 0; i--)
-        MonthlyDataPoint(
-          month: DateTime(now.year, now.month - i, 1),
-          amount: base,
-        ),
-    ];
-  }
-
-  /// Trend kosztu subskrypcji per miesiąc — w odróżnieniu od bazy cyklicznej
-  /// liczony historycznie (data startu i anulowania każdej subskrypcji).
-  List<MonthlyDataPoint> subscriptionsTrend(
-    List<Subscription> subs, {
-    int months = 6,
-    Currency? target,
-  }) =>
-      _analytics.getSpendingTrend(subs, months: months, target: target);
-
-  /// Trend realnych rachunków (`billPayment`) per miesiąc — ostatnie [months].
-  List<MonthlyDataPoint> billsTrend(
-    List<BudgetEntry> entries, {
+    required ExpenseView view,
     int months = 6,
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
+    final base = monthlyBudgetExpenses(entries, target: t);
+    return _months(months).map((m) {
+      return MonthlyDataPoint(
+        month: m,
+        amount: view == ExpenseView.plan
+            ? base
+            : recurringExpensesForMonth(
+                entries,
+                BudgetEntry.monthKeyOf(m),
+                target: t,
+              ),
+      );
+    }).toList();
+  }
+
+  /// Trend kosztu subskrypcji per miesiąc: w planie dzisiejsza kwota/mies
+  /// rzutowana na cały wykres, w rzeczywistości — liczona z dat startu
+  /// i anulowania każdej subskrypcji.
+  List<MonthlyDataPoint> subscriptionsTrend(
+    List<Subscription> subs, {
+    required ExpenseView view,
+    int months = 6,
+    Currency? target,
+  }) {
+    if (view == ExpenseView.actual) {
+      return _analytics.getSpendingTrend(subs, months: months, target: target);
+    }
+    final base = monthlySubscriptionsExpense(subs, target: target);
+    return _months(months)
+        .map((m) => MonthlyDataPoint(month: m, amount: base))
+        .toList();
+  }
+
+  /// Trend rachunków: w planie płaska koperta „Na rachunki" ([billsAllocation]),
+  /// w rzeczywistości realne `billPayment` każdego miesiąca. To jest ta sama
+  /// para plan/realny, którą porównuje karta miesiąca w „Rachunkach".
+  List<MonthlyDataPoint> billsTrend(
+    List<BudgetEntry> entries, {
+    required ExpenseView view,
+    double billsAllocation = 0,
+    int months = 6,
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    return _months(months).map((m) {
+      return MonthlyDataPoint(
+        month: m,
+        amount: view == ExpenseView.plan
+            ? billsAllocation
+            : billsActualForMonth(entries, BudgetEntry.monthKeyOf(m), target: t),
+      );
+    }).toList();
+  }
+
+  /// Ostatnie [months] miesięcy, od najstarszego — wspólna oś wszystkich serii.
+  List<DateTime> _months(int months) {
     final now = _now;
     return [
       for (var i = months - 1; i >= 0; i--)
-        () {
-          final m = DateTime(now.year, now.month - i, 1);
-          return MonthlyDataPoint(
-            month: m,
-            amount:
-                billsActualForMonth(entries, BudgetEntry.monthKeyOf(m), target: t),
-          );
-        }()
+        DateTime(now.year, now.month - i, 1),
     ];
   }
 
+  // ── Podsumowanie roczne (ADR-029) ──────────────────────────────────────────
+
+  /// Realne wydatki JEDNEGO miesiąca: koszty cykliczne z korektami tego miesiąca
+  /// + subskrypcje wtedy aktywne + rachunki tego miesiąca. Ta sama definicja co
+  /// ujęcie „Realne" na wykresach (ADR-028) i co bilans miesiąca.
+  double actualExpensesForMonth(
+    List<BudgetEntry> entries,
+    List<Subscription> subs,
+    DateTime month, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final key = BudgetEntry.monthKeyOf(month);
+    return recurringExpensesForMonth(entries, key, target: t) +
+        _analytics.getMonthlyTotalForMonth(subs, month, target: t) +
+        billsActualForMonth(entries, key, target: t);
+  }
+
+  /// Planowany koszt miesięczny: koszty cykliczne + subskrypcje + koperta
+  /// „Na rachunki" — dokładnie to, co pomniejsza „zostaje miesięcznie".
+  double plannedMonthlyExpenses(
+    List<BudgetEntry> entries,
+    List<Subscription> subs, {
+    double billsAllocation = 0,
+    Currency? target,
+  }) =>
+      monthlyRecurringExpenses(entries, subs, target: target) + billsAllocation;
+
+  /// Podsumowanie roku: ile z planu rocznego już wydano, miesiąc po miesiącu.
+  ///
+  /// [fromMonth] (1–12) to początek ewidencji w tym roku — miesiące przed nim
+  /// są puste i NIE wchodzą do planu, z którym się porównujemy. Bez tego rok
+  /// rozpoczęty w lipcu wyglądałby na wykonany w połowie tylko dlatego, że
+  /// przez pół roku nie było czego zapisywać.
+  ///
+  /// Miesiące przyszłe zostają puste w ujęciu [ExpenseView.actual] (nic tam
+  /// jeszcze nie wydano) i wypełnione planem w [ExpenseView.plan].
+  YearExpenseSummary yearExpenseSummary(
+    List<BudgetEntry> entries,
+    List<Subscription> subs,
+    int year, {
+    required ExpenseView view,
+    int fromMonth = 1,
+    double billsAllocation = 0,
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final now = _now;
+    final planned = plannedMonthlyExpenses(
+      entries,
+      subs,
+      billsAllocation: billsAllocation,
+      target: t,
+    );
+    // 13 = ewidencja zaczyna się dopiero w kolejnym roku, więc ten rok jest
+    // pusty po obu stronach (i plan, i wykonanie).
+    final from = fromMonth.clamp(1, 13);
+
+    final months = <YearMonthExpense>[];
+    var running = 0.0;
+    for (var m = 1; m <= 12; m++) {
+      final month = DateTime(year, m, 1);
+      final isFuture =
+          year > now.year || (year == now.year && m > now.month);
+      double? amount;
+      if (m < from) {
+        amount = null; // przed początkiem ewidencji
+      } else if (view == ExpenseView.plan) {
+        amount = planned;
+      } else {
+        amount = isFuture ? null : actualExpensesForMonth(entries, subs, month, target: t);
+      }
+      if (amount != null) running += amount;
+      months.add(
+        YearMonthExpense(
+          month: m,
+          amount: amount,
+          cumulative: amount == null ? null : running,
+        ),
+      );
+    }
+
+    return YearExpenseSummary(
+      year: year,
+      fromMonth: from,
+      months: months,
+      spent: running,
+      // Plan liczymy tylko za miesiące objęte ewidencją — porównujemy jabłka
+      // z jabłkami.
+      planned: planned * (from > 12 ? 0 : 12 - from + 1),
+      plannedMonthly: planned,
+    );
+  }
+
+  /// Ile brakuje, by [total] było wielokrotnością [step] (zaokrąglenie W GÓRĘ).
+  /// `0` = suma już jest okrągła. Liczone w groszach, bo `1296.56` w arytmetyce
+  /// zmiennoprzecinkowej potrafi dać `3.4399999999999`.
+  double roundUpGap(double total, int step) {
+    if (step <= 0) return 0;
+    final cents = (total * 100).round();
+    final stepCents = step * 100;
+    if (cents <= 0) return 0;
+    final rem = cents % stepCents;
+    return rem == 0 ? 0 : (stepCents - rem) / 100;
+  }
+
   /// Podział CAŁYCH miesięcznych wydatków wg kategorii: koszty cykliczne
-  /// budżetu + subskrypcje + rachunki wskazanego miesiąca. Trzy źródła są
+  /// budżetu + subskrypcje + trzeci strumień zależny od [view]. Trzy źródła są
   /// rozłączne, więc to zwykła suma per kategoria.
   ///
-  /// Uwaga na jednostki (reguła wyboru sekcji): cykliczne i subskrypcje wchodzą
-  /// kwotą uśrednioną na miesiąc, rachunki — realną kwotą wybranego miesiąca.
-  /// Tak samo liczy je plan „zostaje miesięcznie" i bilans miesiąca.
+  /// [ExpenseView.plan]: koszty bazowe uśrednione na miesiąc, a zamiast
+  /// rachunków — pozycje koperty „Na rachunki" ([allocationItems], rozbite po
+  /// swoich kategoriach). Tak liczy plan „zostaje miesięcznie".
+  ///
+  /// [ExpenseView.actual]: koszty tego miesiąca (z korektami, bez pozycji,
+  /// które wtedy nie istniały) + realne rachunki miesiąca. Tak liczy bilans
+  /// miesiąca.
   ///
   /// Pozycje bez kategorii z obu światów (`budget_other` z budżetu,
   /// `cat_other` z subskrypcji) lądują pod jednym kluczem — inaczej wykres
@@ -355,6 +592,8 @@ class BudgetService {
     List<BudgetEntry> entries,
     List<Subscription> subs,
     String monthKey, {
+    required ExpenseView view,
+    List<BillsAllocationItem> allocationItems = const [],
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
@@ -366,9 +605,53 @@ class BudgetService {
       }
     }
 
-    addAll(expenseBreakdownByCategory(entries, target: t));
+    addAll(
+      view == ExpenseView.plan
+          ? expenseBreakdownByCategory(entries, target: t)
+          : recurringBreakdownForMonth(entries, monthKey, target: t),
+    );
     addAll(_analytics.getCategoryBreakdown(subs, target: t));
-    addAll(billsBreakdownByCategory(entries, monthKey, target: t));
+    addAll(
+      view == ExpenseView.plan
+          ? allocationBreakdownByCategory(allocationItems)
+          : billsBreakdownByCategory(entries, monthKey, target: t),
+    );
+    return out;
+  }
+
+  /// Podział realnych kosztów cyklicznych DANEGO miesiąca wg kategorii —
+  /// odpowiednik [expenseBreakdownByCategory] w ujęciu „rzeczywistość".
+  Map<String, double> recurringBreakdownForMonth(
+    List<BudgetEntry> entries,
+    String monthKey, {
+    Currency? target,
+  }) {
+    final t = target ?? Currency.PLN;
+    final out = <String, double>{};
+    for (final e in entries.where(
+      (e) =>
+          e.isActive &&
+          e.isExpense &&
+          !e.isOneTime &&
+          _existsInMonth(e, monthKey),
+    )) {
+      final key = e.categoryId ?? 'budget_other';
+      out[key] =
+          (out[key] ?? 0) + _monthly(e, t) + _overrideDelta(e, monthKey, t);
+    }
+    return out;
+  }
+
+  /// Podział koperty „Na rachunki" wg kategorii jej pozycji (ujęcie planu).
+  /// Kwoty koperty są już w walucie docelowej — to zwykła suma z ustawień.
+  Map<String, double> allocationBreakdownByCategory(
+    List<BillsAllocationItem> items,
+  ) {
+    final out = <String, double>{};
+    for (final it in items.where((it) => !it.deleted)) {
+      final key = it.categoryId ?? 'budget_other';
+      out[key] = (out[key] ?? 0) + it.amount;
+    }
     return out;
   }
 

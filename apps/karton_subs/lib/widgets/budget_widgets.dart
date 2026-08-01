@@ -664,6 +664,258 @@ class AnnualCostsSection extends StatelessWidget {
   }
 }
 
+/// Akordeon „Podsumowanie roczne" — plan roczny widziany od drugiej strony:
+/// ile z niego już wydano, miesiąc po miesiącu (ADR-029).
+///
+/// „Koszty roczne" mówią, ile rok MA kosztować (kwota/mies × 12). Ta sekcja
+/// mówi, gdzie w tym roku realnie jesteśmy — narastająco, więc widać, kiedy
+/// zbliżamy się do planu.
+class AnnualSummarySection extends StatelessWidget {
+  final YearExpenseSummary summary;
+  final String currency;
+  final bool compact;
+  final VoidCallback onToggle;
+
+  /// Przełącznik ujęcia (Plan / Realne) — jak przy wykresach.
+  final Widget? trailing;
+
+  /// Tapnięcie w podpis „od lipca" — wybór początku ewidencji.
+  final VoidCallback? onEditStart;
+
+  const AnnualSummarySection({
+    super.key,
+    required this.summary,
+    required this.currency,
+    required this.compact,
+    required this.onToggle,
+    this.trailing,
+    this.onEditStart,
+  });
+
+  static const _monthNames = [
+    'styczeń',
+    'luty',
+    'marzec',
+    'kwiecień',
+    'maj',
+    'czerwiec',
+    'lipiec',
+    'sierpień',
+    'wrzesień',
+    'październik',
+    'listopad',
+    'grudzień',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final s = summary;
+    if (s.planned <= 0 && s.spent <= 0) return const SizedBox.shrink();
+
+    final progress = s.progress;
+    final over = progress != null && progress > 1;
+    final fromLabel = s.fromMonth > 12
+        ? 'ewidencja zaczyna się w kolejnym roku'
+        : s.fromMonth == 1
+        ? 'cały rok'
+        : 'od ${_monthNames[s.fromMonth - 1]}';
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Podsumowanie roczne ${s.year}',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: c.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      ?trailing,
+                      const SizedBox(width: 6),
+                      Icon(
+                        compact
+                            ? LucideIcons.chevronDown
+                            : LucideIcons.chevronUp,
+                        size: 20,
+                        color: c.textMuted,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${budgetNf.format(s.spent)}${curLabelSuffix(currency)}',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: over ? c.negative : c.textPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    s.planned > 0
+                        ? 'z ${budgetNf.format(s.planned)}${curLabelSuffix(currency)} planowanych'
+                            ' (${((progress ?? 0) * 100).round()}%)'
+                        : 'brak planu do porównania',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: c.textSecondary,
+                    ),
+                  ),
+                  if (progress != null) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: progress.clamp(0.0, 1.0),
+                        minHeight: 8,
+                        backgroundColor: c.border,
+                        valueColor: AlwaysStoppedAnimation(
+                          over ? c.negative : c.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // Początek ewidencji — poza obszarem zwijania, żeby tapnięcie w niego
+          // nie zamykało sekcji.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: InkWell(
+              onTap: onEditStart,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.calendar, size: 14, color: c.textMuted),
+                  const SizedBox(width: 6),
+                  Text(
+                    fromLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: c.textMuted,
+                    ),
+                  ),
+                  if (onEditStart != null) ...[
+                    const SizedBox(width: 4),
+                    Icon(LucideIcons.pencil, size: 12, color: c.textMuted),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 180),
+            sizeCurve: Curves.easeInOut,
+            crossFadeState: compact
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 16),
+                  for (final m in s.months)
+                    _YearMonthRow(
+                      label: _monthNames[m.month - 1],
+                      amount: m.amount,
+                      cumulative: m.cumulative,
+                      currency: currency,
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Miesiąc po miesiącu i narastająco. Puste miesiące to te '
+                    'sprzed początku ewidencji albo jeszcze nienadeszłe — nie '
+                    'wchodzą też do planu, z którym się porównują.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            secondChild: const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Wiersz miesiąca w podsumowaniu rocznym: kwota miesiąca i narastająco.
+class _YearMonthRow extends StatelessWidget {
+  final String label;
+  final double? amount;
+  final double? cumulative;
+  final String currency;
+
+  const _YearMonthRow({
+    required this.label,
+    required this.amount,
+    required this.cumulative,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final empty = amount == null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: empty ? c.textMuted : null,
+              ),
+            ),
+          ),
+          Text(
+            empty ? '—' : budgetNf.format(amount!),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: empty ? c.textMuted : c.negative,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 96,
+            child: Text(
+              empty
+                  ? ''
+                  : '${budgetNf.format(cumulative!)}${curLabelSuffix(currency)}',
+              textAlign: TextAlign.right,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: c.textSecondary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Wiersz rozpisu: znak działania, nazwa składnika, kwota i udział w procentach.
 class _BreakdownRow extends StatelessWidget {
   final String label;

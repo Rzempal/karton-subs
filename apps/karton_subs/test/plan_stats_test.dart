@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:karton_subs/models/bills_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/budget_service.dart';
@@ -54,31 +55,38 @@ void main() {
     final subs = [_sub(50)];
 
     test('cykliczne = koszty stałe bez subskrypcji i bez rachunków', () {
-      final t = _svc.recurringExpenseTrend(entries);
+      final t = _svc.recurringExpenseTrend(entries, view: ExpenseView.plan);
       expect(t.last.amount, closeTo(300, 0.001));
     });
 
     test('cykliczne są płaskie (brak historii kosztów stałych)', () {
-      final t = _svc.recurringExpenseTrend(entries);
+      final t = _svc.recurringExpenseTrend(entries, view: ExpenseView.plan);
       expect(t.length, 6);
       expect(t.every((p) => (p.amount - 300).abs() < 0.001), isTrue);
     });
 
     test('subskrypcje i rachunki jako osobne strumienie', () {
-      expect(_svc.subscriptionsTrend(subs).last.amount, closeTo(50, 0.001));
-      expect(_svc.billsTrend(entries).last.amount, closeTo(200, 0.001));
+      expect(
+        _svc.subscriptionsTrend(subs, view: ExpenseView.actual).last.amount,
+        closeTo(50, 0.001),
+      );
+      expect(
+        _svc.billsTrend(entries, view: ExpenseView.actual).last.amount,
+        closeTo(200, 0.001),
+      );
     });
 
     test('suma trzech serii = całość wydatków miesiąca (expenseTrend)', () {
-      final sum = _svc.recurringExpenseTrend(entries).last.amount +
-          _svc.subscriptionsTrend(subs).last.amount +
-          _svc.billsTrend(entries).last.amount;
+      final sum =
+          _svc.recurringExpenseTrend(entries, view: ExpenseView.plan).last.amount +
+              _svc.subscriptionsTrend(subs, view: ExpenseView.actual).last.amount +
+              _svc.billsTrend(entries, view: ExpenseView.actual).last.amount;
       expect(sum, closeTo(_svc.expenseTrend(entries, subs).last.amount, 0.001));
     });
 
     test('rachunek innego miesiąca nie wchodzi do bieżącego punktu', () {
       final other = [_recurring(300), _bill(200, month: '2026-05')];
-      final t = _svc.billsTrend(other);
+      final t = _svc.billsTrend(other, view: ExpenseView.actual);
       expect(t.last.amount, closeTo(0, 0.001));
     });
   });
@@ -200,6 +208,7 @@ void main() {
         [_recurring(300, categoryId: 'cat_a'), _bill(200, categoryId: 'cat_a')],
         [_sub(50, categoryId: 'cat_a')],
         _thisMonth,
+        view: ExpenseView.actual,
       );
       expect(r.length, 1);
       expect(r['cat_a'], closeTo(550, 0.001));
@@ -210,6 +219,7 @@ void main() {
         [_recurring(300), _bill(200)],
         [_sub(50)],
         _thisMonth,
+        view: ExpenseView.actual,
       );
       // Klucz budżetowy „budget_other" jest sprowadzany do „cat_other" —
       // inaczej wykres pokazałby dwa kawałki o tej samej nazwie.
@@ -223,14 +233,128 @@ void main() {
         entries,
         const [],
         '2026-07',
+        view: ExpenseView.actual,
       );
       final maj = _svc.combinedExpenseBreakdownByCategory(
         entries,
         const [],
         '2026-05',
+        view: ExpenseView.actual,
       );
       expect(lipiec['cat_other'], closeTo(300, 0.001));
       expect(maj['cat_other'], closeTo(500, 0.001));
+    });
+  });
+
+  // ── Plan vs Rzeczywistość (ADR-028) ────────────────────────────────────────
+
+  group('Trend: plan vs rzeczywistość', () {
+    final korekta = _recurring(300).copyWith(
+      monthOverrides: {_thisMonth: const BillMonthOverride(amount: 420)},
+    );
+
+    test('plan nie zna korekt miesiąca, rzeczywistość je bierze', () {
+      final plan = _svc.recurringExpenseTrend([korekta], view: ExpenseView.plan);
+      final real = _svc.recurringExpenseTrend(
+        [korekta],
+        view: ExpenseView.actual,
+      );
+      expect(plan.last.amount, closeTo(300, 0.001));
+      expect(real.last.amount, closeTo(420, 0.001));
+      // Miesiąc bez korekty wraca do kwoty bazowej — korekta dotyczy jednego.
+      expect(real.first.amount, closeTo(300, 0.001));
+    });
+
+    test('rachunki: plan to koperta, rzeczywistość to realne kwoty', () {
+      final entries = [_bill(200)];
+      final plan = _svc.billsTrend(
+        entries,
+        view: ExpenseView.plan,
+        billsAllocation: 500,
+      );
+      final real = _svc.billsTrend(entries, view: ExpenseView.actual);
+      expect(plan.every((p) => (p.amount - 500).abs() < 0.001), isTrue);
+      expect(real.last.amount, closeTo(200, 0.001));
+      expect(real.first.amount, closeTo(0, 0.001));
+    });
+
+    test('koszt stały dodany w tym miesiącu nie obciąża wstecz (realne)', () {
+      // Data startu = jedyny ślad historii, jaki mamy: pozycja z lipca nie
+      // istniała w marcu, więc w ujęciu realnym marzec musi być bez niej.
+      final swiezy = _recurring(300).copyWith(startDate: _today);
+      final real = _svc.recurringExpenseTrend(
+        [swiezy],
+        view: ExpenseView.actual,
+      );
+      expect(real.last.amount, closeTo(300, 0.001));
+      expect(real.first.amount, closeTo(0, 0.001));
+      // W planie ta sama pozycja jest płaska na całym wykresie.
+      final plan = _svc.recurringExpenseTrend([swiezy], view: ExpenseView.plan);
+      expect(plan.every((p) => (p.amount - 300).abs() < 0.001), isTrue);
+    });
+
+    test('rzeczywistość bieżącego miesiąca zgadza się z bilansem miesiąca', () {
+      final entries = [korekta, _bill(950)];
+      final subs = [_sub(120)];
+      final parts = _svc.monthBalanceParts(entries, subs, _thisMonth);
+      final real = _svc.recurringExpenseTrend(
+        entries,
+        view: ExpenseView.actual,
+      );
+      // Ta sama definicja kosztów cyklicznych po obu stronach — inaczej wykres
+      // i bilans pokazywałyby dwie różne prawdy o tym samym miesiącu.
+      expect(real.last.amount, closeTo(parts.recurring, 0.001));
+      expect(
+        _svc.billsTrend(entries, view: ExpenseView.actual).last.amount,
+        closeTo(parts.bills, 0.001),
+      );
+    });
+  });
+
+  group('Kategorie: plan vs rzeczywistość', () {
+    final alloc = [
+      const BillsAllocationItem(
+        id: 'a1',
+        name: 'Paliwo',
+        amount: 300,
+        categoryId: 'cat_a',
+      ),
+      const BillsAllocationItem(id: 'a2', name: 'Bufor', amount: 200),
+    ];
+
+    test('plan bierze kopertę (po jej kategoriach), a nie rachunki', () {
+      final entries = [_recurring(300, categoryId: 'cat_a'), _bill(950)];
+      final r = _svc.combinedExpenseBreakdownByCategory(
+        entries,
+        const [],
+        _thisMonth,
+        view: ExpenseView.plan,
+        allocationItems: alloc,
+      );
+      expect(r['cat_a'], closeTo(600, 0.001)); // 300 koszt + 300 koperta
+      expect(r['cat_other'], closeTo(200, 0.001)); // bufor bez kategorii
+      // Realny rachunek 950 nie ma prawa wejść do ujęcia planowego.
+      expect(r.values.fold(0.0, (a, b) => a + b), closeTo(800, 0.001));
+    });
+
+    test('rzeczywistość bierze rachunki miesiąca i korekty kosztów', () {
+      final entries = [
+        _recurring(300, categoryId: 'cat_a').copyWith(
+          monthOverrides: {_thisMonth: const BillMonthOverride(amount: 420)},
+        ),
+        _bill(950, categoryId: 'cat_b'),
+      ];
+      final r = _svc.combinedExpenseBreakdownByCategory(
+        entries,
+        const [],
+        _thisMonth,
+        view: ExpenseView.actual,
+        allocationItems: alloc,
+      );
+      expect(r['cat_a'], closeTo(420, 0.001));
+      expect(r['cat_b'], closeTo(950, 0.001));
+      // Koperta jest planem — w ujęciu realnym nie występuje.
+      expect(r.containsKey('cat_other'), isFalse);
     });
   });
 }
