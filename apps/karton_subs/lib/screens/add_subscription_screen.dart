@@ -12,7 +12,12 @@ import '../widgets/cycle_months_picker.dart';
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? existing;
 
-  const AddSubscriptionScreen({super.key, this.existing});
+  /// Zakres nowej subskrypcji — lista podaje ten, na którym stoi użytkownik.
+  /// Bez tego subskrypcja dodana w budżecie domowym lądowała w osobistym,
+  /// czyli poza listą, z której ją dodano.
+  final SubscriptionScope? initialScope;
+
+  const AddSubscriptionScreen({super.key, this.existing, this.initialScope});
 
   @override
   State<AddSubscriptionScreen> createState() => _AddSubscriptionScreenState();
@@ -45,7 +50,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   String? _paymentMethod;
   bool _isTrial = false;
   DateTime? _trialEndDate;
-  SubscriptionScope _scope = SubscriptionScope.personal;
+  late SubscriptionScope _scope;
   late final TextEditingController _postTrialAmountCtrl;
   bool _isSubmitting = false;
 
@@ -55,6 +60,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   void initState() {
     super.initState();
     final s = widget.existing;
+    _scope = widget.initialScope ?? SubscriptionScope.personal;
     _nameCtrl = TextEditingController(text: s?.name ?? '');
     _amountCtrl = TextEditingController(
       text: s != null ? s.amount.toStringAsFixed(2) : '',

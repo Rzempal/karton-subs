@@ -10,7 +10,7 @@ import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
-import 'subscription_card.dart' show categoryIcon;
+import 'category_icons.dart' show categoryIcon;
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 

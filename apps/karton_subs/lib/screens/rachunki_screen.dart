@@ -12,11 +12,9 @@ import '../models/budget_entry.dart';
 import '../models/pending_bill_scan.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
-import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
-import '../widgets/bills_allocation_editor.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/gradient_amount.dart';
@@ -25,6 +23,7 @@ import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_refresh.dart';
 import 'add_bill_payment_screen.dart';
+import 'bills_planner_screen.dart';
 
 /// Ekran „Rachunki" — datowane wydatki jednorazowe ([BudgetEntryType.billPayment]):
 /// log opłaconych oraz pozycje zaplanowane na przyszłą datę (ADR-018).
@@ -45,7 +44,6 @@ class RachunkiScreen extends StatefulWidget {
 
 class _RachunkiScreenState extends State<RachunkiScreen> {
   late DateTime _month; // pierwszy dzień wybranego miesiąca
-  late bool _plannerCompact;
 
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
@@ -54,7 +52,6 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     super.initState();
     final now = _today;
     _month = DateTime(now.year, now.month);
-    _plannerCompact = context.read<StorageService>().getBillsPlannerCompact();
   }
 
   void _shiftMonth(int delta) =>
@@ -70,11 +67,6 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     if (picked != null && mounted) {
       setState(() => _month = DateTime(picked.year, picked.month));
     }
-  }
-
-  void _togglePlanner() {
-    setState(() => _plannerCompact = !_plannerCompact);
-    context.read<StorageService>().setBillsPlannerCompact(_plannerCompact);
   }
 
   Future<void> _openAdd(BudgetController ctrl) async {
@@ -291,10 +283,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
-                    _PlannerCard(
-                      compact: _plannerCompact,
-                      onToggleCompact: _togglePlanner,
-                    ),
+                    const _PlannerCard(),
                     const SizedBox(height: 8),
                     _MonthCard(
                       monthKey: monthKey,
@@ -560,17 +549,15 @@ class _PendingScanCard extends StatelessWidget {
   }
 }
 
-/// Karta „Planner" — sam plan koperty „Na rachunki": z czego się składa i ile
-/// razem wynosi. Plan jest JEDEN dla wszystkich miesięcy (ADR-012), dlatego
-/// nie ma tu nawigacji po miesiącach — wykonanie planu pokazuje [_MonthCard].
+/// Karta „Planner" — wejście do planu koperty „Na rachunki" (ADR-012): nazwa,
+/// suma planu i przejście do edycji.
 ///
-/// Edycja siedzi tutaj, a nie w „Wydatkach cyklicznych", bo to plan dla tej
-/// samej puli, którą ten ekran realnie loguje (ADR-019).
+/// Sam plan mieszka na własnym ekranie ([BillsPlannerScreen]), bo dotyczy dwóch
+/// miejsc naraz: tu jest realizowany, a w „Wydatkach cyklicznych" pomniejsza
+/// plan jako rezerwa — więc oba ekrany prowadzą do tego samego miejsca zamiast
+/// odsyłać się nawzajem.
 class _PlannerCard extends StatelessWidget {
-  final bool compact;
-  final VoidCallback onToggleCompact;
-
-  const _PlannerCard({required this.compact, required this.onToggleCompact});
+  const _PlannerCard();
 
   @override
   Widget build(BuildContext context) {
@@ -578,70 +565,65 @@ class _PlannerCard extends StatelessWidget {
     final theme = Theme.of(context);
     final cur = ctrl.targetCurrencyLabel;
     final alloc = ctrl.billsAllocation;
+    final count = ctrl.billsAllocationItems.length;
 
     return FrostCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const BillsPlannerScreen()),
+      ),
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Planner',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Zaplanuj kwotę w budżecie przeznaczoną na rachunki',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Planner',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: compact ? 'Rozwiń Planner' : 'Zwiń Planner',
-                icon: Icon(
-                  compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
+                const SizedBox(height: 2),
+                Text(
+                  alloc == null
+                      ? 'Zaplanuj kwotę w budżecie przeznaczoną na rachunki'
+                      : '$count ${_itemsLabel(count)} w planie',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
-                onPressed: onToggleCompact,
-              ),
-            ],
-          ),
-          // Po zwinięciu zostaje sama suma planu — nagłówek bez liczby nie
-          // niósłby żadnej informacji.
-          if (compact)
-            Text(
-              alloc == null
-                  ? 'Plan jeszcze pusty'
-                  : 'Plan: ${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
-              style: theme.textTheme.bodyMedium,
-            )
-          else ...[
-            const Divider(height: 24),
-            BillsAllocationItems(
-              items: ctrl.billsAllocationItems.toList()
-                ..sort(
-                  (a, b) =>
-                      a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-                ),
-              currency: cur,
-              onAdd: () => showBillsAllocationItemEditor(context),
-              onEdit: (it) =>
-                  showBillsAllocationItemEditor(context, existing: it),
+              ],
             ),
-          ],
+          ),
+          const SizedBox(width: 12),
+          Text(
+            alloc == null
+                ? 'Brak'
+                : '−${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: alloc == null
+                  ? AppColors.textMuted
+                  : context.semanticColors.negative,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            LucideIcons.chevronRight,
+            size: 18,
+            color: AppColors.textMuted,
+          ),
         ],
       ),
     );
+  }
+
+  String _itemsLabel(int n) {
+    if (n == 1) return 'pozycja';
+    final lastTwo = n % 100;
+    final last = n % 10;
+    if (lastTwo >= 12 && lastTwo <= 14) return 'pozycji';
+    return (last >= 2 && last <= 4) ? 'pozycje' : 'pozycji';
   }
 }
 
@@ -738,8 +720,8 @@ class _MonthCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (alloc == null)
             Text(
-              'Dodaj pozycje planu w „Plannerze" powyżej, by porównać plan '
-              'z realnymi wydatkami. Zaplanowana kwota pomniejsza „zostaje '
+              'Dodaj pozycje planu w „Plannerze" (karta powyżej), by porównać '
+              'plan z realnymi wydatkami. Zaplanowana kwota pomniejsza „zostaje '
               'miesięcznie".',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppColors.textSecondary,

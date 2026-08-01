@@ -9,7 +9,7 @@ import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/subscription_card.dart'
+import '../widgets/category_icons.dart'
     show categoryIcon, availableIconNames;
 
 class CategoryManagementScreen extends StatefulWidget {
@@ -325,12 +325,15 @@ class _CategoryEditorState extends State<_CategoryEditor> {
           // Ikona
           Text('Ikona', style: theme.textTheme.labelMedium),
           const SizedBox(height: 8),
+          // Siatka przewijana W DÓŁ, nie w bok: ikon jest kilkadziesiąt, a
+          // ułożone są tematycznie (dom, zakupy, transport, …). Dwa rzędy
+          // przewijane poziomo rozbijały tę kolejność na pary i szukanie
+          // sprowadzało się do przesuwania przez cały zestaw.
           SizedBox(
-            height: 100,
+            height: 168,
             child: GridView.builder(
-              scrollDirection: Axis.horizontal,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 48,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
               ),

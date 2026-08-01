@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' show File;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 // Ikona receiptText (receipt-text) jest tylko w nowszym pakiecie (alias).
@@ -14,7 +15,6 @@ import 'controllers/bill_scan_controller.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/rachunki_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/subscription_list_screen.dart';
 import 'screens/budget_dashboard_screen.dart';
 import 'services/ai_engine_service.dart';
 import 'services/app_logger.dart';
@@ -167,7 +167,8 @@ class KartonApp extends StatelessWidget {
     final tp = context.watch<ThemeProvider>();
     final platform = MediaQuery.platformBrightnessOf(context);
     // Faktyczna paleta (uwzglednia system) dla globalnych getterow AppColors.
-    AppColors.active = tp.effectivePalette(platform);
+    final palette = tp.effectivePalette(platform);
+    AppColors.active = palette;
     return MaterialApp(
       title: 'Zostaje',
       debugShowCheckedModeBanner: false,
@@ -179,7 +180,15 @@ class KartonApp extends StatelessWidget {
       // wyłącznie treść (tło stoi nieruchomo), a ekrany mają przezroczyste
       // Scaffoldy. Wcześniej każdy ekran niósł własną kopię tła, przez co
       // animacja powrotu „pompowała" gradientem i poświatami.
-      builder: (context, child) => AuroraBackground(child: child!),
+      // Styl paskow systemowych deklarowany RAZ, nad Navigatorem: ekrany
+      // robocze nie maja paskow tytulu (ADR-026), wiec nikt inny nie mowi
+      // systemowi, czy ikony stanu maja byc ciemne czy biale. Deklaratywnie,
+      // a nie przez SystemChrome — ekran z wlasnym AppBarem nadpisze styl na
+      // czas swojego zycia, a po powrocie znow obowiazuje ten.
+      builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: systemOverlayStyleFor(palette),
+        child: AuroraBackground(child: child!),
+      ),
       home: const _MainShell(),
     );
   }
@@ -361,12 +370,12 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   }
 
   /// Kolejnosc zakladek: przeglad, potem sciezka pieniedzy (wplywy -> rachunki
-  /// -> subskrypcje -> wydatki cykliczne), na koncu ustawienia.
+  /// -> wydatki cykliczne), na koncu ustawienia. Subskrypcje nie maja juz
+  /// wlasnej zakladki — sa sekcja „Wydatkow" (ADR-027).
   static const _screens = [
     DashboardScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
     RachunkiScreen(),
-    SubscriptionListScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.expenses),
     SettingsScreen(),
   ];
@@ -378,7 +387,6 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
     GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
     GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Rachunki'),
-    GlassNavItem(icon: LucideIcons.repeat, label: 'Subskrypcje'),
     GlassNavItem(icon: LucideIcons.trendingDown, label: 'Wydatki'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
@@ -395,8 +403,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     0 => SectionInfo.budget,
     1 => SectionInfo.incomes,
     2 => SectionInfo.bills,
-    3 => SectionInfo.subscriptions,
-    4 => SectionInfo.recurringExpenses,
+    3 => SectionInfo.recurringExpenses,
     _ => null,
   };
 

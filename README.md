@@ -12,7 +12,9 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 **Kluczowe funkcje:**
 - Zero logowania, zero rejestracji -- 100% prywatnosci, wszystko na urzadzeniu
 - Zakladka "Budzet": pelny przeglad budzetu razem z subskrypcjami (bilans miesiaca + plan)
-- Subskrypcje: podsumowanie miesieczne/roczne, trend, podzial wg kategorii, triale, limit
+- Subskrypcje: sekcja zakladki "Wydatki", obok przelewu wewnetrznego i wydatkow stalych
+  (ADR-027) — ten sam styl listy i te same filtry; podsumowanie miesieczne/roczne,
+  trend, podzial wg kategorii, triale i limit sa w zakladce "Budzet"
 - **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (rachunki),
   koszty cykliczne i wieksze wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie"
 - **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
@@ -73,10 +75,10 @@ karton-subs/
 │       │   ├── models/         # Subscription, Category, UsageEvent, BudgetEntry
 │       │   ├── services/       # StorageService (Hive), AnalyticsService, BudgetService
 │       │   ├── controllers/    # SubscriptionController, BudgetController
-│       │   ├── utils/          # cycle_math (normalizacja cyklu)
+│       │   ├── utils/          # cycle_math (normalizacja cyklu), expenses_filter (filtry list)
 │       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
-│       │   ├── screens/        # Budzet (przeglad), Rachunki, Subskrypcje, Wydatki, Wplywy, Ustawienia
-│       │   └── widgets/        # SubscriptionCard
+│       │   ├── screens/        # Budzet (przeglad), Rachunki, Wydatki (z subskrypcjami), Wplywy, Ustawienia
+│       │   └── widgets/        # Wspolne widgety list, wykresow i nawigacji
 │       └── pubspec.yaml
 ├── docs/
 │   ├── architecture.md         # Architektura systemu
@@ -124,4 +126,4 @@ Reusable infrastructure: ~40% kodu (serwisy, kontrolery, konfiguracja).
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-17
+> **Ostatnia aktualizacja:** 2026-08-01

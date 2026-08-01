@@ -71,6 +71,22 @@ tam, gdzie metodę da się zdefiniować (typy wydatkowe; wpływy bez metody jej 
 - **Header = osobna rezerwa, pozycje = częściowe rozbicie z buforem.** Odrzucone na
   życzenie właściciela: total = Σ pozycji; bufor dodaje się jako zwykła pozycja.
 
+## Uzupełnienie (2026-08-01): Planner ma własny ekran
+
+Plan koperty był sekcją zwijaną na ekranie „Rachunki", a „Wydatki cykliczne"
+pokazywały samą sumę z podpisem „edycja w Rachunkach". Po tym, jak subskrypcje
+weszły do „Wydatków" (ADR-027), ten podpis stał się jedyną rzeczą na ekranie,
+która odsyłała gdzie indziej zamiast działać.
+
+Plan mieszka teraz na **własnym ekranie** (`BillsPlannerScreen`), a oba ekrany
+prowadzą do niego tak samo: karta „Planner" na „Rachunkach" i wiersz sumy na
+„Wydatkach". Zwijanie zniknęło razem ze swoim ustawieniem — ekran nie zabiera
+miejsca liście, więc nie ma czego chować.
+
+Zakres (osobisty/domowy) jest **dziedziczony** z ekranu, z którego weszliśmy, i
+pokazany w podtytule; przełącznika tam nie ma. Koperty są dwie, a przełączanie
+zakresu w podekranie to prosta droga do edycji nie tej, o którą chodziło.
+
 ## Wpływ na ADR-011
 
 Punkt 3 (koperta „Na rachunki") — koperta **nie jest już pojedynczą kwotą**, lecz

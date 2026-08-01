@@ -85,6 +85,21 @@ Dwie linie na pozycje:
     pasuja do wzorca `{typ} {data} {metoda}`. Lista aplikacji ma wiec dzis dwa
     style wiersza.
 
+## Uzupelnienie (2026-08-01): kolor ikon paska stanu
+
+Usuniecie `AppBar` zabralo ekranom cos jeszcze: **kazdy pasek tytulu ustawia styl
+ikon paskow systemowych**. Bez niego ekrany robocze nie deklarowaly nic i zostawal
+styl ustawiony przez cokolwiek wczesniej — podekran Ustawien albo motyw okna
+Androida. Na jasnym motywie konczylo sie to bialymi ikonami na bialym tle.
+
+Styl deklaruje teraz `AnnotatedRegion` w `MaterialApp.builder`
+(`systemOverlayStyleFor(palette)`), czyli raz dla calej aplikacji i zaleznie od
+jasnosci aktywnej palety. Deklaratywnie, nie przez `SystemChrome`: ekran z wlasnym
+paskiem tytulu nadpisuje styl na czas swojego zycia, a po powrocie znow obowiazuje
+deklaracja z powloki. Ten sam styl siedzi w `appBarTheme.systemOverlayStyle`
+(inaczej pasek tytulu zgadywalby kolor ikon z przezroczystego tla), a klatke
+startowa pokrywa `windowLightStatusBar` w `styles.xml` (jasny i ciemny wariant).
+
 ## Rozwazane alternatywy
 
 - **Zostawic paski tytulu, skrocic tylko listy** — odrzucone: nazwa ekranu

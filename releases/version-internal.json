@@ -1,6 +1,21 @@
 {
-  "versionCode": 1526080107,
+  "version": "0.16.26080110",
+  "releaseDate": "2026-08-01T11:51:00Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1626080110",
+  "releaseNotes": "- Planner ma wlasny ekran: wejscie z Rachunkow i z Wydatkow\n- czytelne ikony paska stanu w jasnym motywie",
   "changelog": [
+    {
+      "version": "0.16.26080110",
+      "notes": "- Planner ma wlasny ekran: wejscie z Rachunkow i z Wydatkow\n- czytelne ikony paska stanu w jasnym motywie"
+    },
+    {
+      "version": "0.16.26080109",
+      "notes": "- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- ikony ulozone tematycznie, wybor przewija sie w dol zamiast w bok"
+    },
+    {
+      "version": "0.16.26080108",
+      "notes": "- Subskrypcje jako sekcja Wydatkow (koniec osobnej zakladki)\n- Zwijane sekcje listy z suma w naglowku\n- Pokaz ukryte: wstrzymane pozycje i anulowane subskrypcje"
+    },
     {
       "version": "0.15.26080107",
       "notes": "- druga linia pozycji wykorzystuje cala szerokosc (koniec urywania daty)\n- rachunki maja ten sam format daty co reszta: RRRR-MM-DD"
@@ -28,22 +43,7 @@
     {
       "version": "0.15.26080101",
       "notes": "- formularz pokazuje tylko typy z tej sekcji (Wplywy: wplyw i wplyw jednorazowy)\n- grupowanie po kategoriach znika na ekranie Wplywy (nie maja kategorii)"
-    },
-    {
-      "version": "0.14.26080100",
-      "notes": "- wiecej miejsca: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- przelacznik Osobisty/Domowy na samej gorze, wspolny dla wszystkich ekranow\n- sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- opis sekcji (ikona i) obok przelacznika zakresu"
-    },
-    {
-      "version": "0.13.26073105",
-      "notes": "- kategorie i metody platnosci przeniesione do sekcji Personalizacja\n- eksport XLSX i PDF w Ustawieniach (Dane -> Eksport danych) zamiast ikon w paskach ekranow"
-    },
-    {
-      "version": "0.13.26073104",
-      "notes": "- synchronizacja przez przeciagniecie listy w dol (zamiast przycisku w pasku)\n- gest dziala na Budzecie, Rachunkach, Wydatkach cyklicznych i Wplywach"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1526080107",
-  "releaseNotes": "- druga linia pozycji wykorzystuje cala szerokosc (koniec urywania daty)\n- rachunki maja ten sam format daty co reszta: RRRR-MM-DD",
-  "version": "0.15.26080107",
-  "releaseDate": "2026-08-01T01:59:37Z"
+  "versionCode": 1626080110
 }

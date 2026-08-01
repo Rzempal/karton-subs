@@ -31,15 +31,10 @@ class SectionInfo {
     'Skan zdjęciem rozpoznaje kwotę, wystawcę i datę',
   ]);
 
-  static const subscriptions = SectionInfo('Subskrypcje', [
-    'Usługi odnawiane cyklicznie: streaming, software, karnety',
-    'Osobno od kosztów stałych — to wydatki uznaniowe',
-    'Dzięki temu łatwiej ocenić, z czego zrezygnować',
-    'W planie liczą się jak koszty cykliczne',
-  ]);
-
   static const recurringExpenses = SectionInfo('Wydatki cykliczne', [
     'Koszty powtarzalne: stałe, raty, przelew do budżetu domowego',
+    'Osobna sekcja „Subskrypcje": usługi odnawiane cyklicznie (streaming,'
+        ' software, karnety) — wydatki uznaniowe, łatwiejsze do oceny razem',
     'Liczone jako średnia: kwota × liczba płatności ÷ 12',
     'Miesiąc dodania pozycji nie ma znaczenia',
     'Nie chcesz uśredniać? Dodaj w „Rachunkach"',

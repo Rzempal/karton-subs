@@ -134,6 +134,23 @@ class BudgetController extends ChangeNotifier {
       all.where((e) => e.type == BudgetEntryType.householdTransfer).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
+  /// Subskrypcje aktywnego zakresu — na liście „Wydatki" są trzecią sekcją obok
+  /// przelewu wewnętrznego i wydatków stałych (ADR-027). Przypięte na górze,
+  /// tak jak na dawnym ekranie „Subskrypcje".
+  List<Subscription> get subscriptions => _subsForScope;
+
+  /// Kwota miesięczna subskrypcji w walucie docelowej. Trwający okres próbny
+  /// liczy się jako 0 — tak samo jak w planie i na wykresach.
+  double monthlySubscriptionAmount(Subscription s) =>
+      _currency.convertMonthlyAmount(s, _target);
+
+  /// Suma subskrypcji do nagłówka sekcji — tylko aktywne, bo tylko one wchodzą
+  /// do planu. Anulowana subskrypcja bywa na liście widoczna („pokaż ukryte"),
+  /// ale nic nie kosztuje.
+  double sumSubscriptions(List<Subscription> subs) => subs
+      .where((s) => s.isActive)
+      .fold(0.0, (sum, s) => sum + monthlySubscriptionAmount(s));
+
   /// Suma pozycji w walucie docelowej — do nagłówka sekcji. Cykliczne
   /// znormalizowane do kwoty/mies; jednorazowe liczone pełną kwotą (mają sens
   /// tylko jako jednorazowy wydatek, `monthlyAmount` = 0).

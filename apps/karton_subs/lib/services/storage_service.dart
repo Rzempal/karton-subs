@@ -773,11 +773,16 @@ class StorageService {
   Future<void> setDashboardPlanDetailsCompact(bool value) async =>
       _settingsBox.put('dashboardPlanDetailsCompact', value);
 
-  /// Sekcja „Planner" na ekranie Rachunków — domyślnie rozwinięta, bo plan
-  /// bywa edytowany. Zwinięcie oddaje miejsce liście rachunków miesiąca.
-  bool getBillsPlannerCompact() =>
-      _settingsBox.get('billsPlannerCompact', defaultValue: false) as bool;
+  /// Zwinięte sekcje list „Wydatki" i „Wpływy" (klucze sekcji, nie tytuły).
+  /// Jedna lista zamiast flagi na sekcję — sekcji przybywa (subskrypcje,
+  /// ADR-027), a każda nowa nie musi dokładać własnego ustawienia.
+  /// Domyślnie pusta: sekcje startują rozwinięte.
+  Set<String> getCollapsedBudgetSections() =>
+      (_settingsBox.get('collapsedBudgetSections', defaultValue: const [])
+              as List)
+          .cast<String>()
+          .toSet();
 
-  Future<void> setBillsPlannerCompact(bool value) async =>
-      _settingsBox.put('billsPlannerCompact', value);
+  Future<void> setCollapsedBudgetSections(Set<String> keys) async =>
+      _settingsBox.put('collapsedBudgetSections', keys.toList()..sort());
 }

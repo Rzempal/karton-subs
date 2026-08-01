@@ -19,8 +19,7 @@ import '../widgets/frost_card.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/sync_refresh.dart';
-import 'subscription_list_screen.dart'
-    show SubscriptionStatsView, SubscriptionStatsVariant;
+import '../widgets/subscription_stats_view.dart' show SubscriptionStatsView;
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
 class DashboardScreen extends StatefulWidget {
@@ -256,7 +255,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       scopeFilter: budget.isHousehold
           ? SubscriptionScope.household
           : SubscriptionScope.personal,
-      variant: SubscriptionStatsVariant.planDetails,
     ),
   ];
 

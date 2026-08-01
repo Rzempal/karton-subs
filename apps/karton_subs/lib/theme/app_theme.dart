@@ -1,5 +1,26 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// Styl pasków systemowych (stan u góry, nawigacja u dołu) dla danej palety.
+///
+/// Ikony tych pasków maluje SYSTEM, więc aplikacja musi mu powiedzieć, na jakim
+/// tle stoją. Do czasu usunięcia pasków tytułu (ADR-026) robił to za nas każdy
+/// `AppBar`; potem ekrany robocze nie deklarowały nic i na jasnym motywie
+/// zostawały białe ikony na białym tle — nieczytelne.
+SystemUiOverlayStyle systemOverlayStyleFor(AuroraPalette palette) {
+  final isLight = palette.brightness == Brightness.light;
+  return SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    // Android pyta o jasność IKON, iOS o jasność TŁA — stąd odwrotne wartości
+    // tej samej sytuacji.
+    statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+    statusBarBrightness: isLight ? Brightness.light : Brightness.dark,
+    systemNavigationBarIconBrightness: isLight
+        ? Brightness.dark
+        : Brightness.light,
+  );
+}
 
 /// Aurora — design system z obsługą wielu motywow (ADR-010, zastepuje ADR-005).
 ///
@@ -743,6 +764,9 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: p.textPrimary,
+        // Bez tego pasek tytułu (podekrany Ustawień, Planner) zgadywałby kolor
+        // ikon systemowych z własnego — przezroczystego — tła.
+        systemOverlayStyle: systemOverlayStyleFor(p),
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,

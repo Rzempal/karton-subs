@@ -370,24 +370,27 @@ class AppColors {
 
 ### Subskrypcje
 
+Nie maja wlasnego ekranu — sa trzecia sekcja „Wydatkow" (ADR-027), w tym samym
+stylu wiersza co pozycje budzetu.
+
 | Element | Realizacja Aurora |
 |---------|-------------------|
-| Taby Lista / Statystyki | aktywny: podkreslenie 2px `--accent-violet` |
-| Filtry (zakres + kategorie) | chipy; aktywny = `--accent-gradient` lub `--frost-2` |
-| Wiersz subskrypcji | kafel ikony w tincie koloru kategorii + kropka statusu `--positive` + nazwa + etykieta kategorii (kolor); prawa: kwota/okres + /os. |
-| Odnowienie wkrotce / trial | tlo `--warning` @ 0.10 + border `--warning` @ 0.30 |
+| Wiersz subskrypcji | jak wiersz pozycji budzetu: ikona kategorii (lub `repeat`) + nazwa + kwota/cykl `--negative`; druga linia: `Subskrypcja · data · okres probny · /os. · metoda · kategoria` |
+| Okres probny | kwota w kolorze `--trial`, w drugiej linii „probny · N dni"; koszty po okresie probnym w karcie na „Planie" |
+| Anulowana | wiersz przygaszony (opacity 0.5) + token „anulowana"; domyslnie ukryta, odslania ja przelacznik przy filtrze czasu |
+| Przypieta | ikona `pin` przed nazwa; zostaje na gorze sekcji niezaleznie od sortowania |
 | Kolory kategorii | Streaming `#60A5FA`, Software `#FB923C`, Cloud `--accent-cyan`, Muzyka `--accent-violet` |
-| „Dodaj" | pigulka `--accent-gradient` |
 
-### Budzet
+### Wydatki / Wplywy (listy pozycji)
 
 | Element | Realizacja Aurora |
 |---------|-------------------|
-| Przelacznik Osobisty/Domowy | segmented frost; aktywny = gradient |
-| Filtry | chipy: kategorie, typy oraz czas (rok → po wybraniu roku pasek miesiecy). Filtr czasu = snapshot: cykliczne zawsze, jednorazowe danego miesiaca, raty w oknie. Pasek czasu widoczny tylko gdy sa pozycje jednorazowe lub raty |
-| Naglowki sekcji | „Wplywy" / „Koszty cykliczne" — 15px/600 `--text-primary` |
-| Wiersz pozycji | ikona trending-up `--positive` / trending-down `--negative` + nazwa + typ (`--text-muted`) + kwota (semantic) |
-| „Dodaj" | pigulka `--accent-gradient` |
+| Przelacznik Osobisty/Domowy | segmented frost w `WorkspaceTopBar`; aktywny = gradient |
+| Filtry | chipy: kategorie, typy (z pseudo-chipem „Subskrypcje") oraz czas (rok → po wybraniu roku pasek miesiecy). Filtr czasu = snapshot: cykliczne i subskrypcje zawsze, jednorazowe danego miesiaca, raty w oknie |
+| Akcje przy paskach | grupowanie po kategoriach przy kategoriach, sortowanie przy typach, „pokaz ukryte" (oko) przy czasie — przyklejone na koncu przewijanego paska |
+| Naglowki sekcji | „Przelew wewnetrzny" / „Wydatki stale" / „Subskrypcje" / „Wplywy" — 15px/600 `--text-primary` + suma sekcji i chevron; tap zwija sekcje (suma zostaje) |
+| Wiersz pozycji | ikona kategorii (`--kolor kategorii`) lub trending-up/down + nazwa + kwota (semantic); druga linia: typ · data · metoda · kategoria |
+| „Dodaj" | pigulka `--accent-gradient`; menu: pozycja budzetu, subskrypcja, import z Excela |
 
 ### Ustawienia
 
@@ -401,4 +404,4 @@ class AppColors {
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-06-17
+> **Ostatnia aktualizacja:** 2026-08-01

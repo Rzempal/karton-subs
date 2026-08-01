@@ -79,7 +79,8 @@ lib/
 │   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek/rata/przelew) — ADR-018
 │   └── pending_bill_scan.dart   # Rachunek rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
-│   └── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
+│   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
+│   └── expenses_filter.dart     # Reguly widocznosci listy „Wydatki"/„Wplywy" (typ, kategoria, czas, ukryte) — ADR-027
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # Szyfrowanie kopii (AES-256-GCM) + kod odzyskiwania (ADR-024)
@@ -104,11 +105,11 @@ lib/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
 │   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Plan (domyslna) / Bilans miesiaca (ADR-011)
-│   ├── rachunki_screen.dart     # Rachunki: Planner (koperta „Na rachunki") -> karta miesiaca -> lista oplat (ADR-011)
+│   ├── rachunki_screen.dart     # Rachunki: wejscie do Plannera -> karta miesiaca -> lista oplat (ADR-011)
+│   ├── bills_planner_screen.dart # Planner: plan koperty „Na rachunki" (ADR-012) — wejscie z Rachunkow i z Wydatkow
 │   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
-│   ├── subscription_list_screen.dart # Subskrypcje: pod-zakladki Lista/Statystyki
-│   ├── add_subscription_screen.dart # Formularz subskrypcji
-│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne" i „Wplywy" (jeden widget, tryby) + Excel
+│   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
+│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne" (z sekcja Subskrypcje, ADR-027) i „Wplywy" (jeden widget, tryby) + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
@@ -122,7 +123,9 @@ lib/
 │   ├── gradient_amount.dart      # Kwota-bohater (ShaderMask gradient)
 │   ├── aurora_chip.dart          # Chip filtra (frost / gradient aktywny)
 │   ├── aurora_add_menu.dart      # Przycisk „Dodaj" + menu wysuwane w gore (zamiast bottom sheet)
-│   ├── subscription_card.dart   # Karta subskrypcji
+│   ├── subscription_row.dart    # Wiersz subskrypcji w stylu listy budzetu (ADR-027)
+│   ├── subscription_stats_view.dart # Limit subskrypcji + koszty okresow probnych („Plan" -> „Szczegoly")
+│   ├── category_icons.dart      # Slownik ikon kategorii (wspolny dla list i Ustawien)
 │   ├── budget_widgets.dart      # Wspolne widgety budzetu (BudgetSummarySection full/compact, flow/miesiac/karta)
 │   ├── cashflow_calendar.dart   # Siatka miesiaca z kropkami wplyw/wydatek
 │   ├── spending_chart.dart      # Wykres trendu wydatkow (jedna seria lub kilka + chipy legendy)
@@ -171,9 +174,10 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ---
 
-## Nawigacja (6 zakladek)
+## Nawigacja (5 zakladek)
 
 > **ADR:** [ADR-026 Gestosc interfejsu](adr/ADR-026-gestosc-interfejsu-bez-paskow-tytulu.md)
+> | [ADR-027 Subskrypcje jako sekcja „Wydatkow"](adr/ADR-027-subskrypcje-jako-sekcja-wydatkow.md)
 
 **Bez paskow tytulu.** Ekrany robocze nie maja `AppBar` — nazwa sekcji stoi
 w pigulce nawigacji na dole, wiec pasek ja tylko dublowal. Zamiast niego jeden
@@ -185,9 +189,20 @@ pozycji — nad te liste. Podekrany Ustawien zachowuja `AppBar` (przycisk powrot
 Powloka opakowuje tresc w `SafeArea(bottom: false)` — bez paska tytulu nic innego
 nie chroni jej przed paskiem stanu telefonu.
 
-Kolejnosc: Budzet | Wplywy | Rachunki | Subskrypcje | Wydatki | ⋮ Ustawienia —
+**Paski systemowe (stan i nawigacja)** deklaruje `AnnotatedRegion` w
+`MaterialApp.builder` (`systemOverlayStyleFor(palette)` w `app_theme.dart`), a nie
+`SystemChrome` — ekran z wlasnym `AppBar` nadpisuje styl na czas swojego zycia,
+po powrocie znow obowiazuje deklaracja z powloki. To druga polowa ADR-026: gdy
+zniknely paski tytulu, zniklo tez jedyne miejsce, ktore mowilo systemowi, czy
+ikony maja byc ciemne czy biale — na jasnym motywie potrafily byc biale na bialym.
+Ten sam styl jest w `appBarTheme.systemOverlayStyle` (podekrany), a klatke
+startowa (przed pierwsza klatka Fluttera) pokrywa `windowLightStatusBar`
+w `android/app/src/main/res/values{,-night}/styles.xml`.
+
+Kolejnosc: Budzet | Wplywy | Rachunki | Wydatki | ⋮ Ustawienia —
 przeglad, potem sciezka pieniedzy: skad przychodza (Wplywy) i gdzie wychodza
-(Rachunki, Subskrypcje, Wydatki). Separator oddziela Ustawienia od piatki
+(Rachunki, Wydatki). Subskrypcje nie maja juz wlasnej zakladki — sa sekcja
+„Wydatkow" (ADR-027). Separator oddziela Ustawienia od czworki
 funkcyjnej (`GlassNavBar` liczy go dynamicznie). Indeks zakladki Rachunki jest
 stala `_rachunkiTab` w `main.dart` — po „Udostepnij -> Zostaje" ladujemy wlasnie
 tam, wiec kolejna zmiana kolejnosci nie moze go rozjechac po cichu. Pasek pokazuje etykiete TYLKO aktywnej pozycji (reszta to ikony),
@@ -202,9 +217,8 @@ sortowanie, grupowanie i Excel.
 | Zakladka | Tresc |
 |----------|-------|
 | **Budzet** (przeglad) | Pod-zakladki **Plan** (domyslna — statystyki calosci: podsumowanie + predykcja vs rzeczywisty, **jeden wykres trendu 6 mies. z trzema ROZLACZNYMI seriami** (Cykliczne bez subskrypcji / Subskrypcje / Rachunki) + chipy wlacz-wylacz i seria „Razem" (suma, linia przerywana, domyslnie wylaczona), **jeden podzial na kategorie** laczacy te trzy zrodla; koszt subskrypcji — miesiecznie, rocznie i liczba aktywnych — w rozwinietej karcie „Saldo" (subskrypcje sa czescia kosztow cyklicznych); zwijana sekcja „Szczegoly" (domyslnie zwinieta, chowana gdy pusta) trzyma tylko limit subskrypcji i koszty okresow probnych. Rachunki miesiaca sa wylacznie w „Bilansie miesiaca") i **Bilans miesiaca** (**„Rzeczywisty bilans miesiaca"** nad kalendarzem: kwota + pasek i rozpis realnych strumieni — wplywy − koszty cykliczne (z korektami i ratami) − subskrypcje − rachunki zbiorczo = bilans; przytrzymanie kwoty otwiera rozbicie „bilans vs plan". Karta kalendarza nie powtarza juz kwoty bilansu. Dalej kalendarz + „Platnosci" jako jedna sekcja z grupami manualne/automatyczne + rachunki miesiaca + „Podsumowanie miesiaca" — wplywy i wydatki po dniach, sekcja na dole, zwijana; w pasku akcji sortowanie A→Z / po dacie i grupowanie po typie glownym: Rachunki / Subskrypcje / Budzet — dziala na obie sekcje) — ADR-011 |
-| **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018). Trzy czesci w kolejnosci: **Planner** (sam plan koperty „Na rachunki" — pozycje + suma, zwijany, stan trwaly), **karta miesiaca** (nawigacja strzalkami, tap w nazwe = wybor miesiaca `showMonthPicker` z przyciskiem „Dzisiaj", suma rachunkow miesiaca + pasek plan/realny) i **lista** rachunkow miesiaca. Podzial idzie po zaleznosciach: plan jest jeden dla wszystkich miesiecy, wykonanie liczy sie per miesiac. „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
-| **Subskrypcje** | Sama lista (statystyki przeniesione do „Plan" w Budzecie); zakres czyta globalny `BudgetScope`; CTA Excel + PDF; import pod „Dodaj" |
-| **Wydatki** (tytul: „Wydatki cykliczne") | Pozycje planowalne: koszty stale, raty, przelew wewnetrzny. Datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach; koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow (edycja w „Rachunkach" — ADR-019); CTA Excel |
+| **Rachunki** | Datowane wydatki jednorazowe (`billPayment`, ADR-018). Trzy czesci w kolejnosci: **karta „Planner"** (nazwa + suma planu + strzalka — wejscie do osobnego ekranu `BillsPlannerScreen`, ADR-012), **karta miesiaca** (nawigacja strzalkami, tap w nazwe = wybor miesiaca `showMonthPicker` z przyciskiem „Dzisiaj", suma rachunkow miesiaca + pasek plan/realny) i **lista** rachunkow miesiaca. Podzial idzie po zaleznosciach: plan jest jeden dla wszystkich miesiecy, wykonanie liczy sie per miesiac. „Dodaj rachunek"; **skan rachunku AI** (aparat/galeria/Udostepnij) z sekcja „Do zatwierdzenia" (miniatura + Zatwierdz/Edytuj/Odrzuc; tap w miniature -> podglad z „Przytnij") — ADR-011, ADR-013 |
+| **Wydatki** (tytul: „Wydatki cykliczne") | Trzy sekcje: **Przelew wewnetrzny · Wydatki stale · Subskrypcje** (ADR-027). Pozycje planowalne (koszty stale, raty, przelew) + subskrypcje aktywnego zakresu; datowane wydatki jednorazowe sa w „Rachunkach" (ADR-018). Sekcje **zwijane tapnieciem w naglowek** (suma zostaje widoczna, stan trwaly). Grupowanie zawsze po typach, przycisk „warstwy" wlacza podgrupy po kategoriach (takze w subskrypcjach); filtr typu ma pseudo-chip „Subskrypcje"; **„pokaz ukryte"** przy filtrze czasu odslania wstrzymane pozycje i anulowane subskrypcje (sumy sekcji licza tylko aktywne). Koperta „Na rachunki" jako **wiersz sumy** przypiety na gorze wydatkow stalych — tapniecie otwiera ekran Plannera (ten sam, co z „Rachunkow"). Menu „Dodaj": pozycja budzetu, subskrypcja, import obu z Excela |
 | **Wplywy** | Wplywy cykliczne (pensja) i jednorazowe (premia); w budzecie domowym takze wklady czlonkow i lustro przelewu z osobistego. Ten sam widget co „Wydatki", tryb `incomes`. Po rozdzieleniu sekcji formularz pokazuje TYLKO typy tej sekcji (`allowedTypes`) — przy wplywie nie ma po co oferowac kosztu ani raty, bo zmiana typu przeniosłaby pozycje na inny ekran. Z tego samego powodu na Wplywach nie ma grupowania po kategoriach: wplywy kategorii nie maja (formularz je czysci) |
 | **Ustawienia** | Trzy sekcje. **Personalizacja**: wyglad, waluta i limit, **wybor budzetow** (tryb: Osobisty / Domowy / oba — ADR-014), powiadomienia, **kategorie i metody platnosci** (slowniki, ktorymi uzytkownik opisuje SWOJ budzet — stad przy personalizacji, nie przy danych). **Dane**: **Asystent AI** (opt-in wspomagania skanu silnikiem), **Archiwum rachunkow** (zapis zdjec do `Documents/<podfolder>`), **Budzet domowy** (parowanie i synchronizacja), **Backup** (kopia zapasowa i odtwarzanie) oraz **Eksport danych** (XLSX subskrypcji i budzetu, raport PDF — wczesniej ikony w paskach ekranow; eksport to nie kopia zapasowa, plikow nie da sie wczytac z powrotem). **Aplikacja**: **aktualizacje OTA inline**, polityka prywatnosci, Developer Tools (tylko DEV). Karty frost |
 
@@ -222,7 +236,8 @@ miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 
 ## Domena Budzet domowy (rownolegla warstwa)
 
-> **ADR:** [ADR-023 Rozlaczne strumienie wydatkow](adr/ADR-023-rozlaczne-strumienie-wydatkow.md)
+> **ADR:** [ADR-027 Subskrypcje jako sekcja „Wydatkow"](adr/ADR-027-subskrypcje-jako-sekcja-wydatkow.md)
+> | [ADR-023 Rozlaczne strumienie wydatkow](adr/ADR-023-rozlaczne-strumienie-wydatkow.md)
 > | [ADR-020 Cykl „wybrane miesiace roku"](adr/ADR-020-cykl-wybrane-miesiace-roku.md)
 > | [ADR-018 Scalenie wydatku jednorazowego z rachunkiem](adr/ADR-018-scalenie-wydatku-jednorazowego-z-rachunkiem.md)
 > | [ADR-004 Model budzetu domowego](adr/ADR-004-model-budzetu-domowego.md)
@@ -475,4 +490,4 @@ ten sam plik — dociecie na wejsciu dziedziczy sie w cala reszte lancucha.
 
 ---
 
-> **Ostatnia aktualizacja:** 2026-07-27
+> **Ostatnia aktualizacja:** 2026-08-01

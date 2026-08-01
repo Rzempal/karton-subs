@@ -291,7 +291,7 @@ darmowy tier Supabase uspia projekt po ~tygodniu (pierwszy sync budzi z cold sta
 | Grupowanie subskrypcji (np. "Rodzina") | Sredni |
 | ~~Shared subscriptions (split costs)~~ | ✅ Zrealizowane w Fazie 2 |
 | Auto-detect z SMS/email (parsowanie potwierdzen) | Niski (prywatnosc!) |
-| SelectionController (multi-select batch operations) | Sredni — wymaga przebudowy subscription_list_screen |
+| SelectionController (multi-select batch operations) | Sredni — wymaga przebudowy listy w `budget_dashboard_screen` (sekcja Subskrypcje, ADR-027) |
 
 ---
 
