@@ -118,3 +118,27 @@ tylko na urzadzeniu, ktore ma zrodlo). Szczegoly zachowania — w fazie implemen
   i zlozonosc; relay E2E daje efekt bez rejestracji.
 - **Pelny CRDT (scalanie pol)** — odrzucona: przerost formy dla 2–3 osob; LWW per pozycja
   wystarcza.
+
+---
+
+## Uzupelnienie (2026-08-01): przenoszenie pozycji miedzy budzetami
+
+`BudgetController.moveToScope` przenosi rachunek osobisty ↔ domowy. Zakres nie
+jest polem pozycji, tylko wynika z pudelka, w ktorym rekord lezy — przeniesienie
+to zapis w nowym i usuniecie ze starego. Trzy rzeczy musza pojsc razem z nia:
+
+1. **Nagrobek przy wyjsciu z domowego.** Domowy kasuje przez `deleted`, wiec
+   zwykle wyjecie rekordu skonczyloby sie przywroceniem pozycji z serwera przy
+   najblizszej synchronizacji — i liczeniem jej w OBU budzetach naraz.
+2. **Zdjecie rachunku** — trzymane poza pozycja, w mapie po `id`.
+3. **Odhaczenie platnosci** — klucz zawiera zakres ORAZ `id`
+   (`zakres|id|data`), wiec bez przepiecia zaplacony rachunek wracalby na liste
+   „Platnosci".
+
+Pozycja dostaje **nowe `id`**: nagrobek zostaje przy starym, wiec nie ma jak sie
+z nia zderzyc, gdyby kiedys wrocila. Przelewy miedzy budzetami
+(`householdTransfer` z `linkId`) sa odrzucane — to para pozycja + lustro,
+przeniesienie jednej strony rozspoiloby ja z druga.
+
+Testy: `test/budget_move_scope_test.dart` (prawdziwy Hive, patrz
+`docs/standards/testing.md`).

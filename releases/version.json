@@ -1,10 +1,12 @@
 {
-  "version": "0.15.26080100",
-  "releaseNotes": "- Wiecej miejsca na tresc: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- Przelacznik Osobisty/Domowy na samej gorze, wspolny dla calej aplikacji\n- Sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- Opis sekcji (ikona i) obok przelacznika zakresu",
-  "releaseDate": "2026-08-01T00:13:15Z",
-  "versionCode": 1526080100,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1526080100",
+  "version": "0.16.26080101",
+  "releaseNotes": "- Smuklejsze listy: pozycje bez ramek, rozdzielone separatorem, w dwoch liniach\n- Ikona kategorii przy pozycji, kwota przy nazwie, opis na pelnej szerokosci\n- Jeden format daty w calej liscie (RRRR-MM-DD)\n- Sortowanie i grupowanie w paskach filtrow zamiast osobnej linii ikon\n- Formularz pokazuje tylko typy z tej sekcji; filtr kategorii tylko tam, gdzie sa kategorie",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1626080101",
   "changelog": [
+    {
+      "version": "0.16.26080101",
+      "notes": "- Smuklejsze listy: pozycje bez ramek, rozdzielone separatorem, w dwoch liniach\n- Ikona kategorii przy pozycji, kwota przy nazwie, opis na pelnej szerokosci\n- Jeden format daty w calej liscie (RRRR-MM-DD)\n- Sortowanie i grupowanie w paskach filtrow zamiast osobnej linii ikon\n- Formularz pokazuje tylko typy z tej sekcji; filtr kategorii tylko tam, gdzie sa kategorie"
+    },
     {
       "version": "0.15.26080100",
       "notes": "- Wiecej miejsca na tresc: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- Przelacznik Osobisty/Domowy na samej gorze, wspolny dla calej aplikacji\n- Sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- Opis sekcji (ikona i) obok przelacznika zakresu"
@@ -40,10 +42,8 @@
     {
       "version": "0.11.26072600",
       "notes": "- Skan rachunku ze zdjecia: aparat, galeria albo 'Udostepnij -> Zostaje'; rozpoznawanie w calosci na telefonie, bez chmury\n- Paragony i zrzuty platnosci telefonem czyta szybki OCR w ok. 2 s; faktury o dowolnym ukladzie przejmuje lokalny silnik AI\n- Rozpoznawanie dziala w tle - mozesz wyjsc z aplikacji, wynik czeka w sekcji 'Do zatwierdzenia'\n- Zdjecie rachunku mozna przyciac do samego paragonu; opcjonalne archiwum zdjec w Documents\n- Nowy uklad sekcji: Budzet (przeglad), Wplywy, Rachunki, Subskrypcje, Wydatki cykliczne\n- Rachunek i wydatek jednorazowy to teraz jedno: datowany wydatek w sekcji Rachunki (oplacony albo zaplanowany)\n- Planner: kwota zaplanowana w budzecie na rachunki, edytowana przy rachunkach\n- Nowy cykl platnosci: wybrane miesiace roku, z presetami co 2 / 3 / 4 miesiace i co pol roku\n- Tryb budzetu: Osobisty / Domowy / oba\n- Podsumowanie miesiaca jako osobna sekcja, z sortowaniem i grupowaniem po typie\n- Ikona 'i' przy kazdej sekcji tlumaczy, po co ona jest\n- Paczka aktualizacji schudla do 43 MB"
-    },
-    {
-      "version": "0.10.26062500",
-      "notes": "- Dashboard: sekcja Saldo zostaje miesiecznie scalona w jedna karte z opisem jak liczone jest saldo\n- Bilans miesiaca: lepszy opis + przytrzymanie kwoty pokazuje rozbicie roznicy wzgledem salda\n- Budzet: filtr czasu (rok i miesiac) obok kategorii i typow"
     }
-  ]
+  ],
+  "versionCode": 1626080101,
+  "releaseDate": "2026-08-01T02:07:56Z"
 }

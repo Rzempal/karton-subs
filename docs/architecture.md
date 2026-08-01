@@ -173,6 +173,8 @@ Serce aplikacji -- obliczenia finansowe wykonywane lokalnie:
 
 ## Nawigacja (6 zakladek)
 
+> **ADR:** [ADR-026 Gestosc interfejsu](adr/ADR-026-gestosc-interfejsu-bez-paskow-tytulu.md)
+
 **Bez paskow tytulu.** Ekrany robocze nie maja `AppBar` — nazwa sekcji stoi
 w pigulce nawigacji na dole, wiec pasek ja tylko dublowal. Zamiast niego jeden
 `WorkspaceTopBar` w powloce: przelacznik zakresu (globalny, wiec nie powtarza sie

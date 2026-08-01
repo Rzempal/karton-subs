@@ -678,3 +678,38 @@ Decyzja „czy zapytac uzytkownika" nie moze wynikac z **metadanych** pliku, tyl
 z tego, czy aplikacja faktycznie potrafi go otworzyc. Naglowek mowi „czym to
 zaszyfrowano", a nie „czy mam do tego klucz". Ta sama pulapka czeka wszedzie,
 gdzie UI pyta o sekret na podstawie deklaracji formatu zamiast realnej proby.
+
+---
+
+## 2026-08-01: Trzy `Flexible` w wierszu dziela szerokosc po rowno (Flutter)
+
+### Problem
+Wiersz listy skracal tekst, mimo ze obok bylo widac wolne miejsce. Dwa razy
+w tej samej sesji, w dwoch roznych miejscach:
+
+1. `Row([Flexible(nazwa), Flexible(kategoria)])` — nazwa urywala sie na polowie
+   szerokosci, choc kategoria „Dom" zajmowala ulamek swojej czesci.
+2. `Row([Flexible(opis), Flexible(metoda), Flexible(kategoria)])` — data urywala
+   sie do „2…", a po prawej zostawal pusty pas.
+
+### Przyczyna
+`Flexible` (i `Expanded`) z domyslnym `flex: 1` dzieli dostepna szerokosc
+**po rowno miedzy wszystkie elastyczne dzieci**, niezaleznie od tego, ile ktore
+naprawde potrzebuje. Dziecko, ktore chce mniej, po prostu nie wykorzystuje
+swojego przydzialu — i ta reszta NIE wraca do rodzenstwa.
+
+### Rozwiazanie
+- Gdy jeden element ma dostac cale wolne miejsce, a drugi tylko tyle, ile
+  potrzebuje: `Expanded` dla pierwszego, a drugi **nieelastyczny**
+  (opcjonalnie `ConstrainedBox` z gornym limitem).
+- Gdy kilka fragmentow tekstu ma plynac jak jedno zdanie: **jeden `Text.rich`**
+  zamiast kilku `Text` w `Row`. Ikone wstawia sie przez `WidgetSpan`
+  (`PlaceholderAlignment.middle`), a `maxLines: 1` + `TextOverflow.ellipsis`
+  utnie dopiero na koncu calej linii.
+
+### Wniosek
+Kilka `Flexible` obok siebie to podzial szerokosci, a NIE „kazdy bierze, ile
+potrzebuje". Jesli tresc ma sie czytac jak jeden ciag — sklej ja w jeden widget
+tekstowy; jesli jeden element jest wazniejszy — tylko on ma byc elastyczny.
+Objaw („skraca sie mimo wolnego miejsca") wyglada jak brak miejsca, wiec latwo
+szukac przyczyny nie tam, gdzie trzeba.
