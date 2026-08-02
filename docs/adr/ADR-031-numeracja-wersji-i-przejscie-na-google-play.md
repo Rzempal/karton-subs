@@ -73,6 +73,21 @@ Wtedy:
   a `ota_update` robi dokladnie to. Kanaly sa juz rozdzielone flaga builda, wiec
   jest gdzie to wylaczyc.
 
+### 4. Dystrybucja przez GitHub Releases (do czasu Play)
+
+Stala nazwa APK (`zostaje_latest.apk`) jest wygodna dla naszego OTA, ale nie
+niesie wersji, wiec zewnetrzne instalatory (Obtainium) licza „pseudo-wersje"
+z hasza pliku: widza, ze plik sie zmienil, ale nie wiedza, co jest nowsze.
+
+Kazde wydanie idzie wiec dodatkowo do **GitHub Releases** — tag niesie wersje,
+zalacznik ma ja w nazwie (`scripts/publish-release.ps1`, DEV jako pre-release).
+Publikacja jest OSOBNYM krokiem po commicie, bo deploy podbija wersje w plikach
+repozytorium: release utworzony w jego trakcie wskazywalby commit sprzed wydania.
+
+Zasada: **jedna aplikacja = jeden zarzadca aktualizacji**. Telefon pilnowany
+przez Obtainium ma miec wylaczone wbudowane OTA, inaczej oba mechanizmy podmieniaja
+sobie plik pod nogami i Obtainium bez konca proponuje aktualizacje.
+
 ## Konsekwencje
 
 - **Pozytywne:**

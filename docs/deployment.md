@@ -72,6 +72,56 @@ wzór przekraczał limit Androida od wersji 0.21). Nazwa pliku jest stała, ale:
 - Skrypt automatycznie usuwa stare, wersjonowane APK danego kanału (lokalnie i na
   serwerze), zostawiając wyłącznie `_latest`.
 
+---
+
+## GitHub Releases — źródło dla Obtainium
+
+Stała nazwa pliku jest wygodna dla naszego OTA (wersję niesie `version*.json`),
+ale **zewnętrzne instalatory nie mają skąd wziąć numeru wersji**. Obtainium
+wpada wtedy w tryb „pseudo-wersji": liczy skrót pliku i pokazuje liczbę w rodzaju
+`920366876` zamiast `0.21.26080210` — nie wie, co jest nowsze, tylko że plik się
+zmienił.
+
+Dlatego każde wydanie trafia dodatkowo do **GitHub Releases**, gdzie wersja stoi
+w tagu, a APK jest załącznikiem z wersją w nazwie:
+
+```bash
+.\scripts\publish-release.ps1 -Channel production
+```
+
+| Kanał | Tag | Załącznik | Typ |
+| --- | --- | --- | --- |
+| `production` | `v0.21.26080210` | `zostaje_0.21.26080210.apk` | zwykłe wydanie |
+| `internal` | `dev-v0.21.26080210` | `zostaje-dev_0.21.26080210.apk` | **pre-release** |
+
+DEV jako pre-release, bo Obtainium domyślnie je pomija — kto śledzi PROD, nie
+dostanie wydania testowego.
+
+### Kolejność jest twarda
+
+```
+deploy.ps1  →  commit  →  publish-release.ps1
+```
+
+`deploy.ps1` podbija wersję w `pubspec.yaml`, changelog i `version*.json`, więc
+release utworzony w środku deployu wskazywałby commit **sprzed** wydania. Skrypt
+publikujący tworzy tag na `HEAD`, czyli dokładnie na kodzie, który poszedł do
+użytkowników. (To ta sama pułapka, przez którą nie używamy `-CreateTag`
+w `deploy.ps1`.)
+
+### Ustawienie w Obtainium
+
+- Źródło: adres repozytorium na GitHubie (typ „GitHub").
+- **PROD:** pre-relesy wyłączone.
+- **DEV:** pre-relesy włączone + filtr APK `zostaje-dev_`.
+- Repozytorium prywatne wymaga tokenu w ustawieniach Obtainium.
+
+> ⚠️ **Jedna aplikacja = jeden zarządca aktualizacji.** Jeśli Obtainium pilnuje
+> instalacji, wbudowane OTA na tym telefonie ma być wyłączone — inaczej po każdej
+> aktualizacji z OTA Obtainium widzi „obcy" plik i w nieskończoność proponuje
+> aktualizację. Przy przejściu na Google Play wbudowane OTA znika całkiem
+> (ADR-031).
+
 ## Wdrożenie Mobile (Android)
 
 ### Wymagania
