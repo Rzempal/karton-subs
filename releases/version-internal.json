@@ -1,8 +1,14 @@
 {
-  "releaseNotes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)",
-  "version": "0.21.26080211",
-  "releaseDate": "2026-08-02T22:10:34Z",
+  "releaseNotes": "- wydanie testowe: sprawdzenie kanalu DEV w Obtainium (pre-release)\n- bez zmian w aplikacji wzgledem 0.21.26080211",
+  "releaseDate": "2026-08-02T23:02:22Z",
+  "version": "0.21.26080212",
+  "versionCode": 2026080212,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080212",
   "changelog": [
+    {
+      "version": "0.21.26080212",
+      "notes": "- wydanie testowe: sprawdzenie kanalu DEV w Obtainium (pre-release)\n- bez zmian w aplikacji wzgledem 0.21.26080211"
+    },
     {
       "version": "0.21.26080211",
       "notes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)"
@@ -38,12 +44,6 @@
     {
       "version": "0.19.26080203",
       "notes": "- filtr czasu ma skrot Dzisiaj (od razu biezacy miesiac)\n- Rachunki jak Wydatki: filtry, sortowanie i suma widocznych pozycji zamiast przewijania miesiecy"
-    },
-    {
-      "version": "0.19.26080202",
-      "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne"
     }
-  ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080211",
-  "versionCode": 2026080211
+  ]
 }
