@@ -7,7 +7,13 @@
 # deploy.ps1 buduje i wysyla APK na wlasny serwer, a dopiero POTEM commitujemy
 # zmiany (deploy podbija wersje w pubspec, changelog i version.json). Release
 # utworzony w srodku deployu wskazywalby commit SPRZED wydania. Kolejnosc jest
-# wiec twarda: deploy -> commit -> publish-release.
+# wiec twarda: deploy -> commit -> publish-release. Pilnuje jej `ship.ps1`.
+#
+# DLACZEGO REST, A NIE `gh`:
+# `gh` (Go) robi wlasne DNS i w srodowiskach z filtrowaniem ruchu po nazwie hosta
+# nie dociera do api.github.com, mimo ze `git push` i .NET dzialaja. REST przez
+# Invoke-RestMethod dziala w obu srodowiskach, wiec wydanie da sie dokonczyc
+# takze z sesji agenta. `gh` uzywamy juz tylko jako zrodla tokenu (lokalne).
 #
 # CO TO DAJE: Obtainium czyta z GitHuba wersje z TAGU i plik z zalacznika, wiec
 # pokazuje prawdziwy numer zamiast pseudo-wersji z hasza pliku (nazwa APK na
@@ -17,7 +23,7 @@
 param(
     [ValidateSet("internal", "production")]
     [string]$Channel = "production",
-    # Nadpisuje istniejacy release (wgrywa plik jeszcze raz).
+    # Nadpisuje zalacznik w istniejacym release.
     [switch]$Force
 )
 
@@ -31,17 +37,32 @@ function Show-Error($msg) { Write-Host $msg -ForegroundColor Red }
 $PROJECT_ROOT = Split-Path -Parent $PSScriptRoot
 $RELEASES_DIR = Join-Path $PROJECT_ROOT "releases"
 
-# ── Warunki wstepne ──────────────────────────────────────────────────────────
+# ── Dostep do GitHuba ────────────────────────────────────────────────────────
 
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-    Show-Error "Brak GitHub CLI (gh). Zainstaluj: https://cli.github.com/"
-    exit 1
+function Get-GitHubToken {
+    $t = gh auth token 2>$null
+    if ($LASTEXITCODE -eq 0 -and $t) { return $t.Trim() }
+    if ($env:GITHUB_TOKEN) { return $env:GITHUB_TOKEN }
+    throw "Brak tokenu GitHuba. Zaloguj sie (gh auth login) albo ustaw GITHUB_TOKEN."
 }
 
-gh auth status 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Show-Error "GitHub CLI nie jest zalogowany. Uruchom: gh auth login"
-    exit 1
+function Get-RepoSlug {
+    $url = git -C $PROJECT_ROOT remote get-url origin
+    if ($url -match '[:/]([^/:]+)/([^/]+?)(\.git)?$') { return "$($Matches[1])/$($Matches[2])" }
+    throw "Nie umiem odczytac repozytorium z: $url"
+}
+
+function Invoke-GitHub($Method, $Url, $Body) {
+    $headers = @{
+        Authorization = "Bearer $script:token"
+        Accept        = "application/vnd.github+json"
+        "User-Agent"  = "zostaje-release-script"
+    }
+    if ($Body) {
+        return Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers `
+            -Body ($Body | ConvertTo-Json -Depth 4) -ContentType "application/json"
+    }
+    return Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers
 }
 
 # ── Co publikujemy ───────────────────────────────────────────────────────────
@@ -52,6 +73,7 @@ if ($Channel -eq "internal") {
     $tagPrefix = "dev-v"
     $assetPrefix = "zostaje-dev"
     $titleSuffix = " (DEV)"
+    $isPrerelease = $true
 }
 else {
     $versionFile = Join-Path $RELEASES_DIR "version.json"
@@ -59,6 +81,7 @@ else {
     $tagPrefix = "v"
     $assetPrefix = "zostaje"
     $titleSuffix = ""
+    $isPrerelease = $false
 }
 
 foreach ($f in @($versionFile, $apkFile)) {
@@ -78,64 +101,106 @@ $tag = "$tagPrefix$version"
 # ale w Obtainium nazwa zalacznika jest tym, co widzi uzytkownik).
 $assetName = "${assetPrefix}_$version.apk"
 $assetPath = Join-Path $env:TEMP $assetName
-Copy-Item $apkFile $assetPath -Force
 
 Show-Info "=== Publikacja GitHub Release ==="
 Show-Info "Kanal:   $Channel"
 Show-Info "Wersja:  $version"
 Show-Info "Tag:     $tag"
-Show-Info "Plik:    $assetName ($([math]::Round((Get-Item $assetPath).Length / 1MB)) MB)"
+
+# ── Straznik kolejnosci ──────────────────────────────────────────────────────
+# Brudne drzewo znaczy, ze zmiany wydania (pubspec, changelog, version.json) NIE
+# sa jeszcze zacommitowane — tag wskazalby kod sprzed wydania i historia
+# klamalaby na zawsze.
+
+$dirty = git -C $PROJECT_ROOT status --porcelain
+if ($dirty) {
+    Show-Error "Sa niezacommitowane zmiany — najpierw commit, potem publikacja."
+    Show-Info "Tag musi wskazywac commit, ktory ZAWIERA wydana wersje."
+    ($dirty -split "`n" | Select-Object -First 5) | ForEach-Object { Show-Info "  $_" }
+    exit 1
+}
+
+try {
+    $script:token = Get-GitHubToken
+    $slug = Get-RepoSlug
+    Show-Info "Repo:    $slug"
+}
+catch {
+    Show-Error $_.Exception.Message
+    exit 1
+}
 
 # ── Tag ──────────────────────────────────────────────────────────────────────
-# Tag tworzymy na HEAD: skrypt uruchamiany jest PO commicie wydania, wiec HEAD
-# to dokladnie ten kod, ktory poszedl do uzytkownikow.
+# Tag na HEAD: skrypt idzie PO commicie wydania, wiec HEAD to dokladnie ten kod,
+# ktory poszedl do uzytkownikow.
 
-$existingTag = git tag --list $tag
-if (-not $existingTag) {
-    Show-Warning "Tworzenie tagu $tag na HEAD ($(git rev-parse --short HEAD))"
-    git tag -a $tag -m "Release $tag"
-    git push origin $tag
+if (-not (git -C $PROJECT_ROOT tag --list $tag)) {
+    Show-Warning "Tworzenie tagu $tag na HEAD ($(git -C $PROJECT_ROOT rev-parse --short HEAD))"
+    git -C $PROJECT_ROOT tag -a $tag -m "Release $tag"
+    git -C $PROJECT_ROOT push origin $tag
+    if ($LASTEXITCODE -ne 0) { Show-Error "Nie udalo sie wypchnac tagu."; exit 1 }
 }
 else {
     Show-Info "Tag $tag juz istnieje — uzywam go."
+    # Tag moze byc lokalny; push jest bezpieczny (istniejacy zdalnie = no-op).
+    git -C $PROJECT_ROOT push origin $tag 2>&1 | Out-Null
 }
 
 # ── Release ──────────────────────────────────────────────────────────────────
 
-$releaseExists = $false
-gh release view $tag 2>&1 | Out-Null
-if ($LASTEXITCODE -eq 0) { $releaseExists = $true }
+$release = $null
+try {
+    $release = Invoke-GitHub GET "https://api.github.com/repos/$slug/releases/tags/$tag"
+}
+catch {
+    # 404 = release jeszcze nie istnieje; kazdy inny blad to problem.
+    if ($_.Exception.Response.StatusCode.value__ -ne 404) {
+        Show-Error "GitHub API: $($_.Exception.Message)"
+        exit 1
+    }
+}
 
-if ($releaseExists -and -not $Force) {
+if ($release -and -not $Force) {
     Show-Warning "Release $tag juz istnieje. Uzyj -Force, zeby nadpisac zalacznik."
-    Remove-Item $assetPath -Force
     exit 0
 }
 
 try {
-    if ($releaseExists) {
-        Show-Warning "Nadpisywanie zalacznika w istniejacym release $tag"
-        gh release upload $tag $assetPath --clobber
-    }
-    else {
-        # Kanal DEV jako pre-release: Obtainium domyslnie pomija pre-relesy,
-        # wiec kto sledzi PROD, nie dostanie wydania testowego.
-        # $ghArgs, nie $args: $args to zmienna automatyczna PowerShella.
-        $ghArgs = @(
-            "release", "create", $tag, $assetPath,
-            "--title", "Zostaje $version$titleSuffix",
-            "--notes", $notes
-        )
-        if ($Channel -eq "internal") { $ghArgs += "--prerelease" }
-        gh @ghArgs
+    if (-not $release) {
+        $release = Invoke-GitHub POST "https://api.github.com/repos/$slug/releases" @{
+            tag_name   = $tag
+            name       = "Zostaje $version$titleSuffix"
+            body       = $notes
+            prerelease = $isPrerelease
+        }
+        Show-Success "Utworzono release $tag"
     }
 
-    if ($LASTEXITCODE -ne 0) { throw "gh zwrocil kod $LASTEXITCODE" }
+    # Zalacznik: kopia pod nazwa z wersja (nazwa pliku na serwerze jest stala).
+    Copy-Item $apkFile $assetPath -Force
+    $sizeMb = [math]::Round((Get-Item $assetPath).Length / 1MB)
+
+    # Nadpisanie wymaga usuniecia starego zalacznika — GitHub nie podmienia po nazwie.
+    $existingAsset = $release.assets | Where-Object { $_.name -eq $assetName }
+    if ($existingAsset) {
+        Show-Warning "Usuwam poprzedni zalacznik $assetName"
+        Invoke-GitHub DELETE "https://api.github.com/repos/$slug/releases/assets/$($existingAsset.id)" | Out-Null
+    }
+
+    Show-Info "Wysylam $assetName ($sizeMb MB)..."
+    $uploadUrl = "https://uploads.github.com/repos/$slug/releases/$($release.id)/assets?name=$assetName"
+    Invoke-RestMethod -Method POST -Uri $uploadUrl -InFile $assetPath `
+        -ContentType "application/vnd.android.package-archive" -Headers @{
+        Authorization = "Bearer $script:token"
+        Accept        = "application/vnd.github+json"
+        "User-Agent"  = "zostaje-release-script"
+    } | Out-Null
+
     Show-Success "Opublikowano: $tag"
-    Show-Info "Zrodlo dla Obtainium: $(gh repo view --json url -q .url)/releases"
+    Show-Info "https://github.com/$slug/releases/tag/$tag"
 }
 catch {
-    Show-Error "Publikacja nie powiodla sie: $_"
+    Show-Error "Publikacja nie powiodla sie: $($_.Exception.Message)"
     exit 1
 }
 finally {
