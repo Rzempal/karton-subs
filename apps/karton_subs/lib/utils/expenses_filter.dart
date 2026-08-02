@@ -78,6 +78,26 @@ class ExpensesFilter {
     return true;
   }
 
+  /// Lata do paska filtra czasu: te obecne w danych ORAZ zawsze bieżący.
+  /// Bieżący musi być, bo skrót „Dzisiaj" nie miałby gdzie zaznaczyć miesiąca
+  /// w roku, w którym nie ma jeszcze żadnej pozycji jednorazowej.
+  static List<int> yearsFor(Set<String> months, DateTime today) {
+    final years = months.map((m) => int.parse(m.substring(0, 4))).toSet()
+      ..add(today.year);
+    return years.toList()..sort();
+  }
+
+  /// Miesiące danego roku do paska filtra: te obecne w danych, a w roku
+  /// bieżącym dodatkowo miesiąc dzisiejszy (z tego samego powodu co wyżej).
+  static List<int> monthsOfYear(Set<String> months, int year, DateTime today) {
+    final out = months
+        .where((m) => m.startsWith('$year-'))
+        .map((m) => int.parse(m.substring(5, 7)))
+        .toSet();
+    if (year == today.year) out.add(today.month);
+    return out.toList()..sort();
+  }
+
   /// Miesiące, które realnie różnicują snapshot — z pozycji jednorazowych i okien
   /// spłaty rat. Cykliczne dotyczą każdego miesiąca, więc nie wnoszą nic do
   /// wyboru; subskrypcje z tego samego powodu też nie.

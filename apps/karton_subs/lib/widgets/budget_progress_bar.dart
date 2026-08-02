@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import 'plan_progress_bar.dart';
 
 class BudgetProgressBar extends StatelessWidget {
   final BudgetStatus status;
@@ -56,14 +57,13 @@ class BudgetProgressBar extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: status.percentage.clamp(0.0, 1.0),
-                backgroundColor: c.border,
-                valueColor: AlwaysStoppedAnimation(barColor),
-                minHeight: 10,
-              ),
+            // Wspólny pasek plan/realny: po przekroczeniu limitu dzieli się na
+            // część mieszczącą się w nim i nadwyżkę, zamiast świecić na czerwono
+            // tak samo przy 1% i przy 200% (ADR-030).
+            PlanProgressBar(
+              value: status.spent,
+              plan: status.limit,
+              height: 10,
             ),
             const SizedBox(height: 8),
             Row(

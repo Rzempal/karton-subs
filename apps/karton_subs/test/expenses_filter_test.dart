@@ -144,5 +144,57 @@ void main() {
       ]);
       expect(months, {'2026-11', '2026-12', '2027-01'});
     });
+
+    test('bieżący rok jest w pasku zawsze — inaczej „Dzisiaj" nie ma gdzie'
+        ' zaznaczyć', () {
+      final years = ExpensesFilter.yearsFor({'2024-03', '2025-11'}, _today);
+      expect(years, [2024, 2025, 2026]);
+    });
+
+    test('bieżący miesiąc jest w pasku miesięcy bieżącego roku', () {
+      final months = ExpensesFilter.monthsOfYear({'2026-03'}, 2026, _today);
+      expect(months, [3, 8]); // marzec z danych + sierpień (dzisiaj)
+    });
+
+    test('w innych latach miesiące pochodzą wyłącznie z danych', () {
+      final months = ExpensesFilter.monthsOfYear({'2025-05'}, 2025, _today);
+      expect(months, [5]);
+    });
+  });
+
+  group('Rachunki na tych samych regułach', () {
+    // Rachunek to datowana pozycja jednorazowa, więc filtr czasu działa na nim
+    // bez wyjątków — ekran „Rachunki" korzysta z tego samego filtra.
+    BudgetEntry bill(String month, {String? categoryId}) => BudgetEntry(
+      id: 'b$month$categoryId',
+      name: 'rachunek',
+      type: BudgetEntryType.billPayment,
+      amount: 120,
+      currency: Currency.PLN,
+      cycle: BillingCycle.monthly,
+      month: month,
+      startDate: DateTime.parse('$month-10'),
+      categoryId: categoryId,
+      dataDodania: _today,
+    );
+
+    test('filtr miesiąca zostawia rachunki tego miesiąca', () {
+      const f = ExpensesFilter(year: 2026, month: 8, showHidden: true);
+      expect(f.keepEntry(bill('2026-08')), isTrue);
+      expect(f.keepEntry(bill('2026-07')), isFalse);
+    });
+
+    test('filtr roku obejmuje wszystkie miesiące tego roku', () {
+      const f = ExpensesFilter(year: 2026, showHidden: true);
+      expect(f.keepEntry(bill('2026-01')), isTrue);
+      expect(f.keepEntry(bill('2026-12')), isTrue);
+      expect(f.keepEntry(bill('2025-12')), isFalse);
+    });
+
+    test('kategoria zawęża tak samo jak na liście wydatków', () {
+      const f = ExpensesFilter(categoryId: 'cat_a', showHidden: true);
+      expect(f.keepEntry(bill('2026-08', categoryId: 'cat_a')), isTrue);
+      expect(f.keepEntry(bill('2026-08', categoryId: 'cat_b')), isFalse);
+    });
   });
 }

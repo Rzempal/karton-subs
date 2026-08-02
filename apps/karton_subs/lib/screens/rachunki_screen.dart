@@ -12,14 +12,16 @@ import '../models/budget_entry.dart';
 import '../models/pending_bill_scan.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
+import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/expenses_filter.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/budget_widgets.dart';
+import '../widgets/filter_bars.dart';
 import '../widgets/frost_card.dart';
-import '../widgets/gradient_amount.dart';
+import '../widgets/plan_progress_bar.dart';
 import '../widgets/image_preview_dialog.dart';
-import '../widgets/month_picker_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_refresh.dart';
 import 'add_bill_payment_screen.dart';
@@ -42,8 +44,18 @@ class RachunkiScreen extends StatefulWidget {
   State<RachunkiScreen> createState() => _RachunkiScreenState();
 }
 
+/// Sortowanie listy rachunków. Domyślnie od najnowszego — rachunek najczęściej
+/// szuka się „ten sprzed chwili", a nie alfabetycznie.
+enum _BillSort { dateDesc, amountDesc, alpha }
+
 class _RachunkiScreenState extends State<RachunkiScreen> {
-  late DateTime _month; // pierwszy dzień wybranego miesiąca
+  /// Filtry listy (jak w „Wydatkach"): kategoria + czas. Start na bieżącym
+  /// miesiącu, bo to najczęstsze pytanie — ale jedno tapnięcie w „Wszystkie
+  /// lata" otwiera całe archiwum.
+  String? _filterCategoryId;
+  int? _filterYear;
+  int? _filterMonth;
+  _BillSort _sort = _BillSort.dateDesc;
 
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
@@ -51,22 +63,34 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   void initState() {
     super.initState();
     final now = _today;
-    _month = DateTime(now.year, now.month);
+    _filterYear = now.year;
+    _filterMonth = now.month;
   }
 
-  void _shiftMonth(int delta) =>
-      setState(() => _month = DateTime(_month.year, _month.month + delta));
+  /// Miesiąc rachunku: własny `month`, a dla starych rekordów wyliczony z daty.
+  String _monthKeyOf(BudgetEntry e) =>
+      e.month ?? BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania);
 
-  /// Skok na dowolny miesiąc bez klikania strzałkami (np. rachunki sprzed roku).
-  Future<void> _pickMonth() async {
-    final picked = await showMonthPicker(
-      context,
-      initialMonth: _month,
-      today: _today,
+  /// Przełącznik sortowania — przyklejony na końcu paska filtrów, jak w
+  /// „Wydatkach": stoi przy liście, na którą działa.
+  Widget _sortButton() {
+    final (icon, tip) = switch (_sort) {
+      _BillSort.dateDesc => (LucideIcons.arrowDownWideNarrow, 'Sortuj: od najnowszych'),
+      _BillSort.amountDesc => (LucideIcons.arrowDown10, 'Sortuj: kwota malejąco'),
+      _BillSort.alpha => (LucideIcons.arrowDownAZ, 'Sortuj: A→Z'),
+    };
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      tooltip: tip,
+      icon: Icon(icon, size: 18),
+      onPressed: () => setState(() {
+        _sort = switch (_sort) {
+          _BillSort.dateDesc => _BillSort.amountDesc,
+          _BillSort.amountDesc => _BillSort.alpha,
+          _BillSort.alpha => _BillSort.dateDesc,
+        };
+      }),
     );
-    if (picked != null && mounted) {
-      setState(() => _month = DateTime(picked.year, picked.month));
-    }
   }
 
   Future<void> _openAdd(BudgetController ctrl) async {
@@ -229,15 +253,61 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
     final scanCtrl = context.watch<BillScanController>();
-    final monthKey = BudgetEntry.monthKeyOf(_month);
-    final items = ctrl.billPayments
-        .where(
-          (e) =>
-              (e.month ??
-                  BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania)) ==
-              monthKey,
-        )
+    final all = ctrl.billPayments;
+    final today = _today;
+
+    // Paski filtrów budowane z tego, co realnie jest na liście (plus bieżący
+    // miesiąc, żeby „Dzisiaj" miał gdzie zaznaczyć).
+    final billMonths = all.map(_monthKeyOf).toSet();
+    final availableYears = ExpensesFilter.yearsFor(billMonths, today);
+    final activeYear =
+        (_filterYear != null && availableYears.contains(_filterYear))
+        ? _filterYear
+        : null;
+    final monthsOfYear = activeYear == null
+        ? <int>[]
+        : ExpensesFilter.monthsOfYear(billMonths, activeYear, today);
+    final activeMonth =
+        (_filterMonth != null && monthsOfYear.contains(_filterMonth))
+        ? _filterMonth
+        : null;
+    final isToday = activeYear == today.year && activeMonth == today.month;
+
+    final usedCatIds = <String>{
+      for (final e in all)
+        if (e.categoryId != null) e.categoryId!,
+    };
+    final filterCategories = context
+        .read<StorageService>()
+        .getCategories()
+        .where((c) => usedCatIds.contains(c.id))
         .toList();
+    final activeCat =
+        (_filterCategoryId != null && usedCatIds.contains(_filterCategoryId))
+        ? _filterCategoryId
+        : null;
+
+    // Te same reguły co na liście wydatków — rachunek jest datowaną pozycją
+    // jednorazową, więc filtr czasu działa na nim bez żadnego wyjątku.
+    // `showHidden`: rachunek to log tego, co się wydarzyło; nie chowamy go.
+    final filter = ExpensesFilter(
+      categoryId: activeCat,
+      year: activeYear,
+      month: activeMonth,
+      showHidden: true,
+    );
+    final items = all.where(filter.keepEntry).toList()
+      ..sort((a, b) => switch (_sort) {
+        _BillSort.dateDesc => (b.startDate ?? b.dataDodania).compareTo(
+          a.startDate ?? a.dataDodania,
+        ),
+        _BillSort.amountDesc => b.amount.compareTo(a.amount),
+        _BillSort.alpha => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      });
+
+    // Porównanie z kopertą ma sens tylko dla POJEDYNCZEGO miesiąca — koperta
+    // jest miesięczna, więc przy „całym roku" zestawiałaby jabłka z gruszkami.
+    final singleMonth = activeYear != null && activeMonth != null;
     // Pozycje oczekujące aktywnego zakresu (niezależne od wybranego miesiąca —
     // wiszą, dopóki nie zostaną zatwierdzone albo odrzucone).
     final pending = scanCtrl.pending
@@ -271,27 +341,48 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       ),
       body: Column(
         children: [
-          // Planner, miesiąc i lista objęte swipe zakresu; wiersze listy to
-          // Dismissible (swipe = usuń), więc karty są pewną strefą flicku.
-          // Wszystko w jednej przewijanej liście: rozwinięty Planner nie może
-          // spychać rachunków poza ekran na stałe.
+          // Filtry nad listą — ten sam wzorzec co „Wydatki": kategoria i czas,
+          // a sortowanie przyklejone na końcu paska kategorii.
+          if (all.isNotEmpty && filterCategories.isNotEmpty)
+            FilterRow(
+              filters: CategoryFilterBar(
+                categories: filterCategories,
+                selected: activeCat,
+                onSelect: (id) => setState(() => _filterCategoryId = id),
+              ),
+              action: _sortButton(),
+            ),
+          if (all.isNotEmpty)
+            TimeFilterBar(
+              years: availableYears,
+              activeYear: activeYear,
+              monthsOfYear: monthsOfYear,
+              activeMonth: activeMonth,
+              todaySelected: isToday,
+              onToday: () => setState(() {
+                _filterYear = today.year;
+                _filterMonth = today.month;
+              }),
+              onSelectYear: (y) => setState(() {
+                _filterYear = y;
+                _filterMonth = null;
+              }),
+              onSelectMonth: (m) => setState(() => _filterMonth = m),
+              action: filterCategories.isEmpty ? _sortButton() : null,
+            ),
+          // Planner i lista objęte swipe zakresu; wiersze listy to Dismissible
+          // (swipe = usuń), więc karty są pewną strefą flicku. Wszystko w jednej
+          // przewijanej liście: rozwinięty Planner nie może spychać rachunków
+          // poza ekran na stałe.
           Expanded(
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
               child: SyncRefresh(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: [
                     const _PlannerCard(),
-                    const SizedBox(height: 8),
-                    _MonthCard(
-                      monthKey: monthKey,
-                      month: _month,
-                      onPrev: () => _shiftMonth(-1),
-                      onNext: () => _shiftMonth(1),
-                      onPickMonth: _pickMonth,
-                    ),
                     const SizedBox(height: 12),
                     // Sekcja „Do zatwierdzenia" — skany silnika AI.
                     if (pending.isNotEmpty) ...[
@@ -318,8 +409,16 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                       ],
                       const SizedBox(height: 8),
                     ],
+                    // Nagłówek sekcji z sumą TEGO, co widać po filtrach — plus
+                    // porównanie z kopertą, gdy wybrany jest jeden miesiąc.
+                    _BillsSectionHeader(
+                      total: ctrl.sumAmounts(items),
+                      count: items.length,
+                      currency: ctrl.targetCurrencyLabel,
+                      allocation: singleMonth ? ctrl.billsAllocation : null,
+                    ),
                     if (items.isEmpty)
-                      _EmptyState(month: _month)
+                      const _EmptyState()
                     else
                       for (var i = 0; i < items.length; i++) ...[
                         // Separator zamiast odstepu: wiersze tworza jedna liste,
@@ -627,135 +726,73 @@ class _PlannerCard extends StatelessWidget {
   }
 }
 
-/// Karta miesiąca — wybór miesiąca i wykonanie planu w tym miesiącu: suma
-/// rachunków wobec kwoty z Plannera.
-class _MonthCard extends StatelessWidget {
-  final String monthKey;
-  final DateTime month;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-  final VoidCallback onPickMonth;
+/// Nagłówek listy rachunków: suma TEGO, co widać po filtrach, a przy jednym
+/// wybranym miesiącu także porównanie z kopertą „Na rachunki".
+///
+/// Zastąpił kartę miesiąca ze strzałkami: miesiąc jest teraz jednym z filtrów,
+/// więc suma musi mówić o zestawie na ekranie, a nie o sztywnym miesiącu.
+class _BillsSectionHeader extends StatelessWidget {
+  final double total;
+  final int count;
+  final String currency;
 
-  const _MonthCard({
-    required this.monthKey,
-    required this.month,
-    required this.onPrev,
-    required this.onNext,
-    required this.onPickMonth,
+  /// Koperta planu — `null`, gdy filtr obejmuje więcej niż jeden miesiąc
+  /// (koperta jest miesięczna, więc porównanie nie miałoby sensu).
+  final double? allocation;
+
+  const _BillsSectionHeader({
+    required this.total,
+    required this.count,
+    required this.currency,
+    required this.allocation,
   });
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = context.watch<BudgetController>();
     final theme = Theme.of(context);
-    final cur = ctrl.targetCurrencyLabel;
-    final actual = ctrl.billsActualForMonth(monthKey);
-    final alloc = ctrl.billsAllocation;
+    final c = context.semanticColors;
+    final alloc = allocation;
+    final over = alloc != null && total > alloc;
 
-    final raw = DateFormat('LLLL y', 'pl_PL').format(month);
-    final monthLabel = raw.isEmpty
-        ? raw
-        : raw[0].toUpperCase() + raw.substring(1);
-
-    final remaining = alloc != null ? alloc - actual : null;
-    final over = remaining != null && remaining < 0;
-
-    return FrostCard(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Poprzedni miesiąc',
-                icon: const Icon(LucideIcons.chevronLeft),
-                onPressed: onPrev,
-              ),
-              // Tap w nazwę = wybór miesiąca: skok o rok wstecz strzałkami to
-              // dwanaście tapnięć.
+              Text('Rachunki', style: theme.textTheme.titleMedium),
+              const SizedBox(width: 8),
               Expanded(
-                child: InkWell(
-                  onTap: onPickMonth,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(monthLabel, style: theme.textTheme.titleSmall),
-                        const SizedBox(width: 6),
-                        Icon(
-                          LucideIcons.calendarDays,
-                          size: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ],
-                    ),
+                child: Text(
+                  count == 0 ? '' : '$count',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: c.textMuted,
                   ),
                 ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Następny miesiąc',
-                icon: const Icon(LucideIcons.chevronRight),
-                onPressed: onNext,
+              Text(
+                '${budgetNf.format(total)}${curLabelSuffix(currency)}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: c.textSecondary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            // Nie „wydane": po scaleniu typów (ADR-018) suma obejmuje też
-            // rachunki zaplanowane na przyszłą datę tego miesiąca.
-            'Rachunki tego miesiąca',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          GradientAmount(
-            '${budgetNf.format(actual)}${curLabelSuffix(cur)}',
-            fontSize: 32,
-          ),
-          const SizedBox(height: 12),
-          if (alloc == null)
+          if (alloc != null && alloc > 0) ...[
+            const SizedBox(height: 6),
             Text(
-              'Dodaj pozycje planu w „Plannerze" (karta powyżej), by porównać '
-              'plan z realnymi wydatkami. Zaplanowana kwota pomniejsza „zostaje '
-              'miesięcznie".',
+              over
+                  ? 'ponad plan o ${budgetNf.format(total - alloc)}${curLabelSuffix(currency)}'
+                        ' (plan ${budgetNf.format(alloc)}${curLabelSuffix(currency)})'
+                  : 'z ${budgetNf.format(alloc)}${curLabelSuffix(currency)} planu',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            )
-          else ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: alloc > 0 ? (actual / alloc).clamp(0.0, 1.0) : 0,
-                minHeight: 8,
-                backgroundColor: AppColors.frostBorder,
-                color: over ? AppColors.negative : AppColors.positive,
+                color: over ? c.negative : c.textSecondary,
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Plan: ${budgetNf.format(alloc)}${curLabelSuffix(cur)}',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                Text(
-                  over
-                      ? 'Przekroczono o ${budgetNf.format(-remaining)}${curLabelSuffix(cur)}'
-                      : 'Zostało ${budgetNf.format(remaining)}${curLabelSuffix(cur)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: over ? AppColors.negative : AppColors.positive,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+            const SizedBox(height: 6),
+            PlanProgressBar(value: total, plan: alloc, height: 6),
           ],
         ],
       ),
@@ -764,13 +801,10 @@ class _MonthCard extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final DateTime month;
-  const _EmptyState({required this.month});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    final raw = DateFormat('LLLL y', 'pl_PL').format(month);
-    final label = raw.isEmpty ? raw : raw[0].toLowerCase() + raw.substring(1);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -784,7 +818,8 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Brak rachunków w $label.\nDodaj pierwszy przyciskiem „+".',
+              'Brak rachunków dla wybranych filtrów.\n'
+              'Zmień filtr albo dodaj rachunek przyciskiem „+".',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

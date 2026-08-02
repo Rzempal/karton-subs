@@ -79,6 +79,24 @@ Rachunek (jak każda pozycja) trafia do właściwego boxu Hive przez aktywny `Bu
 ustawia zakres; **nie** dodajemy pola `scope` do pozycji (to złamałoby granicę
 synchronizacji).
 
+## Uzupelnienie (2026-08-02): ekran Rachunkow filtruje zamiast przewijac miesiace
+
+Karta miesiaca ze strzalkami zalatwiala jedno pytanie („ile w tym miesiacu"),
+ale kazde inne — „gdzie jest rachunek z maja", „ile poszlo na Dom w tym roku" —
+wymagalo klikania miesiac po miesiacu.
+
+Ekran dostal **ten sam uklad co lista „Wydatki"**: paski filtrow (kategoria +
+czas ze skrotem „Dzisiaj"), sortowanie przy filtrach i **naglowek sekcji
+„Rachunki" z suma pozycji aktualnie widocznych**. Domyslny filtr to biezacy
+miesiac, wiec pierwsze wejscie wyglada jak dotad.
+
+Porownanie z koperta (pasek plan/realny) pokazuje sie **tylko przy wybranym
+jednym miesiacu** — koperta jest miesieczna, wiec przy filtrze „caly rok"
+zestawialaby jablka z gruszkami.
+
+Reguly filtrowania sa te same co w „Wydatkach" (`ExpensesFilter`), bo rachunek
+jest datowana pozycja jednorazowa — filtr czasu dziala na nim bez wyjatkow.
+
 ## Konsekwencje
 
 - **Pozytywne:**

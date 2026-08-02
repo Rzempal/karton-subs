@@ -15,6 +15,7 @@ import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
+import '../widgets/filter_bars.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/subscription_row.dart';
@@ -186,27 +187,23 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final filterTypes = presentTypes.toList()
       ..sort((a, b) => a.index.compareTo(b.index));
 
-    // Filtr czasu (snapshot) — lata/miesiące obecne w danych zmiennych.
+    // Filtr czasu (snapshot) — lata/miesiące obecne w danych zmiennych plus
+    // bieżący, żeby skrót „Dzisiaj" zawsze miał gdzie zaznaczyć.
+    final today = Subscription.devDateOverride ?? DateTime.now();
     final variableMonths = ExpensesFilter.variableMonths(ctrl.all);
-    final availableYears =
-        variableMonths.map((m) => int.parse(m.substring(0, 4))).toSet().toList()
-          ..sort();
+    final availableYears = ExpensesFilter.yearsFor(variableMonths, today);
     final activeYear =
         (_filterYear != null && availableYears.contains(_filterYear))
         ? _filterYear
         : null;
     final monthsOfYear = activeYear == null
         ? <int>[]
-        : (variableMonths
-              .where((m) => m.startsWith('$activeYear-'))
-              .map((m) => int.parse(m.substring(5, 7)))
-              .toSet()
-              .toList()
-            ..sort());
+        : ExpensesFilter.monthsOfYear(variableMonths, activeYear, today);
     final activeMonth =
         (_filterMonth != null && monthsOfYear.contains(_filterMonth))
         ? _filterMonth
         : null;
+    final isToday = activeYear == today.year && activeMonth == today.month;
 
     final filter = ExpensesFilter(
       type: activeType,
@@ -305,8 +302,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           // decyduja, CO jest na liscie). Osobny wiersz ikon byl czwarta linia
           // nad lista i nie mowil, na co dziala.
           if (!isEmpty && filterCategories.isNotEmpty)
-            _FilterRow(
-              filters: _CategoryFilter(
+            FilterRow(
+              filters: CategoryFilterBar(
                 categories: filterCategories,
                 selected: activeCat,
                 onSelect: (id) => setState(() => _filterCategoryId = id),
@@ -333,7 +330,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               ),
             ),
           if (!isEmpty && (filterTypes.isNotEmpty || rawSubs.isNotEmpty))
-            _FilterRow(
+            FilterRow(
               filters: _TypeFilter(
                 types: filterTypes,
                 selected: activeType,
@@ -367,11 +364,16 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               ),
             ),
           if (!isEmpty && (availableYears.isNotEmpty || hasHidden))
-            _TimeFilter(
+            TimeFilterBar(
               years: availableYears,
               activeYear: activeYear,
               monthsOfYear: monthsOfYear,
               activeMonth: activeMonth,
+              todaySelected: isToday,
+              onToday: () => setState(() {
+                _filterYear = today.year;
+                _filterMonth = today.month;
+              }),
               onSelectYear: (y) => setState(() {
                 _filterYear = y;
                 _filterMonth = null;
@@ -901,73 +903,6 @@ class _CategoryGroupLabel extends StatelessWidget {
   }
 }
 
-/// Pasek filtrow z akcja przyklejona na koncu — chipy przewijaja sie poziomo,
-/// akcja zostaje na widoku.
-class _FilterRow extends StatelessWidget {
-  final Widget filters;
-  final Widget action;
-
-  const _FilterRow({required this.filters, required this.action});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: filters),
-        Padding(padding: const EdgeInsets.only(right: 8), child: action),
-      ],
-    );
-  }
-}
-
-class _CategoryFilter extends StatelessWidget {
-  final List<Category> categories;
-  final String? selected;
-  final void Function(String?) onSelect;
-
-  const _CategoryFilter({
-    required this.categories,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: AuroraChip(
-                label: 'Wszystkie kategorie',
-                selected: selected == null,
-                onTap: () => onSelect(null),
-              ),
-            ),
-          ),
-          ...categories.map(
-            (cat) => Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: AuroraChip(
-                  label: cat.name,
-                  selected: selected == cat.id,
-                  accent: cat.color,
-                  onTap: () => onSelect(selected == cat.id ? null : cat.id),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TypeFilter extends StatelessWidget {
   final List<BudgetEntryType> types;
   final BudgetEntryType? selected;
@@ -1035,112 +970,6 @@ class _TypeFilter extends StatelessWidget {
 }
 
 /// Krótkie polskie nazwy miesięcy (bez zależności od inicjalizacji locale).
-const _plMonthsShort = [
-  'sty',
-  'lut',
-  'mar',
-  'kwi',
-  'maj',
-  'cze',
-  'lip',
-  'sie',
-  'wrz',
-  'paź',
-  'lis',
-  'gru',
-];
-
-/// Filtr czasu (snapshot): pasek lat, a po wybraniu roku — pasek jego miesięcy.
-/// Na końcu paska lat siedzi [action] („pokaż ukryte"): oba przełączniki
-/// decydują o tym, CO jest na liście.
-class _TimeFilter extends StatelessWidget {
-  final List<int> years;
-  final int? activeYear;
-  final List<int> monthsOfYear;
-  final int? activeMonth;
-  final void Function(int?) onSelectYear;
-  final void Function(int?) onSelectMonth;
-  final Widget? action;
-
-  const _TimeFilter({
-    required this.years,
-    required this.activeYear,
-    required this.monthsOfYear,
-    required this.activeMonth,
-    required this.onSelectYear,
-    required this.onSelectMonth,
-    this.action,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget chip(String label, bool selected, VoidCallback onTap) => Center(
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: AuroraChip(label: label, selected: selected, onTap: onTap),
-      ),
-    );
-
-    // Bez pozycji zmiennych (jednorazowych, rat) nie ma czego filtrować po
-    // czasie — zostaje sam przełącznik ukrytych, po prawej stronie wiersza.
-    final yearsRow = years.isEmpty
-        ? const SizedBox(height: 48)
-        : SizedBox(
-            height: 48,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              children: [
-                chip(
-                  'Wszystkie lata',
-                  activeYear == null,
-                  () => onSelectYear(null),
-                ),
-                ...years.map(
-                  (y) => chip(
-                    '$y',
-                    activeYear == y,
-                    () => onSelectYear(activeYear == y ? null : y),
-                  ),
-                ),
-              ],
-            ),
-          );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (action == null)
-          yearsRow
-        else
-          _FilterRow(filters: yearsRow, action: action!),
-        if (activeYear != null)
-          SizedBox(
-            height: 48,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              children: [
-                chip(
-                  'Cały rok',
-                  activeMonth == null,
-                  () => onSelectMonth(null),
-                ),
-                ...monthsOfYear.map(
-                  (m) => chip(
-                    _plMonthsShort[m - 1],
-                    activeMonth == m,
-                    () => onSelectMonth(activeMonth == m ? null : m),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _FilteredEmpty extends StatelessWidget {
   const _FilteredEmpty();
 

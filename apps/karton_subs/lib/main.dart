@@ -3,6 +3,7 @@ import 'dart:io' show File;
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 // Ikona receiptText (receipt-text) jest tylko w nowszym pakiecie (alias).
@@ -176,6 +177,16 @@ class KartonApp extends StatelessWidget {
       theme: tp.lightTheme,
       darkTheme: tp.darkTheme,
       themeMode: tp.effectiveThemeMode,
+      // Widgety Materiala (kalendarz `showDatePicker`, przyciski „Anuluj/OK",
+      // pierwszy dzien tygodnia) biora jezyk STAD, a nie z `DateFormat` —
+      // aplikacja pisana po polsku otwierala okna po angielsku.
+      locale: const Locale('pl'),
+      supportedLocales: const [Locale('pl'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       // Tło Aurora renderowane RAZ, pod Navigatorem: przejścia ekranów animują
       // wyłącznie treść (tło stoi nieruchomo), a ekrany mają przezroczyste
       // Scaffoldy. Wcześniej każdy ekran niósł własną kopię tła, przez co

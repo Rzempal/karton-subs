@@ -386,6 +386,7 @@ stylu wiersza co pozycje budzetu.
 | Element | Realizacja Aurora |
 |---------|-------------------|
 | Przelacznik Osobisty/Domowy | segmented frost w `WorkspaceTopBar`; aktywny = gradient |
+| Pasek plan/realny | `PlanProgressBar` (ADR-030): w planie zielony odcinek na torze `--border`; ponad plan caly tor dzielony w proporcji do wydanej kwoty — zielone = plan, czerwone = nadwyzka |
 | Filtry | chipy: kategorie, typy (z pseudo-chipem „Subskrypcje") oraz czas (rok → po wybraniu roku pasek miesiecy). Filtr czasu = snapshot: cykliczne i subskrypcje zawsze, jednorazowe danego miesiaca, raty w oknie |
 | Akcje przy paskach | grupowanie po kategoriach przy kategoriach, sortowanie przy typach, „pokaz ukryte" (oko) przy czasie — przyklejone na koncu przewijanego paska |
 | Naglowki sekcji | „Przelew wewnetrzny" / „Wydatki stale" / „Subskrypcje" / „Wplywy" — 15px/600 `--text-primary` + suma sekcji i chevron; tap zwija sekcje (suma zostaje) |

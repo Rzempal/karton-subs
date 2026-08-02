@@ -14,6 +14,7 @@ import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
 import 'category_icons.dart' show categoryIcon;
+import 'plan_progress_bar.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
 
@@ -783,17 +784,9 @@ class AnnualSummarySection extends StatelessWidget {
                   ),
                   if (progress != null) ...[
                     const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: progress.clamp(0.0, 1.0),
-                        minHeight: 8,
-                        backgroundColor: c.border,
-                        valueColor: AlwaysStoppedAnimation(
-                          over ? c.negative : c.primary,
-                        ),
-                      ),
-                    ),
+                    // Po przekroczeniu planu pasek dzieli sie na plan i nadwyzke
+                    // — widac SILE przebicia, a nie tylko fakt (ADR-030).
+                    PlanProgressBar(value: s.spent, plan: s.planned),
                   ],
                 ],
               ),
@@ -1027,6 +1020,9 @@ class BudgetMonthSection extends StatelessWidget {
   final VoidCallback onToggleCompact;
   final VoidCallback onPrev;
   final VoidCallback onNext;
+
+  /// Tapnięcie w nazwę miesiąca — wybór z okna (rok + siatka miesięcy).
+  final VoidCallback onPickMonth;
   final ValueChanged<int> onSelectDay;
 
   const BudgetMonthSection({
@@ -1038,6 +1034,7 @@ class BudgetMonthSection extends StatelessWidget {
     required this.onSelectDay,
     required this.onPrev,
     required this.onNext,
+    required this.onPickMonth,
     required this.compact,
     required this.onToggleCompact,
     this.today,
@@ -1070,9 +1067,32 @@ class BudgetMonthSection extends StatelessWidget {
                       icon: const Icon(LucideIcons.chevronLeft),
                       tooltip: 'Poprzedni miesiąc',
                     ),
-                    Text(
-                      DateFormat('LLLL yyyy', 'pl').format(month),
-                      style: theme.textTheme.titleMedium,
+                    // Tap w nazwę = wybór miesiąca: skok o rok wstecz
+                    // strzałkami to dwanaście tapnięć.
+                    InkWell(
+                      onTap: onPickMonth,
+                      borderRadius: BorderRadius.circular(AppRadii.tile),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              DateFormat('LLLL yyyy', 'pl').format(month),
+                              style: theme.textTheme.titleMedium,
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              LucideIcons.calendarDays,
+                              size: 14,
+                              color: c.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     IconButton(
                       onPressed: onNext,

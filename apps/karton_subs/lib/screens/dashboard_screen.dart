@@ -597,6 +597,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         onToggleCompact: _toggleMonth,
                         onPrev: () => _shiftMonth(-1),
                         onNext: () => _shiftMonth(1),
+                        onPickMonth: _pickStatsMonth,
                         onSelectDay: (d) => setState(() => _selectedDay = d),
                       ),
                       if (MonthPaymentsSection.hasAny(calendar)) ...[

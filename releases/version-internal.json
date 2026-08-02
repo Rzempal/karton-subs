@@ -1,9 +1,14 @@
 {
-  "releaseNotes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1926080202",
-  "version": "0.19.26080202",
-  "versionCode": 1926080202,
+  "versionCode": 1926080204,
   "changelog": [
+    {
+      "version": "0.19.26080204",
+      "notes": "- pasek plan/realny pokazuje sile przekroczenia (zielone = plan, czerwone = nadwyzka)\n- kalendarz w bilansie: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty po polsku (byly po angielsku)"
+    },
+    {
+      "version": "0.19.26080203",
+      "notes": "- filtr czasu ma skrot Dzisiaj (od razu biezacy miesiac)\n- Rachunki jak Wydatki: filtry, sortowanie i suma widocznych pozycji zamiast przewijania miesiecy"
+    },
     {
       "version": "0.19.26080202",
       "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne"
@@ -35,15 +40,10 @@
     {
       "version": "0.17.26080113",
       "notes": "- Podsumowanie roczne w Planie: ile z planu juz wydano, miesiac po miesiacu\n- poczatek ewidencji dla budzetu prowadzonego od polowy roku\n- Uzupelnij do pelnej kwoty w Plannerze (10/100/1000)\n- Plan vs Realne zamiast Predykcja vs rzeczywistosc; bez karty Rachunki miesiaca w bilansie"
-    },
-    {
-      "version": "0.17.26080112",
-      "notes": "- krotszy tytul wykresu kategorii (jedna linia takze z miesiacem)"
-    },
-    {
-      "version": "0.17.26080111",
-      "notes": "- trend wydatkow i podzial wg kategorii maja przelacznik Plan / Realne\n- realne kwoty miesiaca zgadzaja sie z Bilansem miesiaca"
     }
   ],
-  "releaseDate": "2026-08-02T13:58:43Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1926080204",
+  "releaseDate": "2026-08-02T16:37:40Z",
+  "version": "0.19.26080204",
+  "releaseNotes": "- pasek plan/realny pokazuje sile przekroczenia (zielone = plan, czerwone = nadwyzka)\n- kalendarz w bilansie: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty po polsku (byly po angielsku)"
 }

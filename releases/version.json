@@ -1,6 +1,11 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1926080201",
+  "releaseDate": "2026-08-02T17:05:11Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080202",
   "changelog": [
+    {
+      "version": "0.20.26080202",
+      "notes": "- Rachunki z filtrami zamiast przewijania miesiecy: kategoria, czas, sortowanie i suma widocznych pozycji\n- skrot Dzisiaj w filtrze czasu (od razu biezacy miesiac)\n- pasek plan/realny pokazuje sile przekroczenia: zielone = plan, czerwone = nadwyzka\n- kalendarz bilansu: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty i przyciski systemowe po polsku, tydzien od poniedzialku"
+    },
     {
       "version": "0.19.26080201",
       "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly nazywa sie teraz Limity i okresy probne"
@@ -36,14 +41,9 @@
     {
       "version": "0.13.26073100",
       "notes": "- Kopia zapasowa na koncie Google: automat raz na dobe, kod odzyskiwania zamiast klucza urzadzenia\n- Przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- Budzet domowy: kategorie i metody platnosci trafiaja na drugi telefon razem z pozycjami\n- Poprawka: udostepniony rachunek nie dodaje sie ponownie przy kazdym uruchomieniu aplikacji\n- Poprawka: pozycje w trakcie rozpoznawania mozna odrzucic"
-    },
-    {
-      "version": "0.12.26072700",
-      "notes": "- Budzet/Plan: jeden wykres trendu z trzema liniami (cykliczne, subskrypcje, rachunki) i chipami do wlaczania\n- Plan: wspolny podzial na kategorie oraz nowa sekcja Koszty roczne\n- Saldo po rozwinieciu pokazuje skad sie bierze: pasek proporcji i rozpis skladnikow\n- Bilans miesiaca: nowa sekcja Rzeczywisty bilans miesiaca nad kalendarzem\n- Rachunki: Planner, osobna karta miesiaca z wyborem miesiaca i przyciskiem Dzisiaj, potem lista\n- Skan rachunkow dziala bez Lokalnego Silnika AI: paragony, potwierdzenia platnosci i faktury\n- Skan w tle: kolejne zdjecia nie gina po wyjsciu z aplikacji"
     }
   ],
-  "releaseDate": "2026-08-02T14:13:36Z",
-  "versionCode": 1926080201,
-  "version": "0.19.26080201",
-  "releaseNotes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly nazywa sie teraz Limity i okresy probne"
+  "releaseNotes": "- Rachunki z filtrami zamiast przewijania miesiecy: kategoria, czas, sortowanie i suma widocznych pozycji\n- skrot Dzisiaj w filtrze czasu (od razu biezacy miesiac)\n- pasek plan/realny pokazuje sile przekroczenia: zielone = plan, czerwone = nadwyzka\n- kalendarz bilansu: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty i przyciski systemowe po polsku, tydzien od poniedzialku",
+  "versionCode": 2026080202,
+  "version": "0.20.26080202"
 }

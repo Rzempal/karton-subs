@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-08-02: Wlasne teksty po polsku to NIE to samo, co polska aplikacja
+
+### Problem
+Okna wyboru daty (`showDatePicker`) otwieraly sie po **angielsku**: „August 2026",
+„Sun, Aug 2", przyciski „Cancel / OK", tydzien od niedzieli — w aplikacji, ktorej
+kazdy wlasny napis jest po polsku. Wygladalo to na blad losowy („niektore
+kalendarze"), a bylo systematyczne: **wszystkie** widgety Materiala.
+
+### Przyczyna
+Dwa niezalezne mechanizmy jezykowe:
+- `DateFormat('LLLL yyyy', 'pl')` — formatowanie WLASNYCH napisow, ustawiane
+  przy kazdym wywolaniu. Tego uzywalismy wszedzie i to dzialalo.
+- **Delegaty lokalizacji w `MaterialApp`** — jezyk widgetow gotowych
+  (kalendarz, przyciski dialogow, etykiety dostepnosci, pierwszy dzien tygodnia).
+  Tych nie bylo, wiec Flutter uzywal domyslnego angielskiego.
+
+`initializeDateFormatting('pl_PL')` w `main()` zalatwia tylko pierwszy punkt —
+stad zludzenie, ze „polski jest juz ustawiony".
+
+### Rozwiazanie
+`flutter_localizations` + w `MaterialApp`: `locale: Locale('pl')`,
+`supportedLocales`, trzy delegaty (`GlobalMaterialLocalizations`,
+`GlobalWidgetsLocalizations`, `GlobalCupertinoLocalizations`).
+
+### Wniosek
+Jesli aplikacja ma jeden jezyk, ustaw go **w `MaterialApp` od pierwszego dnia** —
+inaczej kazde gotowe okno systemowe (data, czas, `showLicensePage`, menu
+kontekstowe pola tekstowego) bedzie po angielsku, a zauwazysz to dopiero, gdy
+uzytkownik trafi na konkretny ekran. Blad zyl tu **kilkanascie wydan**, bo apka
+formatuje wlasne daty sama i nikt nie mial powodu podejrzewac `MaterialApp`.
+
+---
+
 ## 2026-08-01: Usuwajac widget platformy, sprawdz, co robil ZA CIEBIE
 
 ### Problem
