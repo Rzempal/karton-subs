@@ -1,6 +1,12 @@
 {
-  "version": "0.21.26080210",
+  "releaseNotes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)",
+  "version": "0.21.26080211",
+  "releaseDate": "2026-08-02T22:10:34Z",
   "changelog": [
+    {
+      "version": "0.21.26080211",
+      "notes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)"
+    },
     {
       "version": "0.21.26080210",
       "notes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)"
@@ -36,14 +42,8 @@
     {
       "version": "0.19.26080202",
       "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne"
-    },
-    {
-      "version": "0.18.26080201",
-      "notes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080210",
-  "releaseNotes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)",
-  "versionCode": 2026080210,
-  "releaseDate": "2026-08-02T21:19:44Z"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080211",
+  "versionCode": 2026080211
 }
