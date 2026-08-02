@@ -727,11 +727,6 @@ class AnnualSummarySection extends StatelessWidget {
 
     final progress = s.progress;
     final over = progress != null && progress > 1;
-    final fromLabel = s.fromMonth > 12
-        ? 'ewidencja zaczyna się w kolejnym roku'
-        : s.fromMonth == 1
-        ? 'cały rok'
-        : 'od ${_monthNames[s.fromMonth - 1]}';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -804,16 +799,8 @@ class AnnualSummarySection extends StatelessWidget {
               ),
             ),
           ),
-          // Punkt startu nie ma tu własnego przycisku — ustawia się go raz,
-          // w nagłówku sekcji „Statystyki", bo ucina też trend obok.
-          if (s.fromMonth > 1)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Text(
-                fromLabel,
-                style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
-              ),
-            ),
+          // Punktu startu tu nie powtarzamy — stoi w nagłówku sekcji
+          // „Statystyki", bo ucina też trend obok.
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 180),
             sizeCurve: Curves.easeInOut,

@@ -817,6 +817,20 @@ class StorageService {
   Future<void> setPlanYearView(String value) async =>
       _settingsBox.put('planYearView', value);
 
+  /// Grupy zakładki „Plan" — zwinięcie całej grupy kart tapnięciem w jej
+  /// nagłówek. Domyślnie rozwinięte: to jest treść zakładki, a nie doczytanie.
+  bool getPlanMonthGroupCompact() =>
+      _settingsBox.get('planMonthGroupCompact', defaultValue: false) as bool;
+
+  Future<void> setPlanMonthGroupCompact(bool value) async =>
+      _settingsBox.put('planMonthGroupCompact', value);
+
+  bool getPlanStatsGroupCompact() =>
+      _settingsBox.get('planStatsGroupCompact', defaultValue: false) as bool;
+
+  Future<void> setPlanStatsGroupCompact(bool value) async =>
+      _settingsBox.put('planStatsGroupCompact', value);
+
   /// Sekcja „Podsumowanie roczne" — domyślnie ZWINIĘTA: dwanaście wierszy to
   /// doczytanie, a nagłówek z paskiem odpowiada na pytanie od razu.
   bool getDashboardAnnualSummaryCompact() =>

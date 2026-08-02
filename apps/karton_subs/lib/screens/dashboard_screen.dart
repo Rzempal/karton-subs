@@ -58,6 +58,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   late ExpenseView _yearView;
   late bool _annualSummaryCompact;
 
+  /// Zwinięcie całych grup zakładki „Plan" (nagłówki „Miesiąc" i „Statystyki").
+  late bool _monthGroupCompact;
+  late bool _statsGroupCompact;
+
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
@@ -87,6 +91,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     _categoriesView = _parseView(storage.getPlanCategoriesView());
     _yearView = _parseView(storage.getPlanYearView());
     _annualSummaryCompact = storage.getDashboardAnnualSummaryCompact();
+    _monthGroupCompact = storage.getPlanMonthGroupCompact();
+    _statsGroupCompact = storage.getPlanStatsGroupCompact();
+  }
+
+  void _toggleMonthGroup() {
+    setState(() => _monthGroupCompact = !_monthGroupCompact);
+    context.read<StorageService>().setPlanMonthGroupCompact(_monthGroupCompact);
+  }
+
+  void _toggleStatsGroup() {
+    setState(() => _statsGroupCompact = !_statsGroupCompact);
+    context.read<StorageService>().setPlanStatsGroupCompact(_statsGroupCompact);
   }
 
   static ExpenseView _parseView(String s) =>
@@ -347,6 +363,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       // stoi w nagłówku, bo rządzi obiema kartami.
       _SectionHeader(
         title: 'Miesiąc',
+        collapsed: _monthGroupCompact,
+        onToggle: _toggleMonthGroup,
         trailing: _MonthNav(
           label: _monthLabel(_selectedMonth),
           onPrev: () => _shiftMonth(-1),
@@ -354,48 +372,53 @@ class _DashboardScreenState extends State<DashboardScreen>
           onPick: _pickStatsMonth,
         ),
       ),
-      const SizedBox(height: 12),
-      _PredictionCard(
-        predicted: budget.monthlySurplus,
-        real: budget.balanceForMonth(monthKey),
-        allocation: budget.billsAllocation,
-        billsActual: budget.billsActualForMonth(monthKey),
-        currency: currency,
-      ),
-      const SizedBox(height: 16),
-      // Kategorie należą do tej samej grupy co „Plan vs Realne": w ujęciu
-      // realnym liczą WYBRANY miesiąc, więc idą tuż pod kartą, która ten
-      // miesiąc przełącza.
-      CategoryBreakdownChart(
-        categoryTotals: budget.combinedExpenseByCategory(
-          monthKey,
-          _categoriesView,
+      if (!_monthGroupCompact) ...[
+        const SizedBox(height: 12),
+        _PredictionCard(
+          predicted: budget.monthlySurplus,
+          real: budget.balanceForMonth(monthKey),
+          allocation: budget.billsAllocation,
+          billsActual: budget.billsActualForMonth(monthKey),
+          currency: currency,
         ),
-        categories: cats,
-        currencySymbol: currency,
-        // W ujęciu realnym liczby dotyczą KONKRETNEGO miesiąca — bez tego
-        // dopisku wykres wyglądałby jak plan. Miesiąc skrócony („sie 2026"),
-        // żeby tytuł został w jednej linii.
-        subtitle: _categoriesView == ExpenseView.actual
-            ? DateFormat('LLL y', 'pl_PL').format(_selectedMonth)
-            : null,
-        trailing: _ViewToggle<ExpenseView>(
-          value: _categoriesView,
-          options: _ViewToggle.planActual,
-          onChanged: _setCategoriesView,
+        const SizedBox(height: 16),
+        // Kategorie należą do tej samej grupy co „Plan vs Realne": w ujęciu
+        // realnym liczą WYBRANY miesiąc, więc idą tuż pod kartą, która ten
+        // miesiąc przełącza.
+        CategoryBreakdownChart(
+          categoryTotals: budget.combinedExpenseByCategory(
+            monthKey,
+            _categoriesView,
+          ),
+          categories: cats,
+          currencySymbol: currency,
+          // W ujęciu realnym liczby dotyczą KONKRETNEGO miesiąca — bez tego
+          // dopisku wykres wyglądałby jak plan. Miesiąc skrócony („sie 2026"),
+          // żeby tytuł został w jednej linii.
+          subtitle: _categoriesView == ExpenseView.actual
+              ? DateFormat('LLL y', 'pl_PL').format(_selectedMonth)
+              : null,
+          trailing: _ViewToggle<ExpenseView>(
+            value: _categoriesView,
+            options: _ViewToggle.planActual,
+            onChanged: _setCategoriesView,
+          ),
         ),
-      ),
+      ],
       const SizedBox(height: 24),
       // Granica sekcji: pod nią zestawienia liczone OD początku ewidencji —
       // trend i podsumowanie roczne. Ten sam punkt startu rządzi obydwoma, więc
       // stoi w nagłówku, a nie w środku jednej z kart (ADR-029).
       _SectionHeader(
         title: 'Statystyki',
+        collapsed: _statsGroupCompact,
+        onToggle: _toggleStatsGroup,
         trailing: _StartPointChip(
           label: _trackingStartLabel(budget.trackingStartMonth),
           onTap: () => _pickTrackingStart(budget),
         ),
       ),
+      if (!_statsGroupCompact) ...[
       const SizedBox(height: 12),
       SpendingChart.multi(
         currencySymbol: currency,
@@ -464,6 +487,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           onChanged: _setYearView,
         ),
       ),
+      ],
     ];
   }
 
@@ -635,9 +659,14 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 }
 
-/// „Szczegóły" na zakładce Plan — karty, które dotyczą pojedynczego strumienia
-/// (rachunki miesiąca, subskrypcje). Domyślnie zwinięte: wspólne wykresy wyżej
-/// odpowiadają na pytanie „ile i na co", a to jest doczytanie na żądanie.
+/// „Limity i okresy próbne" na zakładce Plan — dwie rzeczy do pilnowania:
+/// wykorzystanie limitu subskrypcji i koszty, które zaczną obowiązywać po
+/// zakończeniu trwających okresów próbnych.
+///
+/// Nazwa mówi wprost, co jest w środku. „Szczegóły" nie mówiło nic, a
+/// „Powiadomienia" myliłyby z przypomnieniami systemowymi z Ustawień — te
+/// karty niczego nie wysyłają, tylko pokazują stan. Sekcja chowa się, gdy nie
+/// ma ani limitu, ani trwającego okresu próbnego.
 class _DetailsSection extends StatelessWidget {
   final bool compact;
   final VoidCallback onToggleCompact;
@@ -662,7 +691,10 @@ class _DetailsSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                Text('Szczegóły', style: theme.textTheme.titleMedium),
+                Text(
+                  'Limity i okresy próbne',
+                  style: theme.textTheme.titleMedium,
+                ),
                 const Spacer(),
                 Icon(
                   compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
@@ -822,7 +854,19 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final Widget trailing;
 
-  const _SectionHeader({required this.title, required this.trailing});
+  /// Czy grupa jest zwinięta (karty pod nagłówkiem schowane).
+  final bool collapsed;
+
+  /// Zwijanie tapnięciem w nazwę i kreskę — sterowanie okresem po prawej
+  /// zostaje klikalne osobno, żeby zmiana miesiąca nie chowała kart.
+  final VoidCallback onToggle;
+
+  const _SectionHeader({
+    required this.title,
+    required this.trailing,
+    required this.collapsed,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -831,14 +875,35 @@ class _SectionHeader extends StatelessWidget {
 
     return Row(
       children: [
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(AppRadii.tile),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    collapsed
+                        ? LucideIcons.chevronDown
+                        : LucideIcons.chevronUp,
+                    size: 18,
+                    color: c.textMuted,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Divider(color: c.border, height: 1)),
+                ],
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(child: Divider(color: c.border, height: 1)),
         const SizedBox(width: 8),
         trailing,
       ],

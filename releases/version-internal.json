@@ -1,9 +1,13 @@
 {
-  "releaseDate": "2026-08-02T12:11:55Z",
-  "versionCode": 1826080201,
-  "releaseNotes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1826080201",
+  "releaseNotes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1926080202",
+  "version": "0.19.26080202",
+  "versionCode": 1926080202,
   "changelog": [
+    {
+      "version": "0.19.26080202",
+      "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly to teraz Limity i okresy probne"
+    },
     {
       "version": "0.18.26080201",
       "notes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)"
@@ -39,11 +43,7 @@
     {
       "version": "0.17.26080111",
       "notes": "- trend wydatkow i podzial wg kategorii maja przelacznik Plan / Realne\n- realne kwoty miesiaca zgadzaja sie z Bilansem miesiaca"
-    },
-    {
-      "version": "0.16.26080110",
-      "notes": "- Planner ma wlasny ekran: wejscie z Rachunkow i z Wydatkow\n- czytelne ikony paska stanu w jasnym motywie"
     }
   ],
-  "version": "0.18.26080201"
+  "releaseDate": "2026-08-02T13:58:43Z"
 }
