@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Ujęcie obu wykresów „Planu" — osobno dla trendu i kategorii (ADR-028),
   /// stan trwały. Podsumowanie roczne ma własne (ADR-029).
-  late ExpenseView _trendView;
+  late _TrendView _trendView;
   late ExpenseView _categoriesView;
   late ExpenseView _yearView;
   late bool _annualSummaryCompact;
@@ -80,7 +80,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     _planDetailsCompact = storage.getDashboardPlanDetailsCompact();
     _annualCostsCompact = storage.getDashboardAnnualCostsCompact();
     _monthBalanceCompact = storage.getDashboardMonthBalanceCompact();
-    _trendView = _parseView(storage.getPlanTrendView());
+    _trendView = _TrendView.values.firstWhere(
+      (v) => v.name == storage.getPlanTrendView(),
+      orElse: () => _TrendView.plan,
+    );
     _categoriesView = _parseView(storage.getPlanCategoriesView());
     _yearView = _parseView(storage.getPlanYearView());
     _annualSummaryCompact = storage.getDashboardAnnualSummaryCompact();
@@ -89,7 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   static ExpenseView _parseView(String s) =>
       s == ExpenseView.actual.name ? ExpenseView.actual : ExpenseView.plan;
 
-  void _setTrendView(ExpenseView v) {
+  void _setTrendView(_TrendView v) {
     setState(() => _trendView = v);
     context.read<StorageService>().setPlanTrendView(v.name);
   }
@@ -238,6 +241,47 @@ class _DashboardScreenState extends State<DashboardScreen>
     return raw.isEmpty ? raw : raw[0].toUpperCase() + raw.substring(1);
   }
 
+  /// Wybór miesiąca dla grupy „Miesiąc" — okno wyboru zamiast klikania
+  /// strzałkami przez pół roku.
+  Future<void> _pickStatsMonth() async {
+    final picked = await showMonthPicker(
+      context,
+      initialMonth: _selectedMonth,
+      today: _today,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _selectedMonth = DateTime(picked.year, picked.month, 1);
+      final t = _today;
+      _selectedDay =
+          (_selectedMonth.year == t.year && _selectedMonth.month == t.month)
+          ? t.day
+          : null;
+    });
+  }
+
+  /// Podpis punktu startu w nagłówku „Statystyki". Dopełniacz („od lipca"),
+  /// bo „od lipiec" to nie po polsku.
+  String _trackingStartLabel(String? monthKey) {
+    if (monthKey == null || monthKey.length < 7) return 'cały okres';
+    const genitive = [
+      'stycznia',
+      'lutego',
+      'marca',
+      'kwietnia',
+      'maja',
+      'czerwca',
+      'lipca',
+      'sierpnia',
+      'września',
+      'października',
+      'listopada',
+      'grudnia',
+    ];
+    final m = int.tryParse(monthKey.substring(5, 7)) ?? 1;
+    return 'od ${genitive[(m - 1).clamp(0, 11)]} ${monthKey.substring(0, 4)}';
+  }
+
   /// Zakładka „Plan": jeden zestaw statystyk zamiast trzech osobnych podstron.
   /// Wydatki rozbite na trzy ROZŁĄCZNE strumienie (cykliczne bez subskrypcji,
   /// subskrypcje, rachunki), więc jeden wykres trendu i jeden podział na
@@ -250,20 +294,25 @@ class _DashboardScreenState extends State<DashboardScreen>
     final cats = context.read<StorageService>().getCategories();
     final c = context.semanticColors;
     final palette = AppColors.chartColors;
-    final recurring = budget.recurringExpenseTrend(_trendView);
-    final subscriptions = budget.subscriptionsTrend(_trendView);
-    final bills = budget.billsTrend(_trendView);
+    final streamView = _trendView == _TrendView.plan
+        ? ExpenseView.plan
+        : ExpenseView.actual;
+    final recurring = budget.recurringExpenseTrend(streamView);
+    final subscriptions = budget.subscriptionsTrend(streamView);
+    final bills = budget.billsTrend(streamView);
     // Suma liczona z tych samych serii, które widać na wykresie — inaczej
     // „Razem" nie zgadzałoby się z tym, co użytkownik sam sobie zsumuje.
-    final total = [
-      for (var i = 0; i < recurring.length; i++)
-        MonthlyDataPoint(
-          month: recurring[i].month,
-          amount: recurring[i].amount +
-              (i < subscriptions.length ? subscriptions[i].amount : 0) +
-              (i < bills.length ? bills[i].amount : 0),
-        ),
-    ];
+    final total = _sumSeries([recurring, subscriptions, bills]);
+    // Tryb porównawczy: dwie linie zbiorcze zamiast trzech strumieni razy dwa
+    // ujęcia. Sześć linii na 200 px to plątanina, a pytanie brzmi „ile
+    // odbiegamy od planu", nie „który strumień o ile".
+    final planTotal = _trendView == _TrendView.both
+        ? _sumSeries([
+            budget.recurringExpenseTrend(ExpenseView.plan),
+            budget.subscriptionsTrend(ExpenseView.plan),
+            budget.billsTrend(ExpenseView.plan),
+          ])
+        : const <MonthlyDataPoint>[];
 
     return [
       BudgetSummarySection(
@@ -277,69 +326,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         compact: _summaryCompact,
         onToggle: _toggleSummary,
       ),
-      const SizedBox(height: 24),
-      _PredictionCard(
-        monthLabel: _monthLabel(_selectedMonth),
-        predicted: budget.monthlySurplus,
-        real: budget.balanceForMonth(monthKey),
-        allocation: budget.billsAllocation,
-        billsActual: budget.billsActualForMonth(monthKey),
-        currency: currency,
-        onPrev: () => _shiftMonth(-1),
-        onNext: () => _shiftMonth(1),
-      ),
       const SizedBox(height: 16),
-      SpendingChart.multi(
-        currencySymbol: currency,
-        trailing: _ViewToggle(
-          value: _trendView,
-          onChanged: _setTrendView,
-        ),
-        series: [
-          ChartSeries(
-            label: 'Cykliczne',
-            data: recurring,
-            color: palette[0],
-          ),
-          ChartSeries(
-            label: 'Subskrypcje',
-            data: subscriptions,
-            color: palette[1],
-          ),
-          ChartSeries(label: 'Rachunki', data: bills, color: palette[2]),
-          // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
-          // składowe przy pierwszym spojrzeniu.
-          ChartSeries(
-            label: 'Razem',
-            data: total,
-            color: c.textSecondary,
-            dashed: true,
-            hiddenByDefault: true,
-          ),
-        ],
-      ),
-      const SizedBox(height: 16),
-      CategoryBreakdownChart(
-        categoryTotals: budget.combinedExpenseByCategory(
-          monthKey,
-          _categoriesView,
-        ),
-        categories: cats,
-        currencySymbol: currency,
-        // W ujęciu realnym liczby dotyczą KONKRETNEGO miesiąca (tego z karty
-        // predykcji wyżej) — bez tego dopisku wykres wyglądałby jak plan.
-        // Miesiąc skrócony („sie 2026"), żeby tytuł został w jednej linii.
-        subtitle: _categoriesView == ExpenseView.actual
-            ? DateFormat('LLL y', 'pl_PL').format(_selectedMonth)
-            : null,
-        trailing: _ViewToggle(
-          value: _categoriesView,
-          onChanged: _setCategoriesView,
-        ),
-      ),
-      const SizedBox(height: 16),
-      // Na końcu: skala roczna zamyka obraz planu, a codzienne pytania
-      // („ile zostaje", „na co idzie") są wyżej.
+      // Plan w skali roku stoi przy planie w skali miesiąca — obie karty liczą
+      // to samo, tylko innym okresem, i obu nie dotyczy wybrany zakres.
       AnnualCostsSection(
         // Te same składniki co w rozpisie salda, tylko w skali roku — koszty
         // cykliczne bez subskrypcji i bez rezerwy, bo obie są osobno.
@@ -353,17 +342,127 @@ class _DashboardScreenState extends State<DashboardScreen>
         compact: _annualCostsCompact,
         onToggle: _toggleAnnualCosts,
       ),
+      const SizedBox(height: 24),
+      // Grupa jednego miesiąca: „Plan vs Realne" i „Kategorie". Wybór miesiąca
+      // stoi w nagłówku, bo rządzi obiema kartami.
+      _SectionHeader(
+        title: 'Miesiąc',
+        trailing: _MonthNav(
+          label: _monthLabel(_selectedMonth),
+          onPrev: () => _shiftMonth(-1),
+          onNext: () => _shiftMonth(1),
+          onPick: _pickStatsMonth,
+        ),
+      ),
+      const SizedBox(height: 12),
+      _PredictionCard(
+        predicted: budget.monthlySurplus,
+        real: budget.balanceForMonth(monthKey),
+        allocation: budget.billsAllocation,
+        billsActual: budget.billsActualForMonth(monthKey),
+        currency: currency,
+      ),
+      const SizedBox(height: 16),
+      // Kategorie należą do tej samej grupy co „Plan vs Realne": w ujęciu
+      // realnym liczą WYBRANY miesiąc, więc idą tuż pod kartą, która ten
+      // miesiąc przełącza.
+      CategoryBreakdownChart(
+        categoryTotals: budget.combinedExpenseByCategory(
+          monthKey,
+          _categoriesView,
+        ),
+        categories: cats,
+        currencySymbol: currency,
+        // W ujęciu realnym liczby dotyczą KONKRETNEGO miesiąca — bez tego
+        // dopisku wykres wyglądałby jak plan. Miesiąc skrócony („sie 2026"),
+        // żeby tytuł został w jednej linii.
+        subtitle: _categoriesView == ExpenseView.actual
+            ? DateFormat('LLL y', 'pl_PL').format(_selectedMonth)
+            : null,
+        trailing: _ViewToggle<ExpenseView>(
+          value: _categoriesView,
+          options: _ViewToggle.planActual,
+          onChanged: _setCategoriesView,
+        ),
+      ),
+      const SizedBox(height: 24),
+      // Granica sekcji: pod nią zestawienia liczone OD początku ewidencji —
+      // trend i podsumowanie roczne. Ten sam punkt startu rządzi obydwoma, więc
+      // stoi w nagłówku, a nie w środku jednej z kart (ADR-029).
+      _SectionHeader(
+        title: 'Statystyki',
+        trailing: _StartPointChip(
+          label: _trackingStartLabel(budget.trackingStartMonth),
+          onTap: () => _pickTrackingStart(budget),
+        ),
+      ),
+      const SizedBox(height: 12),
+      SpendingChart.multi(
+        currencySymbol: currency,
+        trailing: _ViewToggle<_TrendView>(
+          value: _trendView,
+          options: const [
+            (_TrendView.plan, 'Plan'),
+            (_TrendView.actual, 'Realne'),
+            (_TrendView.both, 'Oba'),
+          ],
+          onChanged: _setTrendView,
+        ),
+        series: _trendView == _TrendView.both
+            ? [
+                ChartSeries(
+                  label: 'Realne',
+                  data: total,
+                  color: palette[0],
+                ),
+                ChartSeries(
+                  label: 'Plan',
+                  data: planTotal,
+                  color: c.textSecondary,
+                  dashed: true,
+                ),
+              ]
+            : [
+                ChartSeries(
+                  label: 'Cykliczne',
+                  data: recurring,
+                  color: palette[0],
+                ),
+                ChartSeries(
+                  label: 'Subskrypcje',
+                  data: subscriptions,
+                  color: palette[1],
+                ),
+                ChartSeries(
+                  label: 'Rachunki',
+                  data: bills,
+                  color: palette[2],
+                ),
+                // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
+                // składowe przy pierwszym spojrzeniu.
+                ChartSeries(
+                  label: 'Razem',
+                  data: total,
+                  color: c.textSecondary,
+                  dashed: true,
+                  hiddenByDefault: true,
+                ),
+              ],
+      ),
       const SizedBox(height: 16),
       // Plan roczny od drugiej strony: ile z niego już wydano (ADR-029).
-      // Stoi tuż pod „Kosztami rocznymi", bo to ta sama skala i te same
-      // składniki — raz jako założenie, raz jako wykonanie.
+      // Zostaje w statystykach, bo liczy się dla wybranego roku — inaczej niż
+      // „Koszty roczne", które są samym założeniem.
       AnnualSummarySection(
         summary: budget.yearExpenseSummary(_selectedMonth.year, _yearView),
         currency: currency,
         compact: _annualSummaryCompact,
         onToggle: _toggleAnnualSummary,
-        trailing: _ViewToggle(value: _yearView, onChanged: _setYearView),
-        onEditStart: () => _pickTrackingStart(budget),
+        trailing: _ViewToggle<ExpenseView>(
+          value: _yearView,
+          options: _ViewToggle.planActual,
+          onChanged: _setYearView,
+        ),
       ),
     ];
   }
@@ -712,37 +811,194 @@ class _Kv extends StatelessWidget {
   }
 }
 
-/// Przełącznik ujęcia wykresu: **Plan** (kwoty założone, rachunki = koperta)
-/// ↔ **Realne** (kwoty miesiąca z korektami, rachunki faktyczne) — ADR-028.
+/// Nagłówek grupy kart na zakładce „Plan": nazwa, kreska i po prawej element
+/// sterujący okresem, którego dotyczy cała grupa.
 ///
-/// Dwa chipy, a nie segment: mieszczą się w nagłówku karty, a styl jest ten sam
-/// co filtry list. Każdy wykres ma własny przełącznik, bo oba służą do
-/// porównywania — wspólny odbierałby możliwość zestawienia planu z realnym.
-class _ViewToggle extends StatelessWidget {
-  final ExpenseView value;
-  final ValueChanged<ExpenseView> onChanged;
+/// Dwie grupy, dwa okresy: **Miesiąc** (strzałki + wybór miesiąca) rządzi kartą
+/// „Plan vs Realne" i „Kategoriami", a **Statystyki** (punkt startu ewidencji)
+/// — trendem i podsumowaniem rocznym. Oba sterowania siedziały wcześniej
+/// w środku przypadkowych kart, choć każde rządzi dwiema.
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final Widget trailing;
 
-  const _ViewToggle({required this.value, required this.onChanged});
+  const _SectionHeader({required this.title, required this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    return Row(
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Divider(color: c.border, height: 1)),
+        const SizedBox(width: 8),
+        trailing,
+      ],
+    );
+  }
+}
+
+/// Wybór miesiąca w nagłówku: strzałki na sąsiednie miesiące, tapnięcie
+/// w nazwę otwiera okno wyboru (skok o rok to dwa tapnięcia, nie dwanaście).
+class _MonthNav extends StatelessWidget {
+  final String label;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+  final VoidCallback onPick;
+
+  const _MonthNav({
+    required this.label,
+    required this.onPrev,
+    required this.onNext,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          icon: Icon(LucideIcons.chevronLeft, size: 18, color: c.textSecondary),
+          onPressed: onPrev,
+        ),
+        InkWell(
+          onTap: onPick,
+          borderRadius: BorderRadius.circular(AppRadii.tile),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: c.textSecondary,
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          icon: Icon(
+            LucideIcons.chevronRight,
+            size: 18,
+            color: c.textSecondary,
+          ),
+          onPressed: onNext,
+        ),
+      ],
+    );
+  }
+}
+
+/// Punkt startu ewidencji w nagłówku „Statystyki" — tapnięcie otwiera wybór.
+class _StartPointChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _StartPointChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.tile),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.calendar, size: 14, color: c.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: c.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(LucideIcons.pencil, size: 12, color: c.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ujęcie wykresu trendu: **Plan** (kwoty założone, rachunki = koperta),
+/// **Realne** (kwoty miesiąca z korektami, rachunki faktyczne) albo **Oba**
+/// — dwie linie zbiorcze, na których widać odchylenie od planu (ADR-028).
+enum _TrendView { plan, actual, both }
+
+/// Przełącznik ujęcia w nagłówku wykresu — chipy, a nie segment: mieszczą się
+/// przy tytule, a styl jest ten sam co filtry list. Każdy wykres ma własny,
+/// bo te widoki służą do porównywania.
+class _ViewToggle<T> extends StatelessWidget {
+  final T value;
+  final List<(T, String)> options;
+  final ValueChanged<T> onChanged;
+
+  const _ViewToggle({
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  /// Domyślna para dla wykresów liczących jedno ujęcie naraz.
+  static const planActual = <(ExpenseView, String)>[
+    (ExpenseView.plan, 'Plan'),
+    (ExpenseView.actual, 'Realne'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AuroraChip(
-          label: 'Plan',
-          selected: value == ExpenseView.plan,
-          onTap: () => onChanged(ExpenseView.plan),
-        ),
-        const SizedBox(width: 6),
-        AuroraChip(
-          label: 'Realne',
-          selected: value == ExpenseView.actual,
-          onTap: () => onChanged(ExpenseView.actual),
-        ),
+        for (var i = 0; i < options.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          AuroraChip(
+            label: options[i].$2,
+            selected: value == options[i].$1,
+            onTap: () => onChanged(options[i].$1),
+          ),
+        ],
       ],
     );
   }
+}
+
+/// Suma serii punkt po punkcie (te same miesiące na osi).
+List<MonthlyDataPoint> _sumSeries(List<List<MonthlyDataPoint>> series) {
+  if (series.isEmpty || series.first.isEmpty) return const [];
+  final axis = series.first;
+  return [
+    for (var i = 0; i < axis.length; i++)
+      MonthlyDataPoint(
+        month: axis[i].month,
+        amount: series.fold(
+          0.0,
+          (sum, s) => sum + (i < s.length ? s[i].amount : 0),
+        ),
+      ),
+  ];
 }
 
 /// „Plan vs Realne" dla wybranego miesiąca — ta sama para pojęć, co przełączniki
@@ -751,23 +1007,18 @@ class _ViewToggle extends StatelessWidget {
 /// Plan = „zostaje/mies" − koperta „Na rachunki"; realne = bilans miesiąca
 /// (z faktycznymi rachunkami i pozycjami jednorazowymi). Patrz ADR-008.
 class _PredictionCard extends StatelessWidget {
-  final String monthLabel;
   final double predicted;
   final double real;
   final double? allocation;
   final double billsActual;
   final String currency;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
+
   const _PredictionCard({
-    required this.monthLabel,
     required this.predicted,
     required this.real,
     required this.allocation,
     required this.billsActual,
     required this.currency,
-    required this.onPrev,
-    required this.onNext,
   });
 
   @override
@@ -793,28 +1044,9 @@ class _PredictionCard extends StatelessWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(LucideIcons.chevronLeft),
-                onPressed: onPrev,
-              ),
-              Expanded(
-                child: Text(
-                  monthLabel,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleSmall,
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(LucideIcons.chevronRight),
-                onPressed: onNext,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          // Miesiąca tu nie powtarzamy — stoi w nagłówku grupy, który go
+          // przełącza dla tej karty i dla „Kategorii" pod nią.
+          const SizedBox(height: 12),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

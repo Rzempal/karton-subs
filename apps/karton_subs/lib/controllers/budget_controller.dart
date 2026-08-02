@@ -469,16 +469,29 @@ class BudgetController extends ChangeNotifier {
   /// Rozłączne serie wspólnego wykresu trendu (suma trzech = całość wydatków).
   /// [view] wybiera ujęcie: plan (kwoty bazowe + koperta) albo rzeczywistość
   /// (kwoty miesiąca z korektami + realne rachunki) — ADR-028.
+  /// Wykres zaczyna się od początku ewidencji (ADR-029): wcześniejsze miesiące
+  /// byłyby odtworzone z dzisiejszych kwot, czyli zmyślone.
   List<MonthlyDataPoint> recurringExpenseTrend(ExpenseView view) =>
-      _budget.recurringExpenseTrend(all, view: view, target: _target);
+      _budget.recurringExpenseTrend(
+        all,
+        view: view,
+        fromMonth: trackingStartMonth,
+        target: _target,
+      );
 
   List<MonthlyDataPoint> subscriptionsTrend(ExpenseView view) =>
-      _budget.subscriptionsTrend(_subsForScope, view: view, target: _target);
+      _budget.subscriptionsTrend(
+        _subsForScope,
+        view: view,
+        fromMonth: trackingStartMonth,
+        target: _target,
+      );
 
   List<MonthlyDataPoint> billsTrend(ExpenseView view) => _budget.billsTrend(
     all,
     view: view,
     billsAllocation: billsAllocation ?? 0,
+    fromMonth: trackingStartMonth,
     target: _target,
   );
 

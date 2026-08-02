@@ -38,8 +38,6 @@ class CalendarItem {
     this.isAutomatic = false,
     this.sourceId,
   });
-
-  bool get isSubscription => kind == CalendarItemKind.subscription;
 }
 
 /// Typ glowny pozycji kalendarza (grupowanie na Dashboardzie).
@@ -401,11 +399,12 @@ class BudgetService {
     List<BudgetEntry> entries, {
     required ExpenseView view,
     int months = 6,
+    String? fromMonth,
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
     final base = monthlyBudgetExpenses(entries, target: t);
-    return _months(months).map((m) {
+    return _months(months, fromMonthKey: fromMonth).map((m) {
       return MonthlyDataPoint(
         month: m,
         amount: view == ExpenseView.plan
@@ -426,14 +425,19 @@ class BudgetService {
     List<Subscription> subs, {
     required ExpenseView view,
     int months = 6,
+    String? fromMonth,
     Currency? target,
   }) {
-    if (view == ExpenseView.actual) {
-      return _analytics.getSpendingTrend(subs, months: months, target: target);
-    }
     final base = monthlySubscriptionsExpense(subs, target: target);
-    return _months(months)
-        .map((m) => MonthlyDataPoint(month: m, amount: base))
+    return _months(months, fromMonthKey: fromMonth)
+        .map(
+          (m) => MonthlyDataPoint(
+            month: m,
+            amount: view == ExpenseView.actual
+                ? _analytics.getMonthlyTotalForMonth(subs, m, target: target)
+                : base,
+          ),
+        )
         .toList();
   }
 
@@ -445,10 +449,11 @@ class BudgetService {
     required ExpenseView view,
     double billsAllocation = 0,
     int months = 6,
+    String? fromMonth,
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
-    return _months(months).map((m) {
+    return _months(months, fromMonthKey: fromMonth).map((m) {
       return MonthlyDataPoint(
         month: m,
         amount: view == ExpenseView.plan
@@ -459,12 +464,23 @@ class BudgetService {
   }
 
   /// Ostatnie [months] miesięcy, od najstarszego — wspólna oś wszystkich serii.
-  List<DateTime> _months(int months) {
-    final now = _now;
-    return [
+  ///
+  /// [fromMonthKey] („YYYY-MM") ucina miesiące sprzed początku ewidencji: dane
+  /// wstecz są ODTWARZANE z dzisiejszych kwot (ADR-028), więc przed startem
+  /// byłyby po prostu zmyślone. Krótszy wykres mówi prawdę, dłuższy ściemnia.
+  List<DateTime> _months(int months, {String? fromMonthKey}) {
+    final end = _now;
+    final all = [
       for (var i = months - 1; i >= 0; i--)
-        DateTime(now.year, now.month - i, 1),
+        DateTime(end.year, end.month - i, 1),
     ];
+    if (fromMonthKey == null) return all;
+    final kept = all
+        .where((m) => BudgetEntry.monthKeyOf(m).compareTo(fromMonthKey) >= 0)
+        .toList();
+    // Ewidencja zaczyna się po całej osi (np. start w przyszłym miesiącu) —
+    // zostawiamy bieżący miesiąc, bo wykres bez punktów nic nie niesie.
+    return kept.isEmpty ? [all.last] : kept;
   }
 
   // ── Podsumowanie roczne (ADR-029) ──────────────────────────────────────────

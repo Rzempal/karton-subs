@@ -1,9 +1,33 @@
 {
-  "version": "0.17.26080113",
-  "releaseNotes": "- Podsumowanie roczne w Planie: ile z planu juz wydano, miesiac po miesiacu\n- poczatek ewidencji dla budzetu prowadzonego od polowy roku\n- Uzupelnij do pelnej kwoty w Plannerze (10/100/1000)\n- Plan vs Realne zamiast Predykcja vs rzeczywistosc; bez karty Rachunki miesiaca w bilansie",
-  "releaseDate": "2026-08-01T14:00:39Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1726080113",
+  "releaseDate": "2026-08-02T12:11:55Z",
+  "versionCode": 1826080201,
+  "releaseNotes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1826080201",
   "changelog": [
+    {
+      "version": "0.18.26080201",
+      "notes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)"
+    },
+    {
+      "version": "0.18.26080200",
+      "notes": "- drugi naglowek: Miesiac (strzalki i wybor) nad Plan vs Realne i Kategoriami\n- smuklejsze karty Saldo i Koszty roczne — kwoty wykorzystuja szerokosc karty"
+    },
+    {
+      "version": "0.18.26080117",
+      "notes": "- Kategorie przy Plan vs Realne (obie dotycza wybranego miesiaca)\n- pod naglowkiem Statystyki zostaja trend i podsumowanie roczne"
+    },
+    {
+      "version": "0.18.26080116",
+      "notes": "- naglowek Statystyki z punktem startu (od lipca) — rzadzi trendem i podsumowaniem rocznym\n- Plan vs Realne wraca nad kreske, ze swoimi strzalkami miesiaca"
+    },
+    {
+      "version": "0.18.26080115",
+      "notes": "- Plan: Koszty roczne przy Saldzie, reszta pod naglowkiem Statystyki\n- zakres (miesiac) wybierany w naglowku, dotyczy tez trendu"
+    },
+    {
+      "version": "0.18.26080114",
+      "notes": "- trend zaczyna sie od poczatku ewidencji (koniec zmyslonych miesiecy wstecz)\n- trzeci tryb wykresu: Oba — realne i plan na jednym wykresie, widac odchylenie"
+    },
     {
       "version": "0.17.26080113",
       "notes": "- Podsumowanie roczne w Planie: ile z planu juz wydano, miesiac po miesiacu\n- poczatek ewidencji dla budzetu prowadzonego od polowy roku\n- Uzupelnij do pelnej kwoty w Plannerze (10/100/1000)\n- Plan vs Realne zamiast Predykcja vs rzeczywistosc; bez karty Rachunki miesiaca w bilansie"
@@ -19,31 +43,7 @@
     {
       "version": "0.16.26080110",
       "notes": "- Planner ma wlasny ekran: wejscie z Rachunkow i z Wydatkow\n- czytelne ikony paska stanu w jasnym motywie"
-    },
-    {
-      "version": "0.16.26080109",
-      "notes": "- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- ikony ulozone tematycznie, wybor przewija sie w dol zamiast w bok"
-    },
-    {
-      "version": "0.16.26080108",
-      "notes": "- Subskrypcje jako sekcja Wydatkow (koniec osobnej zakladki)\n- Zwijane sekcje listy z suma w naglowku\n- Pokaz ukryte: wstrzymane pozycje i anulowane subskrypcje"
-    },
-    {
-      "version": "0.15.26080107",
-      "notes": "- druga linia pozycji wykorzystuje cala szerokosc (koniec urywania daty)\n- rachunki maja ten sam format daty co reszta: RRRR-MM-DD"
-    },
-    {
-      "version": "0.15.26080106",
-      "notes": "- kategoria przeniesiona do drugiej linii, na koniec opisu\n- pozycja z kategoria pokazuje jej ikone zamiast strzalki kierunku"
-    },
-    {
-      "version": "0.15.26080105",
-      "notes": "- kwota przeniesiona do linii z nazwa, dzieki czemu typ, data i sposob platnosci maja cala szerokosc\n- nazwa pozycji nie skraca sie juz przy krotkiej kategorii"
-    },
-    {
-      "version": "0.15.26080104",
-      "notes": "- smuklejsze listy: pozycje bez ramek, rozdzielone separatorem\n- kazda pozycja w dwoch liniach: nazwa i kategoria, pod spodem typ, data i sposob platnosci"
     }
   ],
-  "versionCode": 1726080113
+  "version": "0.18.26080201"
 }

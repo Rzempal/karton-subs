@@ -69,6 +69,50 @@ Trend w ujeciu „Plan" jest z natury plaski (rusza sie tylko przy ratach wchodz
 i wychodzacych z okna splaty). To poprawne: plan nie zmienia sie z miesiaca na
 miesiac, a ruch widac dopiero w „Realne".
 
+## Uzupelnienie (2026-08-01): tryb „Oba" i poczatek ewidencji na trendzie
+
+Dwa braki wyszly przy pierwszym uzyciu.
+
+**1. Trend zaczyna sie od poczatku ewidencji** (`trackingStartMonth`, ADR-029).
+Wczesniej wykres rysowal szesc miesiecy niezaleznie od tego, czy bylo wtedy co
+zapisywac — cztery pierwsze punkty pochodzily z odtworzenia dzisiejszych kwot.
+Teraz os po prostu zaczyna sie od miesiaca startu (przy starcie w lipcu wykres
+ma dwa punkty). Krotszy wykres mowi prawde, dluzszy sciemnia. Wszystkie serie
+skracaja sie razem, wiec nic sie nie rozjezdza.
+
+Odrzucone: dziura w linii (puste punkty przed startem) — wymagaloby dopuszczenia
+`null` w calym lancuchu danych, gdzie kwota jest dzis zawsze liczba, i mnozylo
+miejsca, w ktorych „brak danych" moze sie wyswietlic jako zero.
+
+**2. Trzeci tryb: „Oba"** — dwie linie zbiorcze (realne ciagla, plan przerywana),
+na ktorych widac odchylenie. NIE trzy strumienie razy dwa ujecia: szesc linii na
+200 px to platanina, a pytanie brzmi „ile odbiegamy od planu", nie „ktory strumien
+o ile". Chipy legendy zostaja, wiec kazda linie mozna wylaczyc.
+
+Podzial na kategorie zostaje przy dwoch ujeciach — wykres kolowy laczacy plan
+z rzeczywistoscia nie mialby sensu.
+
+**3. Naglowki grup: „Miesiac" i „Statystyki".** Zakladka „Plan" dzieli sie
+wedlug tego, CZEGO dotycza liczby, a **kazdy okres ma sterowanie w naglowku
+swojej grupy** — nie w srodku jednej z kart, ktore rzadzi takze sasiadka:
+
+| Grupa | Karty | Sterowanie |
+|---|---|---|
+| (bez naglowka) plan | Saldo, Koszty roczne | brak — to zalozenie |
+| **Miesiac** | Plan vs Realne, Kategorie | strzalki + wybor miesiaca |
+| **Statystyki** | Trend, Podsumowanie roczne | punkt startu ewidencji |
+
+Karta „Plan vs Realne" stracila wlasne strzalki, a „Podsumowanie roczne" wlasny
+wybor startu — obie kontrolki zyja teraz w naglowkach.
+
+Punkt startu (`trackingStartMonth`, ADR-029) siedzial wczesniej w srodku karty
+„Podsumowanie roczne", choc ucina takze trend — dwa widoki, jedno ustawienie,
+wiec jego miejsce jest w naglowku sekcji. Wybor idzie oknem wyboru miesiaca:
+to ustawienie zmienia sie raz na jakis czas, a nie krok po kroku.
+
+Karta „Plan vs Realne" zostaje NAD kreska ze swoimi strzalkami — dotyczy jednego
+miesiaca, a nie okresu, od ktorego licza sie statystyki.
+
 ## Konsekwencje
 
 - **Pozytywne:**

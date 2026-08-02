@@ -119,6 +119,61 @@ void main() {
     });
   });
 
+  group('Trend a początek ewidencji', () {
+    // Wykres nie ma pokazywać miesięcy sprzed ewidencji: dane wstecz są
+    // odtwarzane z dzisiejszych kwot (ADR-028), więc przed startem byłyby
+    // po prostu zmyślone.
+    final entries = [_recurring(1000)];
+
+    test('bez początku ewidencji: pełne sześć miesięcy', () {
+      final t = _svc.recurringExpenseTrend(entries, view: ExpenseView.actual);
+      expect(t.length, 6);
+      expect(t.first.month, DateTime(2026, 3, 1));
+    });
+
+    test('start w lipcu: oś zaczyna się od lipca', () {
+      final t = _svc.recurringExpenseTrend(
+        entries,
+        view: ExpenseView.actual,
+        fromMonth: '2026-07',
+      );
+      expect(t.length, 2);
+      expect(t.first.month, DateTime(2026, 7, 1));
+      expect(t.last.month, DateTime(2026, 8, 1));
+    });
+
+    test('wszystkie serie skracają się tak samo (wspólna oś)', () {
+      final r = _svc.recurringExpenseTrend(
+        entries,
+        view: ExpenseView.actual,
+        fromMonth: '2026-07',
+      );
+      final s = _svc.subscriptionsTrend(
+        const [],
+        view: ExpenseView.actual,
+        fromMonth: '2026-07',
+      );
+      final b = _svc.billsTrend(
+        entries,
+        view: ExpenseView.actual,
+        fromMonth: '2026-07',
+      );
+      expect(s.length, r.length);
+      expect(b.length, r.length);
+      expect(s.first.month, r.first.month);
+    });
+
+    test('start po całej osi: zostaje bieżący miesiąc', () {
+      final t = _svc.recurringExpenseTrend(
+        entries,
+        view: ExpenseView.actual,
+        fromMonth: '2027-01',
+      );
+      expect(t.length, 1);
+      expect(t.single.month, DateTime(2026, 8, 1));
+    });
+  });
+
   group('Uzupełnienie do pełnej kwoty', () {
     test('liczy resztę w groszach, bez błędu zmiennoprzecinkowego', () {
       expect(_svc.roundUpGap(1296.56, 100), closeTo(3.44, 0.0001));

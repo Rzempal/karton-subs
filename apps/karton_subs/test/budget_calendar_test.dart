@@ -107,7 +107,7 @@ void main() {
       expect(cal[10]!.hasExpense, isTrue);
       expect(cal[18]!.hasExpense, isTrue);
       expect(cal[5]!.hasExpense, isTrue);
-      expect(cal[5]!.items.single.isSubscription, isTrue);
+      expect(cal[5]!.items.single.kind, CalendarItemKind.subscription);
       expect(cal[1], isNull);
     });
 
@@ -134,7 +134,6 @@ void main() {
       expect(cal[8]!.items.single.kind, CalendarItemKind.bill);
       expect(cal[12]!.items.single.kind, CalendarItemKind.budgetEntry);
       expect(cal[5]!.items.single.kind, CalendarItemKind.subscription);
-      expect(cal[5]!.items.single.isSubscription, isTrue);
     });
 
     test('jednorazowy wpływ (premia) na swojej dacie jako wpływ', () {

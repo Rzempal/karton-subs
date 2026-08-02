@@ -1,8 +1,12 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1826080103",
-  "releaseNotes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca",
-  "versionCode": 1826080103,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=1926080200",
+  "version": "0.19.26080200",
+  "versionCode": 1926080200,
   "changelog": [
+    {
+      "version": "0.19.26080200",
+      "notes": "- Plan podzielony na grupy: Miesiac (Plan vs Realne, Kategorie) i Statystyki (trend, podsumowanie roczne)\n- wybor miesiaca i punkt startu ewidencji przeniesione do naglowkow grup\n- trend zaczyna sie od punktu startu i ma tryb Oba: realne i plan na jednym wykresie\n- smuklejsze karty Saldo i Koszty roczne\n- rachunki maja wlasna ikone na listach miesiaca"
+    },
     {
       "version": "0.18.26080103",
       "notes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca"
@@ -38,12 +42,8 @@
     {
       "version": "0.11.26072603",
       "notes": "- Backup obejmuje teraz takze ustawienia: walute, limit budzetu, tryb budzetu, powiadomienia, Asystenta AI, archiwum i motyw\n- Sciezki zdjec rachunkow swiadomie poza plikiem - zdjec tam nie ma, wiec byly by martwe linki"
-    },
-    {
-      "version": "0.11.26072602",
-      "notes": "- Poprawka: odtwarzanie ze starszego backupu nie kasuje danych, ktorych ten plik nie zawiera (dotyczylo Plannera)\n- Czyszczone sa tylko obszary faktycznie obecne w pliku"
     }
   ],
-  "version": "0.18.26080103",
-  "releaseDate": "2026-08-01T15:00:19Z"
+  "releaseDate": "2026-08-02T12:13:52Z",
+  "releaseNotes": "- Plan podzielony na grupy: Miesiac (Plan vs Realne, Kategorie) i Statystyki (trend, podsumowanie roczne)\n- wybor miesiaca i punkt startu ewidencji przeniesione do naglowkow grup\n- trend zaczyna sie od punktu startu i ma tryb Oba: realne i plan na jednym wykresie\n- smuklejsze karty Saldo i Koszty roczne\n- rachunki maja wlasna ikone na listach miesiaca"
 }

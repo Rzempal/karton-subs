@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+// Ikona receiptText (rachunki) jest tylko w nowszym pakiecie — ten sam alias
+// co w pasku nawigacji, żeby rachunek miał wszędzie tę samą ikonę.
+import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
@@ -117,41 +120,51 @@ class BudgetSummarySection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Kwota po lewej, wpływy i koszty po prawej — wcześniej wszystko
+              // stało w kolumnie przy lewej krawędzi, a prawa połowa karty była
+              // pusta i karta zjadała ekran bez powodu.
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      'Saldo: zostaje miesięcznie',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: c.textSecondary,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saldo: zostaje miesięcznie',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: c.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Jedna reguła koloru w całej karcie: zielony =
+                        // pieniądze, które przychodzą albo zostają, czerwony =
+                        // które wychodzą. Kwota-bohater nie jest wyjątkiem —
+                        // gradient akcentu nie niósł tej informacji.
+                        Text(
+                          amountText,
+                          semanticsLabel: 'Saldo $amountText',
+                          style: theme.textTheme.headlineLarge?.copyWith(
+                            color: positive ? c.positive : c.negative,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  _InlineTrends(
+                    income: income,
+                    expenses: expenses,
+                    currency: currency,
+                  ),
+                  const SizedBox(width: 8),
                   Icon(
                     compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
                     size: 20,
                     color: c.textMuted,
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              // Jedna reguła koloru w całej karcie: zielony = pieniądze, które
-              // przychodzą albo zostają, czerwony = które wychodzą. Kwota-bohater
-              // nie jest wyjątkiem — gradient akcentu (fiolet→turkus) nie niósł
-              // tej informacji.
-              Text(
-                amountText,
-                semanticsLabel: 'Saldo $amountText',
-                style: theme.textTheme.displayLarge?.copyWith(
-                  color: positive ? c.positive : c.negative,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _InlineTrends(
-                income: income,
-                expenses: expenses,
-                currency: currency,
               ),
               // Rozwijane tapnięciem: przypis subskrypcji + opis „jak liczone
               // jest saldo" (odróżnia saldo — plan, stałe koszty — od bilansu).
@@ -579,10 +592,12 @@ class AnnualCostsSection extends StatelessWidget {
       child: InkWell(
         onTap: onToggle,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Etykieta i kwota w jednej linii — karta z samą sumą nie
+              // potrzebuje dwóch wierszy i połowy szerokości na pustkę.
               Row(
                 children: [
                   Expanded(
@@ -593,20 +608,20 @@ class AnnualCostsSection extends StatelessWidget {
                       ),
                     ),
                   ),
+                  Text(
+                    '${budgetNf.format(total)}${curLabelSuffix(currency)}',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: c.negative,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Icon(
                     compact ? LucideIcons.chevronDown : LucideIcons.chevronUp,
                     size: 20,
                     color: c.textMuted,
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${budgetNf.format(total)}${curLabelSuffix(currency)}',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: c.negative,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
               ),
               AnimatedCrossFade(
                 duration: const Duration(milliseconds: 180),
@@ -679,9 +694,6 @@ class AnnualSummarySection extends StatelessWidget {
   /// Przełącznik ujęcia (Plan / Realne) — jak przy wykresach.
   final Widget? trailing;
 
-  /// Tapnięcie w podpis „od lipca" — wybór początku ewidencji.
-  final VoidCallback? onEditStart;
-
   const AnnualSummarySection({
     super.key,
     required this.summary,
@@ -689,7 +701,6 @@ class AnnualSummarySection extends StatelessWidget {
     required this.compact,
     required this.onToggle,
     this.trailing,
-    this.onEditStart,
   });
 
   static const _monthNames = [
@@ -793,31 +804,16 @@ class AnnualSummarySection extends StatelessWidget {
               ),
             ),
           ),
-          // Początek ewidencji — poza obszarem zwijania, żeby tapnięcie w niego
-          // nie zamykało sekcji.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: InkWell(
-              onTap: onEditStart,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(LucideIcons.calendar, size: 14, color: c.textMuted),
-                  const SizedBox(width: 6),
-                  Text(
-                    fromLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: c.textMuted,
-                    ),
-                  ),
-                  if (onEditStart != null) ...[
-                    const SizedBox(width: 4),
-                    Icon(LucideIcons.pencil, size: 12, color: c.textMuted),
-                  ],
-                ],
+          // Punkt startu nie ma tu własnego przycisku — ustawia się go raz,
+          // w nagłówku sekcji „Statystyki", bo ucina też trend obok.
+          if (s.fromMonth > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                fromLabel,
+                style: theme.textTheme.bodySmall?.copyWith(color: c.textMuted),
               ),
             ),
-          ),
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 180),
             sizeCurve: Curves.easeInOut,
@@ -1019,11 +1015,14 @@ class _InlineTrends extends StatelessWidget {
         ),
       ],
     );
-    return Wrap(
-      spacing: 18,
-      runSpacing: 8,
+    // Kolumna, nie Wrap: stoją z boku kwoty-bohatera, więc jedna pod drugą
+    // mieszczą się nawet przy pięciocyfrowych sumach.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
       children: [
         item(LucideIcons.trendingUp, c.positive, income),
+        const SizedBox(height: 4),
         item(LucideIcons.trendingDown, c.negative, expenses),
       ],
     );
@@ -1320,6 +1319,16 @@ List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
   return out;
 }
 
+/// Ikona pozycji przepływu. Rachunek ma WŁASNĄ ikonę — tę samą, co zakładka
+/// „Rachunki" w pasku nawigacji; wcześniej dostawał strzałkę kierunku, czyli
+/// dokładnie to samo co zwykły koszt, choć to osobny rodzaj pozycji (ADR-018).
+IconData _flowIcon(CalendarItem it) => switch (it.kind) {
+  CalendarItemKind.bill => lucide.LucideIcons.receiptText,
+  CalendarItemKind.subscription => LucideIcons.repeat,
+  CalendarItemKind.budgetEntry =>
+    it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+};
+
 /// Podpis podgrupy typu głównego (wewnątrz sekcji).
 Widget _kindLabel(
   ThemeData theme,
@@ -1535,15 +1544,7 @@ class MonthSummarySection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Icon(
-            it.isSubscription
-                ? LucideIcons.repeat
-                : (it.isIncome
-                      ? LucideIcons.trendingUp
-                      : LucideIcons.trendingDown),
-            size: 16,
-            color: color,
-          ),
+          Icon(_flowIcon(it), size: 16, color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1887,15 +1888,7 @@ class _DayDetail extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
-                  Icon(
-                    it.isSubscription
-                        ? LucideIcons.repeat
-                        : (it.isIncome
-                              ? LucideIcons.trendingUp
-                              : LucideIcons.trendingDown),
-                    size: 16,
-                    color: color,
-                  ),
+                  Icon(_flowIcon(it), size: 16, color: color),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
