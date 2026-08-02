@@ -74,6 +74,51 @@ wzór przekraczał limit Androida od wersji 0.21). Nazwa pliku jest stała, ale:
 
 ---
 
+## Wydanie jednym poleceniem: `ship.ps1`
+
+Wydanie ma pięć kroków, które **muszą** iść w tej kolejności — i to jest jedyny
+sposób, w jaki wydajemy:
+
+```bash
+.\scripts\ship.ps1 -Channel internal -Message "Opis zmian" -Notes "- co nowego"
+```
+
+```
+[0/5] kontrola   gałąź main, token GitHuba, poprzedni release opublikowany,
+                 flutter analyze, flutter test
+[1/5] deploy     build + wysyłka na serwer (podbija pubspec, changelog, version.json)
+[2/5] commit
+[3/5] push
+[4/5] release    tag na HEAD + GitHub Release z APK
+[5/5] gotowe     „sprawdź na telefonie"
+```
+
+**Kontrola idzie PRZED czymkolwiek**, bo nieudany build po podbiciu wersji
+zostawia repozytorium w połowie drogi, a brak tokenu wyszedłby dopiero po kilku
+minutach kompilacji. Testy i analiza są jedyną bramką jakości przed telefonem —
+gdy nie przechodzą, wydania nie ma.
+
+| Parametr | Po co |
+| --- | --- |
+| `-BumpType patch\|minor\|major\|changelog` | domyślnie `patch` |
+| `-DryRun` | wykonuje same kontrole, nic nie zmienia |
+| `-SkipChecks` | pomija analizę i testy (świadomie) |
+| `-SkipRelease` | wydaje bez publikacji na GitHubie (gdy GitHub nie odpowiada) |
+
+### Blokady, które nie zależą od pamięci
+
+- **Poprzednie wydanie PROD bez release'u na GitHubie → deploy się nie zaczyna.**
+  Inaczej GitHub zostaje w tyle, a Obtainium proponuje aktualizację wstecz.
+  DEV tylko ostrzega (bywa wypuszczany kilka razy pod rząd i tak nadpisuje sam siebie).
+- **„GitHub nieosiągalny" ≠ „release nieopublikowany"** — skrypt rozróżnia te
+  stany, bo mylenie ich albo blokuje wydanie bez powodu, albo przepuszcza rozjazd.
+- **`publish-release.ps1` odmawia przy niezacommitowanych zmianach** — tag musi
+  wskazywać commit, który zawiera wydaną wersję.
+- **`deploy.ps1` przerywa, gdy `versionCode` przekroczyłby limit Androida**
+  (ADR-031) — zamiast błędu Gradle po kilku minutach builda.
+
+---
+
 ## GitHub Releases — źródło dla Obtainium
 
 Stała nazwa pliku jest wygodna dla naszego OTA (wersję niesie `version*.json`),
