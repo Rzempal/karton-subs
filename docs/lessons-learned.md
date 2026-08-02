@@ -4,6 +4,36 @@
 
 ---
 
+## 2026-08-02: Schemat numeracji wersji ma SUFIT — sprawdz go, zanim go zbudujesz
+
+### Problem
+Deploy wersji 0.21 nie zbudowal sie: `buildNumber: 2126080203 is greater than
+the maximum allowed value of 2100000000`. Wzor `Major*10^9 + Minor*10^8 +
+yyMMDDcc` przekracza twardy limit Androida na **kazdej** wersji od 0.21 wzwyz
+(a takze na 1.11 i 2.1). Nie „kiedys zabraknie" — 0.20 bylo ostatnim mozliwym
+minorem, i dowiedzielismy sie o tym w momencie, gdy chcielismy wydac kolejny.
+
+### Pulapka w naprawie
+`versionCode` **nie moze zmalec** — Android odrzuca APK z mniejszym numerem jako
+cofniecie wersji, a OTA porownuje dokladnie ten numer. Wszystkie „czyste"
+rozwiazania (licznik od 1, sama data bez bazy) daja liczbe MNIEJSZA od juz
+zainstalowanej, wiec sa nie do uzycia bez odinstalowania aplikacji.
+
+### Rozwiazanie
+`versionCode = 2 000 000 000 + yyMMDDcc` — baza sztuczna, ale trzyma numer nad
+zainstalowanym; data zapewnia wzrost. Do tego straznik w skrypcie deployu, ktory
+przerywa PRZED buildem, bo inaczej blad wychodzi po kilku minutach kompilacji
+komunikatem Gradle, ktory nie mowi, co z nim zrobic. Szczegoly: ADR-031.
+
+### Wniosek
+Projektujac schemat numeracji, **policz jego maksimum i sprawdz limit
+platformy** (Android: 2 100 000 000). Wzor z mnoznikami zjada zakres wykladniczo:
+kazdy skladnik przesuniety o rzad wielkosci to dziesieciokrotnie mniej miejsca
+dla reszty. I pamietaj, ze numeru, ktory raz trafil na urzadzenie, nie da sie
+juz obnizyc — schemat jest decyzja jednokierunkowa.
+
+---
+
 ## 2026-08-02: Wlasne teksty po polsku to NIE to samo, co polska aplikacja
 
 ### Problem

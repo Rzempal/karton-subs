@@ -741,8 +741,17 @@ class BudgetController extends ChangeNotifier {
   }
 
   Future<void> delete(String id) async {
+    final touchedHousehold = await _deleteOne(id);
+    if (touchedHousehold == null) return;
+    _log.info('Deleted budget entry ($_scope): $id');
+    _notifyMutation(touchedHousehold: touchedHousehold);
+  }
+
+  /// Usuwa jedną pozycję razem z drugą stroną pary przelewu. Zwraca, czy
+  /// zmiana dotknęła budżetu domowego, albo `null` gdy pozycji nie było.
+  Future<bool?> _deleteOne(String id) async {
     final entry = _storage.getBudgetEntry(id, _scope);
-    if (entry == null) return;
+    if (entry == null) return null;
     await _removeOrTombstone(entry, _scope);
     // Kaskada: usuń drugą stronę pary przelewu (w przeciwnym boxie).
     if (entry.linkId != null) {
@@ -754,10 +763,101 @@ class BudgetController extends ChangeNotifier {
         await _removeOrTombstone(partner, other);
       }
     }
-    _log.info('Deleted budget entry ($_scope): $id');
-    _notifyMutation(
-      touchedHousehold: _scope == BudgetScope.household || entry.linkId != null,
-    );
+    return _scope == BudgetScope.household || entry.linkId != null;
+  }
+
+  // ── Operacje zbiorcze (zaznaczanie wielu pozycji) ──────────────────────────
+  //
+  // Wszystkie kończą się JEDNYM powiadomieniem: przy kilkudziesięciu
+  // zaznaczonych pozycjach lista przebudowywałaby się inaczej tyle razy, ile
+  // jest zaznaczeń, a synchronizacja domowa ruszałaby po każdej z nich.
+
+  /// Ustawia kategorię (albo ją czyści) wielu pozycjom. Zwraca liczbę zmienionych.
+  Future<int> setCategoryForAll(Iterable<String> ids, String? categoryId) =>
+      _updateAll(
+        ids,
+        (e) => e.copyWith(
+          categoryId: categoryId,
+          clearCategoryId: categoryId == null,
+        ),
+      );
+
+  /// Ustawia metodę płatności (albo ją czyści) wielu pozycjom.
+  Future<int> setPaymentMethodForAll(Iterable<String> ids, String? method) =>
+      _updateAll(
+        ids,
+        (e) => e.copyWith(
+          paymentMethod: method,
+          clearPaymentMethod: method == null,
+        ),
+      );
+
+  /// Wstrzymuje albo wznawia wiele pozycji naraz. Wstrzymana pozycja zostaje
+  /// w danych, ale wypada z planu — na liście widać ją dopiero po „pokaż ukryte".
+  Future<int> setActiveForAll(Iterable<String> ids, bool active) =>
+      _updateAll(ids, (e) => e.copyWith(isActive: active));
+
+  /// Ustawia datę wielu pozycjom datowanym (rachunki).
+  ///
+  /// Data rachunku wyznacza jego MIESIĄC, więc ta operacja przenosi pozycje
+  /// między bilansami miesięcy — i dlatego musi zabrać ze sobą **odhaczenie
+  /// płatności**, którego klucz zawiera datę. Bez tego rachunek po zmianie daty
+  /// po cichu wracałby na listę „do zapłaty".
+  Future<int> setDateForAll(Iterable<String> ids, DateTime date) async {
+    var changed = 0;
+    for (final id in ids) {
+      final entry = _storage.getBudgetEntry(id, _scope);
+      if (entry == null) continue;
+      final oldDate = entry.startDate ?? entry.dataDodania;
+      final wasDone = _storage.isPaymentDone(_paymentKey(id, oldDate));
+      await _saveStamped(
+        entry.copyWith(startDate: date, month: BudgetEntry.monthKeyOf(date)),
+        _scope,
+      );
+      if (wasDone) {
+        await _storage.setPaymentDone(_paymentKey(id, oldDate), false);
+        await _storage.setPaymentDone(_paymentKey(id, date), true);
+      }
+      changed++;
+    }
+    if (changed > 0) {
+      _log.info('Zbiorcza zmiana daty: $changed pozycji ($_scope)');
+      _notifyMutation(touchedHousehold: isHousehold);
+    }
+    return changed;
+  }
+
+  /// Usuwa wiele pozycji naraz (z nagrobkami w domowym, jak pojedyncze
+  /// usunięcie). Zdjęcia rachunków kasuje wołający — mieszkają poza budżetem.
+  Future<int> deleteAll(Iterable<String> ids) async {
+    var changed = 0;
+    var touchedHousehold = false;
+    for (final id in ids) {
+      final touched = await _deleteOne(id);
+      if (touched == null) continue;
+      touchedHousehold = touchedHousehold || touched;
+      changed++;
+    }
+    if (changed > 0) {
+      _log.info('Zbiorcze usuniecie: $changed pozycji ($_scope)');
+      _notifyMutation(touchedHousehold: touchedHousehold);
+    }
+    return changed;
+  }
+
+  Future<int> _updateAll(
+    Iterable<String> ids,
+    BudgetEntry Function(BudgetEntry) change,
+  ) async {
+    var changed = 0;
+    for (final id in ids) {
+      final entry = _storage.getBudgetEntry(id, _scope);
+      if (entry == null) continue;
+      await _saveStamped(change(entry), _scope);
+      changed++;
+    }
+    if (changed > 0) _notifyMutation(touchedHousehold: isHousehold);
+    return changed;
   }
 
   /// Przenosi pozycję do drugiego budżetu (osobisty ↔ domowy). Zwraca `null`

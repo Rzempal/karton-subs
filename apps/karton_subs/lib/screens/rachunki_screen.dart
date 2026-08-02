@@ -21,6 +21,7 @@ import '../widgets/budget_widgets.dart';
 import '../widgets/filter_bars.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/plan_progress_bar.dart';
+import '../widgets/selection_bar.dart';
 import '../widgets/image_preview_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_refresh.dart';
@@ -57,6 +58,11 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   int? _filterMonth;
   _BillSort _sort = _BillSort.dateDesc;
 
+  /// Zaznaczone pozycje (tryb zaznaczania). Pusty zbiór + `_selecting = false`
+  /// = zwykła lista; wejście długim przytrzymaniem wiersza.
+  final Set<String> _selected = {};
+  bool _selecting = false;
+
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
   @override
@@ -71,12 +77,171 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   String _monthKeyOf(BudgetEntry e) =>
       e.month ?? BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania);
 
+  // ── Tryb zaznaczania ───────────────────────────────────────────────────────
+
+  void _startSelection(String id) {
+    setState(() {
+      _selecting = true;
+      _selected.add(id);
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (!_selected.remove(id)) _selected.add(id);
+      // Odznaczenie ostatniej pozycji nie wychodzi z trybu: użytkownik zwykle
+      // poprawia wybór, a nie kończy. Wyjście jest jawne („✕").
+    });
+  }
+
+  void _endSelection() {
+    setState(() {
+      _selecting = false;
+      _selected.clear();
+    });
+  }
+
+  /// „Zaznacz wszystkie" dotyczy pozycji WIDOCZNYCH po filtrach — zaznaczenie
+  /// całego archiwum jednym tapnięciem byłoby zaproszeniem do przypadkowej
+  /// zmiany danych, których nie widać na ekranie.
+  void _toggleSelectAll(List<BudgetEntry> visible) {
+    setState(() {
+      final ids = visible.map((e) => e.id).toSet();
+      if (ids.every(_selected.contains)) {
+        _selected.removeAll(ids);
+      } else {
+        _selected.addAll(ids);
+      }
+    });
+  }
+
+  /// Zaznaczenia pilnujemy przy każdej zmianie listy: pozycja mogła zniknąć
+  /// (filtr, usunięcie, synchronizacja), a akcja zbiorcza pracowałaby wtedy na
+  /// duchach.
+  Set<String> _liveSelection(List<BudgetEntry> visible) {
+    final ids = visible.map((e) => e.id).toSet();
+    return _selected.where(ids.contains).toSet();
+  }
+
+  Future<void> _bulkCategory(Set<String> ids) async {
+    final storage = context.read<StorageService>();
+    final ctrl = context.read<BudgetController>();
+    final picked = await _pickFromDialog<String?>(
+      title: 'Kategoria dla ${ids.length} poz.',
+      options: [
+        (null, 'Brak kategorii'),
+        for (final c in storage.getCategories()) (c.id, c.name),
+      ],
+    );
+    if (picked == null || !mounted) return;
+    await ctrl.setCategoryForAll(ids, picked.value);
+    if (mounted) _afterBulk('Zmieniono kategorię: ${ids.length} poz.');
+  }
+
+  Future<void> _bulkPaymentMethod(Set<String> ids) async {
+    final storage = context.read<StorageService>();
+    final ctrl = context.read<BudgetController>();
+    final picked = await _pickFromDialog<String?>(
+      title: 'Metoda płatności dla ${ids.length} poz.',
+      options: [
+        (null, 'Brak metody'),
+        for (final m in storage.getPaymentMethods()) (m.name, m.name),
+      ],
+    );
+    if (picked == null || !mounted) return;
+    await ctrl.setPaymentMethodForAll(ids, picked.value);
+    if (mounted) _afterBulk('Zmieniono metodę płatności: ${ids.length} poz.');
+  }
+
+  Future<void> _bulkDate(Set<String> ids) async {
+    final ctrl = context.read<BudgetController>();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _today,
+      firstDate: DateTime(_today.year - 5),
+      lastDate: DateTime(_today.year + 5),
+      helpText: 'Data dla ${ids.length} poz.',
+    );
+    if (picked == null || !mounted) return;
+    await ctrl.setDateForAll(ids, picked);
+    if (mounted) {
+      _afterBulk(
+        'Zmieniono datę: ${ids.length} poz. '
+        '(rachunki trafiły do bilansu ${DateFormat('LLLL y', 'pl_PL').format(picked)})',
+      );
+    }
+  }
+
+  Future<void> _bulkDelete(Set<String> ids) async {
+    final ctrl = context.read<BudgetController>();
+    final scanCtrl = context.read<BillScanController>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: Text('Usunąć ${ids.length} poz.?'),
+        content: const Text(
+          'Rachunki znikną z bilansu swoich miesięcy razem ze zdjęciami. '
+          'Tego nie da się cofnąć.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
+            child: const Text('Usuń'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    // Zdjęcia mieszkają poza budżetem (mapa po id), więc kasuje je osobno ten,
+    // kto o nich wie — tak samo jak przy usuwaniu przesunięciem w lewo.
+    for (final id in ids) {
+      scanCtrl.deletePhotoFor(id);
+    }
+    await ctrl.deleteAll(ids);
+    if (mounted) _afterBulk('Usunięto: ${ids.length} poz.');
+  }
+
+  void _afterBulk(String message) {
+    _endSelection();
+    _snack(message);
+  }
+
+  /// Proste okno wyboru z listy — wspólne dla kategorii i metody płatności.
+  /// Zwraca `null` przy anulowaniu; `(value: null)` znaczy „wyczyść pole".
+  Future<({T value})?> _pickFromDialog<T>({
+    required String title,
+    required List<(T, String)> options,
+  }) => showDialog<({T value})>(
+    context: context,
+    builder: (dctx) => SimpleDialog(
+      title: Text(title),
+      children: [
+        for (final (value, label) in options)
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dctx, (value: value)),
+            child: Text(label),
+          ),
+      ],
+    ),
+  );
+
   /// Przełącznik sortowania — przyklejony na końcu paska filtrów, jak w
   /// „Wydatkach": stoi przy liście, na którą działa.
   Widget _sortButton() {
     final (icon, tip) = switch (_sort) {
-      _BillSort.dateDesc => (LucideIcons.arrowDownWideNarrow, 'Sortuj: od najnowszych'),
-      _BillSort.amountDesc => (LucideIcons.arrowDown10, 'Sortuj: kwota malejąco'),
+      _BillSort.dateDesc => (
+        LucideIcons.arrowDownWideNarrow,
+        'Sortuj: od najnowszych',
+      ),
+      _BillSort.amountDesc => (
+        LucideIcons.arrowDown10,
+        'Sortuj: kwota malejąco',
+      ),
       _BillSort.alpha => (LucideIcons.arrowDownAZ, 'Sortuj: A→Z'),
     };
     return IconButton(
@@ -297,17 +462,25 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       showHidden: true,
     );
     final items = all.where(filter.keepEntry).toList()
-      ..sort((a, b) => switch (_sort) {
-        _BillSort.dateDesc => (b.startDate ?? b.dataDodania).compareTo(
-          a.startDate ?? a.dataDodania,
-        ),
-        _BillSort.amountDesc => b.amount.compareTo(a.amount),
-        _BillSort.alpha => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      });
+      ..sort(
+        (a, b) => switch (_sort) {
+          _BillSort.dateDesc => (b.startDate ?? b.dataDodania).compareTo(
+            a.startDate ?? a.dataDodania,
+          ),
+          _BillSort.amountDesc => b.amount.compareTo(a.amount),
+          _BillSort.alpha => a.name.toLowerCase().compareTo(
+            b.name.toLowerCase(),
+          ),
+        },
+      );
 
     // Porównanie z kopertą ma sens tylko dla POJEDYNCZEGO miesiąca — koperta
     // jest miesięczna, więc przy „całym roku" zestawiałaby jabłka z gruszkami.
     final singleMonth = activeYear != null && activeMonth != null;
+
+    // Zaznaczenie liczone z listy WIDOCZNEJ: pozycja mogła zniknąć przez filtr,
+    // usunięcie albo synchronizację, a akcja pracowałaby wtedy na duchu.
+    final selection = _liveSelection(items);
     // Pozycje oczekujące aktywnego zakresu (niezależne od wybranego miesiąca —
     // wiszą, dopóki nie zostaną zatwierdzone albo odrzucone).
     final pending = scanCtrl.pending
@@ -341,16 +514,65 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       ),
       body: Column(
         children: [
-          // Filtry nad listą — ten sam wzorzec co „Wydatki": kategoria i czas,
-          // a sortowanie przyklejone na końcu paska kategorii.
-          if (all.isNotEmpty && filterCategories.isNotEmpty)
-            FilterRow(
-              filters: CategoryFilterBar(
-                categories: filterCategories,
-                selected: activeCat,
-                onSelect: (id) => setState(() => _filterCategoryId = id),
+          // Pasek zaznaczania ZASTĘPUJE pasek kategorii, a nie dokłada się nad
+          // nim: wsunięty dodatkowo spychał całą listę w dół dokładnie w chwili,
+          // gdy palec trzymał wiersz — pozycja pod palcem uciekała. Filtr czasu
+          // zostaje widoczny, więc nadal widać, czego dotyczy „Zaznacz wszystkie".
+          if (all.isNotEmpty && (filterCategories.isNotEmpty || _selecting))
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 160),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween(
+                    begin: const Offset(0, -0.25),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
               ),
-              action: _sortButton(),
+              child: _selecting
+                  ? SelectionBar(
+                      key: const ValueKey('selection'),
+                      count: selection.length,
+                      allSelected:
+                          items.isNotEmpty && selection.length == items.length,
+                      onToggleAll: () => _toggleSelectAll(items),
+                      onClose: _endSelection,
+                      actions: [
+                        SelectionAction(
+                          icon: LucideIcons.tag,
+                          tooltip: 'Zmień kategorię',
+                          onPressed: () => _bulkCategory(selection),
+                        ),
+                        SelectionAction(
+                          icon: LucideIcons.creditCard,
+                          tooltip: 'Zmień metodę płatności',
+                          onPressed: () => _bulkPaymentMethod(selection),
+                        ),
+                        SelectionAction(
+                          icon: LucideIcons.calendarDays,
+                          tooltip: 'Zmień datę',
+                          onPressed: () => _bulkDate(selection),
+                        ),
+                        SelectionAction(
+                          icon: LucideIcons.trash2,
+                          tooltip: 'Usuń zaznaczone',
+                          danger: true,
+                          onPressed: () => _bulkDelete(selection),
+                        ),
+                      ],
+                    )
+                  : FilterRow(
+                      key: const ValueKey('filters'),
+                      filters: CategoryFilterBar(
+                        categories: filterCategories,
+                        selected: activeCat,
+                        onSelect: (id) =>
+                            setState(() => _filterCategoryId = id),
+                      ),
+                      action: _sortButton(),
+                    ),
             ),
           if (all.isNotEmpty)
             TimeFilterBar(
@@ -378,82 +600,109 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
               child: SyncRefresh(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 112),
+                // Slivery, nie `ListView(children:)`: przy filtrze „Wszystkie
+                // lata" lista rachunków rośnie do setek pozycji, a zwykła lista
+                // budowałaby JE WSZYSTKIE przy każdym odświeżeniu kontrolera
+                // (a synchronizacja odświeża go regularnie). Nagłówek zostaje
+                // zwykłym elementem, leniwie budowane są same wiersze.
+                child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    const _PlannerCard(),
-                    const SizedBox(height: 12),
-                    // Sekcja „Do zatwierdzenia" — skany silnika AI.
-                    if (pending.isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(
-                          'Do zatwierdzenia',
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(color: AppColors.textSecondary),
-                        ),
-                      ),
-                      for (final p in pending) ...[
-                        _PendingScanCard(
-                          item: p,
-                          isActive: scanCtrl.activeScanId == p.id,
-                          onApprove: () => _approveScan(p),
-                          onEdit: () => _editScan(p),
-                          onReject: () => _rejectScan(p),
-                          onCrop: () => _cropScan(p),
-                          onRetry: () =>
-                              context.read<BillScanController>().retry(p.id),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      const SizedBox(height: 8),
-                    ],
-                    // Nagłówek sekcji z sumą TEGO, co widać po filtrach — plus
-                    // porównanie z kopertą, gdy wybrany jest jeden miesiąc.
-                    _BillsSectionHeader(
-                      total: ctrl.sumAmounts(items),
-                      count: items.length,
-                      currency: ctrl.targetCurrencyLabel,
-                      allocation: singleMonth ? ctrl.billsAllocation : null,
-                    ),
-                    if (items.isEmpty)
-                      const _EmptyState()
-                    else
-                      for (var i = 0; i < items.length; i++) ...[
-                        // Separator zamiast odstepu: wiersze tworza jedna liste,
-                        // a nie ciag osobnych kart.
-                        if (i > 0)
-                          Divider(
-                            height: 1,
-                            thickness: 1,
-                            color: context.semanticColors.border,
-                          ),
-                        Dismissible(
-                          key: ValueKey(items[i].id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            child: Icon(
-                              LucideIcons.trash2,
-                              color: AppColors.negative,
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          const _PlannerCard(),
+                          const SizedBox(height: 12),
+                          // Sekcja „Do zatwierdzenia" — skany silnika AI.
+                          if (pending.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                'Do zatwierdzenia',
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
                             ),
+                            for (final p in pending) ...[
+                              _PendingScanCard(
+                                item: p,
+                                isActive: scanCtrl.activeScanId == p.id,
+                                onApprove: () => _approveScan(p),
+                                onEdit: () => _editScan(p),
+                                onReject: () => _rejectScan(p),
+                                onCrop: () => _cropScan(p),
+                                onRetry: () => context
+                                    .read<BillScanController>()
+                                    .retry(p.id),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                            const SizedBox(height: 8),
+                          ],
+                          // Nagłówek sekcji z sumą TEGO, co widać po filtrach —
+                          // plus porównanie z kopertą przy jednym miesiącu.
+                          _BillsSectionHeader(
+                            total: ctrl.sumAmounts(items),
+                            count: items.length,
+                            currency: ctrl.targetCurrencyLabel,
+                            allocation: singleMonth
+                                ? ctrl.billsAllocation
+                                : null,
                           ),
-                          confirmDismiss: (_) => _confirmDelete(items[i]),
-                          onDismissed: (_) {
-                            final id = items[i].id;
-                            context.read<BillScanController>().deletePhotoFor(
-                              id,
-                            );
-                            context.read<BudgetController>().delete(id);
-                          },
-                          child: BudgetEntryCard(
-                            entry: items[i],
-                            onTap: () => _openEdit(items[i]),
-                          ),
+                          if (items.isEmpty) const _EmptyState(),
+                        ]),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 112),
+                      // Separator zamiast odstępu: wiersze tworzą jedną listę,
+                      // a nie ciąg osobnych kart.
+                      sliver: SliverList.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) => Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: context.semanticColors.border,
                         ),
-                      ],
+                        itemBuilder: (context, i) {
+                          final e = items[i];
+                          final row = SelectableRow(
+                            selectionMode: _selecting,
+                            selected: selection.contains(e.id),
+                            onTap: () => _toggleSelection(e.id),
+                            onLongPress: () => _startSelection(e.id),
+                            child: BudgetEntryCard(
+                              entry: e,
+                              onTap: () => _openEdit(e),
+                            ),
+                          );
+                          // W trybie zaznaczania swipe jest wyłączony: ten sam
+                          // gest znaczyłby „usuń jedną" obok zaznaczenia wielu.
+                          if (_selecting) return row;
+                          return Dismissible(
+                            key: ValueKey(e.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              child: Icon(
+                                LucideIcons.trash2,
+                                color: AppColors.negative,
+                              ),
+                            ),
+                            confirmDismiss: (_) => _confirmDelete(e),
+                            onDismissed: (_) {
+                              context.read<BillScanController>().deletePhotoFor(
+                                e.id,
+                              );
+                              context.read<BudgetController>().delete(e.id);
+                            },
+                            child: row,
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -667,9 +916,9 @@ class _PlannerCard extends StatelessWidget {
     final count = ctrl.billsAllocationItems.length;
 
     return FrostCard(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const BillsPlannerScreen()),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const BillsPlannerScreen())),
       child: Row(
         children: [
           Expanded(
@@ -707,11 +956,7 @@ class _PlannerCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Icon(
-            LucideIcons.chevronRight,
-            size: 18,
-            color: AppColors.textMuted,
-          ),
+          Icon(LucideIcons.chevronRight, size: 18, color: AppColors.textMuted),
         ],
       ),
     );

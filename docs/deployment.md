@@ -62,8 +62,10 @@ APK ma **stałą nazwę** zależną tylko od kanału — na serwerze i w `releas
 | `production` (PROD) | `zostaje_latest.apk` | `version.json` |
 
 **Kontrola wersji nie zależy od nazwy pliku.** OTA porównuje `versionCode` z pliku
-`version*.json` z wersją zainstalowaną — `versionName`/`versionCode` nadal rosną przy
-każdym deployu (`Major.Minor.yyMMDDcc`). Nazwa pliku jest stała, ale:
+`version*.json` z wersją zainstalowaną. `versionName` to `Major.Minor.yyMMDDcc`,
+a **`versionCode` = `2 000 000 000 + yyMMDDcc`** i NIE zależy już od Major/Minor
+([ADR-031](adr/ADR-031-numeracja-wersji-i-przejscie-na-google-play.md) — poprzedni
+wzór przekraczał limit Androida od wersji 0.21). Nazwa pliku jest stała, ale:
 
 - **Cache-busting:** `apkUrl` w `version*.json` ma dopisek `?v=<versionCode>`, więc
   każda wersja ma unikalny URL — OTA zawsze pobiera świeży plik mimo stałej nazwy.

@@ -273,7 +273,7 @@ $DEPLOY_PORT = if ($env:DEPLOY_PORT) { $env:DEPLOY_PORT } else { "" }
 # Semantic Versioning: Major.Minor.Patch
 # ========================================
 # versionName: Major.Minor.Patch (user-visible)
-# versionCode: Major*10^9 + Minor*10^8 + Patch (for Android + OTA)
+# versionCode:  VERSION_CODE_BASE + Patch  (for Android + OTA)  -- ADR-031
 #
 # Patch format: yyMMDD + cc (daily deploy counter)
 #   yy  = 2-digit year (26 for 2026)
@@ -281,11 +281,23 @@ $DEPLOY_PORT = if ($env:DEPLOY_PORT) { $env:DEPLOY_PORT } else { "" }
 #   DD  = day (01-31)
 #   cc  = deploy counter (00-99, resets daily)
 #
+# UWAGA: versionCode NIE zalezy juz od Major/Minor. Poprzedni wzor
+# (Major*10^9 + Minor*10^8 + Patch) uderzyl w twardy limit Androida
+# (2 100 000 000) na wersji 0.21 — wydanie 0.21.26080203 dalo 2 126 080 203
+# i build sie nie zbudowal. Baza 2 mld jest sztuczna i zostaje wylacznie po to,
+# by kolejne kody byly WIEKSZE od juz zainstalowanych (0.20.x = 2 026 080 2xx);
+# mniejszy kod Android odrzuca jako cofniecie wersji.
+#
+# Baza + yyMMDDcc miesci sie pod limitem do 2099 roku i rosnie z kazdym dniem,
+# niezaleznie od tego, jak nazwiemy wersje. Przy przejsciu na Google Play
+# (instalacja od zera, inny podpis) numeracja startuje od nowa — patrz ADR-031.
+#
 # Example: 2025-12-31, 3rd deploy (cc=02)
 #   Patch:       25123102
 #   versionName: 0.7.25123102
-#   versionCode: 0*10^9 + 7*10^8 + 25123102 = 725123102
+#   versionCode: 2000000000 + 25123102 = 2025123102
 # ========================================
+$VERSION_CODE_BASE = 2000000000
 
 # Read Major.Minor from pubspec.yaml
 $PUBSPEC_PATH = Join-Path $MOBILE_DIR "pubspec.yaml"
@@ -410,7 +422,15 @@ if ($COUNT -gt 99) {
 
 $PATCH = "$DatePart$($COUNT.ToString('00'))"
 $VERSION_NAME = "$MAJOR.$MINOR.$PATCH"
-$VERSION_CODE = [int64]$MAJOR * 1000000000 + [int64]$MINOR * 100000000 + [int64]$PATCH
+$VERSION_CODE = [int64]$VERSION_CODE_BASE + [int64]$PATCH
+
+# Straznik: przekroczenie limitu Androida konczy sie bledem buildu dopiero po
+# kilku minutach kompilacji, a komunikat Gradle nie mowi, co z tym zrobic.
+if ($VERSION_CODE -gt 2100000000) {
+    Show-Error "versionCode $VERSION_CODE przekracza limit Androida (2 100 000 000)."
+    Show-Info "Patrz ADR-031: baza numeracji wymaga zmiany (albo czas na reset przy Google Play)."
+    exit 1
+}
 
 Show-Info "Patch: $PATCH (deploy #$($COUNT.ToString('00')) dzisiaj)"
 
@@ -432,7 +452,7 @@ else {
 
 Show-Info "Kanal: $Channel"
 Show-Info "Wersja: v$VERSION_NAME"
-Show-Info "versionCode: $VERSION_CODE (Major*10^9 + Minor*10^8 + Patch)"
+Show-Info "versionCode: $VERSION_CODE (baza $VERSION_CODE_BASE + yyMMDDcc, ADR-031)"
 Show-Info "APK: $APK_NAME"
 Write-Host ""
 

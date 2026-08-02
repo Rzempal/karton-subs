@@ -1,6 +1,30 @@
 {
-  "versionCode": 1926080204,
+  "version": "0.21.26080210",
   "changelog": [
+    {
+      "version": "0.21.26080210",
+      "notes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)"
+    },
+    {
+      "version": "0.20.26080209",
+      "notes": "- zaznaczanie wielu pozycji takze w Wydatkach i Wplywach\n- akcje zbiorcze tam: kategoria, metoda platnosci, wstrzymaj/wznow, usun"
+    },
+    {
+      "version": "0.20.26080208",
+      "notes": "- pasek zaznaczania zastepuje pasek kategorii zamiast spychac liste w dol"
+    },
+    {
+      "version": "0.20.26080207",
+      "notes": "- pasek zaznaczania wyroznia sie jako osobny tryb (pigulka z akcentem)"
+    },
+    {
+      "version": "0.20.26080206",
+      "notes": "- zaznaczanie wielu rachunkow (dlugie przytrzymanie) i zmiana kategorii, metody, daty albo usuniecie naraz\n- Zaznacz wszystkie dotyczy pozycji widocznych po filtrach"
+    },
+    {
+      "version": "0.20.26080205",
+      "notes": "- lista rachunkow buduje sie leniwie (dluga historia nie spowalnia ekranu)\n- metody platnosci liczone raz zamiast przy kazdym wierszu listy"
+    },
     {
       "version": "0.19.26080204",
       "notes": "- pasek plan/realny pokazuje sile przekroczenia (zielone = plan, czerwone = nadwyzka)\n- kalendarz w bilansie: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty po polsku (byly po angielsku)"
@@ -16,34 +40,10 @@
     {
       "version": "0.18.26080201",
       "notes": "- rachunki maja wlasna ikone na listach miesiaca (jak w pasku nawigacji)"
-    },
-    {
-      "version": "0.18.26080200",
-      "notes": "- drugi naglowek: Miesiac (strzalki i wybor) nad Plan vs Realne i Kategoriami\n- smuklejsze karty Saldo i Koszty roczne — kwoty wykorzystuja szerokosc karty"
-    },
-    {
-      "version": "0.18.26080117",
-      "notes": "- Kategorie przy Plan vs Realne (obie dotycza wybranego miesiaca)\n- pod naglowkiem Statystyki zostaja trend i podsumowanie roczne"
-    },
-    {
-      "version": "0.18.26080116",
-      "notes": "- naglowek Statystyki z punktem startu (od lipca) — rzadzi trendem i podsumowaniem rocznym\n- Plan vs Realne wraca nad kreske, ze swoimi strzalkami miesiaca"
-    },
-    {
-      "version": "0.18.26080115",
-      "notes": "- Plan: Koszty roczne przy Saldzie, reszta pod naglowkiem Statystyki\n- zakres (miesiac) wybierany w naglowku, dotyczy tez trendu"
-    },
-    {
-      "version": "0.18.26080114",
-      "notes": "- trend zaczyna sie od poczatku ewidencji (koniec zmyslonych miesiecy wstecz)\n- trzeci tryb wykresu: Oba — realne i plan na jednym wykresie, widac odchylenie"
-    },
-    {
-      "version": "0.17.26080113",
-      "notes": "- Podsumowanie roczne w Planie: ile z planu juz wydano, miesiac po miesiacu\n- poczatek ewidencji dla budzetu prowadzonego od polowy roku\n- Uzupelnij do pelnej kwoty w Plannerze (10/100/1000)\n- Plan vs Realne zamiast Predykcja vs rzeczywistosc; bez karty Rachunki miesiaca w bilansie"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=1926080204",
-  "releaseDate": "2026-08-02T16:37:40Z",
-  "version": "0.19.26080204",
-  "releaseNotes": "- pasek plan/realny pokazuje sile przekroczenia (zielone = plan, czerwone = nadwyzka)\n- kalendarz w bilansie: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty po polsku (byly po angielsku)"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080210",
+  "releaseNotes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)",
+  "versionCode": 2026080210,
+  "releaseDate": "2026-08-02T21:19:44Z"
 }

@@ -1,7 +1,9 @@
 {
-  "releaseDate": "2026-08-02T17:05:11Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080202",
   "changelog": [
+    {
+      "version": "0.20.26080203",
+      "notes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie"
+    },
     {
       "version": "0.20.26080202",
       "notes": "- Rachunki z filtrami zamiast przewijania miesiecy: kategoria, czas, sortowanie i suma widocznych pozycji\n- skrot Dzisiaj w filtrze czasu (od razu biezacy miesiac)\n- pasek plan/realny pokazuje sile przekroczenia: zielone = plan, czerwone = nadwyzka\n- kalendarz bilansu: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty i przyciski systemowe po polsku, tydzien od poniedzialku"
@@ -37,13 +39,11 @@
     {
       "version": "0.13.26073101",
       "notes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)"
-    },
-    {
-      "version": "0.13.26073100",
-      "notes": "- Kopia zapasowa na koncie Google: automat raz na dobe, kod odzyskiwania zamiast klucza urzadzenia\n- Przenoszenie rachunku miedzy budzetem osobistym a domowym (przycisk w edycji rachunku)\n- Budzet domowy: kategorie i metody platnosci trafiaja na drugi telefon razem z pozycjami\n- Poprawka: udostepniony rachunek nie dodaje sie ponownie przy kazdym uruchomieniu aplikacji\n- Poprawka: pozycje w trakcie rozpoznawania mozna odrzucic"
     }
   ],
-  "releaseNotes": "- Rachunki z filtrami zamiast przewijania miesiecy: kategoria, czas, sortowanie i suma widocznych pozycji\n- skrot Dzisiaj w filtrze czasu (od razu biezacy miesiac)\n- pasek plan/realny pokazuje sile przekroczenia: zielone = plan, czerwone = nadwyzka\n- kalendarz bilansu: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty i przyciski systemowe po polsku, tydzien od poniedzialku",
-  "versionCode": 2026080202,
-  "version": "0.20.26080202"
+  "versionCode": 2026080203,
+  "releaseNotes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie",
+  "version": "0.20.26080203",
+  "releaseDate": "2026-08-02T20:32:52Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080203"
 }

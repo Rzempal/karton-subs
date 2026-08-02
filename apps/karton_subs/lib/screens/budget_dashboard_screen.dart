@@ -18,6 +18,7 @@ import '../widgets/budget_widgets.dart';
 import '../widgets/filter_bars.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
+import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
 import '../widgets/sync_refresh.dart';
 import 'add_budget_entry_screen.dart';
@@ -107,6 +108,12 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// co jest na liście, a nie tym, jak jest ułożone.
   bool _showHidden = false;
 
+  /// Zaznaczone pozycje BUDŻETU (tryb zaznaczania, wejście długim
+  /// przytrzymaniem wiersza). Subskrypcje zostają poza nim: to inny model
+  /// danych, z własnym formularzem i własnym menu pod przytrzymaniem.
+  final Set<String> _selected = {};
+  bool _selecting = false;
+
   /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
   _BudgetGrouping _grouping = _BudgetGrouping.byType;
@@ -119,6 +126,127 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     super.initState();
     _collapsed = context.read<StorageService>().getCollapsedBudgetSections();
   }
+
+  // ── Tryb zaznaczania (pozycje budżetu) ─────────────────────────────────────
+
+  void _startSelection(String id) => setState(() {
+    _selecting = true;
+    _selected.add(id);
+  });
+
+  void _toggleSelection(String id) => setState(() {
+    if (!_selected.remove(id)) _selected.add(id);
+  });
+
+  void _endSelection() => setState(() {
+    _selecting = false;
+    _selected.clear();
+  });
+
+  /// „Zaznacz wszystkie" = wszystkie widoczne pozycje budżetu, w poprzek sekcji.
+  /// Zawężanie to rola filtrów — one już decydują, co jest na ekranie.
+  void _toggleSelectAll(List<BudgetEntry> visible) => setState(() {
+    final ids = visible.map((e) => e.id).toSet();
+    if (ids.every(_selected.contains)) {
+      _selected.removeAll(ids);
+    } else {
+      _selected.addAll(ids);
+    }
+  });
+
+  Future<void> _bulkCategory(Set<String> ids) async {
+    final storage = context.read<StorageService>();
+    final ctrl = context.read<BudgetController>();
+    final picked = await _pickOption(
+      title: 'Kategoria dla ${ids.length} poz.',
+      options: [
+        (null, 'Brak kategorii'),
+        for (final c in storage.getCategories()) (c.id, c.name),
+      ],
+    );
+    if (picked == null || !mounted) return;
+    await ctrl.setCategoryForAll(ids, picked.value);
+    if (mounted) _afterBulk('Zmieniono kategorię: ${ids.length} poz.');
+  }
+
+  Future<void> _bulkPaymentMethod(Set<String> ids) async {
+    final storage = context.read<StorageService>();
+    final ctrl = context.read<BudgetController>();
+    final picked = await _pickOption(
+      title: 'Metoda płatności dla ${ids.length} poz.',
+      options: [
+        (null, 'Brak metody'),
+        for (final m in storage.getPaymentMethods()) (m.name, m.name),
+      ],
+    );
+    if (picked == null || !mounted) return;
+    await ctrl.setPaymentMethodForAll(ids, picked.value);
+    if (mounted) _afterBulk('Zmieniono metodę płatności: ${ids.length} poz.');
+  }
+
+  /// Wstrzymanie albo wznowienie — kierunek bierzemy z zaznaczenia: jeśli
+  /// cokolwiek jest aktywne, wstrzymujemy; jeśli wszystko wstrzymane, wznawiamy.
+  Future<void> _bulkToggleActive(Set<String> ids, bool anyActive) async {
+    final ctrl = context.read<BudgetController>();
+    await ctrl.setActiveForAll(ids, !anyActive);
+    if (mounted) {
+      _afterBulk(
+        anyActive
+            ? 'Wstrzymano: ${ids.length} poz. (widoczne po „pokaż ukryte")'
+            : 'Wznowiono: ${ids.length} poz.',
+      );
+    }
+  }
+
+  Future<void> _bulkDelete(Set<String> ids) async {
+    final ctrl = context.read<BudgetController>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dctx) => AlertDialog(
+        title: Text('Usunąć ${ids.length} poz.?'),
+        content: const Text(
+          'Pozycje znikną z planu. Przelew do domowego zniknie razem ze swoim '
+          'lustrem w drugim budżecie. Tego nie da się cofnąć.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dctx, false),
+            child: const Text('Anuluj'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.negative),
+            child: const Text('Usuń'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await ctrl.deleteAll(ids);
+    if (mounted) _afterBulk('Usunięto: ${ids.length} poz.');
+  }
+
+  void _afterBulk(String message) {
+    _endSelection();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<({T value})?> _pickOption<T>({
+    required String title,
+    required List<(T, String)> options,
+  }) => showDialog<({T value})>(
+    context: context,
+    builder: (dctx) => SimpleDialog(
+      title: Text(title),
+      children: [
+        for (final (value, label) in options)
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(dctx, (value: value)),
+            child: Text(label),
+          ),
+      ],
+    ),
+  );
 
   void _toggleSection(String key) {
     setState(() {
@@ -246,6 +374,16 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     final subs = rawSubs.where(filter.keepSubscription).toList()..sort(cmpSub);
     final filteredEmpty = buckets.isEmpty && subs.isEmpty;
 
+    // Zaznaczanie obejmuje pozycje budżetu ze WSZYSTKICH widocznych sekcji.
+    // Liczone z listy widocznej: pozycja mogła wypaść przez filtr albo
+    // synchronizację, a akcja pracowałaby wtedy na duchu.
+    final visibleEntries = [for (final b in buckets) ...b.entries];
+    final visibleIds = visibleEntries.map((e) => e.id).toSet();
+    final selection = _selected.where(visibleIds.contains).toSet();
+    final anyActiveSelected = visibleEntries.any(
+      (e) => selection.contains(e.id) && e.isActive,
+    );
+
     // Jest co odsłaniać? Bez tego przełącznik „pokaż ukryte" wisiałby na
     // ekranie, na którym nic nie jest ukryte.
     final hasHidden =
@@ -301,7 +439,48 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           // przy typach, widocznosc ukrytych przy czasie (te dwa paski razem
           // decyduja, CO jest na liscie). Osobny wiersz ikon byl czwarta linia
           // nad lista i nie mowil, na co dziala.
-          if (!isEmpty && filterCategories.isNotEmpty)
+          // Pasek zaznaczania ZASTĘPUJE pasek kategorii (ta sama wysokość),
+          // żeby wejście w tryb nie spychało listy w chwili, gdy palec trzyma
+          // wiersz. Filtry typu i czasu zostają — one wyznaczają, czego dotyczy
+          // „Zaznacz wszystkie".
+          if (_selecting)
+            SelectionBar(
+              count: selection.length,
+              allSelected:
+                  visibleEntries.isNotEmpty &&
+                  selection.length == visibleEntries.length,
+              onToggleAll: () => _toggleSelectAll(visibleEntries),
+              onClose: _endSelection,
+              actions: [
+                SelectionAction(
+                  icon: LucideIcons.tag,
+                  tooltip: 'Zmień kategorię',
+                  onPressed: () => _bulkCategory(selection),
+                ),
+                SelectionAction(
+                  icon: LucideIcons.creditCard,
+                  tooltip: 'Zmień metodę płatności',
+                  onPressed: () => _bulkPaymentMethod(selection),
+                ),
+                SelectionAction(
+                  icon: anyActiveSelected
+                      ? LucideIcons.pauseCircle
+                      : LucideIcons.playCircle,
+                  tooltip: anyActiveSelected
+                      ? 'Wstrzymaj zaznaczone'
+                      : 'Wznów zaznaczone',
+                  onPressed: () =>
+                      _bulkToggleActive(selection, anyActiveSelected),
+                ),
+                SelectionAction(
+                  icon: LucideIcons.trash2,
+                  tooltip: 'Usuń zaznaczone',
+                  danger: true,
+                  onPressed: () => _bulkDelete(selection),
+                ),
+              ],
+            )
+          else if (!isEmpty && filterCategories.isNotEmpty)
             FilterRow(
               filters: CategoryFilterBar(
                 categories: filterCategories,
@@ -471,8 +650,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     var pinned = false;
     for (final b in buckets) {
       final isExp = showAlloc && b.key == _kSectionFixed;
-      Widget entryRow(BudgetEntry e) =>
-          BudgetEntryCard(entry: e, onTap: () => _openEdit(e));
+      Widget entryRow(BudgetEntry e) => SelectableRow(
+        selectionMode: _selecting,
+        selected: _selected.contains(e.id),
+        onTap: () => _toggleSelection(e.id),
+        onLongPress: () => _startSelection(e.id),
+        child: BudgetEntryCard(entry: e, onTap: () => _openEdit(e)),
+      );
       out.add(
         _Section(
           title: b.title,

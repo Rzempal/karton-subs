@@ -161,6 +161,7 @@ class StorageService {
 
   void _loadPaymentMethodsCache() {
     _paymentMethodsCache.clear();
+    _paymentMethodsSorted = null;
     for (final key in _paymentMethodsBox.keys) {
       try {
         final json = jsonDecode(_paymentMethodsBox.get(key as String)!);
@@ -179,13 +180,23 @@ class StorageService {
       _paymentMethodsBox.put(pm.id, jsonEncode(pm.toJson()));
       _paymentMethodsCache[pm.id] = pm;
     }
+    _paymentMethodsSorted = null;
     _log.info('Seeded ${defaultPaymentMethods.length} default payment methods');
   }
 
+  /// Posortowana lista metod płatności, budowana raz i unieważniana przy każdym
+  /// zapisie. Woła ją KAŻDY wiersz listy (żeby sprawdzić, czy płatność jest
+  /// automatyczna), a wcześniej każde takie wywołanie tworzyło nową listę
+  /// i sortowało ją od nowa — przy kilkuset wierszach to kilkaset sortowań
+  /// na jedno przemalowanie ekranu.
+  List<PaymentMethod>? _paymentMethodsSorted;
+
   List<PaymentMethod> getPaymentMethods() {
-    final items = _paymentMethodsCache.values.toList();
-    items.sort((a, b) => a.order.compareTo(b.order));
-    return List.unmodifiable(items);
+    final cached = _paymentMethodsSorted;
+    if (cached != null) return cached;
+    final items = _paymentMethodsCache.values.toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+    return _paymentMethodsSorted = List.unmodifiable(items);
   }
 
   PaymentMethod? getPaymentMethod(String id) => _paymentMethodsCache[id];
@@ -195,11 +206,13 @@ class StorageService {
     final toSave = stamp ? pm.copyWith(updatedAt: DateTime.now()) : pm;
     await _paymentMethodsBox.put(toSave.id, jsonEncode(toSave.toJson()));
     _paymentMethodsCache[toSave.id] = toSave;
+    _paymentMethodsSorted = null;
   }
 
   Future<void> deletePaymentMethod(String id) async {
     await _paymentMethodsBox.delete(id);
     _paymentMethodsCache.remove(id);
+    _paymentMethodsSorted = null;
     _log.info('Deleted payment method: $id');
   }
 
