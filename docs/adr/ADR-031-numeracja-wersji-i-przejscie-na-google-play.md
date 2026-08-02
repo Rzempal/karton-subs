@@ -84,9 +84,18 @@ zalacznik ma ja w nazwie (`scripts/publish-release.ps1`, DEV jako pre-release).
 Publikacja jest OSOBNYM krokiem po commicie, bo deploy podbija wersje w plikach
 repozytorium: release utworzony w jego trakcie wskazywalby commit sprzed wydania.
 
-Zasada: **jedna aplikacja = jeden zarzadca aktualizacji**. Telefon pilnowany
-przez Obtainium ma miec wylaczone wbudowane OTA, inaczej oba mechanizmy podmieniaja
-sobie plik pod nogami i Obtainium bez konca proponuje aktualizacje.
+**OTA i Obtainium moga dzialac obok siebie** — pod warunkiem, ze zrodlem jest
+GitHub, a nie bezposredni link do APK. Obtainium porownuje wtedy wersje z TAGU
+z wersja zainstalowana, ktora czyta **z systemu**, a OTA porownuje `versionCode`
+z `version*.json`. Oba mechanizmy operuja na tym samym numerze, wiec aktualizacja
+zrobiona przez jeden z nich jest poprawnie widziana przez drugi.
+
+Warunek: **release publikujemy zaraz po deployu**. Gdy GitHub zostaje w tyle za
+tym, co serwuje OTA, Obtainium widzi w systemie wersje nowsza niz ostatni release
+i moze zaproponowac aktualizacje wstecz. `deploy.ps1` konczy sie przypomnieniem.
+
+(Ograniczenie „jeden zarzadca" dotyczy dopiero Google Play — tam wbudowane OTA
+musi zniknac z powodu zasad sklepu, nie z powodu konfliktu numeracji.)
 
 ## Konsekwencje
 

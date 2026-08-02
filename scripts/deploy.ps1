@@ -715,4 +715,14 @@ if ($Channel -eq "production" -and $SkipUpload) {
     Update-ProdChangelog -VersionName $VERSION_NAME -ReleaseNotes $RELEASE_NOTES
 }
 
+# Przypomnienie o GitHub Release: gdy zostaje w tyle za tym, co serwuje OTA,
+# Obtainium widzi w systemie wersje nowsza niz ostatni release i proponuje
+# aktualizacje wstecz. Publikacja jest osobnym krokiem, bo musi isc PO commicie
+# (deploy zmienil pubspec, changelog i version.json).
+if (-not $SkipUpload) {
+    Write-Host ""
+    Show-Warning "Nastepny krok: commit, a potem publikacja wydania na GitHubie:"
+    Show-Info "  .\scripts\publish-release.ps1 -Channel $Channel"
+}
+
 exit 0

@@ -116,11 +116,25 @@ w `deploy.ps1`.)
 - **DEV:** pre-relesy włączone + filtr APK `zostaje-dev_`.
 - Repozytorium prywatne wymaga tokenu w ustawieniach Obtainium.
 
-> ⚠️ **Jedna aplikacja = jeden zarządca aktualizacji.** Jeśli Obtainium pilnuje
-> instalacji, wbudowane OTA na tym telefonie ma być wyłączone — inaczej po każdej
-> aktualizacji z OTA Obtainium widzi „obcy" plik i w nieskończoność proponuje
-> aktualizację. Przy przejściu na Google Play wbudowane OTA znika całkiem
-> (ADR-031).
+### OTA i Obtainium działają obok siebie
+
+Przy źródle GitHub **oba mechanizmy mówią tym samym numerem**: Obtainium
+porównuje wersję z tagu z wersją zainstalowaną, którą czyta **z systemu**
+(nie z własnej pamięci), a OTA porównuje `versionCode` z `version*.json`.
+Kto by nie zaktualizował aplikacji — drugi mechanizm widzi zgodny stan. Wbudowane
+OTA zostaje włączone.
+
+To nie działało przy źródle „bezpośredni link do APK": stała nazwa pliku nie
+niesie wersji, więc Obtainium liczył pseudo-wersję z hasza i porównywał liczbę
+bez związku z `versionName` — stąd wieczna „dostępna aktualizacja".
+
+> ⚠️ **Publikuj release od razu po deployu.** Jeśli GitHub zostanie w tyle za
+> tym, co serwuje OTA, Obtainium zobaczy w systemie wersję nowszą niż ostatni
+> release i może zaproponować aktualizację **wstecz**. `deploy.ps1` przypomina
+> o tym na końcu.
+
+> Przy przejściu na Google Play wbudowane OTA znika całkiem — zasady sklepu
+> zabraniają samodzielnego instalowania kodu (ADR-031).
 
 ## Wdrożenie Mobile (Android)
 
