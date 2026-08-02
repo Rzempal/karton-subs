@@ -206,10 +206,21 @@ try {
     }
 
     # ── [3/5] Push ───────────────────────────────────────────────────────────
+    # Z ponowieniem: chwilowa awaria sieci nie moze zostawiac wydania w polowie
+    # (kod zbudowany i wyslany na serwer, ale commit tylko lokalnie).
     Show-Step 3 "Push na main"
-    git push origin main
-    if ($LASTEXITCODE -ne 0) {
-        Show-Error "Push odrzucony. Zsynchronizuj (git pull --rebase origin main) i uruchom publish-release recznie."
+    $pushed = $false
+    foreach ($attempt in 1..3) {
+        git push origin main
+        if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
+        if ($attempt -lt 3) {
+            Show-Warning "  push nie powiodl sie ($attempt/3) — ponawiam za $(5 * $attempt) s"
+            Start-Sleep -Seconds (5 * $attempt)
+        }
+    }
+    if (-not $pushed) {
+        Show-Error "Push odrzucony po trzech probach."
+        Show-Info "Zsynchronizuj (git pull --rebase origin main), potem: .\scripts\publish-release.ps1 -Channel $Channel"
         exit 1
     }
 

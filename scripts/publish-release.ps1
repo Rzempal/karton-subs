@@ -39,6 +39,26 @@ $RELEASES_DIR = Join-Path $PROJECT_ROOT "releases"
 
 # ── Dostep do GitHuba ────────────────────────────────────────────────────────
 
+# Sieć bywa chwilowo niedostepna (widziane w praktyce: `git push` odrzucony po
+# 21 s, po ponowieniu przechodzi). Wydanie ma sie nie wywracac na jednej takiej
+# probie — to jedyny krok, ktory zostawia system w polowie drogi.
+function Invoke-WithRetry {
+    param([scriptblock]$Action, [int]$Attempts = 3, [int]$DelaySeconds = 5, [string]$What = "operacja")
+    for ($i = 1; $i -le $Attempts; $i++) {
+        try {
+            return & $Action
+        }
+        catch {
+            # Blad HTTP 4xx to nie awaria sieci — ponawianie nic nie da.
+            $status = $_.Exception.Response.StatusCode.value__
+            if ($status -ge 400 -and $status -lt 500) { throw }
+            if ($i -eq $Attempts) { throw }
+            Show-Warning "  $What nie powiodla sie ($i/$Attempts): $($_.Exception.Message)"
+            Start-Sleep -Seconds ($DelaySeconds * $i)
+        }
+    }
+}
+
 function Get-GitHubToken {
     $t = gh auth token 2>$null
     if ($LASTEXITCODE -eq 0 -and $t) { return $t.Trim() }
@@ -58,11 +78,15 @@ function Invoke-GitHub($Method, $Url, $Body) {
         Accept        = "application/vnd.github+json"
         "User-Agent"  = "zostaje-release-script"
     }
-    if ($Body) {
-        return Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers `
-            -Body ($Body | ConvertTo-Json -Depth 4) -ContentType "application/json"
+    return Invoke-WithRetry -What "zapytanie do GitHuba" -Action {
+        if ($Body) {
+            Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers `
+                -Body ($Body | ConvertTo-Json -Depth 4) -ContentType "application/json"
+        }
+        else {
+            Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers
+        }
     }
-    return Invoke-RestMethod -Method $Method -Uri $Url -Headers $headers
 }
 
 # ── Co publikujemy ───────────────────────────────────────────────────────────
@@ -137,13 +161,22 @@ catch {
 if (-not (git -C $PROJECT_ROOT tag --list $tag)) {
     Show-Warning "Tworzenie tagu $tag na HEAD ($(git -C $PROJECT_ROOT rev-parse --short HEAD))"
     git -C $PROJECT_ROOT tag -a $tag -m "Release $tag"
-    git -C $PROJECT_ROOT push origin $tag
-    if ($LASTEXITCODE -ne 0) { Show-Error "Nie udalo sie wypchnac tagu."; exit 1 }
 }
 else {
     Show-Info "Tag $tag juz istnieje — uzywam go."
-    # Tag moze byc lokalny; push jest bezpieczny (istniejacy zdalnie = no-op).
-    git -C $PROJECT_ROOT push origin $tag 2>&1 | Out-Null
+}
+
+# Push tagu z ponowieniem; istniejacy zdalnie tag to no-op, wiec powtorzenie
+# jest bezpieczne.
+try {
+    Invoke-WithRetry -What "wypchniecie tagu" -Action {
+        git -C $PROJECT_ROOT push origin $tag 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "git push zwrocil $LASTEXITCODE" }
+    }
+}
+catch {
+    Show-Error "Nie udalo sie wypchnac tagu po kilku probach: $($_.Exception.Message)"
+    exit 1
 }
 
 # ── Release ──────────────────────────────────────────────────────────────────
@@ -189,11 +222,13 @@ try {
 
     Show-Info "Wysylam $assetName ($sizeMb MB)..."
     $uploadUrl = "https://uploads.github.com/repos/$slug/releases/$($release.id)/assets?name=$assetName"
-    Invoke-RestMethod -Method POST -Uri $uploadUrl -InFile $assetPath `
-        -ContentType "application/vnd.android.package-archive" -Headers @{
-        Authorization = "Bearer $script:token"
-        Accept        = "application/vnd.github+json"
-        "User-Agent"  = "zostaje-release-script"
+    Invoke-WithRetry -What "wysylka zalacznika" -Action {
+        Invoke-RestMethod -Method POST -Uri $uploadUrl -InFile $assetPath `
+            -ContentType "application/vnd.android.package-archive" -Headers @{
+            Authorization = "Bearer $script:token"
+            Accept        = "application/vnd.github+json"
+            "User-Agent"  = "zostaje-release-script"
+        }
     } | Out-Null
 
     Show-Success "Opublikowano: $tag"
