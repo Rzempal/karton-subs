@@ -142,3 +142,40 @@ przeniesienie jednej strony rozspoiloby ja z druga.
 
 Testy: `test/budget_move_scope_test.dart` (prawdziwy Hive, patrz
 `docs/standards/testing.md`).
+
+---
+
+## Uzupelnienie (2026-08-04): sparowany telefon moze pokazac kod QR ponownie
+
+Wymiana telefonu konczyla sie rozlaczeniem calego gospodarstwa. Powod: kopia
+zapasowa niesie dane (budzet domowy tez), ale **nie niesie parowania** — adres
+skrzynki i klucz leza w sejfie systemowym (Keystore), ktory nie przenosi sie
+miedzy urzadzeniami. To jest celowe: gdyby klucz jechal w pliku kopii, dostep do
+Dysku Google (gdzie obok kopii lezy kod odzyskiwania, ADR-024) oznaczalby dostep
+do tresci budzetu domowego, czyli koniec E2E.
+
+Problem byl gdzie indziej: **`salt` istnial tylko w chwili zakladania**
+gospodarstwa. Kod QR pokazywal sie raz, a z klucza soli nie da sie odtworzyc
+(funkcja jednokierunkowa), wiec sparowany telefon nie mial czego wystawic. Nowe
+urzadzenie moglo wiec tylko **zalozyc gospodarstwo od nowa** — z rozlaczeniem
+drugiej osoby, nowa skrzynka i osierocona stara.
+
+**Decyzja:** `salt` zapisujemy w sejfie razem z parowaniem, a sparowany telefon
+dostaje akcje **„Pokaz kod QR"** (dolaczenie kolejnego urzadzenia do TEGO
+SAMEGO gospodarstwa). Dziala na obu telefonach — takze na tym, ktory dolaczyl,
+bo sol przychodzi w kodzie QR.
+
+Bezpieczenstwo sie nie zmienia: `salt` jest **jawny** (i tak jedzie w kodzie QR),
+a caly sekret to haslo przekazywane ustnie i nigdzie niezapisywane. W sejfie lezy
+juz gotowy klucz — sol jest przy nim informacja slabsza, nie mocniejsza.
+
+Dwie rzeczy, ktore latwo przeoczyc:
+
+1. **Zapis parowania bez soli kasuje sol poprzedniego gospodarstwa.** Inaczej
+   telefon pokazywalby kod QR do skrzynki, z ktora nie jest juz sparowany.
+2. **Parowania sprzed tej wersji nie da sie uzupelnic.** Kafelek jest wtedy
+   nieaktywny i mowi wprost, ze kod wroci po ponownym sparowaniu; sama
+   synchronizacja dziala bez zmian.
+
+Testy: `test/sync_pairing_qr_test.dart` (round-trip kodu QR miedzy trzema
+telefonami + trwalosc soli w sejfie, z migracja starego wpisu).

@@ -31,6 +31,7 @@ Po sparowaniu (QR + haslo) zmiany przeplywaja przez **skrzynke relay w chmurze**
 | Co widzi serwer | **Tylko zaszyfrowany blob + metadane** (rozmiar, znacznik czasu). NIE widzi kwot ani nazw |
 | Gdzie jest klucz | Wylacznie na urzadzeniach (wyprowadzany z hasla). Nigdy na serwerze |
 | Dostep do skrzynki | Po sekretnym `household_id` (z kodu QR), nie po koncie |
+| Gdzie jest parowanie | Sejf systemowy (Keystore/Keychain): `household_id`, klucz i `salt`. **Nie ma go w kopii zapasowej** — dlatego po wymianie telefonu trzeba sparowac urzadzenie ponownie (sparowany telefon wystawia kod przez „Pokaz kod QR") |
 | Zakres | Tylko budzet domowy. Osobiste dane sie nie synchronizuja |
 | Slowniki (ADR-025) | W paczce jada **tylko kategorie i metody platnosci uzywane przez pozycje domowe**. Slownik jest wspoldzielony z budzetem osobistym i subskrypcjami, wiec nazwa kategorii uzywanej wylacznie prywatnie NIE opuszcza telefonu |
 

@@ -16,10 +16,20 @@ import 'sync_crypto_service.dart';
 import 'sync_merge.dart';
 
 /// Dane sparowania gospodarstwa (sekret): adres skrzynki + wspólny klucz AES.
+///
+/// [salt] jest jawny (i tak jedzie w kodzie QR) — trzymamy go, żeby sparowany
+/// telefon mógł ponownie wystawić kod QR i dołączyć KOLEJNE urządzenie do tego
+/// samego gospodarstwa. Bez niego wymiana telefonu wymagałaby założenia
+/// gospodarstwa od nowa i rozłączenia obu stron.
+///
+/// `null` = sparowanie zapisane przed tą wersją: klucz jest, ale `salt` nie da
+/// się z niego odtworzyć (funkcja jednokierunkowa), więc QR wróci dopiero po
+/// ponownym sparowaniu.
 class SyncPairing {
   final String householdId;
   final Uint8List key;
-  const SyncPairing(this.householdId, this.key);
+  final Uint8List? salt;
+  const SyncPairing(this.householdId, this.key, {this.salt});
 }
 
 /// Kodowanie treści kodu QR parowania (ADR-009). QR niesie **tylko** adres
@@ -78,6 +88,7 @@ abstract class SyncStore {
 class SecureSyncStore implements SyncStore {
   static const _kHouseholdId = 'sync_household_id';
   static const _kKey = 'sync_key_b64';
+  static const _kSalt = 'sync_salt_b64';
   static const _kVersion = 'sync_version';
 
   final FlutterSecureStorage _s;
@@ -88,19 +99,35 @@ class SecureSyncStore implements SyncStore {
     final hid = await _s.read(key: _kHouseholdId);
     final keyB64 = await _s.read(key: _kKey);
     if (hid == null || keyB64 == null) return null;
-    return SyncPairing(hid, base64.decode(keyB64));
+    // Brak soli = sparowanie sprzed tej wersji; reszta działa bez zmian.
+    final saltB64 = await _s.read(key: _kSalt);
+    return SyncPairing(
+      hid,
+      base64.decode(keyB64),
+      salt: saltB64 == null ? null : base64.decode(saltB64),
+    );
   }
 
   @override
   Future<void> savePairing(SyncPairing pairing) async {
     await _s.write(key: _kHouseholdId, value: pairing.householdId);
     await _s.write(key: _kKey, value: base64.encode(pairing.key));
+    final salt = pairing.salt;
+    if (salt == null) {
+      // Kasujemy, zamiast zostawiać — sól z POPRZEDNIEGO gospodarstwa dałaby
+      // kod QR prowadzący do skrzynki, z którą to urządzenie nie jest już
+      // sparowane.
+      await _s.delete(key: _kSalt);
+    } else {
+      await _s.write(key: _kSalt, value: base64.encode(salt));
+    }
   }
 
   @override
   Future<void> clearPairing() async {
     await _s.delete(key: _kHouseholdId);
     await _s.delete(key: _kKey);
+    await _s.delete(key: _kSalt);
     await _s.delete(key: _kVersion);
   }
 
@@ -215,7 +242,7 @@ class SyncService extends ChangeNotifier {
     final salt = _crypto.newSalt();
     final key = _crypto.deriveKey(password, salt);
     return (
-      pairing: SyncPairing(id, key),
+      pairing: SyncPairing(id, key, salt: salt),
       qrPayload: SyncPairingCodec.encode(id, salt),
     );
   }
@@ -224,7 +251,22 @@ class SyncService extends ChangeNotifier {
   /// [FormatException] przy nieprawidłowym kodzie.
   SyncPairing pairingFromQr(String qrPayload, String password) {
     final d = SyncPairingCodec.decode(qrPayload);
-    return SyncPairing(d.householdId, _crypto.deriveKey(password, d.salt));
+    return SyncPairing(
+      d.householdId,
+      _crypto.deriveKey(password, d.salt),
+      salt: d.salt,
+    );
+  }
+
+  /// Treść kodu QR dla obecnego gospodarstwa — do dołączenia kolejnego telefonu
+  /// (np. po wymianie urządzenia) BEZ zakładania gospodarstwa od nowa.
+  ///
+  /// `null`, gdy nie ma sparowania albo pochodzi ono sprzed zapisywania soli.
+  String? get pairingQrPayload {
+    final p = _pairing;
+    final salt = p?.salt;
+    if (p == null || salt == null) return null;
+    return SyncPairingCodec.encode(p.householdId, salt);
   }
 
   /// Zapisuje sparowanie (wołane przez ekran „Dodaj członka"/„Dołącz").

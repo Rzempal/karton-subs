@@ -206,6 +206,8 @@ class _PairedView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        _ShowQrCard(sync: sync),
+        const SizedBox(height: 8),
         FrostCard(
           onTap: () => _unpair(context),
           child: _ActionRow(
@@ -250,6 +252,37 @@ class _PairedView extends StatelessWidget {
   }
 }
 
+/// „Pokaż kod QR" na sparowanym telefonie — dołączenie kolejnego urządzenia do
+/// TEGO SAMEGO gospodarstwa (wymiana telefonu bez rozłączania drugiej osoby).
+///
+/// Sparowania sprzed wersji zapisującej sól nie mają z czego odtworzyć kodu,
+/// więc kafelek jest wtedy nieaktywny i mówi wprost, co zrobić.
+class _ShowQrCard extends StatelessWidget {
+  final SyncService sync;
+  const _ShowQrCard({required this.sync});
+
+  @override
+  Widget build(BuildContext context) {
+    final payload = sync.pairingQrPayload;
+    return FrostCard(
+      onTap: payload == null
+          ? null
+          : () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => _ShowQrScreen(payload: payload),
+              )),
+      child: _ActionRow(
+        icon: LucideIcons.qrCode,
+        title: 'Pokaż kod QR',
+        subtitle: payload == null
+            ? 'Niedostępne dla sparowania z wcześniejszej wersji — wróci po ponownym sparowaniu'
+            : 'Dołącz kolejny telefon do tego gospodarstwa',
+        color: payload == null ? context.semanticColors.textMuted : null,
+        trailing: payload == null ? const SizedBox.shrink() : null,
+      ),
+    );
+  }
+}
+
 // ── Ekran QR (telefon A pokazuje) ─────────────────────────────────────────────
 
 class _ShowQrScreen extends StatelessWidget {
@@ -283,7 +316,7 @@ class _ShowQrScreen extends StatelessWidget {
             Text(
               '1. Na drugim telefonie wybierz „Dołącz do gospodarstwa".\n'
               '2. Zeskanuj ten kod.\n'
-              '3. Podaj tej osobie hasło — ustnie, nie zapisuj go nigdzie.',
+              '3. Podaj hasło gospodarstwa — ustnie, nie zapisuj go nigdzie.',
               style: TextStyle(fontSize: 14, color: muted, height: 1.6),
             ),
             const SizedBox(height: 24),

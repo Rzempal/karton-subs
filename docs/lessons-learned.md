@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-08-04: Co lezy w sejfie systemowym, nie przezyje wymiany telefonu
+
+### Problem
+Scenariusz „nowy telefon + kopia z Dysku": dane budzetu domowego wracaja
+komplenie, ale synchronizacja z druga osoba nie. Gorzej — nie dalo sie do niej
+wrocic: kod QR gospodarstwa powstawal tylko przy zakladaniu, wiec telefon zony
+nie mial czego pokazac. Jedyne wyjscie to bylo zalozenie gospodarstwa od nowa,
+czyli rozlaczenie obu stron.
+
+### Przyczyna
+Parowanie (adres skrzynki + klucz) trzymamy w sejfie systemowym (Keystore) i to
+jest sluszne — w kopii zapasowej byloby wydaniem tresci budzetu kazdemu, kto ma
+dostep do Dysku. Ale sejf **nie przenosi sie miedzy urzadzeniami**, wiec kazda
+funkcja oparta o sekret w sejfie musi miec wlasna, swiadomie zaprojektowana
+sciezke odtworzenia. Tej brakowalo: `salt` istnial wylacznie w pamieci podczas
+zakladania gospodarstwa, a z klucza nie da sie go wyliczyc wstecz.
+
+### Rozwiazanie
+`salt` zapisany razem z parowaniem + akcja „Pokaz kod QR" na sparowanym telefonie
+(ADR-009, uzupelnienie). Sekret nie oslabl: sol i tak jedzie jawnie w kodzie QR,
+a cala ochrona stoi na hasle przekazywanym ustnie. Ten sam problem rozwiazano
+wczesniej inaczej dla kopii w chmurze — kod odzyskiwania lezy obok kopii na
+Dysku (ADR-024), wiec odtworzenie dziala bez przepisywania go z kartki.
+
+### Wniosek
+Przy kazdym sekrecie w sejfie zadaj pytanie „co sie stanie przy wymianie
+telefonu" — i odpowiedz na nie w kodzie, nie w instrukcji. Odpowiedzi sa dwie:
+albo sekret da sie odtworzyc z drugiego urzadzenia (QR), albo lezy w miejscu,
+ktore uzytkownik odzyskuje razem z kontem. Brak odpowiedzi wychodzi dopiero
+przy realnej wymianie telefonu — czyli w najgorszym momencie.
+
 ## 2026-08-02: Schemat numeracji wersji ma SUFIT — sprawdz go, zanim go zbudujesz
 
 ### Problem
