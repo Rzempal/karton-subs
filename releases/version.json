@@ -1,5 +1,12 @@
 {
+  "releaseDate": "2026-08-04T23:15:40Z",
+  "releaseNotes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080400",
   "changelog": [
+    {
+      "version": "0.21.26080400",
+      "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
+    },
     {
       "version": "0.20.26080203",
       "notes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie"
@@ -35,15 +42,8 @@
     {
       "version": "0.14.26073102",
       "notes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja"
-    },
-    {
-      "version": "0.13.26073101",
-      "notes": "- Dociete zdjecie zapisanego rachunku trafia takze do archiwum (stara wersja jest usuwana)"
     }
   ],
-  "versionCode": 2026080203,
-  "releaseNotes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie",
-  "version": "0.20.26080203",
-  "releaseDate": "2026-08-02T20:32:52Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080203"
+  "versionCode": 2026080400,
+  "version": "0.21.26080400"
 }
