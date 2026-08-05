@@ -111,7 +111,7 @@ lib/
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
 │   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne" (z sekcja Subskrypcje, ADR-027) i „Wplywy" (jeden widget, tryby) + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
-│   ├── household_sync_screen.dart # Parowanie QR + haslo, sync budzetu domowego (ADR-009)
+│   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
 │   ├── data_export_screen.dart  # Eksport XLSX (subskrypcje, budzet) i PDF — Ustawienia -> Dane
 │   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
