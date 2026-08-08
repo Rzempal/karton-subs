@@ -1,10 +1,14 @@
 {
-  "version": "0.21.26080800",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080800",
-  "versionCode": 2026080800,
-  "releaseDate": "2026-08-08T14:09:53Z",
-  "releaseNotes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne\n- Koperta Plannera: Na biezace wydatki\n- Subskrypcje maja wlasna ikone (dawna przeszla do zakladki Cykliczne)\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080801",
+  "versionCode": 2026080801,
+  "releaseDate": "2026-08-08T15:30:30Z",
+  "version": "0.21.26080801",
+  "releaseNotes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie",
   "changelog": [
+    {
+      "version": "0.21.26080801",
+      "notes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
+    },
     {
       "version": "0.21.26080800",
       "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne\n- Koperta Plannera: Na biezace wydatki\n- Subskrypcje maja wlasna ikone (dawna przeszla do zakladki Cykliczne)\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian"
@@ -40,10 +44,6 @@
     {
       "version": "0.20.26080206",
       "notes": "- zaznaczanie wielu rachunkow (dlugie przytrzymanie) i zmiana kategorii, metody, daty albo usuniecie naraz\n- Zaznacz wszystkie dotyczy pozycji widocznych po filtrach"
-    },
-    {
-      "version": "0.20.26080205",
-      "notes": "- lista rachunkow buduje sie leniwie (dluga historia nie spowalnia ekranu)\n- metody platnosci liczone raz zamiast przy kazdym wierszu listy"
     }
   ]
 }
