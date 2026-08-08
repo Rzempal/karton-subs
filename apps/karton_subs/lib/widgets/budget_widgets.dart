@@ -1979,12 +1979,18 @@ class BudgetEntryCard extends StatelessWidget {
     final details = [
       budgetTypeLabel(entry.type),
       ?date,
-      if (overrideCount > 0) 'korekt: $overrideCount',
       if (dimmed) 'wstrzymane',
     ].join(' · ');
 
-    // Korekta wybranego miesiąca. Korekta samej DATY (bez kwoty) nie ma tu co
-    // pokazać — kwota miesiąca jest wtedy równa bazowej.
+    // Prawa strona drugiej linii — jedno z dwojga, nigdy oba naraz:
+    //
+    //   * kwota tego miesiąca, gdy filtr stoi na jednym miesiącu i pozycja ma
+    //     w nim korektę — wtedy licznik nie wnosi nic ponad to, co widać;
+    //   * inaczej licznik „korekt: N", czyli sam sygnał „ta pozycja ma miesiące
+    //     odbiegające od planu".
+    //
+    // Korekta samej DATY (bez kwoty) nie ma czego pokazać — kwota miesiąca jest
+    // wtedy równa bazowej, więc pozycja spada do licznika.
     final mk = monthKey;
     final overrideAmount = mk != null
         ? entry.overrideForMonth(mk)?.amount
@@ -2078,6 +2084,15 @@ class BudgetEntryCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (overrideAmount == null && overrideCount > 0) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            'korekt: $overrideCount',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: c.textMuted,
+                            ),
+                          ),
+                        ],
                         if (overrideAmount != null) ...[
                           const SizedBox(width: 8),
                           Text(
