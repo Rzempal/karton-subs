@@ -1,6 +1,13 @@
 {
-  "versionCode": 2026080802,
+  "releaseNotes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080803",
+  "versionCode": 2026080803,
+  "version": "0.22.26080803",
   "changelog": [
+    {
+      "version": "0.22.26080803",
+      "notes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem"
+    },
     {
       "version": "0.22.26080802",
       "notes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia"
@@ -36,14 +43,7 @@
     {
       "version": "0.20.26080208",
       "notes": "- pasek zaznaczania zastepuje pasek kategorii zamiast spychac liste w dol"
-    },
-    {
-      "version": "0.20.26080207",
-      "notes": "- pasek zaznaczania wyroznia sie jako osobny tryb (pigulka z akcentem)"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080802",
-  "releaseNotes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia",
-  "version": "0.22.26080802",
-  "releaseDate": "2026-08-08T22:00:38Z"
+  "releaseDate": "2026-08-08T22:19:01Z"
 }
