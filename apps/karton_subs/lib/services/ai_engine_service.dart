@@ -115,7 +115,7 @@ class AiEngineService {
     } on MissingPluginException {
       throw const AiEngineException(
         code: 'NO_PLATFORM',
-        message: 'Skanowanie rachunków działa tylko na urządzeniu z Androidem',
+        message: 'Skanowanie paragonów działa tylko na urządzeniu z Androidem',
       );
     }
   }
@@ -153,7 +153,7 @@ class AiEngineService {
   /// Komunikat dla użytkownika na podstawie kodu błędu silnika.
   static String describeError(String code, String? message) => switch (code) {
         'ENGINE_NOT_INSTALLED' =>
-          'Brak apki „Lokalny Silnik AI" — zainstaluj ją, by skanować rachunki',
+          'Brak apki „Lokalny Silnik AI" — zainstaluj ją, by skanować paragony',
         'ENGINE_UNAVAILABLE' =>
           'Lokalny Silnik AI nie odpowiada — otwórz apkę silnika i ponów',
         'MODEL_MISSING' =>

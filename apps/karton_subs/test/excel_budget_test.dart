@@ -251,4 +251,48 @@ void main() {
       expect(e.startDate, DateTime(2026, 7, 12));
     });
   });
+
+  // Zakładka „Rachunki" nazywa się dziś „Bieżące" (ADR-032). Kolumna „Typ"
+  // w arkuszu to tekst, który użytkownik ma na dysku w starych eksportach —
+  // import musi rozumieć obie nazwy, bo inaczej stary arkusz wjedzie z błędnym
+  // typem i pozycje wylądują w planie zamiast w bilansie miesiąca.
+  group('ExcelService — nazwa typu po zmianie „Rachunki" → „Bieżące"', () {
+    test('stara i nowa nazwa dają ten sam typ', () {
+      final bytes = _xlsx([
+        _header,
+        // Stary eksport, sprzed zmiany nazwy.
+        ['Rachunek', 'Apteka', 63.50, 'PLN', '', '2026-07', '', 'tak'],
+        // Nowy eksport.
+        ['Wydatek bieżący', 'Paliwo', 300.0, 'PLN', '', '2026-07', '', 'tak'],
+        // Arkusz poprawiony ręcznie, bez polskich znaków.
+        ['Wydatek biezacy', 'Barber', 120.0, 'PLN', '', '2026-07', '', 'tak'],
+      ]);
+      final r = ExcelService.parseBudgetBytesForTest(bytes);
+
+      expect(r.importedCount, 3);
+      for (final e in r.entries) {
+        expect(e.type, BudgetEntryType.billPayment,
+            reason: '„${e.name}" musi trafić do wydatków bieżących');
+      }
+    });
+
+    test('eksport pisze nową nazwę w kolumnie „Typ"', () {
+      final bytes = ExcelService.buildBudgetWorkbookForTest([
+        BudgetEntry(
+          id: 'r1',
+          name: 'Paliwo',
+          type: BudgetEntryType.billPayment,
+          amount: 300,
+          currency: Currency.PLN,
+          month: '2026-07',
+          dataDodania: DateTime(2026, 1, 1),
+        ),
+      ]);
+      final sheet = Excel.decodeBytes(bytes).tables.values.first;
+      final typeCell = sheet.rows[1].first?.value;
+
+      expect(typeCell, isA<TextCellValue>());
+      expect((typeCell as TextCellValue).value.text, 'Wydatek bieżący');
+    });
+  });
 }

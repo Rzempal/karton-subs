@@ -59,8 +59,9 @@ class BillsPlannerScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           Text(
-            'Kwota zaplanowana w budżecie na rachunki. Pomniejsza „zostaje '
-            'miesięcznie", a realne rachunki tej puli logujesz w „Rachunkach".',
+            'Kwota zaplanowana w budżecie na bieżące wydatki. Pomniejsza '
+            '„zostaje miesięcznie", a realne wydatki tej puli logujesz '
+            'w „Bieżących".',
             style: theme.textTheme.bodySmall?.copyWith(color: c.textSecondary),
           ),
           const SizedBox(height: 16),

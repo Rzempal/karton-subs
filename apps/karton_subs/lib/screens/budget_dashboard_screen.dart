@@ -406,7 +406,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           ),
           if (!_onIncomes)
             AuroraAddAction(
-              icon: LucideIcons.repeat,
+              icon: LucideIcons.badgeCheck,
               label: 'Dodaj subskrypcję',
               onTap: _openAddSubscription,
             ),
@@ -1200,7 +1200,7 @@ class _EmptyBudget extends StatelessWidget {
             Text(
               isHousehold
                   ? 'Wspólna kasa domowa — dodaj wkłady i koszty'
-                  : 'Zacznij od dodania wpływu i rachunków',
+                  : 'Zacznij od dodania wpływu i wydatków',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
@@ -1266,8 +1266,8 @@ class _AllocationSummaryRow extends StatelessWidget {
                     Text('Planner', style: theme.textTheme.bodyMedium),
                     Text(
                       isSet
-                          ? 'Kwota zaplanowana na rachunki'
-                          : 'Zaplanuj kwotę na rachunki',
+                          ? 'Kwota zaplanowana na bieżące wydatki'
+                          : 'Zaplanuj kwotę na bieżące wydatki',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: c.textMuted,
                       ),

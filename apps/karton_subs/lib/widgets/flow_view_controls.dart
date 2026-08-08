@@ -54,7 +54,7 @@ class FlowViewControls extends StatelessWidget {
           isSelected: grouped,
           tooltip: grouped
               ? 'Grupowanie po typie (włączone)'
-              : 'Grupuj po typie: rachunki / subskrypcje / budżet',
+              : 'Grupuj po typie: bieżące / subskrypcje / budżet',
           // Aktywny stan = wypełniona pigułka (widoczna też w motywie mono,
           // gdzie akcent jest bezbarwny) + ikona w kolorze akcentu.
           style: grouped

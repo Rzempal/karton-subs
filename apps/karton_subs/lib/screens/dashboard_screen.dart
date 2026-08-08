@@ -457,7 +457,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   color: palette[1],
                 ),
                 ChartSeries(
-                  label: 'Rachunki',
+                  label: 'Bieżące',
                   data: bills,
                   color: palette[2],
                 ),
@@ -1134,17 +1134,18 @@ class _PredictionCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _Kv(
-                  'Na rachunki (plan)',
+                  'Na bieżące (plan)',
                   allocation != null ? fmt(allocation!) : '—',
                 ),
               ),
-              Expanded(child: _Kv('Rachunki (realne)', fmt(billsActual))),
+              Expanded(child: _Kv('Bieżące (realne)', fmt(billsActual))),
             ],
           ),
           if (allocation == null) ...[
             const SizedBox(height: 8),
             Text(
-              'Ustaw kopertę „Na rachunki" w Plannerze, aby doprecyzować plan.',
+              'Ustaw kopertę „Na bieżące wydatki" w Plannerze, aby '
+              'doprecyzować plan.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: c.textSecondary,
               ),

@@ -77,7 +77,10 @@ class SubscriptionRow extends StatelessWidget {
               Icon(
                 category != null
                     ? categoryIcon(category.iconName)
-                    : LucideIcons.repeat,
+                    // `repeat` nalezy do zakladki „Cykliczne" (ADR-032) —
+                    // subskrypcje maja wlasna ikone, zeby nie znaczyly tego
+                    // samego co sekcja, w ktorej mieszkaja.
+                    : LucideIcons.badgeCheck,
                 size: 18,
                 color: category?.color ?? color,
               ),

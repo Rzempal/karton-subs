@@ -101,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // bez udziału silnika AI (ADR-017).
             ListTile(
               leading: const Icon(LucideIcons.folderArchive),
-              title: const Text('Archiwum rachunków'),
+              title: const Text('Archiwum paragonów'),
               subtitle: Text(ReceiptArchiveScreen.labelFor(
                 storage.getReceiptArchiveEnabled(),
                 storage.getReceiptArchiveSubfolder(),

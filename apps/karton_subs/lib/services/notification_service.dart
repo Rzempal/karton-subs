@@ -200,21 +200,23 @@ class NotificationService {
   //
   // Powiadomienie „w toku" wystawia natywna usluga skanujaca (jest warunkiem
   // jej pracy na pierwszym planie — ADR-016). Tutaj zostaja tylko powiadomienia
-  // koncowe, pokazywane, gdy aplikacja zyje i zna nazwe rachunku.
+  // koncowe, pokazywane, gdy aplikacja zyje i zna nazwe paragonu.
 
+  // ID kanalu zostaje bez zmian: Android trzyma pod nim ustawienia uzytkownika
+  // (dzwiek, waznosc). Nowe ID zalozyloby drugi kanal i skasowalo te ustawienia.
   static const _scanChannelId = 'zostaje_scan';
-  static const _scanChannelName = 'Skanowanie rachunków';
+  static const _scanChannelName = 'Skanowanie paragonów';
 
   /// Stabilny int-id powiadomienia dla danego skanu (jeden na pozycję).
   int _scanNotifId(String scanId) => 900000 + (scanId.hashCode.abs() % 90000);
 
-  /// Powiadomienie „Gotowe" (rachunek czeka na zatwierdzenie).
+  /// Powiadomienie „Gotowe" (paragon czeka na zatwierdzenie).
   Future<void> showScanDone(String scanId, String? name) async {
     if (!_initialized) return;
     final details = AndroidNotificationDetails(
       _scanChannelId,
       _scanChannelName,
-      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
+      channelDescription: 'Postęp rozpoznawania paragonów ze zdjęć',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       showProgress: false,
@@ -223,10 +225,10 @@ class NotificationService {
     try {
       await _plugin.show(
         _scanNotifId(scanId),
-        'Rachunek rozpoznany — gotowe',
+        'Paragon rozpoznany — gotowe',
         name != null && name.isNotEmpty
-            ? '„$name" czeka na zatwierdzenie w zakładce Rachunki'
-            : 'Czeka na zatwierdzenie w zakładce Rachunki',
+            ? '„$name" czeka na zatwierdzenie w zakładce Bieżące'
+            : 'Czeka na zatwierdzenie w zakładce Bieżące',
         NotificationDetails(android: details),
       );
     } catch (e) {
@@ -240,7 +242,7 @@ class NotificationService {
     final details = AndroidNotificationDetails(
       _scanChannelId,
       _scanChannelName,
-      channelDescription: 'Postęp rozpoznawania rachunków ze zdjęć',
+      channelDescription: 'Postęp rozpoznawania paragonów ze zdjęć',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       showProgress: false,
@@ -249,8 +251,8 @@ class NotificationService {
     try {
       await _plugin.show(
         _scanNotifId(scanId),
-        'Nie udało się rozpoznać rachunku',
-        'Otwórz zakładkę Rachunki, by ponowić lub uzupełnić ręcznie',
+        'Nie udało się rozpoznać paragonu',
+        'Otwórz zakładkę Bieżące, by ponowić lub uzupełnić ręcznie',
         NotificationDetails(android: details),
       );
     } catch (e) {

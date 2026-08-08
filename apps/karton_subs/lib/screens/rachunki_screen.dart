@@ -167,7 +167,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     if (mounted) {
       _afterBulk(
         'Zmieniono datę: ${ids.length} poz. '
-        '(rachunki trafiły do bilansu ${DateFormat('LLLL y', 'pl_PL').format(picked)})',
+        '(wydatki trafiły do bilansu ${DateFormat('LLLL y', 'pl_PL').format(picked)})',
       );
     }
   }
@@ -180,7 +180,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       builder: (dctx) => AlertDialog(
         title: Text('Usunąć ${ids.length} poz.?'),
         content: const Text(
-          'Rachunki znikną z bilansu swoich miesięcy razem ze zdjęciami. '
+          'Wydatki znikną z bilansu swoich miesięcy razem ze zdjęciami. '
           'Tego nie da się cofnąć.',
         ),
         actions: [
@@ -934,7 +934,7 @@ class _PlannerCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   alloc == null
-                      ? 'Zaplanuj kwotę w budżecie przeznaczoną na rachunki'
+                      ? 'Zaplanuj kwotę w budżecie na bieżące wydatki'
                       : '$count ${_itemsLabel(count)} w planie',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
@@ -1006,7 +1006,7 @@ class _BillsSectionHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Rachunki', style: theme.textTheme.titleMedium),
+              Text('Bieżące', style: theme.textTheme.titleMedium),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1063,8 +1063,8 @@ class _EmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Brak rachunków dla wybranych filtrów.\n'
-              'Zmień filtr albo dodaj rachunek przyciskiem „+".',
+              'Brak wydatków dla wybranych filtrów.\n'
+              'Zmień filtr albo dodaj wydatek przyciskiem „+".',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

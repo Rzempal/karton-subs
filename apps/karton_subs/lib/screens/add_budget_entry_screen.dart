@@ -834,7 +834,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _nameLabel() => switch (_type) {
     BudgetEntryType.income => 'Nazwa wpływu *',
-    BudgetEntryType.billPayment => 'Nazwa rachunku *',
+    BudgetEntryType.billPayment => 'Nazwa wydatku *',
     BudgetEntryType.recurringCost => 'Nazwa kosztu *',
     BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
     BudgetEntryType.householdTransfer => 'Nazwa przelewu *',

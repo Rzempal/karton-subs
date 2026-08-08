@@ -502,7 +502,7 @@ class StorageService {
       return [
         BillsAllocationItem(
           id: 'legacy-${scope.name}',
-          name: 'Na rachunki',
+          name: 'Na bieżące wydatki',
           amount: amount,
         ),
       ];

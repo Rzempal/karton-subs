@@ -138,7 +138,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
       initialDate: _date,
       firstDate: DateTime(now.year - 3, 1, 1),
       lastDate: DateTime(now.year + 1, 12, 31),
-      helpText: 'Data zapłaty rachunku',
+      helpText: 'Data wydatku',
     );
     if (picked != null) {
       setState(() => _date = DateTime(picked.year, picked.month, picked.day));
@@ -341,7 +341,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           children: [
             // Podgląd zdjęcia rachunku (skan lub powiązane zdjęcie) — tap powiększa.
             if (_photoPath != null && File(_photoPath!).existsSync()) ...[
-              _SectionLabel('Zdjęcie rachunku'),
+              _SectionLabel('Zdjęcie paragonu'),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () => ImagePreviewDialog.show(
@@ -387,7 +387,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
             const SizedBox(height: 8),
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nazwa rachunku *'),
+              decoration: const InputDecoration(labelText: 'Nazwa wydatku *'),
               textCapitalization: TextCapitalization.sentences,
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Wymagane' : null,

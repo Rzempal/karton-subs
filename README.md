@@ -12,29 +12,32 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 **Kluczowe funkcje:**
 - Zero logowania, zero rejestracji -- 100% prywatnosci, wszystko na urzadzeniu
 - Zakladka "Budzet": pelny przeglad budzetu razem z subskrypcjami (bilans miesiaca + plan)
-- Subskrypcje: sekcja zakladki "Wydatki", obok przelewu wewnetrznego i wydatkow stalych
+- Subskrypcje: sekcja zakladki "Cykliczne", obok przelewu wewnetrznego i kosztow stalych
   (ADR-027) — ten sam styl listy i te same filtry; podsumowanie miesieczne/roczne,
   trend, podzial wg kategorii, triale i limit sa w zakladce "Budzet"
-- **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (rachunki),
-  koszty cykliczne i wieksze wydatki jednorazowe -- z podsumowaniem "ile zostaje miesiecznie"
+- **Podzial wydatkow wg sposobu liczenia (ADR-032):** "Biezace" = wydatek datowany,
+  uderza w bilans konkretnego miesiaca (zakupy, paliwo, wyjscia, zajecia, naprawa auta);
+  "Cykliczne" = koszt usredniany na miesiac (prad, gaz, czynsz, raty, subskrypcje)
+- **Budzet domowy:** wplywy (w tym jednorazowe, np. premia), koszty stale (prad, gaz,
+  czynsz), raty i wydatki biezace -- z podsumowaniem "ile zostaje miesiecznie"
 - **Plan vs Realne:** wykres trendu i podzial wg kategorii maja przelacznik ujecia —
-  plan (kwoty zalozone + koperta „Na rachunki") albo realne kwoty miesiaca z korektami
-  i faktycznymi rachunkami (ADR-028)
+  plan (kwoty zalozone + koperta „Na biezace wydatki") albo realne kwoty miesiaca
+  z korektami i faktycznymi wydatkami (ADR-028)
 - **Podsumowanie roczne:** ile z rocznego planu juz wydano, miesiac po miesiacu
   i narastajaco; **poczatek ewidencji** sprawia, ze budzet zaczety w polowie roku
   porownuje sie z planem na te miesiace, a nie na dwanascie (ADR-029)
-- **Planner** („Na rachunki"): osobny ekran dostepny z „Rachunkow" i z „Wydatkow",
-  z akcja „Uzupelnij do pelnej kwoty" (domkniecie planu do 10 / 100 / 1000)
+- **Planner** („Na biezace wydatki"): osobny ekran dostepny z „Biezacych" i z
+  „Cyklicznych", z akcja „Uzupelnij do pelnej kwoty" (domkniecie do 10 / 100 / 1000)
 - **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
 - **Budzet osobisty i domowy:** osobny wspolny budzet (wklady czlonkow, przelew z osobistego);
   subskrypcje z przynaleznoscia osobista/domowa
 - **Synchronizacja budzetu domowego (preview):** wspoldzielenie miedzy telefonami bez kont —
   parowanie kodem QR + haslo, szyfrowanie end-to-end (serwer nie widzi tresci). Budzety
   osobiste zostaja lokalne. _Funkcja w wersji wczesnej — wymaga dalszych testow._
-- **Skan rachunku (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje".
+- **Skan paragonu (lokalnie):** zdjecie z aparatu/galerii lub "Udostepnij -> Zostaje".
   Paragon fiskalny i zrzut platnosci telefonem czyta szybka sciezka — zwykly OCR
   + reguly, ~1-2 s, data wprost z dokumentu (ADR-017); dokument o dowolnym ukladzie
-  przejmuje wlasny silnik AI NA telefonie. Rachunek
+  przejmuje wlasny silnik AI NA telefonie. Wydatek
   czeka w sekcji "Do zatwierdzenia" z miniatura zdjecia (ADR-013). Zdjecie mozna
   przyciac do samego paragonu (mniej szumu dla OCR, lzejsze archiwum) — przy aparacie/
   galerii od razu, a dla "Udostepnij" i w edycji z podgladu miniatury (ADR-015)
@@ -47,7 +50,7 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
 **Filozofia:**
 - Baza z "Karton z lekami" (APPteczka) -- ta sama architektura, inna domena
 - Ewolucja wygladu: neumorfizm -> "Ledger Glass" (flat M3) -> "Aurora" (premium, jeden ciemny motyw; wdrozenie Faza 6)
-- AI wylacznie LOKALNIE: skan rachunkow przez wlasna apke-silnik na urzadzeniu
+- AI wylacznie LOKALNIE: skan paragonow przez wlasna apke-silnik na urzadzeniu
   (Gemma 4 E4B, repo karton-ai) -- zero chmury, zero kont, zero API w sieci (ADR-013).
   Szybka sciezka OCR tez jest offline: model rozpoznawania tekstu siedzi w APK,
   bez Google Play Services (ADR-017)
@@ -85,7 +88,7 @@ karton-subs/
 │       │   ├── controllers/    # SubscriptionController, BudgetController
 │       │   ├── utils/          # cycle_math (normalizacja cyklu), expenses_filter (filtry list)
 │       │   ├── theme/          # Motyw (AppTheme, AppColors) -- Aurora od Fazy 6
-│       │   ├── screens/        # Budzet (przeglad), Rachunki, Wydatki (z subskrypcjami), Wplywy, Ustawienia
+│       │   ├── screens/        # Budzet (przeglad), Biezace, Cykliczne (z subskrypcjami), Wplywy, Ustawienia
 │       │   └── widgets/        # Wspolne widgety list, wykresow i nawigacji
 │       └── pubspec.yaml
 ├── docs/

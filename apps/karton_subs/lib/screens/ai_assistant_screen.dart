@@ -64,7 +64,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Text(
-              'Skanowanie rachunków ze zdjęć działa zawsze — apka odczytuje '
+              'Skanowanie paragonów ze zdjęć działa zawsze — apka odczytuje '
               'paragony i potwierdzenia płatności własnym mechanizmem, bez '
               'sieci i bez dodatkowych aplikacji.',
               style: theme.textTheme.bodySmall?.copyWith(

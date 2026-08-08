@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-// Ikona receiptText (rachunki) jest tylko w nowszym pakiecie — ten sam alias
-// co w pasku nawigacji, żeby rachunek miał wszędzie tę samą ikonę.
+// Ikona receiptText (paragon) jest tylko w nowszym pakiecie — ten sam alias
+// co w pasku nawigacji, żeby wydatek bieżący miał wszędzie tę samą ikonę.
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../models/budget_entry.dart';
@@ -82,7 +82,7 @@ class BudgetSummarySection extends StatelessWidget {
   /// miesięcznym i rocznym (dawny „hero" z osobnej sekcji statystyk).
   final int subscriptionsCount;
 
-  /// Rezerwa „Na rachunki" (Planner) — trzeci składnik odejmowania. [expenses]
+  /// Rezerwa „Na bieżące wydatki" (Planner) — trzeci składnik. [expenses]
   /// już ją zawiera; tutaj jest osobno, żeby rozpis pokazał ją jako własną
   /// pozycję zamiast chować w kosztach cyklicznych.
   final double allocation;
@@ -181,7 +181,7 @@ class BudgetSummarySection extends StatelessWidget {
                     const SizedBox(height: 16),
                     _SurplusBreakdown(
                       income: income,
-                      // [expenses] zawiera rezerwę „Zaplanowana na rachunki"
+                      // [expenses] zawiera rezerwę „Zaplanowana na bieżące"
                       // ORAZ subskrypcje, a obie są w rozpisie osobnymi
                       // pozycjami — bez odjęcia policzylibyśmy je dwa razy
                       // i suma nie zeszłaby się z saldem.
@@ -194,8 +194,8 @@ class BudgetSummarySection extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       'Plan: wpływy minus koszty stałe (cykliczne, subskrypcje) '
-                      'i rezerwa „Na rachunki". Bez pozycji jednorazowych, korekt '
-                      'i realnych rachunków — te liczy bilans miesiąca.',
+                      'i rezerwa „Na bieżące wydatki". Bez pozycji jednorazowych, '
+                      'korekt i realnych wydatków — te liczy bilans miesiąca.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: c.textSecondary,
                       ),
@@ -314,7 +314,7 @@ class _SurplusBreakdown extends StatelessWidget {
           ),
         if (allocation > 0)
           _BreakdownRow(
-            label: 'Zaplanowana na rachunki',
+            label: 'Zaplanowana na bieżące',
             amount: allocation,
             currency: currency,
             sign: '−',
@@ -345,8 +345,8 @@ class _SurplusBreakdown extends StatelessWidget {
 ///
 /// Ten sam układ co karta „Saldo" na zakładce Plan (pasek proporcji + rozpis),
 /// ale na danych REALNYCH: koszty cykliczne z korektami kwot i ratami tego
-/// miesiąca, subskrypcje i rachunki faktycznie przypisane do miesiąca.
-/// Rachunki zbiorczo — pozycja po pozycji jest ich lista niżej na ekranie.
+/// miesiąca, subskrypcje i wydatki bieżące przypisane do miesiąca.
+/// Bieżące zbiorczo — pozycja po pozycji jest ich lista niżej na ekranie.
 class MonthBalanceSection extends StatelessWidget {
   final DateTime month;
   final MonthBalanceParts parts;
@@ -511,7 +511,7 @@ class MonthBalanceSection extends StatelessWidget {
                       ),
                     if (parts.bills > 0)
                       _BreakdownRow(
-                        label: 'Rachunki',
+                        label: 'Bieżące',
                         amount: parts.bills,
                         currency: currency,
                         sign: '−',
@@ -536,7 +536,7 @@ class MonthBalanceSection extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Realne kwoty tego miesiąca: koszty cykliczne razem '
-                      'z korektami i ratami, rachunki zbiorczo (lista niżej). '
+                      'z korektami i ratami, bieżące zbiorczo (lista niżej). '
                       'Przytrzymaj kwotę, by zobaczyć, czym miesiąc różni się '
                       'od planu.',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -653,7 +653,7 @@ class AnnualCostsSection extends StatelessWidget {
                       ),
                     if (allocation > 0)
                       _BreakdownRow(
-                        label: 'Zaplanowana na rachunki',
+                        label: 'Zaplanowana na bieżące',
                         amount: allocation * 12,
                         currency: currency,
                         sign: '',
@@ -663,7 +663,7 @@ class AnnualCostsSection extends StatelessWidget {
                     Text(
                       'Kwoty miesięczne × 12 — koszty cykliczne i subskrypcje '
                       'liczone dzisiejszym stanem, bez pozycji jednorazowych '
-                      'i realnych rachunków.',
+                      'i realnych wydatków bieżących.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: c.textSecondary,
                       ),
@@ -1164,7 +1164,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   ];
 
   String _groupLabel(BalanceContributionKind k) => switch (k) {
-    BalanceContributionKind.billsAllocation => 'Na rachunki (rezerwa)',
+    BalanceContributionKind.billsAllocation => 'Na bieżące (rezerwa)',
     BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
     BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
     BalanceContributionKind.amountOverride => 'Korekty kwot',
@@ -1308,7 +1308,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
 /// Przełącznik siedzi w prawym górnym rogu Dashboardu i rządzi obiema sekcjami.
 enum MonthFlowSort { byDate, byName }
 
-/// Grupowanie pozycji po typie głównym (rachunki / subskrypcje / budżet).
+/// Grupowanie pozycji po typie głównym (bieżące / subskrypcje / budżet).
 /// Działa jak „warstwy" w Budżecie: nie zastępuje istniejącego podziału sekcji,
 /// tylko dokłada podgrupy w środku.
 enum MonthFlowGrouping { none, byType }
@@ -1326,12 +1326,12 @@ List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
   return out;
 }
 
-/// Ikona pozycji przepływu. Rachunek ma WŁASNĄ ikonę — tę samą, co zakładka
-/// „Rachunki" w pasku nawigacji; wcześniej dostawał strzałkę kierunku, czyli
+/// Ikona pozycji przepływu. Wydatek bieżący ma WŁASNĄ ikonę — tę samą, co
+/// zakładka „Bieżące" w pasku; wcześniej dostawał strzałkę kierunku, czyli
 /// dokładnie to samo co zwykły koszt, choć to osobny rodzaj pozycji (ADR-018).
 IconData _flowIcon(CalendarItem it) => switch (it.kind) {
   CalendarItemKind.bill => lucide.LucideIcons.receiptText,
-  CalendarItemKind.subscription => LucideIcons.repeat,
+  CalendarItemKind.subscription => LucideIcons.badgeCheck,
   CalendarItemKind.budgetEntry =>
     it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
 };
@@ -1956,7 +1956,7 @@ class BudgetEntryCard extends StatelessWidget {
     // Druga linia: typ · data · metoda. Data tylko tam, gdzie coś znaczy —
     // pozycja jednorazowa ma swój miesiąc, cykliczna datę startu cyklu.
     // Jeden format daty dla wszystkich pozycji: pelna data pozycji, a gdy jej
-    // nie ma (stare rekordy) — sam miesiac. Rachunki mialy wczesniej „2026-07",
+    // nie ma (stare rekordy) — sam miesiac. Biezace mialy wczesniej „2026-07",
     // wiec ta sama lista pokazywala dwa rozne formaty.
     final date = entry.startDate != null
         ? DateFormat('yyyy-MM-dd').format(entry.startDate!)

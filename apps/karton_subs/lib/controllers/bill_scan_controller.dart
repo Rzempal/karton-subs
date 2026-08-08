@@ -530,7 +530,7 @@ class BillScanController extends ChangeNotifier {
       await _fail(
         id,
         'Nie odczytano automatycznie — uzupełnij ręcznie (Edytuj). '
-        'Faktury i nietypowe rachunki czyta Asystent AI '
+        'Faktury i nietypowe dokumenty czyta Asystent AI '
         '(Ustawienia → Asystent AI).',
       );
       return;
@@ -590,7 +590,7 @@ class BillScanController extends ChangeNotifier {
         item.copyWith(
           status: PendingScanStatus.error,
           errorMessage: outcome.errorMessage ??
-              'Nie rozpoznano rachunku na zdjęciu — spróbuj wyraźniejszego ujęcia',
+              'Nie rozpoznano paragonu na zdjęciu — spróbuj wyraźniejszego ujęcia',
         ),
       );
       if (!outcome.nativeNotified) {

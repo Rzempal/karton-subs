@@ -87,15 +87,15 @@ class _ReceiptArchiveScreenState extends State<ReceiptArchiveScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Archiwum rachunków')),
+      appBar: AppBar(title: const Text('Archiwum paragonów')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 112),
         children: [
           SettingsGroup(children: [
             SwitchListTile(
-              title: const Text('Zapisuj zdjęcia rachunków'),
+              title: const Text('Zapisuj zdjęcia paragonów'),
               subtitle: const Text(
-                'Trwała kopia zdjęcia przy zatwierdzeniu rachunku',
+                'Trwała kopia zdjęcia przy zatwierdzeniu wydatku',
               ),
               value: _enabled,
               onChanged: _setEnabled,
@@ -112,7 +112,7 @@ class _ReceiptArchiveScreenState extends State<ReceiptArchiveScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Text(
-              'Zdjęcia zatwierdzonych rachunków trafiają do wybranego folderu '
+              'Zdjęcia zatwierdzonych paragonów trafiają do wybranego folderu '
               '(przeglądniesz je w Plikach lub Galerii). Archiwum jest lokalne '
               '— nie wchodzi do kopii zapasowej ani synchronizacji domowej.',
               style: theme.textTheme.bodySmall?.copyWith(

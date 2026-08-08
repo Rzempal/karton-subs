@@ -308,7 +308,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     }
   }
 
-  /// Udostepnione zdjecia -> skan rachunku w tle + przejscie na Rachunki.
+  /// Udostepnione zdjecia -> skan paragonu w tle + przejscie na Biezace.
   void _onSharedMedia(List<SharedMediaFile> files) {
     if (!mounted) return;
     final storage = context.read<StorageService>();
@@ -316,7 +316,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     // 1) w pamieci — to samo zdjecie potrafi przyjsc strumieniem i przez
     //    getInitialMedia w tej samej sesji;
     // 2) TRWALY (Hive) — Android ponawia pierwotny intent ACTION_SEND przy
-    //    wznowieniu zadania z listy ostatnich, wiec bez tego ten sam rachunek
+    //    wznowieniu zadania z listy ostatnich, wiec bez tego ten sam paragon
     //    wracal do kolejki po KAZDYM uruchomieniu aplikacji.
     final now = DateTime.now();
     _recentShares.removeWhere((_, t) => now.difference(t) > const Duration(seconds: 30));
@@ -339,7 +339,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
         .toList();
     if (images.isEmpty) return;
     unawaited(storage.setHandledShares([...handled, ...accepted]));
-    // Bez bramki: odczyt rachunku robi model wbudowany w apke (ADR-017),
+    // Bez bramki: odczyt paragonu robi model wbudowany w apke (ADR-017),
     // wiec „Udostepnij -> Zostaje" dziala niezaleznie od Asystenta AI.
     final scanCtrl = context.read<BillScanController>();
     final scope = context.read<BudgetController>().scope;
@@ -351,8 +351,9 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
       SnackBar(
         content: Text(
           images.length == 1
-              ? 'Rozpoznaję udostępniony rachunek w tle (kolejkuję, ok. 1 min).'
-              : 'Dodano ${images.length} rachunki do kolejki rozpoznawania.',
+              ? 'Rozpoznaję udostępniony paragon w tle (kolejkuję, ok. 1 min).'
+              : 'Rozpoznaję udostępnione paragony w tle '
+                  '(${images.length} szt., kolejkuję).',
         ),
       ),
     );
@@ -380,9 +381,9 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  /// Kolejnosc zakladek: przeglad, potem sciezka pieniedzy (wplywy -> rachunki
-  /// -> wydatki cykliczne), na koncu ustawienia. Subskrypcje nie maja juz
-  /// wlasnej zakladki — sa sekcja „Wydatkow" (ADR-027).
+  /// Kolejnosc zakladek: przeglad, potem sciezka pieniedzy (wplywy -> biezace
+  /// -> cykliczne), na koncu ustawienia. Subskrypcje nie maja juz wlasnej
+  /// zakladki — sa sekcja „Cyklicznych" (ADR-027).
   static const _screens = [
     DashboardScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
@@ -392,17 +393,17 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   ];
 
   static const _navItems = [
-    // Nazwy sekcji wg ADR-019: „Budżet" to przeglad calosci, a zarzadzanie
-    // pozycjami planowalnymi rozbite na „Wplywy" i „Wydatki cykliczne"
-    // (w pasku skrocone do „Wydatki" — pelny tytul jest na ekranie).
+    // Nazwy sekcji wg ADR-019 i ADR-032: „Budżet" to przeglad calosci, a
+    // wydatki dziela sie po sposobie liczenia — „Biezace" (datowane, w bilans
+    // konkretnego miesiaca) i „Cykliczne" (usredniane na miesiac).
     GlassNavItem(icon: LucideIcons.wallet, label: 'Budżet'),
     GlassNavItem(icon: LucideIcons.trendingUp, label: 'Wpływy'),
-    GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Rachunki'),
-    GlassNavItem(icon: LucideIcons.trendingDown, label: 'Wydatki'),
+    GlassNavItem(icon: lucide.LucideIcons.receiptText, label: 'Bieżące'),
+    GlassNavItem(icon: LucideIcons.repeat, label: 'Cykliczne'),
     GlassNavItem(icon: LucideIcons.settings, label: 'Ustawienia'),
   ];
 
-  /// Indeks zakladki „Rachunki" — tam ladujemy po „Udostepnij -> Zostaje".
+  /// Indeks zakladki „Biezace" — tam ladujemy po „Udostepnij -> Zostaje".
   /// Stala, a nie liczba w kodzie: kolejnosc zakladek juz sie zmieniala, a
   /// magiczna „1" po cichu wskazywala wtedy zly ekran.
   static const _rachunkiTab = 2;

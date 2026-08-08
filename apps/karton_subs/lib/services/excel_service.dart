@@ -377,7 +377,7 @@ class ExcelService {
 
   static String _budgetTypeLabel(BudgetEntryType type) => switch (type) {
         BudgetEntryType.income => 'Wpływ',
-        BudgetEntryType.billPayment => 'Rachunek',
+        BudgetEntryType.billPayment => 'Wydatek bieżący',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
         BudgetEntryType.householdTransfer => 'Przelew do domowego',
@@ -1057,7 +1057,13 @@ BudgetEntryType _parseBudgetType(String? raw) {
   if (t.contains('przelew') || t.contains('transfer')) {
     return BudgetEntryType.householdTransfer;
   }
-  if (t.contains('rachunek') || t.contains('bill')) {
+  // „Rachunek" to nazwa sprzed zmiany na „Bieżące" (ADR-032) — zostaje na
+  // zawsze, bo starych arkuszy na dysku użytkownika nikt nie przepisze.
+  // Wariant bez polskich znaków dla arkuszy poprawianych ręcznie.
+  if (t.contains('bieżąc') ||
+      t.contains('biezac') ||
+      t.contains('rachunek') ||
+      t.contains('bill')) {
     return BudgetEntryType.billPayment;
   }
   if (t.contains('cykl') ||

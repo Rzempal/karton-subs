@@ -54,7 +54,7 @@ enum CalendarItemKind {
   /// Etykieta grupy. „Budzet" zamiast „Cykliczne", bo w tej grupie sa takze
   /// pozycje jednorazowe (premia, wieksze zakupy) — nazwa musi je objac.
   String get label => switch (this) {
-        CalendarItemKind.bill => 'Rachunki',
+        CalendarItemKind.bill => 'Bieżące',
         CalendarItemKind.subscription => 'Subskrypcje',
         CalendarItemKind.budgetEntry => 'Budżet',
       };
@@ -817,7 +817,7 @@ class BudgetService {
     // suma delt == bilans − surplus (ADR-008/011).
     if (billsAllocation != 0) {
       out.add(BalanceContribution(
-        name: 'Na rachunki (rezerwa planu)',
+        name: 'Na bieżące wydatki (rezerwa planu)',
         delta: billsAllocation,
         kind: BalanceContributionKind.billsAllocation,
       ));

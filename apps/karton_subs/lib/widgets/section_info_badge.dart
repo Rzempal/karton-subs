@@ -23,11 +23,11 @@ class SectionInfo {
     'Jednorazowe (premia) — podbijają bilans swojego miesiąca',
   ]);
 
-  static const bills = SectionInfo('Rachunki', [
+  static const bills = SectionInfo('Bieżące', [
     'Wydatki z konkretną datą: opłacone i zaplanowane na przyszłość',
     'Wchodzą w bilans swojego miesiąca, nie w plan miesięczny',
     'Trafia tu wszystko, czego nie chcesz rozkładać na średnią',
-    'Planner: kwota zarezerwowana w budżecie na rachunki',
+    'Planner: kwota zarezerwowana w budżecie na bieżące wydatki',
     'Skan zdjęciem rozpoznaje kwotę, wystawcę i datę',
   ]);
 
@@ -37,7 +37,7 @@ class SectionInfo {
         ' software, karnety) — wydatki uznaniowe, łatwiejsze do oceny razem',
     'Liczone jako średnia: kwota × liczba płatności ÷ 12',
     'Miesiąc dodania pozycji nie ma znaczenia',
-    'Nie chcesz uśredniać? Dodaj w „Rachunkach"',
+    'Nie chcesz uśredniać? Dodaj w „Bieżących"',
   ]);
 }
 
