@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// Pasek „ile z planu" — jeden język dla wszystkich porównań plan vs realny
-/// (rachunki wobec koperty, rok wobec planu rocznego, subskrypcje wobec limitu).
+/// (wydatki bieżące wobec koperty, rok wobec planu rocznego, subskrypcje wobec limitu).
 ///
 /// Do wysokości planu pasek rośnie na zielono na neutralnym torze. Po
 /// przekroczeniu **nie zatrzymuje się na pełnym, czerwonym pasku** — ten mówi

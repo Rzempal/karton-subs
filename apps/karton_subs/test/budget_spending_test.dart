@@ -10,7 +10,7 @@ import 'package:karton_subs/models/subscription.dart';
 const _svc = BudgetService();
 final _date = DateTime(2026, 1, 1);
 
-BudgetEntry _billPayment({
+BudgetEntry _spending({
   required double amount,
   required String month,
   bool isActive = true,
@@ -18,7 +18,7 @@ BudgetEntry _billPayment({
     BudgetEntry(
       id: 'bp_${month}_$amount',
       name: 'Rachunek $amount',
-      type: BudgetEntryType.billPayment,
+      type: BudgetEntryType.spending,
       amount: amount,
       currency: Currency.PLN,
       month: month,
@@ -39,37 +39,37 @@ BudgetEntry _income(double amount) => BudgetEntry(
 void main() {
   group('Rachunki (billPayment) — plan vs bilans (ADR-008)', () {
     test('rachunek NIE wchodzi do „zostaje/mies" (surplus)', () {
-      final entries = [_income(5000), _billPayment(amount: 400, month: '2026-07')];
+      final entries = [_income(5000), _spending(amount: 400, month: '2026-07')];
       // Surplus liczy tylko koszty cykliczne — rachunek to realny log, nie plan.
       expect(_svc.monthlyBudgetExpenses(entries), closeTo(0, 0.001));
       expect(_svc.monthlySurplus(entries, const []), closeTo(5000, 0.001));
     });
 
     test('rachunek obciąża bilans SWOJEGO miesiąca, nie innych', () {
-      final entries = [_income(5000), _billPayment(amount: 400, month: '2026-07')];
+      final entries = [_income(5000), _spending(amount: 400, month: '2026-07')];
       expect(_svc.balanceForMonth(entries, const [], '2026-07'),
           closeTo(4600, 0.001));
       expect(_svc.balanceForMonth(entries, const [], '2026-08'),
           closeTo(5000, 0.001));
     });
 
-    test('billsActualForMonth sumuje tylko rachunki danego miesiąca', () {
+    test('spendingActualForMonth sumuje tylko rachunki danego miesiąca', () {
       final entries = [
-        _billPayment(amount: 400, month: '2026-07'),
-        _billPayment(amount: 150, month: '2026-07'),
-        _billPayment(amount: 999, month: '2026-08'),
+        _spending(amount: 400, month: '2026-07'),
+        _spending(amount: 150, month: '2026-07'),
+        _spending(amount: 999, month: '2026-08'),
       ];
-      expect(_svc.billsActualForMonth(entries, '2026-07'), closeTo(550, 0.001));
-      expect(_svc.billsActualForMonth(entries, '2026-08'), closeTo(999, 0.001));
-      expect(_svc.billsActualForMonth(entries, '2026-09'), closeTo(0, 0.001));
+      expect(_svc.spendingActualForMonth(entries, '2026-07'), closeTo(550, 0.001));
+      expect(_svc.spendingActualForMonth(entries, '2026-08'), closeTo(999, 0.001));
+      expect(_svc.spendingActualForMonth(entries, '2026-09'), closeTo(0, 0.001));
     });
 
     test('nieaktywny rachunek pomijany w bilansie i sumie', () {
       final entries = [
         _income(5000),
-        _billPayment(amount: 400, month: '2026-07', isActive: false),
+        _spending(amount: 400, month: '2026-07', isActive: false),
       ];
-      expect(_svc.billsActualForMonth(entries, '2026-07'), closeTo(0, 0.001));
+      expect(_svc.spendingActualForMonth(entries, '2026-07'), closeTo(0, 0.001));
       expect(_svc.balanceForMonth(entries, const [], '2026-07'),
           closeTo(5000, 0.001));
     });
@@ -77,28 +77,28 @@ void main() {
 
   group('Koperta „Na rachunki" (planowany koszt, ADR-011)', () {
     test('koperta pomniejsza surplus, NIE rusza bilansu', () {
-      final entries = [_income(5000), _billPayment(amount: 400, month: '2026-07')];
+      final entries = [_income(5000), _spending(amount: 400, month: '2026-07')];
       // Bez koperty.
       expect(_svc.monthlySurplus(entries, const []), closeTo(5000, 0.001));
       // Koperta 500 → plan mniejszy o 500 (rezerwa na rachunki).
-      expect(_svc.monthlySurplus(entries, const [], billsAllocation: 500),
+      expect(_svc.monthlySurplus(entries, const [], spendingAllocation: 500),
           closeTo(4500, 0.001));
       // Bilans miesiąca liczy REALNE rachunki (400), niezależnie od koperty.
       expect(
           _svc.balanceForMonth(entries, const [], '2026-07',
-              billsAllocation: 500),
+              spendingAllocation: 500),
           closeTo(4600, 0.001));
       expect(_svc.balanceForMonth(entries, const [], '2026-07'),
           closeTo(4600, 0.001));
     });
 
     test('suma rozbicia == bilans − surplus (z kopertą)', () {
-      final entries = [_income(5000), _billPayment(amount: 400, month: '2026-07')];
+      final entries = [_income(5000), _spending(amount: 400, month: '2026-07')];
       final diff = _svc.balanceForMonth(entries, const [], '2026-07',
-              billsAllocation: 500) -
-          _svc.monthlySurplus(entries, const [], billsAllocation: 500);
+              spendingAllocation: 500) -
+          _svc.monthlySurplus(entries, const [], spendingAllocation: 500);
       final sum = _svc
-          .balanceBreakdownForMonth(entries, '2026-07', billsAllocation: 500)
+          .balanceBreakdownForMonth(entries, '2026-07', spendingAllocation: 500)
           .fold<double>(0, (s, it) => s + it.delta);
       expect(sum, closeTo(diff, 0.001));
     });

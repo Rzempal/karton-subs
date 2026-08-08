@@ -29,7 +29,7 @@ void main() {
   group('Migracja typow scalonych', () {
     test('stary "oneTimeExpense" czyta sie jako rachunek', () {
       final e = BudgetEntry.fromJson(_json('oneTimeExpense'));
-      expect(e.type, BudgetEntryType.billPayment);
+      expect(e.type, BudgetEntryType.spending);
       expect(e.isOneTime, isTrue);
       expect(e.isExpense, isTrue);
     });

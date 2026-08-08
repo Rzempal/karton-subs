@@ -1,6 +1,6 @@
 import 'budget_entry.dart';
 
-/// Status pozycji oczekującej po skanie rachunku.
+/// Status pozycji oczekującej po skanie paragonu.
 enum PendingScanStatus {
   /// Silnik AI pracuje w tle (OCR ~30–45 s).
   processing,
@@ -12,13 +12,13 @@ enum PendingScanStatus {
   error,
 }
 
-/// Rachunek rozpoznany ze zdjęcia, oczekujący na zatwierdzenie.
+/// Paragon rozpoznany ze zdjęcia, oczekujący na zatwierdzenie.
 ///
 /// Pozycje oczekujące są LOKALNE (poza synchronizacją, backupem i bilansem) —
-/// do budżetu ([BudgetEntryType.billPayment]) trafiają dopiero po zatwierdzeniu.
+/// do budżetu ([BudgetEntryType.spending]) trafiają dopiero po zatwierdzeniu.
 /// [imagePath] to kopia zdjęcia w katalogu aplikacji: miniatura do porównania
 /// z rozpoznaniem; kasowana razem z pozycją.
-class PendingBillScan {
+class PendingReceiptScan {
   final String id;
   final String imagePath;
   final BudgetScope scope;
@@ -37,7 +37,7 @@ class PendingBillScan {
   // Status == error.
   final String? errorMessage;
 
-  const PendingBillScan({
+  const PendingReceiptScan({
     required this.id,
     required this.imagePath,
     required this.scope,
@@ -51,7 +51,7 @@ class PendingBillScan {
     this.errorMessage,
   });
 
-  PendingBillScan copyWith({
+  PendingReceiptScan copyWith({
     String? imagePath,
     PendingScanStatus? status,
     String? name,
@@ -61,7 +61,7 @@ class PendingBillScan {
     String? rodzaj,
     String? errorMessage,
   }) =>
-      PendingBillScan(
+      PendingReceiptScan(
         id: id,
         imagePath: imagePath ?? this.imagePath,
         scope: scope,
@@ -75,7 +75,7 @@ class PendingBillScan {
         errorMessage: errorMessage ?? this.errorMessage,
       );
 
-  factory PendingBillScan.fromJson(Map<String, dynamic> json) => PendingBillScan(
+  factory PendingReceiptScan.fromJson(Map<String, dynamic> json) => PendingReceiptScan(
         id: json['id'] as String,
         imagePath: json['imagePath'] as String,
         scope: BudgetScope.values.firstWhere(

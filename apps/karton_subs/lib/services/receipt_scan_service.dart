@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import '../models/category.dart';
 
-/// Jeden rachunek rozpoznany przez silnik (pola null = nieczytelne na zdjęciu).
-class ParsedBill {
+/// Jeden paragon rozpoznany przez silnik (pola null = nieczytelne na zdjęciu).
+class ParsedReceipt {
   final String? name;
   final double? amount;
   final String? currency;
   final DateTime? date;
   final String? rodzaj;
 
-  const ParsedBill({
+  const ParsedReceipt({
     this.name,
     this.amount,
     this.currency,
@@ -20,12 +20,12 @@ class ParsedBill {
 }
 
 /// Parsowanie odpowiedzi lokalnego silnika AI (`{"rachunki":[...]}`) na dane
-/// do prefillu rachunku. Defensywne: mały model potrafi zwrócić zepsuty JSON —
+/// do prefillu paragonu. Defensywne: mały model potrafi zwrócić zepsuty JSON —
 /// wtedy zwracamy pustą listę zamiast wyjątku.
-class BillScanParser {
-  /// Wyciąga listę rachunków z surowej odpowiedzi silnika.
+class ReceiptScanParser {
+  /// Wyciąga listę paragonów z surowej odpowiedzi silnika.
   /// [now] tylko do testów — punkt odniesienia dla roku w dacie.
-  static List<ParsedBill> parse(String raw, {DateTime? now}) {
+  static List<ParsedReceipt> parse(String raw, {DateTime? now}) {
     final today = now ?? DateTime.now();
     final dynamic decoded;
     try {
@@ -34,13 +34,16 @@ class BillScanParser {
       return const [];
     }
     if (decoded is! Map<String, dynamic>) return const [];
+    // Klucz `rachunki` to UMOWA Z APKĄ-SILNIKIEM (osobne APK, osobne repo) —
+    // nie zmieniac (ADR-032). Zmiana zabija skanowanie do czasu aktualizacji
+    // obu aplikacji naraz.
     final list = decoded['rachunki'];
     if (list is! List) return const [];
 
-    final bills = <ParsedBill>[];
+    final receipts = <ParsedReceipt>[];
     for (final e in list) {
       if (e is! Map<String, dynamic>) continue;
-      final bill = ParsedBill(
+      final receipt = ParsedReceipt(
         name: _buildName(e['wystawca'], e['tytul']),
         amount: _parseAmount(e['kwota']),
         currency: (e['waluta'] as String?)?.trim().toUpperCase(),
@@ -49,12 +52,12 @@ class BillScanParser {
         rodzaj: (e['rodzaj'] as String?)?.trim().toLowerCase(),
       );
       // Pozycja bez nazwy I bez kwoty nie niesie żadnej informacji — pomijamy.
-      if (bill.name != null || bill.amount != null) bills.add(bill);
+      if (receipt.name != null || receipt.amount != null) receipts.add(receipt);
     }
-    return bills;
+    return receipts;
   }
 
-  /// Nazwa rachunku: wystawca (+ tytuł, gdy wnosi coś ponad wystawcę).
+  /// Nazwa paragonu: wystawca (+ tytuł, gdy wnosi coś ponad wystawcę).
   static String? _buildName(dynamic wystawca, dynamic tytul) {
     final w = (wystawca is String) ? wystawca.trim() : '';
     final t = (tytul is String) ? tytul.trim() : '';
@@ -82,17 +85,17 @@ class BillScanParser {
 
   // ── Data: kotwica roku ────────────────────────────────────────────────────
   //
-  // Silnik AI nie ma zegara — gdy na rachunku widnieje sam dzień i miesiąc
+  // Silnik AI nie ma zegara — gdy na paragonu widnieje sam dzień i miesiąc
   // (paragon, zrzut z Google Pay), model musi rok zmyślić i najczęściej wpisuje
   // rok poprzedni: dokument z „25 lip" oglądany 25.07.2026 wracał jako
-  // 2025-07-25. Rachunek fotografuje się „na bieżąco", więc data spoza okna
+  // 2025-07-25. Paragon fotografuje się „na bieżąco", więc data spoza okna
   // wokół dzisiaj to prawie na pewno zmyślony rok: zachowujemy dzień i miesiąc,
   // a rok bierzemy ten, który wypada najbliżej dzisiaj (remis → rok bieżący).
   //
   // Okno wstecz musi być KRÓTSZE niż rok, inaczej „ten sam dzień rok temu"
   // przechodzi jako wiarygodny — na tym poległa pierwsza wersja tej reguły.
   //
-  // Świadome ograniczenie: zdjęcie naprawdę starego rachunku (ponad ~9 mies.)
+  // Świadome ograniczenie: zdjęcie naprawdę starego paragonu (ponad ~9 mies.)
   // zostanie przesunięte bliżej dzisiaj — datę trzeba wtedy poprawić ręcznie
   // w edycji przed zatwierdzeniem.
 
@@ -172,7 +175,11 @@ class BillScanParser {
     'ubezpieczenie': ['ubezpiecz', 'polis'],
   };
 
-  /// Ogólne kategorie „rachunkowe" — fallback dla każdego rodzaju (też „inne").
+  /// Ogólne kategorie opłatowe — fallback dla każdego rodzaju (też „inne").
+  ///
+  /// To słowa, których UŻYTKOWNIK używa w nazwach swoich kategorii — nie nazwy
+  /// z apki. „rachun" zostaje, bo ludzie tak nazywają kategorie niezależnie od
+  /// tego, jak nazywa się zakładka (ADR-032).
   static const List<String> _genericKeywords = [
     'rachun',
     'opłat',

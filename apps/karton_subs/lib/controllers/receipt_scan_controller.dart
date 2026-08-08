@@ -6,26 +6,33 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/budget_entry.dart';
-import '../models/pending_bill_scan.dart';
+import '../models/pending_receipt_scan.dart';
 import '../models/subscription.dart';
 import '../services/ai_engine_service.dart';
 import '../services/app_logger.dart';
-import '../services/bill_scan_service.dart';
+import '../services/receipt_scan_service.dart';
 import '../services/notification_service.dart';
 import '../services/storage_service.dart';
 import '../services/text_ocr_service.dart';
 import 'budget_controller.dart';
 
-/// Skanowanie rachunków lokalnym silnikiem AI: kolejka pozycji oczekujących.
+/// Skanowanie paragonów lokalnym silnikiem AI: kolejka pozycji oczekujących.
 ///
 /// Przepływ: zdjęcie → kopia w katalogu apki → pozycja „processing" → OCR
 /// w tle (usługa AIDL silnika, ~30–45 s) → pozycja „done" z rozpoznanymi polami
-/// i miniaturą → użytkownik zatwierdza (powstaje zwykły [BudgetEntryType.billPayment])
+/// i miniaturą → użytkownik zatwierdza (powstaje zwykły [BudgetEntryType.spending])
 /// albo odrzuca. Pozycje oczekujące są lokalne — poza bilansem, synchronizacją
 /// i backupem; do budżetu wchodzą dopiero po zatwierdzeniu.
-class BillScanController extends ChangeNotifier {
-  static final _log = AppLogger.get('BillScanController');
+class ReceiptScanController extends ChangeNotifier {
+  static final _log = AppLogger.get('ReceiptScanController');
   static const _uuid = Uuid();
+
+  /// Katalog prywatnych kopii zdjęć czekających na zatwierdzenie.
+  ///
+  /// Nazwa z czasów sekcji „Bieżące" — **nie zmieniać** (ADR-032): ścieżki do
+  /// tego katalogu są zapisane w kolejce skanów (`pendingBillScans`), więc
+  /// przemianowanie osierociłoby zdjęcia czekające na telefonie.
+  static const scansDirName = 'bill_scans';
 
   final StorageService _storage;
   final AiEngineService _engine;
@@ -34,7 +41,7 @@ class BillScanController extends ChangeNotifier {
   /// Szybka ścieżka: zwykły OCR + reguły przed sięgnięciem po silnik AI.
   final TextOcrService _ocr;
 
-  List<PendingBillScan> _items = [];
+  List<PendingReceiptScan> _items = [];
 
   // Kolejka szybkiej ścieżki (zwykły OCR + reguły): działa w procesie apki,
   // więc zdjęcia idą przez nią pojedynczo. Rozpoznawanie silnikiem NIE czeka
@@ -57,13 +64,13 @@ class BillScanController extends ChangeNotifier {
   /// Id aktualnie rozpoznawanego skanu (reszta zleconych czeka w kolejce usługi).
   String? get activeScanId => _inFlight.isEmpty ? null : _inFlight.first;
 
-  BillScanController(
+  ReceiptScanController(
     this._storage,
     this._engine,
     this._notifications,
     this._ocr,
   ) {
-    _items = List.of(_storage.getPendingBillScans());
+    _items = List.of(_storage.getPendingReceiptScans());
     _engine.setScanResultsListener(() => unawaited(_drainResults()));
     unawaited(_recoverAfterStart());
   }
@@ -144,10 +151,10 @@ class BillScanController extends ChangeNotifier {
   }
 
   /// Pozycje oczekujące (wszystkie zakresy; ekran filtruje po aktywnym).
-  List<PendingBillScan> get pending => List.unmodifiable(_items);
+  List<PendingReceiptScan> get pending => List.unmodifiable(_items);
 
   /// Asystent AI (opt-in): steruje widocznością opcji skanowania.
-  /// Zmiana przechodzi przez kontroler (notifyListeners), bo ekran Rachunki
+  /// Zmiana przechodzi przez kontroler (notifyListeners), bo ekran Paragony
   /// żyje w IndexedStack i sam z siebie nie przebuduje się po zmianie w storage.
   bool get aiAssistantEnabled => _storage.getAiAssistantEnabled();
 
@@ -156,12 +163,12 @@ class BillScanController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Przyjmuje zdjęcie rachunku: kopiuje do katalogu apki, dodaje pozycję
+  /// Przyjmuje zdjęcie paragonu: kopiuje do katalogu apki, dodaje pozycję
   /// „processing" i odpala OCR w tle. Wraca od razu (nie czeka na silnik).
   Future<void> startScan(String sourcePath, BudgetScope scope) async {
     final id = _uuid.v4();
     final dir = await getApplicationDocumentsDirectory();
-    final scansDir = Directory('${dir.path}/bill_scans');
+    final scansDir = Directory('${dir.path}/$scansDirName');
     await scansDir.create(recursive: true);
     final ext = sourcePath.split('.').last.toLowerCase();
     final safeExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
@@ -170,7 +177,7 @@ class BillScanController extends ChangeNotifier {
 
     _items = [
       ..._items,
-      PendingBillScan(
+      PendingReceiptScan(
         id: id,
         imagePath: dest,
         scope: scope,
@@ -212,10 +219,10 @@ class BillScanController extends ChangeNotifier {
 
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final scansDir = Directory('${dir.path}/bill_scans');
+      final scansDir = Directory('${dir.path}/$scansDirName');
       await scansDir.create(recursive: true);
       // Nowy plik zamiast nadpisania starego z dwóch powodów: to samo zdjęcie
-      // bywa podpięte pod kilka pozycji (kilka rachunków z jednego kadru),
+      // bywa podpięte pod kilka pozycji (kilka paragonów z jednego kadru),
       // a Flutter trzyma wczytane obrazy pod kluczem ścieżki — zmiana ścieżki
       // wymusza odświeżenie miniatury.
       final dest = '${scansDir.path}/${_uuid.v4()}.jpg';
@@ -263,7 +270,7 @@ class BillScanController extends ChangeNotifier {
     }
   }
 
-  /// Zatwierdza rozpoznany rachunek (przycisk ✓): tworzy [billPayment], wiąże
+  /// Zatwierdza rozpoznany paragon (przycisk ✓): tworzy [spending], wiąże
   /// zdjęcie z pozycją (podgląd w edycji), archiwizuje (opt-in) i usuwa skan.
   /// Wymaga rozpoznanej kwoty — bez niej prowadź przez edycję (formularz).
   /// Zwraca komunikat błędu archiwum (do snackbara) albo null.
@@ -279,16 +286,16 @@ class BillScanController extends ChangeNotifier {
       (c) => c.name == (item.currency ?? 'PLN'),
       orElse: () => Currency.PLN,
     );
-    final categoryId = BillScanParser.suggestCategoryId(
+    final categoryId = ReceiptScanParser.suggestCategoryId(
       item.rodzaj,
       _storage.getCategories(),
     );
 
-    // Zakres wybiera pudełko danych (jak formularz rachunku).
+    // Zakres wybiera pudełko danych (jak formularz paragonu).
     budget.setScope(item.scope);
     final entry = await budget.create(
-      name: item.name ?? 'Rachunek',
-      type: BudgetEntryType.billPayment,
+      name: item.name ?? 'Paragon',
+      type: BudgetEntryType.spending,
       amount: amount,
       currency: currency,
       month: BudgetEntry.monthKeyOf(date),
@@ -298,7 +305,7 @@ class BillScanController extends ChangeNotifier {
     final err = await finalizeApproval(
       entryId: entry.id,
       imagePath: item.imagePath,
-      name: item.name ?? 'Rachunek',
+      name: item.name ?? 'Paragon',
       amount: amount,
       date: date,
     );
@@ -307,7 +314,7 @@ class BillScanController extends ChangeNotifier {
   }
 
   /// Wspólny finał zatwierdzenia (dla ✓ i dla ścieżki edycji formularza):
-  /// prywatna kopia zdjęcia powiązana z rachunkiem (podgląd) + archiwum (opt-in).
+  /// prywatna kopia zdjęcia powiązana z paragonem (podgląd) + archiwum (opt-in).
   /// [imagePath] to zdjęcie do zapisania — zwykle kopia skanu, ale jeśli
   /// użytkownik docił kadr w edycji, to już wersja przycięta.
   /// Zwraca komunikat błędu archiwum albo null.
@@ -325,7 +332,7 @@ class BillScanController extends ChangeNotifier {
     return null;
   }
 
-  /// Podmienia prywatną kopię zdjęcia ZAPISANEGO rachunku na przyciętą
+  /// Podmienia prywatną kopię zdjęcia ZAPISANEGO paragonu na przyciętą
   /// (akcja „Przytnij" w edycji istniejącej pozycji). Nowa nazwa pliku wymusza
   /// odświeżenie miniatury (Flutter cache'uje obraz po ścieżce). Zwraca nową
   /// ścieżkę albo null przy błędzie.
@@ -368,13 +375,13 @@ class BillScanController extends ChangeNotifier {
       }
       return dest;
     } catch (e, st) {
-      _log.warning('Podmiana zdjęcia zapisanego rachunku: $e', e, st);
+      _log.warning('Podmiana zdjęcia zapisanego paragonu: $e', e, st);
       return null;
     }
   }
 
   /// Trwała, prywatna kopia zdjęcia w katalogu apki (`receipts/[entryId].jpg`)
-  /// powiązana z rachunkiem — zawsze czytelna dla podglądu (niezależnie od
+  /// powiązana z paragonem — zawsze czytelna dla podglądu (niezależnie od
   /// publicznego archiwum i uprawnień do pamięci).
   Future<void> _linkPhoto(String entryId, String sourcePath) async {
     try {
@@ -387,11 +394,11 @@ class BillScanController extends ChangeNotifier {
       await File(sourcePath).copy(dest);
       await _storage.setReceiptPhotoPath(entryId, dest);
     } catch (e, st) {
-      _log.warning('Powiązanie zdjęcia z rachunkiem: $e', e, st);
+      _log.warning('Powiązanie zdjęcia z paragonem: $e', e, st);
     }
   }
 
-  /// Usuwa powiązane zdjęcie rachunku (przy usuwaniu rachunku z listy).
+  /// Usuwa powiązane zdjęcie paragonu (przy usuwaniu paragonu z listy).
   Future<void> deletePhotoFor(String entryId) async {
     final path = _storage.getReceiptPhotoPath(entryId);
     if (path != null) {
@@ -403,16 +410,16 @@ class BillScanController extends ChangeNotifier {
       await _storage.removeReceiptPhotoPath(entryId);
     }
     // Plik w publicznym archiwum ZOSTAJE — to trwały ślad, którego usunięcie
-    // rachunku nie powinno kasować. Czyścimy tylko pamięć o nazwie, bo bez
-    // rachunku nie ma już czego podmieniać.
+    // paragonu nie powinno kasować. Czyścimy tylko pamięć o nazwie, bo bez
+    // paragonu nie ma już czego podmieniać.
     await _storage.removeArchivedReceiptName(entryId);
   }
 
-  /// Zapisuje zdjęcie zatwierdzonego rachunku do publicznego archiwum.
+  /// Zapisuje zdjęcie zatwierdzonego paragonu do publicznego archiwum.
   /// Zwraca komunikat błędu (do snackbara) albo null przy sukcesie.
   /// Zapisuje zdjęcie do publicznego archiwum i zapamiętuje nazwę pliku pod
   /// [entryId] — bez tego nie da się potem podmienić właściwego pliku, bo nazwa
-  /// zawiera datę, nazwę i kwotę rachunku (te mogły się zmienić).
+  /// zawiera datę, nazwę i kwotę paragonu (te mogły się zmienić).
   Future<String?> _archive(
     String entryId,
     String sourcePath,
@@ -431,7 +438,7 @@ class BillScanController extends ChangeNotifier {
 
       // Stara wersja musi zniknąć PRZED zapisem nowej: MediaStore nie nadpisuje
       // po nazwie, tylko dokłada „nazwa (1).jpg" — w archiwum zostałyby dwa
-      // zdjęcia tego samego rachunku, w tym jedno nieaktualne.
+      // zdjęcia tego samego paragonu, w tym jedno nieaktualne.
       final previous = _storage.getArchivedReceiptName(entryId);
       if (previous != null) {
         await _engine.deleteArchivedReceipt(
@@ -446,13 +453,13 @@ class BillScanController extends ChangeNotifier {
         filename: filename,
       );
       if (saved == null) {
-        _log.warning('Archiwizacja rachunku nie powiodła się');
+        _log.warning('Archiwizacja paragonu nie powiodła się');
         return 'Nie udało się zapisać zdjęcia do archiwum';
       }
       await _storage.setArchivedReceiptName(entryId, filename);
       return null;
     } catch (e, st) {
-      _log.warning('Archiwizacja rachunku: $e', e, st);
+      _log.warning('Archiwizacja paragonu: $e', e, st);
       return 'Nie udało się zapisać zdjęcia do archiwum: $e';
     }
   }
@@ -464,16 +471,16 @@ class BillScanController extends ChangeNotifier {
         .replaceAll(RegExp(r'[^0-9A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż\s-]'), '')
         .trim()
         .replaceAll(RegExp(r'\s+'), '_');
-    if (cleaned.isEmpty) return 'rachunek';
+    if (cleaned.isEmpty) return 'paragon';
     return cleaned.length > 40 ? cleaned.substring(0, 40) : cleaned;
   }
 
   /// Sugestia kategorii dla pozycji (do prefillu formularza przy edycji).
-  String? suggestCategoryId(PendingBillScan item) =>
-      BillScanParser.suggestCategoryId(item.rodzaj, _storage.getCategories());
+  String? suggestCategoryId(PendingReceiptScan item) =>
+      ReceiptScanParser.suggestCategoryId(item.rodzaj, _storage.getCategories());
 
   /// Usuwa pozycję; kasuje miniaturę, jeśli nie dzieli jej inna pozycja
-  /// (kilka rachunków z jednego zdjęcia).
+  /// (kilka paragonów z jednego zdjęcia).
   Future<void> remove(String id) async {
     final item = _byId(id);
     if (item == null) return;
@@ -551,12 +558,12 @@ class BillScanController extends ChangeNotifier {
     }
 
     try {
-      await _engine.startBillScan(scanId: id, imagePath: item.imagePath);
+      await _engine.startReceiptScan(scanId: id, imagePath: item.imagePath);
     } on AiEngineException catch (e) {
       await _fail(id, e.message);
       return;
     } catch (e, st) {
-      _log.severe('Zlecenie rozpoznawania rachunku', e, st);
+      _log.severe('Zlecenie rozpoznawania paragonu', e, st);
       await _fail(id, 'Błąd rozpoznawania — ponów');
       return;
     }
@@ -567,9 +574,9 @@ class BillScanController extends ChangeNotifier {
 
   /// Próba odczytu regułami (zwykły OCR). Nigdy nie blokuje — każdy problem
   /// oznacza po prostu „nie trafiono" i sprawę przejmuje silnik AI.
-  Future<ParsedBill?> _quickRead(PendingBillScan item) async {
+  Future<ParsedReceipt?> _quickRead(PendingReceiptScan item) async {
     try {
-      return await _ocr.readBill(item.imagePath);
+      return await _ocr.readReceipt(item.imagePath);
     } catch (e, st) {
       _log.warning('Szybka sciezka OCR: $e', e, st);
       return null;
@@ -584,8 +591,8 @@ class BillScanController extends ChangeNotifier {
     if (item == null) return; // pozycję skasowano w międzyczasie
 
     final raw = outcome.rawJson;
-    final bills = raw == null ? const <ParsedBill>[] : BillScanParser.parse(raw);
-    if (bills.isEmpty) {
+    final receipts = raw == null ? const <ParsedReceipt>[] : ReceiptScanParser.parse(raw);
+    if (receipts.isEmpty) {
       _replace(
         item.copyWith(
           status: PendingScanStatus.error,
@@ -598,18 +605,18 @@ class BillScanController extends ChangeNotifier {
       }
       return;
     }
-    // Pierwszy rachunek aktualizuje pozycję; kolejne (kilka dokumentów na
+    // Pierwszy paragon aktualizuje pozycję; kolejne (kilka dokumentów na
     // jednym zdjęciu) stają się osobnymi pozycjami z tą samą miniaturą.
-    final filled = _filled(item, bills.first);
+    final filled = _filled(item, receipts.first);
     _replace(filled);
     if (!outcome.nativeNotified) {
       unawaited(_notifications.showScanDone(item.id, filled.name));
     }
-    for (final extra in bills.skip(1)) {
+    for (final extra in receipts.skip(1)) {
       _items = [
         ..._items,
         _filled(
-          PendingBillScan(
+          PendingReceiptScan(
             id: _uuid.v4(),
             imagePath: item.imagePath,
             scope: item.scope,
@@ -636,25 +643,25 @@ class BillScanController extends ChangeNotifier {
     notifyListeners();
   }
 
-  PendingBillScan _filled(PendingBillScan base, ParsedBill bill) => base.copyWith(
+  PendingReceiptScan _filled(PendingReceiptScan base, ParsedReceipt receipt) => base.copyWith(
         status: PendingScanStatus.done,
-        name: bill.name,
-        amount: bill.amount,
-        currency: bill.currency,
-        date: bill.date,
-        rodzaj: bill.rodzaj,
+        name: receipt.name,
+        amount: receipt.amount,
+        currency: receipt.currency,
+        date: receipt.date,
+        rodzaj: receipt.rodzaj,
       );
 
-  PendingBillScan? _byId(String id) {
+  PendingReceiptScan? _byId(String id) {
     for (final e in _items) {
       if (e.id == id) return e;
     }
     return null;
   }
 
-  void _replace(PendingBillScan item) {
+  void _replace(PendingReceiptScan item) {
     _items = _items.map((e) => e.id == item.id ? item : e).toList();
   }
 
-  Future<void> _persist() => _storage.savePendingBillScans(_items);
+  Future<void> _persist() => _storage.savePendingReceiptScans(_items);
 }

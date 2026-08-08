@@ -73,7 +73,7 @@ class CloudBackupService {
 
   /// Czy trwa wysylka (reczna albo automatyczna). Znacznik „ostatnia kopia"
   /// zapisuje sie dopiero PO udanym wyslaniu, wiec bez tej flagi szybkie
-  /// przelaczenie aplikacji (np. udostepnienie zdjecia rachunku i powrot)
+  /// przelaczenie aplikacji (np. udostepnienie zdjecia wydatku i powrot)
   /// przepuszcza druga probe przez kontrole daty — dwie kopie tego samego dnia
   /// i podwojny transfer.
   ///

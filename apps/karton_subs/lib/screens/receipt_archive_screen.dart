@@ -5,11 +5,11 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_widgets.dart';
 
-/// Ustawienia archiwum rachunkow: trwala kopia zdjecia zatwierdzonego rachunku
+/// Ustawienia archiwum paragonow: trwala kopia zdjecia zatwierdzonego paragonu
 /// w publicznym katalogu `Documents/<podfolder>` (ADR-013 pkt 5a).
 ///
 /// Osobny ekran, nie podsekcja Asystenta AI: archiwum dotyczy KAZDEGO
-/// zatwierdzonego rachunku ze zdjeciem — takze tych odczytanych szybka sciezka
+/// zatwierdzonego paragonu ze zdjeciem — takze tych odczytanych szybka sciezka
 /// OCR, bez udzialu silnika AI (ADR-017).
 class ReceiptArchiveScreen extends StatefulWidget {
   const ReceiptArchiveScreen({super.key});

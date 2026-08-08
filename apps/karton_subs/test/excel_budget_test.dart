@@ -51,10 +51,10 @@ void main() {
       final byName = {for (final e in r.entries) e.name: e};
       expect(byName['Pensja']!.type, BudgetEntryType.income);
       expect(byName['Pensja']!.amount, 5000.0);
-      expect(byName['Prąd']!.type, BudgetEntryType.billPayment);
+      expect(byName['Prąd']!.type, BudgetEntryType.spending);
       expect(byName['Ubezpieczenie']!.type, BudgetEntryType.recurringCost);
       expect(byName['Ubezpieczenie']!.cycle, BillingCycle.yearly);
-      expect(byName['Pralka']!.type, BudgetEntryType.billPayment);
+      expect(byName['Pralka']!.type, BudgetEntryType.spending);
       expect(byName['Pralka']!.month, '2026-07');
     });
 
@@ -107,7 +107,7 @@ void main() {
         BudgetEntry(
           id: 'b',
           name: 'Pralka',
-          type: BudgetEntryType.billPayment,
+          type: BudgetEntryType.spending,
           amount: 3000,
           currency: Currency.PLN,
           month: '2026-09',
@@ -120,7 +120,7 @@ void main() {
       expect(r.importedCount, 2);
       final byName = {for (final e in r.entries) e.name: e};
       expect(byName['Pensja']!.type, BudgetEntryType.income);
-      expect(byName['Pralka']!.type, BudgetEntryType.billPayment);
+      expect(byName['Pralka']!.type, BudgetEntryType.spending);
       expect(byName['Pralka']!.month, '2026-09');
     });
   });
@@ -192,7 +192,7 @@ void main() {
           paymentMethod: 'Karta',
           monthOverrides: {
             '2026-07':
-                BillMonthOverride(amount: 120, date: DateTime(2026, 7, 15)),
+                MonthAmountOverride(amount: 120, date: DateTime(2026, 7, 15)),
           },
           dataDodania: DateTime(2026, 1, 1),
         ),
@@ -233,7 +233,7 @@ void main() {
         BudgetEntry(
           id: 'r1',
           name: 'Apteka',
-          type: BudgetEntryType.billPayment,
+          type: BudgetEntryType.spending,
           amount: 63.50,
           currency: Currency.PLN,
           month: '2026-07',
@@ -244,7 +244,7 @@ void main() {
       final bytes = ExcelService.buildBudgetWorkbookForTest(entries);
       final r = ExcelService.parseBudgetBytesForTest(bytes);
       final e = r.entries.single;
-      expect(e.type, BudgetEntryType.billPayment);
+      expect(e.type, BudgetEntryType.spending);
       expect(e.name, 'Apteka');
       expect(e.amount, closeTo(63.50, 0.001));
       expect(e.month, '2026-07');
@@ -271,7 +271,7 @@ void main() {
 
       expect(r.importedCount, 3);
       for (final e in r.entries) {
-        expect(e.type, BudgetEntryType.billPayment,
+        expect(e.type, BudgetEntryType.spending,
             reason: '„${e.name}" musi trafić do wydatków bieżących');
       }
     });
@@ -281,7 +281,7 @@ void main() {
         BudgetEntry(
           id: 'r1',
           name: 'Paliwo',
-          type: BudgetEntryType.billPayment,
+          type: BudgetEntryType.spending,
           amount: 300,
           currency: Currency.PLN,
           month: '2026-07',

@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import 'app_logger.dart';
-import 'bill_scan_service.dart';
+import 'receipt_scan_service.dart';
 import 'receipt_text_parser.dart';
 
 /// Szybka ścieżka skanu: zwykły OCR tekstowy + reguły ([ReceiptTextParser]).
@@ -34,19 +34,19 @@ class TextOcrService {
   TextRecognizer get _engine =>
       _recognizer ??= TextRecognizer(script: TextRecognitionScript.latin);
 
-  /// Czyta rachunek ze zdjęcia. `null` = żaden wzorzec nie pasuje (sprawę
+  /// Czyta wydatek ze zdjęcia. `null` = żaden wzorzec nie pasuje (sprawę
   /// przejmuje silnik AI). [now] tylko do testów.
-  Future<ParsedBill?> readBill(String imagePath, {DateTime? now}) async {
+  Future<ParsedReceipt?> readReceipt(String imagePath, {DateTime? now}) async {
     for (final angle in _angles) {
       String? path = imagePath;
       if (angle != 0) path = await _rotatedCopy(imagePath, angle);
       if (path == null) continue;
       try {
         final recognized = await _engine.processImage(InputImage.fromFilePath(path));
-        final bill = ReceiptTextParser.parse(recognized.text, now: now);
-        if (bill != null) {
+        final receipt = ReceiptTextParser.parse(recognized.text, now: now);
+        if (receipt != null) {
           _log.info('Szybka sciezka OCR: trafienie przy obrocie $angle');
-          return bill;
+          return receipt;
         }
       } catch (e, st) {
         _log.warning('OCR tekstowy (obrot $angle): $e', e, st);

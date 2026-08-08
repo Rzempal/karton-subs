@@ -300,7 +300,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Zakładka „Plan": jeden zestaw statystyk zamiast trzech osobnych podstron.
   /// Wydatki rozbite na trzy ROZŁĄCZNE strumienie (cykliczne bez subskrypcji,
-  /// subskrypcje, rachunki), więc jeden wykres trendu i jeden podział na
+  /// subskrypcje, wydatki bieżące), więc jeden wykres trendu i jeden podział na
   /// kategorie pokazują całość, a nie trzy widoki tych samych pieniędzy.
   List<Widget> _planStats(
     BudgetController budget,
@@ -315,10 +315,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         : ExpenseView.actual;
     final recurring = budget.recurringExpenseTrend(streamView);
     final subscriptions = budget.subscriptionsTrend(streamView);
-    final bills = budget.billsTrend(streamView);
+    final spending = budget.spendingTrend(streamView);
     // Suma liczona z tych samych serii, które widać na wykresie — inaczej
     // „Razem" nie zgadzałoby się z tym, co użytkownik sam sobie zsumuje.
-    final total = _sumSeries([recurring, subscriptions, bills]);
+    final total = _sumSeries([recurring, subscriptions, spending]);
     // Tryb porównawczy: dwie linie zbiorcze zamiast trzech strumieni razy dwa
     // ujęcia. Sześć linii na 200 px to plątanina, a pytanie brzmi „ile
     // odbiegamy od planu", nie „który strumień o ile".
@@ -326,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ? _sumSeries([
             budget.recurringExpenseTrend(ExpenseView.plan),
             budget.subscriptionsTrend(ExpenseView.plan),
-            budget.billsTrend(ExpenseView.plan),
+            budget.spendingTrend(ExpenseView.plan),
           ])
         : const <MonthlyDataPoint>[];
 
@@ -337,7 +337,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         expenses: budget.monthlyExpenses,
         subscriptionsExpense: budget.monthlySubscriptionsExpense,
         subscriptionsCount: budget.activeSubscriptionsCount,
-        allocation: budget.billsAllocation ?? 0,
+        allocation: budget.spendingAllocation ?? 0,
         currency: currency,
         compact: _summaryCompact,
         onToggle: _toggleSummary,
@@ -349,11 +349,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         // Te same składniki co w rozpisie salda, tylko w skali roku — koszty
         // cykliczne bez subskrypcji i bez rezerwy, bo obie są osobno.
         recurring: budget.monthlyExpenses -
-            (budget.billsAllocation ?? 0) -
+            (budget.spendingAllocation ?? 0) -
             budget.monthlySubscriptionsExpense,
         subscriptions: budget.monthlySubscriptionsExpense,
         subscriptionsCount: budget.activeSubscriptionsCount,
-        allocation: budget.billsAllocation ?? 0,
+        allocation: budget.spendingAllocation ?? 0,
         currency: currency,
         compact: _annualCostsCompact,
         onToggle: _toggleAnnualCosts,
@@ -377,8 +377,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         _PredictionCard(
           predicted: budget.monthlySurplus,
           real: budget.balanceForMonth(monthKey),
-          allocation: budget.billsAllocation,
-          billsActual: budget.billsActualForMonth(monthKey),
+          allocation: budget.spendingAllocation,
+          spendingActual: budget.spendingActualForMonth(monthKey),
           currency: currency,
         ),
         const SizedBox(height: 16),
@@ -458,7 +458,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 ChartSeries(
                   label: 'Bieżące',
-                  data: bills,
+                  data: spending,
                   color: palette[2],
                 ),
                 // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
@@ -493,7 +493,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Karty szczegółowe pod wspólnymi wykresami (sekcja zwijana): to, czego nie
   /// pokazuje nic innego na tej zakładce — limit subskrypcji i koszty okresów
-  /// próbnych. Rachunki wybranego miesiąca mieszkają w „Bilansie miesiąca",
+  /// próbnych. Bieżące wybranego miesiąca mieszkają w „Bilansie miesiąca",
   /// a koszt subskrypcji w karcie „Saldo".
   List<Widget> _planDetails(BudgetController budget) => [
     SubscriptionStatsView(
@@ -539,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     : null,
                 controller: _tab,
                 children: [
-                  // ── „Plan" — statystyki (Budżet / Subskrypcje / Rachunki),
+                  // ── „Plan" — statystyki (Budżet / Subskrypcje / Bieżące),
                   // zakładka domyślna: plan jest punktem wyjścia, a bilans
                   // konkretnego miesiąca sprawdza się na drugim kroku ──
                   SyncRefresh(
@@ -624,7 +624,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                         ),
                       ],
-                      // Karta „Rachunki miesiąca" zniknęła: te same rachunki
+                      // Karta „Bieżące miesiąca" zniknęła: te same wydatki bieżące
                       // stoją pozycja po pozycji w „Podsumowaniu miesiąca"
                       // poniżej, a ich suma jest w rozpisie bilansu wyżej.
                       if (MonthSummarySection.hasAny(calendar)) ...[
@@ -1008,8 +1008,8 @@ class _StartPointChip extends StatelessWidget {
   }
 }
 
-/// Ujęcie wykresu trendu: **Plan** (kwoty założone, rachunki = koperta),
-/// **Realne** (kwoty miesiąca z korektami, rachunki faktyczne) albo **Oba**
+/// Ujęcie wykresu trendu: **Plan** (kwoty założone, wydatki bieżące = koperta),
+/// **Realne** (kwoty miesiąca z korektami, wydatki bieżące faktyczne) albo **Oba**
 /// — dwie linie zbiorcze, na których widać odchylenie od planu (ADR-028).
 enum _TrendView { plan, actual, both }
 
@@ -1070,20 +1070,20 @@ List<MonthlyDataPoint> _sumSeries(List<List<MonthlyDataPoint>> series) {
 /// „Plan vs Realne" dla wybranego miesiąca — ta sama para pojęć, co przełączniki
 /// wykresów (ADR-028), więc i ta sama nazwa.
 ///
-/// Plan = „zostaje/mies" − koperta „Na rachunki"; realne = bilans miesiąca
-/// (z faktycznymi rachunkami i pozycjami jednorazowymi). Patrz ADR-008.
+/// Plan = „zostaje/mies" − koperta „Na bieżące wydatki"; realne = bilans miesiąca
+/// (z faktycznymi wydatkami bieżącymi i pozycjami jednorazowymi). ADR-008.
 class _PredictionCard extends StatelessWidget {
   final double predicted;
   final double real;
   final double? allocation;
-  final double billsActual;
+  final double spendingActual;
   final String currency;
 
   const _PredictionCard({
     required this.predicted,
     required this.real,
     required this.allocation,
-    required this.billsActual,
+    required this.spendingActual,
     required this.currency,
   });
 
@@ -1138,7 +1138,7 @@ class _PredictionCard extends StatelessWidget {
                   allocation != null ? fmt(allocation!) : '—',
                 ),
               ),
-              Expanded(child: _Kv('Bieżące (realne)', fmt(billsActual))),
+              Expanded(child: _Kv('Bieżące (realne)', fmt(spendingActual))),
             ],
           ),
           if (allocation == null) ...[

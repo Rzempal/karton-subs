@@ -54,7 +54,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   late BudgetEntryType _type;
   String? _categoryId;
   String? _paymentMethod;
-  late Map<String, BillMonthOverride> _overrides;
+  late Map<String, MonthAmountOverride> _overrides;
   late final TextEditingController _installmentCountCtrl;
   bool _installmentByCount = true;
   DateTime? _installmentStart;
@@ -97,8 +97,8 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
   bool get _isInstallment => _type == BudgetEntryType.installment;
 
   /// Typy dostępne w danym zakresie — „przelew do domowego" tylko w osobistym.
-  /// Wydatki jednorazowe NIE są tu obecne: to ten sam byt co rachunek, więc
-  /// mają jedno miejsce dodawania — ekran „Rachunki" (ADR-018).
+  /// Wydatki jednorazowe NIE są tu obecne: to ten sam byt co wydatek, więc
+  /// mają jedno miejsce dodawania — ekran „Bieżące" (ADR-018).
   List<BudgetEntryType> get _availableTypes {
     final inScope = [
       BudgetEntryType.income,
@@ -732,9 +732,9 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     // Kategoria/metoda tylko dla wydatków — przy wpływie/przelewie czyścimy.
     final categoryId = _typeHasCategory ? _categoryId : null;
     final paymentMethod = _typeHasPaymentMethod ? _paymentMethod : null;
-    // Korekty miesięczne dla rachunku i przelewu do domowego.
+    // Korekty miesięczne dla wydatku i przelewu do domowego.
     final overrides = _hasOverrides && _overrides.isNotEmpty
-        ? Map<String, BillMonthOverride>.from(_overrides)
+        ? Map<String, MonthAmountOverride>.from(_overrides)
         : null;
 
     // Rata: cykl miesięczny, data pierwszej raty + liczba rat.
@@ -834,14 +834,14 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _nameLabel() => switch (_type) {
     BudgetEntryType.income => 'Nazwa wpływu *',
-    BudgetEntryType.billPayment => 'Nazwa wydatku *',
+    BudgetEntryType.spending => 'Nazwa wydatku *',
     BudgetEntryType.recurringCost => 'Nazwa kosztu *',
     BudgetEntryType.oneTimeIncome => 'Nazwa wpływu *',
     BudgetEntryType.householdTransfer => 'Nazwa przelewu *',
     BudgetEntryType.installment => 'Nazwa raty *',
   };
 
-  /// Krótkie wyjaśnienie różnicy między rachunkiem (zmienny) a kosztem cyklicznym (stały).
+  /// Krótkie wyjaśnienie różnicy między wydatkiem (zmienny) a kosztem cyklicznym (stały).
   String? _typeHint() => switch (_type) {
     BudgetEntryType.recurringCost =>
       'Koszt cykliczny: stała kwota w interwale (np. czynsz, prąd, ubezpieczenie). '
@@ -854,7 +854,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _typeLabel(BudgetEntryType t) => switch (t) {
     BudgetEntryType.income => 'Wpływ',
-    BudgetEntryType.billPayment => 'Rachunek',
+    BudgetEntryType.spending => 'Wydatek',
     BudgetEntryType.recurringCost => 'Koszt cykliczny',
     BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
     BudgetEntryType.householdTransfer => 'Przelew do domowego',
@@ -872,11 +872,11 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
   String _dateLabel(DateTime d) => DateFormat('d MMMM yyyy', 'pl').format(d);
 
-  // ── Korekty miesięczne rachunku (ADR-008) ────────────────────────────────────
+  // ── Korekty miesięczne wydatku (ADR-008) ────────────────────────────────────
 
   List<String> _sortedOverrideKeys() => _overrides.keys.toList()..sort();
 
-  String _overrideTitle(String monthKey, BillMonthOverride ov) {
+  String _overrideTitle(String monthKey, MonthAmountOverride ov) {
     final base = DateTime.tryParse('$monthKey-01');
     final label = base != null
         ? DateFormat('LLLL yyyy', 'pl').format(base)
@@ -884,7 +884,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
     return label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
   }
 
-  String _overrideSubtitle(BillMonthOverride ov) {
+  String _overrideSubtitle(MonthAmountOverride ov) {
     final parts = <String>[];
     if (ov.date != null) {
       parts.add('dzień ${DateFormat('d MMM', 'pl').format(ov.date!)}');
@@ -911,7 +911,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           : '',
     );
 
-    final result = await showDialog<BillMonthOverride>(
+    final result = await showDialog<MonthAmountOverride>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
@@ -974,7 +974,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     return;
                   }
                 }
-                Navigator.pop(ctx, BillMonthOverride(amount: amt, date: date));
+                Navigator.pop(ctx, MonthAmountOverride(amount: amt, date: date));
               },
               child: const Text('Zapisz'),
             ),

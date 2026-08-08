@@ -12,14 +12,17 @@ enum BudgetEntryType {
   /// (bilans + kalendarz). Patrz [ADR-008]. Scalony z dawnym `bill`.
   recurringCost,
 
-  /// Rachunek — datowany wydatek jednorazowy: opłacony (log) albo zaplanowany
-  /// na przyszłą datę. Zasila **bilans miesiąca**, a NIE plan („zostaje/mies");
-  /// zgadywankę planu dla tej puli pełni koperta „Na rachunki".
+  /// Wydatek bieżący — datowany wydatek jednorazowy: opłacony (log) albo
+  /// zaplanowany na przyszłą datę. Zasila **bilans miesiąca**, a NIE plan
+  /// („zostaje/mies"); zgadywankę planu dla tej puli pełni koperta
+  /// „Na bieżące wydatki". Sekcja w UI: „Bieżące" (ADR-032).
   ///
   /// Scalony z dawnym `oneTimeExpense` (ADR-018): oba typy liczyły się
-  /// identycznie, a rozróżnienie „rachunek vs większy zakup" lepiej nosi
+  /// identycznie, a rozróżnienie „wydatek vs większy zakup" lepiej nosi
   /// kategoria. Stare pozycje `"type":"oneTimeExpense"` czyta [typeFromName].
-  billPayment,
+  ///
+  /// Na dysk idzie jako `billPayment` — patrz [_typeWireNames].
+  spending,
 
   /// Wpływ jednorazowy (np. premia, bonus) — przypięty do konkretnej daty.
   oneTimeIncome,
@@ -31,6 +34,31 @@ enum BudgetEntryType {
   /// Rata — koszt miesięczny z określonym końcem (start + liczba rat). Liczy się
   /// do „zostaje/mies" tylko w trakcie spłaty; po ostatniej racie znika.
   installment,
+}
+
+/// Wartości pola `type` W ZAPISIE: baza Hive, kopie `.zostaje` i **paczki
+/// synchronizacji budżetu domowego**. Odcięte od nazw w kodzie celowo (ADR-032)
+/// — nazwę w Darcie wolno zmieniać, wartość tutaj nie.
+///
+/// Najostrzejszy przypadek to synchronizacja: dwa telefony aktualizują się
+/// w różnym czasie, więc telefon na starszej wersji musi dalej rozumieć paczkę
+/// z nowszego. Zmiana wartości = pozycje znikają drugiej osobie.
+///
+/// Pilnuje tego `test/storage_format_guard_test.dart`.
+const Map<BudgetEntryType, String> _typeWireNames = {
+  BudgetEntryType.income: 'income',
+  BudgetEntryType.recurringCost: 'recurringCost',
+  // Wartość z czasów, gdy sekcja nazywała się „Bieżące" (dziś „Bieżące").
+  BudgetEntryType.spending: 'billPayment',
+  BudgetEntryType.oneTimeIncome: 'oneTimeIncome',
+  BudgetEntryType.householdTransfer: 'householdTransfer',
+  BudgetEntryType.installment: 'installment',
+};
+
+extension BudgetEntryTypeWire on BudgetEntryType {
+  /// Wartość zapisywana na dysk — używaj TEGO zamiast [name] wszędzie, gdzie
+  /// typ trafia do JSON-a. Patrz [_typeWireNames].
+  String get wireName => _typeWireNames[this]!;
 }
 
 /// Zakres budżetu: osobisty (lokalny) vs domowy (osobny box, przyszła synchronizacja).
@@ -49,17 +77,17 @@ enum BudgetMode { personalOnly, householdOnly, both }
 /// danego miesiąca: [amount] zmienia kwotę (bilans + kalendarz), [date] zmienia
 /// dzień wystąpienia (kalendarz). Pola opcjonalne — `null` = użyj wartości bazowej.
 /// Patrz [ADR-008]. Korekty NIE wpływają na „zostaje miesięcznie" (surplus).
-class BillMonthOverride {
+class MonthAmountOverride {
   final double? amount;
   final DateTime? date;
 
-  const BillMonthOverride({this.amount, this.date});
+  const MonthAmountOverride({this.amount, this.date});
 
   /// Pusta korekta (oba pola null) — traktowana jak brak korekty.
   bool get isEmpty => amount == null && date == null;
 
-  factory BillMonthOverride.fromJson(Map<String, dynamic> json) =>
-      BillMonthOverride(
+  factory MonthAmountOverride.fromJson(Map<String, dynamic> json) =>
+      MonthAmountOverride(
         amount: (json['amount'] as num?)?.toDouble(),
         date: json['date'] != null
             ? DateTime.parse(json['date'] as String)
@@ -71,13 +99,13 @@ class BillMonthOverride {
         if (date != null) 'date': date!.toIso8601String(),
       };
 
-  BillMonthOverride copyWith({
+  MonthAmountOverride copyWith({
     double? amount,
     bool clearAmount = false,
     DateTime? date,
     bool clearDate = false,
   }) =>
-      BillMonthOverride(
+      MonthAmountOverride(
         amount: clearAmount ? null : (amount ?? this.amount),
         date: clearDate ? null : (date ?? this.date),
       );
@@ -86,7 +114,7 @@ class BillMonthOverride {
 /// Pozycja budżetu domowego.
 ///
 /// Jeden model dla wpływów i wydatków. Typy cykliczne (income/recurringCost)
-/// są normalizowane do kwoty miesięcznej; [oneTimeExpense] i [billPayment] nie
+/// są normalizowane do kwoty miesięcznej; [oneTimeExpense] i [spending] nie
 /// wchodzą do średniej miesięcznej, tylko obciążają bilans wskazanego miesiąca.
 ///
 /// Subskrypcje są osobnym modułem ([Subscription]) — budżet czyta je dodatkowo
@@ -107,13 +135,13 @@ class BudgetEntry {
   /// Ignorowane przy pozostalych cyklach; brak = zachowanie jak dotad (ADR-020).
   final List<int>? cycleMonths;
 
-  /// Miesiąc przypisania w formacie "YYYY-MM" — dla [oneTimeExpense] i [billPayment].
+  /// Miesiąc przypisania w formacie "YYYY-MM" — dla [oneTimeExpense] i [spending].
   final String? month;
 
   /// Korekty miesięczne — dla [BudgetEntryType.recurringCost] i [householdTransfer].
   /// Klucz = "YYYY-MM". Nadpisują kwotę/datę danego miesiąca; nie ruszają surplus.
   /// Patrz [ADR-008].
-  final Map<String, BillMonthOverride>? monthOverrides;
+  final Map<String, MonthAmountOverride>? monthOverrides;
 
   final String? categoryId;
 
@@ -185,11 +213,11 @@ class BudgetEntry {
       type == BudgetEntryType.householdTransfer;
 
   /// Korekta wskazanego miesiąca ("YYYY-MM") lub `null`.
-  BillMonthOverride? overrideForMonth(String monthKey) =>
+  MonthAmountOverride? overrideForMonth(String monthKey) =>
       monthOverrides?[monthKey];
 
   /// Kwota dla wskazanego miesiąca: korekta (jeśli ustawiona) lub kwota bazowa.
-  /// Dotyczy rachunku; dla pozostałych typów zwraca [amount].
+  /// Dotyczy wydatku; dla pozostałych typów zwraca [amount].
   double amountForMonth(String monthKey) =>
       overrideForMonth(monthKey)?.amount ?? amount;
 
@@ -233,7 +261,7 @@ class BudgetEntry {
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
   bool get isOneTime =>
       type == BudgetEntryType.oneTimeIncome ||
-      type == BudgetEntryType.billPayment;
+      type == BudgetEntryType.spending;
   bool get isExpense => !isIncome;
 
   /// Kwota znormalizowana do miesięcznej (bez znaku).
@@ -266,10 +294,10 @@ class BudgetEntry {
   /// `recurringCost` i zacząłby obciążać plan („zostaje/mies") co miesiąc.
   /// Dotyczy naraz bazy lokalnej, backupu i synchronizacji domowej.
   static BudgetEntryType typeFromName(String? raw) {
-    if (raw == 'oneTimeExpense') return BudgetEntryType.billPayment; // ADR-018
+    if (raw == 'oneTimeExpense') return BudgetEntryType.spending; // ADR-018
     if (raw == 'bill') return BudgetEntryType.recurringCost; // ADR-011
     return BudgetEntryType.values.firstWhere(
-      (t) => t.name == raw,
+      (t) => t.wireName == raw,
       orElse: () => BudgetEntryType.recurringCost,
     );
   }
@@ -296,7 +324,7 @@ class BudgetEntry {
       month: json['month'] as String?,
       monthOverrides: (json['monthOverrides'] as Map<String, dynamic>?)?.map(
         (k, v) =>
-            MapEntry(k, BillMonthOverride.fromJson(v as Map<String, dynamic>)),
+            MapEntry(k, MonthAmountOverride.fromJson(v as Map<String, dynamic>)),
       ),
       categoryId: json['categoryId'] as String?,
       paymentMethod: json['paymentMethod'] as String?,
@@ -318,7 +346,7 @@ class BudgetEntry {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'type': type.name,
+        'type': type.wireName,
         'amount': amount,
         'currency': currency.name,
         'cycle': cycle.name,
@@ -354,7 +382,7 @@ class BudgetEntry {
     bool clearCycleMonths = false,
     String? month,
     bool clearMonth = false,
-    Map<String, BillMonthOverride>? monthOverrides,
+    Map<String, MonthAmountOverride>? monthOverrides,
     bool clearMonthOverrides = false,
     String? categoryId,
     bool clearCategoryId = false,

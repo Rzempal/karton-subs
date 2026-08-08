@@ -17,7 +17,7 @@ void main() {
         dataDodania: DateTime(2026, 1, 1),
       );
 
-  BudgetEntry bill({Map<String, BillMonthOverride>? ov}) => BudgetEntry(
+  BudgetEntry bill({Map<String, MonthAmountOverride>? ov}) => BudgetEntry(
         id: 'b',
         name: 'Fryzjer',
         type: BudgetEntryType.recurringCost,
@@ -33,7 +33,7 @@ void main() {
       final base = [income(), bill()];
       final withOv = [
         income(),
-        bill(ov: {'2026-07': const BillMonthOverride(amount: 120)})
+        bill(ov: {'2026-07': const MonthAmountOverride(amount: 120)})
       ];
       expect(svc.monthlySurplus(base, noSubs, target: t),
           svc.monthlySurplus(withOv, noSubs, target: t));
@@ -44,7 +44,7 @@ void main() {
     test('korekta kwoty zmienia bilans danego miesiąca', () {
       final entries = [
         income(),
-        bill(ov: {'2026-07': const BillMonthOverride(amount: 120)})
+        bill(ov: {'2026-07': const MonthAmountOverride(amount: 120)})
       ];
       // Lipiec: rachunek 120 zamiast 80 → bilans niższy o 40.
       expect(svc.balanceForMonth(entries, noSubs, '2026-07', target: t),
@@ -57,7 +57,7 @@ void main() {
     test('korekta tylko daty NIE zmienia bilansu', () {
       final entries = [
         income(),
-        bill(ov: {'2026-07': BillMonthOverride(date: DateTime(2026, 7, 20))})
+        bill(ov: {'2026-07': MonthAmountOverride(date: DateTime(2026, 7, 20))})
       ];
       expect(svc.balanceForMonth(entries, noSubs, '2026-07', target: t),
           closeTo(4920, 0.001));
@@ -66,7 +66,7 @@ void main() {
     test('kalendarz: korekta z datą przenosi wystąpienie i bierze jej kwotę', () {
       final entries = [
         bill(ov: {
-          '2026-07': BillMonthOverride(amount: 120, date: DateTime(2026, 7, 15))
+          '2026-07': MonthAmountOverride(amount: 120, date: DateTime(2026, 7, 15))
         })
       ];
       final cal = svc.calendarForMonth(
@@ -79,7 +79,7 @@ void main() {
 
     test('kalendarz: korekta tylko kwoty zostaje na projektowanym dniu', () {
       final entries = [
-        bill(ov: {'2026-07': const BillMonthOverride(amount: 120)})
+        bill(ov: {'2026-07': const MonthAmountOverride(amount: 120)})
       ];
       final cal = svc.calendarForMonth(
           entries, noSubs, DateTime(2026, 7, 1), target: t);
@@ -95,7 +95,7 @@ void main() {
   });
 
   group('BudgetService — korekta przelewu i lustra (ADR-008)', () {
-    BudgetEntry transfer({Map<String, BillMonthOverride>? ov}) => BudgetEntry(
+    BudgetEntry transfer({Map<String, MonthAmountOverride>? ov}) => BudgetEntry(
           id: 'tr',
           name: 'Do domowego',
           type: BudgetEntryType.householdTransfer,
@@ -107,7 +107,7 @@ void main() {
         );
 
     // Lustro w domowym: wpływ z tymi samymi korektami.
-    BudgetEntry mirrorIncome({Map<String, BillMonthOverride>? ov}) => BudgetEntry(
+    BudgetEntry mirrorIncome({Map<String, MonthAmountOverride>? ov}) => BudgetEntry(
           id: 'mir',
           name: 'Z osobistego',
           type: BudgetEntryType.income,
@@ -118,7 +118,7 @@ void main() {
         );
 
     test('przelew (wydatek): korekta obniza bilans osobistego, nie surplus', () {
-      final ov = {'2026-07': const BillMonthOverride(amount: 300)};
+      final ov = {'2026-07': const MonthAmountOverride(amount: 300)};
       final base = [income(), transfer()];
       final withOv = [income(), transfer(ov: ov)];
       // surplus bez zmian (plan = baza): 5000 − 200 = 4800
@@ -134,7 +134,7 @@ void main() {
     });
 
     test('lustro (wplyw): korekta podwyzsza bilans domowego', () {
-      final ov = {'2026-07': const BillMonthOverride(amount: 300)};
+      final ov = {'2026-07': const MonthAmountOverride(amount: 300)};
       final entries = [mirrorIncome(ov: ov)];
       // surplus domowego = 200 (baza wplywu).
       expect(svc.monthlySurplus(entries, noSubs, target: t), closeTo(200, 0.001));

@@ -12,9 +12,9 @@ import 'package:provider/provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'controllers/subscription_controller.dart';
 import 'controllers/budget_controller.dart';
-import 'controllers/bill_scan_controller.dart';
+import 'controllers/receipt_scan_controller.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/rachunki_screen.dart';
+import 'screens/spending_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/budget_dashboard_screen.dart';
 import 'services/ai_engine_service.dart';
@@ -86,9 +86,9 @@ void main() async {
         ),
         ChangeNotifierProvider.value(value: updateService),
         ChangeNotifierProvider.value(value: syncService),
-        // Skan rachunkow lokalnym silnikiem AI (pozycje oczekujace + OCR w tle).
+        // Skan wydatkow lokalnym silnikiem AI (pozycje oczekujace + OCR w tle).
         ChangeNotifierProvider(
-          create: (_) => BillScanController(
+          create: (_) => ReceiptScanController(
             storage,
             AiEngineService(),
             notificationService,
@@ -341,12 +341,12 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
     unawaited(storage.setHandledShares([...handled, ...accepted]));
     // Bez bramki: odczyt paragonu robi model wbudowany w apke (ADR-017),
     // wiec „Udostepnij -> Zostaje" dziala niezaleznie od Asystenta AI.
-    final scanCtrl = context.read<BillScanController>();
+    final scanCtrl = context.read<ReceiptScanController>();
     final scope = context.read<BudgetController>().scope;
     for (final f in images) {
       scanCtrl.startScan(f.path, scope);
     }
-    setState(() => _currentIndex = _rachunkiTab);
+    setState(() => _currentIndex = _spendingTab);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -387,7 +387,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   static const _screens = [
     DashboardScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.incomes),
-    RachunkiScreen(),
+    SpendingScreen(),
     BudgetDashboardScreen(mode: BudgetEntriesMode.expenses),
     SettingsScreen(),
   ];
@@ -406,7 +406,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   /// Indeks zakladki „Biezace" — tam ladujemy po „Udostepnij -> Zostaje".
   /// Stala, a nie liczba w kodzie: kolejnosc zakladek juz sie zmieniala, a
   /// magiczna „1" po cichu wskazywala wtedy zly ekran.
-  static const _rachunkiTab = 2;
+  static const _spendingTab = 2;
 
   /// Opis sekcji dla wspolnego paska — kolejnosc jak w [_screens].
   /// Ustawienia (ostatnia zakladka) opisu nie maja: to nie jest sekcja budzetu,
@@ -414,7 +414,7 @@ class _MainShellState extends State<_MainShell> with WidgetsBindingObserver {
   static SectionInfo? _sectionInfoFor(int index) => switch (index) {
     0 => SectionInfo.budget,
     1 => SectionInfo.incomes,
-    2 => SectionInfo.bills,
+    2 => SectionInfo.spending,
     3 => SectionInfo.recurringExpenses,
     _ => null,
   };

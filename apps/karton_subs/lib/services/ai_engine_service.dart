@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 ///
 /// Uwaga na czas: OCR na CPU trwa ~30–45 s na zdjęcie (+ ~10 s ładowania
 /// modelu przy zimnym starcie). Dlatego skan jest tylko *zlecany*
-/// ([startBillScan]), a prowadzi go natywna usługa pierwszoplanowa; wynik
+/// ([startReceiptScan]), a prowadzi go natywna usługa pierwszoplanowa; wynik
 /// odbiera się ze skrzynki ([drainScanResults]) — przeżywa zamknięcie ekranu
 /// aplikacji (ADR-016).
 class AiEngineService {
@@ -37,9 +37,9 @@ class AiEngineService {
     }
   }
 
-  /// Kopiuje zdjęcie rachunku do publicznego archiwum
+  /// Kopiuje zdjęcie paragonu do publicznego archiwum
   /// (Documents/[subfolder]/[filename]). Zwraca ścieżkę docelową albo null przy
-  /// błędzie (archiwum jest best-effort — nie blokuje dodania rachunku).
+  /// błędzie (archiwum jest best-effort — nie blokuje dodania paragonu).
   Future<String?> archiveReceipt({
     required String imagePath,
     required String subfolder,
@@ -59,7 +59,7 @@ class AiEngineService {
   /// Kasuje zdjęcie z publicznego archiwum (`Documents/[subfolder]/[filename]`).
   /// Zwraca `true`, gdy plik faktycznie zniknął; `false` = nie było czego kasować.
   ///
-  /// Potrzebne przy podmianie zdjęcia zapisanego rachunku: MediaStore nie
+  /// Potrzebne przy podmianie zdjęcia zapisanego paragonu: MediaStore nie
   /// nadpisuje po nazwie, tylko dokłada „nazwa (1).jpg", więc stara wersja
   /// musi zniknąć przed zapisaniem nowej.
   Future<bool> deleteArchivedReceipt({
@@ -97,16 +97,16 @@ class AiEngineService {
     }
   }
 
-  /// Zleca rozpoznanie rachunku i wraca od razu — pracę prowadzi natywna
+  /// Zleca rozpoznanie paragonu i wraca od razu — pracę prowadzi natywna
   /// usługa pierwszoplanowa (przeżywa wyjście z aplikacji), a wynik przychodzi
   /// przez [drainScanResults]. Rzuca [AiEngineException], gdy zlecenia nie da
   /// się nawet przyjąć (np. brak pliku zdjęcia).
-  Future<void> startBillScan({
+  Future<void> startReceiptScan({
     required String scanId,
     required String imagePath,
   }) async {
     try {
-      await _channel.invokeMethod<bool>('startBillScan', {
+      await _channel.invokeMethod<bool>('startReceiptScan', {
         'scanId': scanId,
         'imagePath': imagePath,
       });

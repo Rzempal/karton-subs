@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/subscription.dart' show PaymentMethod;
@@ -29,7 +29,7 @@ class SyncSnapshot {
   /// (telefon ze starszą wersją aplikacji) — czyli BRAK INFORMACJI, a nie
   /// „pusta lista". Scalanie musi wtedy zostawić lokalny Planner w spokoju,
   /// inaczej starszy telefon wyczyściłby go nowszemu (ADR-022).
-  final List<BillsAllocationItem>? allocation;
+  final List<SpendingAllocationItem>? allocation;
 
   /// Słowniki z paczki; `null` = starsza aplikacja po drugiej stronie.
   /// W odróżnieniu od Plannera pusta lista NIE jest znacząca — słowniki tylko
@@ -92,7 +92,7 @@ class SyncMerge {
   static List<BudgetEntry> visible(List<BudgetEntry> entries) =>
       entries.where((e) => !e.deleted).toList();
 
-  // ── Planner („Na rachunki") — ADR-022 ──────────────────────────────────────
+  // ── Planner („Na bieżące wydatki") — ADR-022 ──────────────────────────────────────
 
   /// Scala pozycje Plannera per `id`, tą samą regułą co pozycje budżetu:
   /// nowszy `updatedAt` wygrywa, remis rozstrzyga treść (determinizm), nagrobki
@@ -101,11 +101,11 @@ class SyncMerge {
   /// Pozycje bez `updatedAt` (zapisane przed ADR-022) traktujemy jako najstarsze
   /// — świeższa zmiana z drugiego telefonu je nadpisze, ale samo ich istnienie
   /// nie ginie.
-  static List<BillsAllocationItem> mergeAllocation(
-    List<BillsAllocationItem> local,
-    List<BillsAllocationItem> remote,
+  static List<SpendingAllocationItem> mergeAllocation(
+    List<SpendingAllocationItem> local,
+    List<SpendingAllocationItem> remote,
   ) {
-    final byId = <String, BillsAllocationItem>{};
+    final byId = <String, SpendingAllocationItem>{};
     for (final e in local) {
       byId[e.id] = e;
     }
@@ -116,9 +116,9 @@ class SyncMerge {
     return byId.values.toList();
   }
 
-  static BillsAllocationItem _pickAllocWinner(
-    BillsAllocationItem a,
-    BillsAllocationItem b,
+  static SpendingAllocationItem _pickAllocWinner(
+    SpendingAllocationItem a,
+    SpendingAllocationItem b,
   ) {
     final ta = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     final tb = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -141,12 +141,14 @@ class SyncMerge {
   /// aktualizacji obu.
   static String encodeSnapshot(
     List<BudgetEntry> entries, {
-    List<BillsAllocationItem>? allocation,
+    List<SpendingAllocationItem>? allocation,
     SyncDictionaries? dictionaries,
   }) =>
       jsonEncode({
         'v': snapshotVersion,
         'entries': [for (final e in entries) e.toJson()],
+        // Klucz `billsAllocation` to FORMAT PACZKI — telefon na starszej
+        // wersji czyta go po tej nazwie. Nie zmieniac (ADR-032).
         if (allocation != null)
           'billsAllocation': [for (final e in allocation) e.toJson()],
         // Słowniki, jak Planner, są sekcją opcjonalną przy tej samej wersji
@@ -193,7 +195,7 @@ class SyncMerge {
       allocation: rawAlloc is List
           ? [
               for (final e in rawAlloc)
-                BillsAllocationItem.fromJson(e as Map<String, dynamic>),
+                SpendingAllocationItem.fromJson(e as Map<String, dynamic>),
             ]
           : null,
       dictionaries: rawDict is Map<String, dynamic>
@@ -331,8 +333,8 @@ class SyncMerge {
   }
 
   /// Jak [applyCategoryAliases], dla pozycji Plannera.
-  static List<BillsAllocationItem> applyCategoryAliasesToAllocation(
-    List<BillsAllocationItem> items,
+  static List<SpendingAllocationItem> applyCategoryAliasesToAllocation(
+    List<SpendingAllocationItem> items,
     Map<String, String> aliases,
   ) {
     if (aliases.isEmpty) return items;

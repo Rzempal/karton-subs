@@ -71,16 +71,16 @@ lib/
 ├── controllers/
 │   ├── subscription_controller.dart # Stan subskrypcji (CRUD + analytics)
 │   ├── budget_controller.dart   # Stan budzetu domowego (CRUD + agregaty)
-│   └── bill_scan_controller.dart # Skan rachunkow AI: kolejka pozycji oczekujacych + OCR w tle (ADR-013)
+│   └── receipt_scan_controller.dart # Skan paragonow AI: kolejka pozycji oczekujacych + OCR w tle (ADR-013)
 ├── models/
 │   ├── subscription.dart        # Glowna encja + PaymentMethod
 │   ├── category.dart            # Kategorie subskrypcji
 │   ├── usage_event.dart         # Logowanie uzycia
-│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/koszt cykliczny/rachunek/rata/przelew) — ADR-018
-│   └── pending_bill_scan.dart   # Rachunek rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
+│   ├── budget_entry.dart        # Pozycja budzetu (wplyw/cykliczny/biezacy/rata/przelew) — ADR-018
+│   └── pending_receipt_scan.dart # Paragon rozpoznany ze zdjecia, czeka na zatwierdzenie (lokalny, poza bilansem)
 ├── utils/
 │   ├── cycle_math.dart          # Wspolna normalizacja cyklu -> kwota/mies + projekcja wystapien (ADR-020)
-│   └── expenses_filter.dart     # Reguly widocznosci listy „Wydatki"/„Wplywy" (typ, kategoria, czas, ukryte) — ADR-027
+│   └── expenses_filter.dart     # Reguly widocznosci listy „Cykliczne"/„Wplywy" (typ, kategoria, czas, ukryte) — ADR-027
 ├── services/
 │   ├── app_logger.dart          # Circular log buffer
 │   ├── backup_crypto_service.dart # Szyfrowanie kopii (AES-256-GCM) + kod odzyskiwania (ADR-024)
@@ -91,10 +91,10 @@ lib/
 │   ├── budget_service.dart      # Agregacja budzetu (wplywy/koszty/surplus/bilans)
 │   ├── excel_service.dart       # Import/eksport .xlsx (subskrypcje + budzet)
 │   ├── ai_engine_service.dart   # Mostek do Lokalnego Silnika AI (kanal platformowy -> usluga AIDL silnika)
-│   ├── bill_scan_service.dart   # Parser odpowiedzi silnika (JSON rachunkow) + dopasowanie kategorii
+│   ├── receipt_scan_service.dart # Parser odpowiedzi silnika (JSON paragonow) + dopasowanie kategorii
 │   ├── text_ocr_service.dart    # Szybka sciezka: zwykly OCR tekstowy (ML Kit bundled) + obroty zdjecia
 │   ├── receipt_text_parser.dart # Szybka sciezka: reguly (paragon fiskalny, zrzut platnosci) — ADR-017
-│   ├── receipt_crop_service.dart # Przyciecie zdjecia rachunku (natywny uCrop, kadr wolny)
+│   ├── receipt_crop_service.dart # Przyciecie zdjecia paragonu (natywny uCrop, kadr wolny)
 │   ├── sync_crypto_service.dart # Synchronizacja: klucz z hasla + szyfrowanie paczki (ADR-009)
 │   ├── sync_merge.dart          # Synchronizacja: scalanie LWW + nagrobki + snapshot
 │   ├── sync_service.dart        # Synchronizacja: orkiestracja (pull/scal/push CAS) + RPC relay
@@ -105,14 +105,14 @@ lib/
 │   └── app_theme.dart           # Aurora: AppColors/AppRadii/AppSemanticColors + ThemeData (ADR-005/007)
 ├── screens/
 │   ├── dashboard_screen.dart    # Zakladka „Budzet" (przeglad): pod-zakladki Plan (domyslna) / Bilans miesiaca (ADR-011)
-│   ├── rachunki_screen.dart     # Rachunki: wejscie do Plannera -> karta miesiaca -> lista oplat (ADR-011)
-│   ├── bills_planner_screen.dart # Planner: plan koperty „Na rachunki" (ADR-012) — wejscie z Rachunkow i z Wydatkow
-│   ├── add_bill_payment_screen.dart # Formularz rachunku (billPayment)
+│   ├── spending_screen.dart     # „Biezace": wejscie do Plannera -> karta miesiaca -> lista wydatkow (ADR-011)
+│   ├── spending_planner_screen.dart # Planner: koperta „Na biezace wydatki" (ADR-012) — wejscie z Biezacych i z Cyklicznych
+│   ├── add_spending_screen.dart # Formularz wydatku biezacego (BudgetEntryType.spending)
 │   ├── add_subscription_screen.dart # Formularz subskrypcji (zakres bierze z listy, na ktorej stoi uzytkownik)
-│   ├── budget_dashboard_screen.dart  # „Wydatki cykliczne" (z sekcja Subskrypcje, ADR-027) i „Wplywy" (jeden widget, tryby) + Excel
+│   ├── budget_dashboard_screen.dart  # „Cykliczne" (z sekcja Subskrypcje, ADR-027) i „Wplywy" (jeden widget, tryby) + Excel
 │   ├── add_budget_entry_screen.dart  # Formularz pozycji budzetu (typy planowalne)
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
-│   ├── receipt_archive_screen.dart # Archiwum zdjec rachunkow (osobna sekcja Ustawien)
+│   ├── receipt_archive_screen.dart # Archiwum zdjec paragonow (osobna sekcja Ustawien)
 │   ├── data_export_screen.dart  # Eksport XLSX (subskrypcje, budzet) i PDF — Ustawienia -> Dane
 │   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
 ├── widgets/

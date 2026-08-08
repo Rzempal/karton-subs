@@ -53,7 +53,7 @@ class BudgetScopeToggle extends StatelessWidget {
 
 String budgetTypeLabel(BudgetEntryType t) => switch (t) {
   BudgetEntryType.income => 'Wpływ',
-  BudgetEntryType.billPayment => 'Rachunek',
+  BudgetEntryType.spending => 'Wydatek',
   BudgetEntryType.recurringCost => 'Koszt cykliczny',
   BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
   BudgetEntryType.householdTransfer => 'Przelew do domowego',
@@ -213,7 +213,7 @@ class BudgetSummarySection extends StatelessWidget {
 }
 
 /// Skąd bierze się saldo: pasek proporcji (ile z wpływów zjadają koszty, ile
-/// zostaje) nad rozpisem składników jak na rachunku.
+/// zostaje) nad rozpisem składników jak na paragonie.
 ///
 /// Pasek odpowiada na „jak dużo", rozpis na „z czego dokładnie" — same procenty
 /// nie pozwalają sprawdzić arytmetyki, a same liczby nie pokazują skali.
@@ -470,7 +470,7 @@ class MonthBalanceSection extends StatelessWidget {
                                     c.negative.withValues(alpha: 0.7),
                                   ),
                                   seg(
-                                    parts.bills,
+                                    parts.spending,
                                     c.negative.withValues(alpha: 0.45),
                                   ),
                                   seg(leftover, c.positive),
@@ -509,14 +509,14 @@ class MonthBalanceSection extends StatelessWidget {
                         trailing: pct(parts.subscriptions),
                         color: c.negative,
                       ),
-                    if (parts.bills > 0)
+                    if (parts.spending > 0)
                       _BreakdownRow(
                         label: 'Bieżące',
-                        amount: parts.bills,
+                        amount: parts.spending,
                         currency: currency,
                         sign: '−',
                         dotColor: c.negative.withValues(alpha: 0.45),
-                        trailing: pct(parts.bills),
+                        trailing: pct(parts.spending),
                         color: c.negative,
                       ),
                     Padding(
@@ -1156,7 +1156,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   });
 
   static const _order = [
-    BalanceContributionKind.billsAllocation,
+    BalanceContributionKind.spendingAllocation,
     BalanceContributionKind.oneTimeIncome,
     BalanceContributionKind.oneTimeExpense,
     BalanceContributionKind.amountOverride,
@@ -1164,7 +1164,7 @@ class _BalanceBreakdownSheet extends StatelessWidget {
   ];
 
   String _groupLabel(BalanceContributionKind k) => switch (k) {
-    BalanceContributionKind.billsAllocation => 'Na bieżące (rezerwa)',
+    BalanceContributionKind.spendingAllocation => 'Na bieżące (rezerwa)',
     BalanceContributionKind.oneTimeIncome => 'Jednorazowe wpływy',
     BalanceContributionKind.oneTimeExpense => 'Jednorazowe wydatki',
     BalanceContributionKind.amountOverride => 'Korekty kwot',
@@ -1330,7 +1330,7 @@ List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
 /// zakładka „Bieżące" w pasku; wcześniej dostawał strzałkę kierunku, czyli
 /// dokładnie to samo co zwykły koszt, choć to osobny rodzaj pozycji (ADR-018).
 IconData _flowIcon(CalendarItem it) => switch (it.kind) {
-  CalendarItemKind.bill => lucide.LucideIcons.receiptText,
+  CalendarItemKind.spending => lucide.LucideIcons.receiptText,
   CalendarItemKind.subscription => LucideIcons.badgeCheck,
   CalendarItemKind.budgetEntry =>
     it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
@@ -1841,7 +1841,7 @@ class _PayRow {
   final DateTime date;
   final String sourceId;
 
-  /// Typ główny (rachunek / subskrypcja / budżet) — do grupowania podgrupami.
+  /// Typ główny (wydatek / subskrypcja / budżet) — do grupowania podgrupami.
   final CalendarItemKind kind;
 
   const _PayRow(this.name, this.amount, this.date, this.sourceId, this.kind);

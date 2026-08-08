@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
 import 'backup_crypto_service.dart';
 import 'storage_service.dart';
@@ -81,7 +80,7 @@ class BackupService {
   /// z telefonem, czyli w jedynym scenariuszu, przed którym kopia ma chronić.
   /// Odczyt starych plików z kluczem urządzenia zostaje bez zmian.
   Future<void> exportWithRecoveryCode() async {
-    final json = _buildJsonPayload();
+    final json = buildJsonPayloadForTest();
     final encrypted = await _crypto.encryptWithRecoveryCode(json);
     await _shareFile(encrypted);
     _log.info('Backup wyeksportowany (kod odzyskiwania)');
@@ -89,11 +88,11 @@ class BackupService {
 
   /// Bajty kopii bez zapisywania do pliku — dla kopii na koncie Google.
   Future<Uint8List> buildEncryptedSnapshot() =>
-      _crypto.encryptWithRecoveryCode(_buildJsonPayload());
+      _crypto.encryptWithRecoveryCode(buildJsonPayloadForTest());
 
   /// Eksportuje zaszyfrowany backup (hasłem użytkownika).
   Future<void> exportWithPassword(String password) async {
-    final json = _buildJsonPayload();
+    final json = buildJsonPayloadForTest();
     final encrypted = _crypto.encryptWithPassword(json, password);
     await _shareFile(encrypted);
     _log.info('Backup wyeksportowany (password)');
@@ -215,7 +214,11 @@ class BackupService {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  String _buildJsonPayload() {
+  /// Tresc kopii przed zaszyfrowaniem. Publiczne wylacznie dla strazniku
+  /// formatu (	est/storage_format_guard_test.dart) — klucze tego JSON-a sa
+  /// formatem pliku .zostaje.
+  @visibleForTesting
+  String buildJsonPayloadForTest() {
     final subs = _storage.getSubscriptions();
     final cats = _storage.getCategories();
     final pms = _storage.getPaymentMethods();
@@ -238,12 +241,13 @@ class BackupService {
       'householdBudgetEntries': household.map((e) => e.toJson()).toList(),
       // Lokalny stan „wykonane" płatności (klucz: scope|sourceId|YYYY-MM-DD).
       'paymentDone': _storage.getAllPaymentDone(),
-      // Planner („Na rachunki") — pomniejsza plan „zostaje/mies", więc bez
-      // niego odtworzony budżet pokazywałby inne liczby (wersja 6).
+      // Planner („Na biezace wydatki") — pomniejsza plan „zostaje/mies", wiec
+      // bez niego odtworzony budzet pokazywalby inne liczby (wersja 6).
+      // Klucz `billsAllocation` to FORMAT PLIKU kopii — nie zmieniac (ADR-032).
       'billsAllocation': {
         for (final scope in BudgetScope.values)
           scope.name: _storage
-              .getBillsAllocationItems(scope)
+              .getSpendingAllocationItems(scope)
               .map((e) => e.toJson())
               .toList(),
       },
@@ -286,7 +290,7 @@ class BackupService {
         budgetPersonal: hasBudget,
         budgetHousehold: hasHousehold,
         paymentDone: data['paymentDone'] != null,
-        billsAllocation: data['billsAllocation'] != null,
+        spendingAllocation: data['billsAllocation'] != null,
       );
     }
 
@@ -342,7 +346,7 @@ class BackupService {
       );
     }
 
-    // Planner („Na rachunki") — backupy < 6 nie miały tego pola.
+    // Planner („Na bieżące wydatki") — backupy < 6 nie miały tego pola.
     final allocRaw = data['billsAllocation'] as Map<String, dynamic>?;
     if (allocRaw != null) {
       for (final scope in BudgetScope.values) {
@@ -350,16 +354,16 @@ class BackupService {
         if (list == null) continue;
         final items = list
             .whereType<Map<String, dynamic>>()
-            .map(BillsAllocationItem.fromJson)
+            .map(SpendingAllocationItem.fromJson)
             .toList();
         // Scalanie: dokładamy tylko pozycje o nieznanym id, żeby nie kasować
         // planu, którego w pliku nie ma. Odtworzenie: lista z pliku wygrywa.
         if (replace) {
-          await _storage.setBillsAllocationItems(scope, items);
+          await _storage.setSpendingAllocationItems(scope, items);
         } else {
-          final current = _storage.getBillsAllocationItems(scope);
+          final current = _storage.getSpendingAllocationItems(scope);
           final known = current.map((e) => e.id).toSet();
-          await _storage.setBillsAllocationItems(scope, [
+          await _storage.setSpendingAllocationItems(scope, [
             ...current,
             ...items.where((e) => !known.contains(e.id)),
           ]);

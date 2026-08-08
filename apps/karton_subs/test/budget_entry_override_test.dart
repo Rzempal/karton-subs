@@ -4,7 +4,7 @@ import 'package:karton_subs/models/subscription.dart';
 
 void main() {
   group('BudgetEntry — korekty miesięczne rachunku (ADR-008)', () {
-    BudgetEntry bill({Map<String, BillMonthOverride>? overrides}) => BudgetEntry(
+    BudgetEntry bill({Map<String, MonthAmountOverride>? overrides}) => BudgetEntry(
           id: 'b1',
           name: 'Fryzjer',
           type: BudgetEntryType.recurringCost,
@@ -16,9 +16,9 @@ void main() {
 
     test('round-trip JSON zachowuje korekty (kwota + data)', () {
       final src = bill(overrides: {
-        '2026-07': BillMonthOverride(amount: 120, date: DateTime(2026, 7, 15)),
-        '2026-08': const BillMonthOverride(amount: 95),
-        '2026-09': BillMonthOverride(date: DateTime(2026, 9, 3)),
+        '2026-07': MonthAmountOverride(amount: 120, date: DateTime(2026, 7, 15)),
+        '2026-08': const MonthAmountOverride(amount: 95),
+        '2026-09': MonthAmountOverride(date: DateTime(2026, 9, 3)),
       });
 
       final restored = BudgetEntry.fromJson(src.toJson());
@@ -34,7 +34,7 @@ void main() {
     });
 
     test('amountForMonth: korekta nadpisuje, brak korekty → baza', () {
-      final b = bill(overrides: {'2026-07': const BillMonthOverride(amount: 120)});
+      final b = bill(overrides: {'2026-07': const MonthAmountOverride(amount: 120)});
       expect(b.amountForMonth('2026-07'), 120); // korekta
       expect(b.amountForMonth('2026-08'), 80); // baza
     });
@@ -55,14 +55,14 @@ void main() {
           isTrue);
       // Rachunek (billPayment) to realny log — bez korekt; wpływ też nie.
       expect(
-          bill().copyWith(type: BudgetEntryType.billPayment).supportsMonthOverrides,
+          bill().copyWith(type: BudgetEntryType.spending).supportsMonthOverrides,
           isFalse);
       expect(bill().copyWith(type: BudgetEntryType.income).supportsMonthOverrides,
           isFalse);
     });
 
     test('copyWith: clearMonthOverrides czyści korekty', () {
-      final b = bill(overrides: {'2026-07': const BillMonthOverride(amount: 120)});
+      final b = bill(overrides: {'2026-07': const MonthAmountOverride(amount: 120)});
       expect(b.copyWith(clearMonthOverrides: true).monthOverrides, isNull);
       // bez flagi zostają zachowane
       expect(b.copyWith(name: 'X').monthOverrides, isNotNull);

@@ -23,7 +23,7 @@ class SectionInfo {
     'Jednorazowe (premia) — podbijają bilans swojego miesiąca',
   ]);
 
-  static const bills = SectionInfo('Bieżące', [
+  static const spending = SectionInfo('Bieżące', [
     'Wydatki z konkretną datą: opłacone i zaplanowane na przyszłość',
     'Wchodzą w bilans swojego miesiąca, nie w plan miesięczny',
     'Trafia tu wszystko, czego nie chcesz rozkładać na średnią',

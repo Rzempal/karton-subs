@@ -377,7 +377,7 @@ class ExcelService {
 
   static String _budgetTypeLabel(BudgetEntryType type) => switch (type) {
         BudgetEntryType.income => 'Wpływ',
-        BudgetEntryType.billPayment => 'Wydatek bieżący',
+        BudgetEntryType.spending => 'Wydatek bieżący',
         BudgetEntryType.recurringCost => 'Koszt cykliczny',
         BudgetEntryType.oneTimeIncome => 'Wpływ jednorazowy',
         BudgetEntryType.householdTransfer => 'Przelew do domowego',
@@ -906,7 +906,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
         : rawName;
     final type = _parseBudgetType(cell(_BudgetHeaderField.type));
     final isOneTime = type == BudgetEntryType.oneTimeIncome ||
-        type == BudgetEntryType.billPayment;
+        type == BudgetEntryType.spending;
     final (cycle, customDays, cycleMonths) = _parseCycle(cell(_BudgetHeaderField.cycle));
     final month = isOneTime
         ? (_parseMonth(cell(_BudgetHeaderField.month)) ??
@@ -915,7 +915,7 @@ BudgetExcelImportResult _parseBudgetWorkbook(
     // Kategoria/metoda tylko dla wydatków — wpływy ignorują kolumny.
     final isExpenseType = type == BudgetEntryType.recurringCost ||
         type == BudgetEntryType.installment ||
-        type == BudgetEntryType.billPayment;
+        type == BudgetEntryType.spending;
     final rawCategory = cell(_BudgetHeaderField.category)?.toLowerCase().trim();
     final categoryId = isExpenseType &&
             rawCategory != null &&
@@ -1008,22 +1008,22 @@ Map<_BudgetHeaderField, int> _detectBudgetHeader(List<Data?> headerCells) {
   return map;
 }
 
-/// Koduje korekty rachunku do jednej komórki (JSON). Pusta mapa → pusty string.
-String _encodeOverrides(Map<String, BillMonthOverride>? ov) {
+/// Koduje korekty wydatku do jednej komórki (JSON). Pusta mapa → pusty string.
+String _encodeOverrides(Map<String, MonthAmountOverride>? ov) {
   if (ov == null || ov.isEmpty) return '';
   return jsonEncode({for (final e in ov.entries) e.key: e.value.toJson()});
 }
 
 /// Dekoduje korekty z komórki JSON. Uszkodzony/pusty → null (nie przerywa importu).
-Map<String, BillMonthOverride>? _decodeOverrides(String? raw) {
+Map<String, MonthAmountOverride>? _decodeOverrides(String? raw) {
   if (raw == null || raw.trim().isEmpty) return null;
   try {
     final decoded = jsonDecode(raw.trim());
     if (decoded is! Map) return null;
-    final map = <String, BillMonthOverride>{};
+    final map = <String, MonthAmountOverride>{};
     decoded.forEach((k, v) {
       if (v is Map) {
-        map['$k'] = BillMonthOverride.fromJson(Map<String, dynamic>.from(v));
+        map['$k'] = MonthAmountOverride.fromJson(Map<String, dynamic>.from(v));
       }
     });
     return map.isEmpty ? null : map;
@@ -1046,8 +1046,8 @@ BudgetEntryType _parseBudgetType(String? raw) {
       t.contains('bonus');
 
   if (isOneTime && isIncomeKw) return BudgetEntryType.oneTimeIncome;
-  // „Wydatek jednorazowy" ze starszych arkuszy to dziś rachunek (ADR-018).
-  if (isOneTime) return BudgetEntryType.billPayment;
+  // „Wydatek jednorazowy" ze starszych arkuszy to dziś wydatek (ADR-018).
+  if (isOneTime) return BudgetEntryType.spending;
   if (isIncomeKw) return BudgetEntryType.income;
   if (t.contains('rata') ||
       t.contains('raty') ||
@@ -1057,14 +1057,15 @@ BudgetEntryType _parseBudgetType(String? raw) {
   if (t.contains('przelew') || t.contains('transfer')) {
     return BudgetEntryType.householdTransfer;
   }
-  // „Rachunek" to nazwa sprzed zmiany na „Bieżące" (ADR-032) — zostaje na
-  // zawsze, bo starych arkuszy na dysku użytkownika nikt nie przepisze.
-  // Wariant bez polskich znaków dla arkuszy poprawianych ręcznie.
+  // „Rachunek" to nazwa sprzed zmiany na „Bieżące" (ADR-032) — SŁOWO KLUCZOWE
+  // FORMATU, nie nazwa w apce: zostaje na zawsze, bo starych arkuszy na dysku
+  // użytkownika nikt nie przepisze. Wariant bez polskich znaków dla arkuszy
+  // poprawianych ręcznie.
   if (t.contains('bieżąc') ||
       t.contains('biezac') ||
       t.contains('rachunek') ||
       t.contains('bill')) {
-    return BudgetEntryType.billPayment;
+    return BudgetEntryType.spending;
   }
   if (t.contains('cykl') ||
       t.contains('recurring') ||

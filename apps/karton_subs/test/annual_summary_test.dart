@@ -21,7 +21,7 @@ BudgetEntry _recurring(double amount, {DateTime? start}) => BudgetEntry(
 BudgetEntry _bill(double amount, String month) => BudgetEntry(
   id: 'b$amount$month',
   name: 'rachunek',
-  type: BudgetEntryType.billPayment,
+  type: BudgetEntryType.spending,
   amount: amount,
   currency: Currency.PLN,
   cycle: BillingCycle.monthly,
@@ -67,7 +67,7 @@ void main() {
         const [],
         2026,
         view: ExpenseView.plan,
-        billsAllocation: 500,
+        spendingAllocation: 500,
       );
       expect(s.plannedMonthly, closeTo(1500, 0.001));
       expect(s.months.every((m) => m.amount == 1500), isTrue);
@@ -153,7 +153,7 @@ void main() {
         view: ExpenseView.actual,
         fromMonth: '2026-07',
       );
-      final b = _svc.billsTrend(
+      final b = _svc.spendingTrend(
         entries,
         view: ExpenseView.actual,
         fromMonth: '2026-07',

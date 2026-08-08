@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart' show Currency, BillingCycle;
 import 'package:karton_subs/services/backup_crypto_service.dart';
@@ -47,7 +47,7 @@ Map<String, dynamic> _payload({
   List<BudgetEntry> personal = const [],
   List<BudgetEntry> household = const [],
   Map<String, bool>? paymentDone,
-  Map<String, dynamic>? billsAllocation,
+  Map<String, dynamic>? spendingAllocation,
   int version = 7,
 }) =>
     {
@@ -59,7 +59,7 @@ Map<String, dynamic> _payload({
       'budgetEntries': [for (final e in personal) e.toJson()],
       'householdBudgetEntries': [for (final e in household) e.toJson()],
       'paymentDone': ?paymentDone,
-      'billsAllocation': ?billsAllocation,
+      'billsAllocation': ?spendingAllocation,
     };
 
 void main() {
@@ -116,8 +116,8 @@ void main() {
     test('ODTWORZENIE nie rusza obszarow, ktorych plik NIE zawiera', () async {
       // Na tym poleglo pierwsze podejscie do ADR-021: czyszczenie „wszystkiego"
       // kasowalo Planner, ktorego starsze formaty w ogole nie mialy.
-      await _storage.setBillsAllocationItems(BudgetScope.personal, [
-        BillsAllocationItem(
+      await _storage.setSpendingAllocationItems(BudgetScope.personal, [
+        SpendingAllocationItem(
           id: 'a1',
           name: 'Paliwo',
           amount: 300,
@@ -141,7 +141,7 @@ void main() {
         reason: 'brak sekcji w pliku = brak informacji, nie „skasuj"',
       );
       expect(
-        _storage.getBillsAllocationItems(BudgetScope.personal).length,
+        _storage.getSpendingAllocationItems(BudgetScope.personal).length,
         1,
         reason: 'Planner bez pokrycia w pliku zostaje',
       );
@@ -187,7 +187,7 @@ void main() {
       await _backup.importFromBytes(
         _file(
           _payload(
-            billsAllocation: {
+            spendingAllocation: {
               'personal': [
                 {
                   'id': 'a1',
@@ -202,7 +202,7 @@ void main() {
         ),
         replace: true,
       );
-      final items = _storage.getBillsAllocationItems(BudgetScope.personal);
+      final items = _storage.getSpendingAllocationItems(BudgetScope.personal);
       expect(items.single.name, 'Paliwo');
       expect(items.single.amount, closeTo(300, 0.001));
     });

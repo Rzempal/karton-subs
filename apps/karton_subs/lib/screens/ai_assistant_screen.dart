@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
-import '../controllers/bill_scan_controller.dart';
+import '../controllers/receipt_scan_controller.dart';
 import '../services/ai_engine_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/settings_widgets.dart';
@@ -9,13 +9,13 @@ import '../widgets/settings_widgets.dart';
 /// Ustawienia Asystenta AI: przełącznik WSPOMAGANIA skanu lokalnym silnikiem
 /// + link do uruchomienia albo pobrania apki silnika.
 ///
-/// Samo skanowanie rachunków nie ma tu przełącznika — odczyt robi model OCR
+/// Samo skanowanie wydatków nie ma tu przełącznika — odczyt robi model OCR
 /// wbudowany w APK (ADR-017), więc działa zawsze, tak jak każda inna funkcja
 /// apki. Wyłączony asystent oznacza tylko tyle, że dokumenty nierozpoznane
 /// regułami czekają na ręczne uzupełnienie zamiast iść do silnika.
 ///
 /// Archiwum zdjęć ma własną sekcję w Ustawieniach (`ReceiptArchiveScreen`) —
-/// dotyczy każdego zatwierdzonego rachunku, nie tylko odczytanego silnikiem.
+/// dotyczy każdego zatwierdzonego wydatku, nie tylko odczytanego silnikiem.
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
 
@@ -32,7 +32,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _enabled = context.read<BillScanController>().aiAssistantEnabled;
+    _enabled = context.read<ReceiptScanController>().aiAssistantEnabled;
     _refreshEngineStatus();
   }
 
@@ -44,8 +44,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
   Future<void> _setEnabled(bool value) async {
     setState(() => _enabled = value);
     // Przez kontroler (nie storage wprost): notyfikacja przebudowuje menu
-    // na ekranie Rachunki i podtytul kafla w Ustawieniach.
-    await context.read<BillScanController>().setAiAssistantEnabled(value);
+    // na ekranie Bieżące i podtytul kafla w Ustawieniach.
+    await context.read<ReceiptScanController>().setAiAssistantEnabled(value);
   }
 
   @override
@@ -59,7 +59,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 8, 0, 112),
         children: [
-          // Skan rachunków jest zwykłą funkcją apki i nie ma tu przełącznika —
+          // Skan wydatków jest zwykłą funkcją apki i nie ma tu przełącznika —
           // ten ekran dotyczy WYŁĄCZNIE wspomagania silnikiem.
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -118,7 +118,7 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Text(
               _enabled
-                  ? 'Silnik czyta rachunek ze zdjęcia (kwota, wystawca, termin '
+                  ? 'Silnik czyta wydatek ze zdjęcia (kwota, wystawca, termin '
                         'płatności) — w pełni lokalnie, bez chmury. Wymaga '
                         'jednorazowego pobrania modelu (~3,7 GB) w aplikacji '
                         '„Lokalny Silnik AI”. Rozpoznanie trwa ok. minuty.'

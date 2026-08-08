@@ -51,12 +51,12 @@ Future<void> resetStorage(StorageService storage) async {
     budgetPersonal: true,
     budgetHousehold: true,
     paymentDone: true,
-    billsAllocation: true,
+    spendingAllocation: true,
   );
   for (final id in storage.getReceiptPhotoPaths().keys.toList()) {
     await storage.removeReceiptPhotoPath(id);
   }
   for (final scope in BudgetScope.values) {
-    await storage.setBillsAllocationItems(scope, const []);
+    await storage.setSpendingAllocationItems(scope, const []);
   }
 }

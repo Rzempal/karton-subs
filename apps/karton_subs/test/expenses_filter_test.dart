@@ -168,7 +168,7 @@ void main() {
     BudgetEntry bill(String month, {String? categoryId}) => BudgetEntry(
       id: 'b$month$categoryId',
       name: 'rachunek',
-      type: BudgetEntryType.billPayment,
+      type: BudgetEntryType.spending,
       amount: 120,
       currency: Currency.PLN,
       cycle: BillingCycle.monthly,

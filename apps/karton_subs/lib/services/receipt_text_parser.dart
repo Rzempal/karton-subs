@@ -1,6 +1,6 @@
-import 'bill_scan_service.dart';
+import 'receipt_scan_service.dart';
 
-/// Odczyt rachunku z SUROWEGO TEKSTU (zwykły OCR) — bez modelu językowego.
+/// Odczyt paragonu z SUROWEGO TEKSTU (zwykły OCR) — bez modelu językowego.
 ///
 /// Po co, skoro jest silnik AI: paragony fiskalne i zrzuty płatności telefonem
 /// mają sztywny układ, więc reguły czytają je pewniej, natychmiast i — co
@@ -11,9 +11,9 @@ import 'bill_scan_service.dart';
 /// Reguły są celowo zachowawcze: brak pewnej kwoty = brak wyniku i sprawę
 /// przejmuje silnik AI. Lepiej oddać dokument modelowi niż wpisać złą kwotę.
 class ReceiptTextParser {
-  /// Czyta rachunek z tekstu OCR. `null` = żaden wzorzec nie pasuje.
+  /// Czyta paragon z tekstu OCR. `null` = żaden wzorzec nie pasuje.
   /// [now] tylko do testów — punkt odniesienia dla roku.
-  static ParsedBill? parse(String text, {DateTime? now}) {
+  static ParsedReceipt? parse(String text, {DateTime? now}) {
     final today = now ?? DateTime.now();
     final lines = text
         .split('\n')
@@ -40,13 +40,13 @@ class ReceiptTextParser {
   /// Data dzień-miesiąc-rok: „24.07.2026", „24-07-2026".
   static final _dmyDate = RegExp(r'\b(\d{1,2})[./-](\d{1,2})[./-](20\d{2})\b');
 
-  static ParsedBill? _fiscalReceipt(List<String> lines, DateTime today) {
+  static ParsedReceipt? _fiscalReceipt(List<String> lines, DateTime today) {
     if (!lines.any(_fiscalAnchor.hasMatch)) return null;
 
     final amount = _amountAfterAnchor(lines, _sumaPln) ?? _amountBeforePln(lines);
     if (amount == null) return null;
 
-    return ParsedBill(
+    return ParsedReceipt(
       name: _merchantFromReceipt(lines),
       amount: amount,
       currency: 'PLN',
@@ -171,7 +171,7 @@ class ReceiptTextParser {
     'lip', 'sie', 'wrz', 'paz', 'lis', 'gru',
   ];
 
-  static ParsedBill? _paymentScreenshot(List<String> lines, DateTime today) {
+  static ParsedReceipt? _paymentScreenshot(List<String> lines, DateTime today) {
     final amountIndex = lines.indexWhere(_amountZl.hasMatch);
     if (amountIndex < 0) return null;
     final amount = _toDouble(_amountZl.firstMatch(lines[amountIndex])!.group(1)!);
@@ -182,7 +182,7 @@ class ReceiptTextParser {
     final date = _walletDateFrom(lines, today);
     if (date == null) return null;
 
-    return ParsedBill(
+    return ParsedReceipt(
       name: _merchantAbove(lines, amountIndex),
       amount: amount,
       currency: 'PLN',
@@ -293,7 +293,7 @@ class ReceiptTextParser {
   );
   static final _sellerLabel = RegExp(r'sprzedawca', caseSensitive: false);
 
-  static ParsedBill? _invoice(List<String> lines) {
+  static ParsedReceipt? _invoice(List<String> lines) {
     if (!lines.any(_invoiceAnchor.hasMatch)) return null;
 
     // „Do zapłaty" szukamy tylko w przód: nad tą etykietą stoi zwykle ogon
@@ -303,13 +303,13 @@ class ReceiptTextParser {
             _amountNearLabel(lines, _totalLabel, window: 3, pickLargest: true);
     if (amount == null) return null;
 
-    // Termin płatności przed datą wystawienia: rachunek obciąża ten miesiąc,
+    // Termin płatności przed datą wystawienia: paragon obciąża ten miesiąc,
     // w którym trzeba go zapłacić.
     final date = _dateNearLabel(lines, _dueLabel) ??
         _dateNearLabel(lines, _issueLabel) ??
         _dateNearLabel(lines, _saleLabel);
 
-    return ParsedBill(
+    return ParsedReceipt(
       name: _sellerName(lines),
       amount: amount,
       currency: 'PLN',

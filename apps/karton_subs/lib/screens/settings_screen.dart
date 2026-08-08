@@ -3,7 +3,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/app_config.dart';
-import '../controllers/bill_scan_controller.dart';
+import '../controllers/receipt_scan_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../services/storage_service.dart';
 import '../services/sync_service.dart';
@@ -35,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     // watch: podtytul aktualizuje sie od razu po zmianie przelacznika.
-    final aiEnabled = context.watch<BillScanController>().aiAssistantEnabled;
+    final aiEnabled = context.watch<ReceiptScanController>().aiAssistantEnabled;
     final storage = context.read<StorageService>();
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -97,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             // Archiwum zdjęć: osobna sekcja, bo dotyczy każdego zatwierdzonego
-            // rachunku ze zdjęciem — także odczytanego szybką ścieżką OCR,
+            // wydatku ze zdjęciem — także odczytanego szybką ścieżką OCR,
             // bez udziału silnika AI (ADR-017).
             ListTile(
               leading: const Icon(LucideIcons.folderArchive),

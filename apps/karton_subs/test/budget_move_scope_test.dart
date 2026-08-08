@@ -32,7 +32,7 @@ BudgetEntry _bill({
     BudgetEntry(
       id: id,
       name: name,
-      type: BudgetEntryType.billPayment,
+      type: BudgetEntryType.spending,
       amount: amount,
       currency: Currency.PLN,
       cycle: BillingCycle.monthly,

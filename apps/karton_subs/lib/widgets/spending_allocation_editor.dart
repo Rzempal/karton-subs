@@ -3,31 +3,31 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/budget_controller.dart';
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'budget_widgets.dart' show budgetNf;
 
-/// Edycja koperty „Na rachunki" (ADR-012) — rezerwy planu na pulę rachunków.
+/// Edycja koperty „Na bieżące wydatki" (ADR-012) — rezerwy planu na pulę wydatków.
 ///
-/// Mieszka na ekranie **Rachunki**: koperta to plan dla tej samej puli, którą
+/// Mieszka na ekranie **Bieżące**: koperta to plan dla tej samej puli, którą
 /// ten ekran realnie loguje, więc jeden ekran posiada temat w całości. Ekran
 /// „Budżet" pokazuje już tylko sumę koperty, bo ona nadal pomniejsza
 /// „zostaje/mies" i suma planu musi się tłumaczyć.
 
 /// Lista pozycji koperty z sumą i przyciskiem dodawania.
-class BillsAllocationItems extends StatelessWidget {
-  final List<BillsAllocationItem> items;
+class SpendingAllocationEditor extends StatelessWidget {
+  final List<SpendingAllocationItem> items;
   final String currency;
   final VoidCallback onAdd;
-  final ValueChanged<BillsAllocationItem> onEdit;
+  final ValueChanged<SpendingAllocationItem> onEdit;
 
   /// „Uzupełnij do pełnej kwoty" — dopisanie pozycji domykającej sumę do
   /// okrągłej wartości. `null` = akcja niedostępna.
   final VoidCallback? onFillToRound;
 
-  const BillsAllocationItems({
+  const SpendingAllocationEditor({
     super.key,
     required this.items,
     required this.currency,
@@ -103,7 +103,7 @@ class BillsAllocationItems extends StatelessWidget {
 /// [isAuto] `null` = brak metody; `true/false` = automatyczna/manualna (ikona).
 /// Kategoria (jeśli przypisana) objawia się TYLKO kolorem [dotColor].
 class _AllocItemRow extends StatelessWidget {
-  final BillsAllocationItem item;
+  final SpendingAllocationItem item;
   final String currency;
   final bool? isAuto;
   final Color? dotColor;
@@ -175,10 +175,10 @@ class _AllocItemRow extends StatelessWidget {
 }
 
 /// Dodanie/edycja pozycji koperty (nazwa, kwota, kategoria, metoda płatności).
-/// Suma pozycji = rezerwa planu; realne rachunki liczy bilans miesiąca.
-Future<void> showBillsAllocationItemEditor(
+/// Suma pozycji = rezerwa planu; realne wydatki bieżące liczy bilans miesiąca.
+Future<void> showSpendingAllocationItemEditor(
   BuildContext context, {
-  BillsAllocationItem? existing,
+  SpendingAllocationItem? existing,
   String? initialName,
   double? initialAmount,
 }) async {
@@ -283,7 +283,7 @@ Future<void> showBillsAllocationItemEditor(
           if (existing != null)
             TextButton(
               onPressed: () {
-                ctrl.removeBillsAllocationItem(existing.id);
+                ctrl.removeSpendingAllocationItem(existing.id);
                 Navigator.pop(dctx);
               },
               child: const Text('Usuń'),
@@ -303,14 +303,14 @@ Future<void> showBillsAllocationItemEditor(
                 return;
               }
               if (existing == null) {
-                ctrl.addBillsAllocationItem(
+                ctrl.addSpendingAllocationItem(
                   name: name,
                   amount: amount,
                   paymentMethod: method,
                   categoryId: categoryId,
                 );
               } else {
-                ctrl.updateBillsAllocationItem(
+                ctrl.updateSpendingAllocationItem(
                   existing.copyWith(
                     name: name,
                     amount: amount,

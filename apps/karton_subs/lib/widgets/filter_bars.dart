@@ -4,7 +4,7 @@ import '../models/category.dart';
 import 'aurora_chip.dart';
 
 /// Wspólne paski filtrów list: kategorie i czas. Używają ich „Wydatki",
-/// „Wpływy" i „Rachunki" — bez tego każdy ekran miałby własną kopię tych samych
+/// „Wpływy" i „Bieżące" — bez tego każdy ekran miałby własną kopię tych samych
 /// chipów, a te zaraz rozjechałyby się wyglądem i zachowaniem.
 
 /// Pasek filtrów z akcją przyklejoną na końcu — chipy przewijają się poziomo,

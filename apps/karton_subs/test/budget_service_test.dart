@@ -109,7 +109,7 @@ void main() {
       final entries = [
         _entry(type: BudgetEntryType.income, amount: 5000),
         _entry(
-            type: BudgetEntryType.billPayment,
+            type: BudgetEntryType.spending,
             amount: 3000,
             month: '2026-07'),
       ];
@@ -137,7 +137,7 @@ void main() {
       _entry(type: BudgetEntryType.income, amount: 5000),
       _entry(type: BudgetEntryType.recurringCost, amount: 1500),
       _entry(
-          type: BudgetEntryType.billPayment, amount: 3000, month: '2026-07'),
+          type: BudgetEntryType.spending, amount: 3000, month: '2026-07'),
     ];
 
     test('miesiąc z jednorazowym: bilans = surplus − jednorazowe', () {
@@ -180,7 +180,7 @@ void main() {
       _entry(type: BudgetEntryType.income, amount: 5000),
       _entry(type: BudgetEntryType.recurringCost, amount: 1500),
       _entry(
-          type: BudgetEntryType.billPayment, amount: 3000, month: '2026-07'),
+          type: BudgetEntryType.spending, amount: 3000, month: '2026-07'),
       _entry(
           type: BudgetEntryType.oneTimeIncome, amount: 2000, month: '2026-07'),
     ];

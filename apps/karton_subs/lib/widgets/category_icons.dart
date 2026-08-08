@@ -19,7 +19,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 /// wcześniej i nie ma po co ich migrować.
 IconData categoryIcon(String? name) {
   return switch (name) {
-    // ── Dom i rachunki ──
+    // ── Dom i wydatki bieżące ──
     'home' => LucideIcons.home,
     'bed' => LucideIcons.bed,
     'zap' => LucideIcons.zap,
@@ -85,7 +85,7 @@ IconData categoryIcon(String? name) {
 /// transport, zdrowie, rozrywka, praca), żeby przy kilkudziesięciu pozycjach
 /// dało się szukać wzrokiem, a nie tylko przewijać.
 const List<String> availableIconNames = [
-  // Dom i rachunki
+  // Dom i wydatki bieżące
   'home', 'bed', 'zap', 'wifi', 'phone', 'mail',
   'drill', 'soapDispenserDroplet', 'swatchBook',
   // Zakupy i jedzenie

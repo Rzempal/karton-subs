@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/budget_service.dart';
@@ -25,7 +25,7 @@ BudgetEntry _bill(double amount, {String? categoryId, String? month}) =>
     BudgetEntry(
       id: 'b_$amount$categoryId',
       name: 'rachunek',
-      type: BudgetEntryType.billPayment,
+      type: BudgetEntryType.spending,
       amount: amount,
       currency: Currency.PLN,
       cycle: BillingCycle.monthly,
@@ -71,7 +71,7 @@ void main() {
         closeTo(50, 0.001),
       );
       expect(
-        _svc.billsTrend(entries, view: ExpenseView.actual).last.amount,
+        _svc.spendingTrend(entries, view: ExpenseView.actual).last.amount,
         closeTo(200, 0.001),
       );
     });
@@ -80,13 +80,13 @@ void main() {
       final sum =
           _svc.recurringExpenseTrend(entries, view: ExpenseView.plan).last.amount +
               _svc.subscriptionsTrend(subs, view: ExpenseView.actual).last.amount +
-              _svc.billsTrend(entries, view: ExpenseView.actual).last.amount;
+              _svc.spendingTrend(entries, view: ExpenseView.actual).last.amount;
       expect(sum, closeTo(_svc.expenseTrend(entries, subs).last.amount, 0.001));
     });
 
     test('rachunek innego miesiąca nie wchodzi do bieżącego punktu', () {
       final other = [_recurring(300), _bill(200, month: '2026-05')];
-      final t = _svc.billsTrend(other, view: ExpenseView.actual);
+      final t = _svc.spendingTrend(other, view: ExpenseView.actual);
       expect(t.last.amount, closeTo(0, 0.001));
     });
   });
@@ -114,7 +114,7 @@ void main() {
       final surplus = _svc.monthlySurplus(
         entries,
         subs,
-        billsAllocation: alloc,
+        spendingAllocation: alloc,
       );
       expect(income - recurring - subsCost - alloc, closeTo(surplus, 0.001));
       expect(surplus, closeTo(5200, 0.001));
@@ -136,7 +136,7 @@ void main() {
       final surplus = _svc.monthlySurplus(
         entries,
         subs,
-        billsAllocation: alloc,
+        spendingAllocation: alloc,
       );
       expect(
         _svc.monthlyIncome(entries) - recurringRow - subsCost - alloc,
@@ -146,7 +146,7 @@ void main() {
   });
 
   group('Rzeczywisty bilans miesiąca — rozpis strumieni', () {
-    BudgetEntry income(double amount, {Map<String, BillMonthOverride>? overrides}) =>
+    BudgetEntry income(double amount, {Map<String, MonthAmountOverride>? overrides}) =>
         BudgetEntry(
           id: 'i$amount',
           name: 'pensja',
@@ -166,11 +166,11 @@ void main() {
       expect(parts.income, closeTo(8000, 0.001));
       expect(parts.recurring, closeTo(2180, 0.001));
       expect(parts.subscriptions, closeTo(120, 0.001));
-      expect(parts.bills, closeTo(950, 0.001));
+      expect(parts.spending, closeTo(950, 0.001));
       expect(
         parts.balance,
         closeTo(
-          _svc.balanceForMonth(entries, subs, _thisMonth, billsAllocation: 500),
+          _svc.balanceForMonth(entries, subs, _thisMonth, spendingAllocation: 500),
           0.001,
         ),
       );
@@ -178,7 +178,7 @@ void main() {
 
     test('korekta kwoty kosztu wchodzi do kosztów cyklicznych', () {
       final withOverride = _recurring(300).copyWith(
-        monthOverrides: {_thisMonth: const BillMonthOverride(amount: 420)},
+        monthOverrides: {_thisMonth: const MonthAmountOverride(amount: 420)},
       );
       final entries = [income(8000), withOverride];
       final parts = _svc.monthBalanceParts(entries, const [], _thisMonth);
@@ -197,7 +197,7 @@ void main() {
     test('rachunek innego miesiąca nie obciąża tego bilansu', () {
       final entries = [income(8000), _bill(950, month: '2026-05')];
       final parts = _svc.monthBalanceParts(entries, const [], _thisMonth);
-      expect(parts.bills, closeTo(0, 0.001));
+      expect(parts.spending, closeTo(0, 0.001));
       expect(parts.balance, closeTo(8000, 0.001));
     });
   });
@@ -250,7 +250,7 @@ void main() {
 
   group('Trend: plan vs rzeczywistość', () {
     final korekta = _recurring(300).copyWith(
-      monthOverrides: {_thisMonth: const BillMonthOverride(amount: 420)},
+      monthOverrides: {_thisMonth: const MonthAmountOverride(amount: 420)},
     );
 
     test('plan nie zna korekt miesiąca, rzeczywistość je bierze', () {
@@ -267,12 +267,12 @@ void main() {
 
     test('rachunki: plan to koperta, rzeczywistość to realne kwoty', () {
       final entries = [_bill(200)];
-      final plan = _svc.billsTrend(
+      final plan = _svc.spendingTrend(
         entries,
         view: ExpenseView.plan,
-        billsAllocation: 500,
+        spendingAllocation: 500,
       );
-      final real = _svc.billsTrend(entries, view: ExpenseView.actual);
+      final real = _svc.spendingTrend(entries, view: ExpenseView.actual);
       expect(plan.every((p) => (p.amount - 500).abs() < 0.001), isTrue);
       expect(real.last.amount, closeTo(200, 0.001));
       expect(real.first.amount, closeTo(0, 0.001));
@@ -305,21 +305,21 @@ void main() {
       // i bilans pokazywałyby dwie różne prawdy o tym samym miesiącu.
       expect(real.last.amount, closeTo(parts.recurring, 0.001));
       expect(
-        _svc.billsTrend(entries, view: ExpenseView.actual).last.amount,
-        closeTo(parts.bills, 0.001),
+        _svc.spendingTrend(entries, view: ExpenseView.actual).last.amount,
+        closeTo(parts.spending, 0.001),
       );
     });
   });
 
   group('Kategorie: plan vs rzeczywistość', () {
     final alloc = [
-      const BillsAllocationItem(
+      const SpendingAllocationItem(
         id: 'a1',
         name: 'Paliwo',
         amount: 300,
         categoryId: 'cat_a',
       ),
-      const BillsAllocationItem(id: 'a2', name: 'Bufor', amount: 200),
+      const SpendingAllocationItem(id: 'a2', name: 'Bufor', amount: 200),
     ];
 
     test('plan bierze kopertę (po jej kategoriach), a nie rachunki', () {
@@ -340,7 +340,7 @@ void main() {
     test('rzeczywistość bierze rachunki miesiąca i korekty kosztów', () {
       final entries = [
         _recurring(300, categoryId: 'cat_a').copyWith(
-          monthOverrides: {_thisMonth: const BillMonthOverride(amount: 420)},
+          monthOverrides: {_thisMonth: const MonthAmountOverride(amount: 420)},
         ),
         _bill(950, categoryId: 'cat_b'),
       ];

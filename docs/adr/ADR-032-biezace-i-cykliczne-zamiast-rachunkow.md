@@ -63,16 +63,87 @@ jest prawdziwa.
 tym, co te powiadomienia generuje, więc dzwonek przy subskrypcji czytałby się
 jako „ma ustawione przypomnienie", a nie „to jest subskrypcja".
 
-### 3. Granica formatu zapisu
+### 3. Nazwy w kodzie idą za nazwami w UI
+
+ADR-019 §3 mówił „nazwy tylko w UI" — tamta decyzja zostaje **odwrócona** dla tej
+sekcji. Powód: w kodzie żyły **trzy** nazwy jednej rzeczy (`Rachunki*` po polsku,
+`Bill*` i `Receipt*` po angielsku), a kontroler skanu nazywał się
+`BillScanController`, choć parser obok niego `ReceiptTextParser`. To nie był
+kosmetyczny rozjazd, tylko realne źródło pomyłek.
+
+Dwa pojęcia, dwie rodziny nazw:
+
+| Pojęcie | UI | Rodzina w kodzie |
+|---|---|---|
+| Wydatek datowany (pieniądze) | „Bieżące" | `Spending*` |
+| Zdjęcie paragonu: skan, OCR, kadrowanie, archiwum | skan / „Archiwum paragonów" | `Receipt*` |
+| Cykl rozliczeniowy subskrypcji | — | `BillingCycle` — **bez zmian**, to poprawna angielszczyzna |
+
+Przemianowane pliki: `rachunki_screen` → `spending_screen`, `bills_planner_screen`
+→ `spending_planner_screen`, `add_bill_payment_screen` → `add_spending_screen`,
+`bills_allocation_item` → `spending_allocation_item`, `bills_allocation_editor` →
+`spending_allocation_editor`, `pending_bill_scan` → `pending_receipt_scan`,
+`bill_scan_controller` → `receipt_scan_controller`, `bill_scan_service` →
+`receipt_scan_service`.
+
+Przy okazji poprawiona **błędna** nazwa: `BillMonthOverride` →
+`MonthAmountOverride`. Mimo „Bill" w nazwie klasa dotyczy korekt pozycji
+**cyklicznych** i przelewu do domowego, nigdy wydatków bieżących.
+
+### 4. Granica formatu zapisu
 
 Nazwa **`'Rachunek'` w kolumnie „Typ" arkusza Excel zostaje rozpoznawana na
 zawsze.** Eksport pisze dziś `'Wydatek bieżący'`, ale import rozumie oba warianty
 (z polskimi znakami i bez) — starych arkuszy na dyskach użytkowników nikt nie
 przepisze. Pilnuje tego test w `test/excel_budget_test.dart`.
 
-Bez zmian zostaje też `BudgetEntryType.billPayment` — wartość zapisana w bazie
-Hive, w kopiach `.zostaje` i **w paczkach synchronizacji**. Telefon na starszej
-wersji musi dalej czytać pozycje z telefonu na nowszej.
+**Nazwa w kodzie jest odcięta od wartości na dysku.** Kod mówi
+`BudgetEntryType.spending`, a do pliku idzie `billPayment` — tłumaczy to jawna
+mapa `_typeWireNames` w `budget_entry.dart` (wcześniej zapis brał `type.name`,
+czyli identyfikator z kodu BYŁ wartością w bazie). Tak samo klucze pudełka
+`settings`: kod woła `StorageKeys.spendingAllocationItems(scope)`, a pod spodem
+stoi historyczne `billsAllocationItems|<zakres>`.
+
+Dzięki temu stare słownictwo zostało w **dwóch opisanych miejscach**
+(`storage_keys.dart` i mapa `_typeWireNames`) zamiast być rozsiane po 35 plikach.
+
+Wartości nietykalne — wszystkie pilnowane przez `test/storage_format_guard_test.dart`:
+
+| Wartość | Gdzie leży | Co psuje zmiana |
+|---|---|---|
+| `"type":"billPayment"` | Hive, kopie `.zostaje`, **paczki synchronizacji** | Telefon na starszej wersji przestaje czytać pozycje z nowszej |
+| `billsAllocationItems\|<zakres>`, `billsAllocation\|<zakres>` | klucze `settings` | Utrata koperty bez napisanej migracji |
+| `pendingBillScans` | klucz `settings` | Utrata kolejki skanów |
+| `billsAllocation` | sekcja paczki sync **i** klucz w kopii `.zostaje` | Planner nie dojeżdża do drugiego telefonu / nie odtwarza się z kopii |
+| `bill_scans` | nazwa katalogu na dysku | Osierocone zdjęcia czekające na zatwierdzenie |
+| `{"rachunki":[...]}` | odpowiedź apki Lokalny Silnik AI | Skanowanie przestaje działać (osobne APK, osobne repo) |
+| `'Rachunek'` w kolumnie „Typ" | arkusze `.xlsx` u użytkownika | Stare arkusze importują się z błędnym typem |
+
+**Migracja tych nazw została świadomie odrzucona.** Kod migracji musiałby żyć
+wiecznie (ktoś odtworzy dwuletnią kopię albo podniesie telefon z szuflady), więc
+byłby droższy w utrzymaniu niż plik ze stałymi — a i tak nie objąłby paczki
+synchronizacji, bo tej nie da się zmigrować z jednej strony.
+
+### 5. Wniosek z wykonania: zamiana tekstem przecieka do formatu
+
+Refaktor prowadzony zbiorczą zamianą nazw **czterokrotnie** trafił w wartości
+formatu zamiast w kod: klucz `billsAllocation` w kopii i w paczce sync, klucz
+`billsAllocationItems` w `settings`, klucz `rachunki` w protokole silnika AI
+oraz słowo kluczowe `rachunek` w imporcie Excela. Każdy z tych przypadków
+wyglądał w diffie jak zwykła zmiana nazwy.
+
+Trzy wnioski na przyszłość:
+
+1. **Strażnik formatu piszemy PRZED refaktorem, nie po.** Trzy z czterech wpadek
+   złapały testy, nie przegląd kodu.
+2. **Po pliku strażnika nie wolno puszczać zamian zbiorczych.** Czwarta wpadka
+   (`billsAllocationItems`) przeszła niezauważona właśnie dlatego, że napis
+   w teście zmienił się razem z napisem w kodzie: test świecił na zielono, a klucz
+   w bazie był już inny. Wartości w strażniku muszą być wpisane wprost i ruszane
+   wyłącznie ręcznie.
+3. **Zamiana nazw musi rozróżniać wielkość liter.** `billsAllocationItems`
+   ucierpiało, bo narzędzie domyślnie dopasowało je do `BillsAllocationItems` —
+   klasy o tej samej nazwie w innej pisowni.
 
 ## Rozważane alternatywy
 

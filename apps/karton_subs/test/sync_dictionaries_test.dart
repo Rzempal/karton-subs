@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/category.dart';
 import 'package:karton_subs/models/subscription.dart'
@@ -143,7 +143,7 @@ void main() {
 
       final alloc = SyncMerge.applyCategoryAliasesToAllocation(
         [
-          BillsAllocationItem(
+          SpendingAllocationItem(
             id: 'a1',
             name: 'Prad',
             amount: 200,

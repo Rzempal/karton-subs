@@ -5,7 +5,7 @@
 // Model czasu: hybryda — rdzeń uśredniony (kwoty/mies) + wydatki jednorazowe
 // przypięte do konkretnego miesiąca.
 
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../utils/cycle_math.dart';
@@ -42,8 +42,8 @@ class CalendarItem {
 
 /// Typ glowny pozycji kalendarza (grupowanie na Dashboardzie).
 enum CalendarItemKind {
-  /// Rachunek — realny log oplaty (`BudgetEntryType.billPayment`).
-  bill,
+  /// Wydatek biezacy — datowany log wydatku (`BudgetEntryType.spending`).
+  spending,
 
   /// Odnowienie subskrypcji.
   subscription,
@@ -54,7 +54,7 @@ enum CalendarItemKind {
   /// Etykieta grupy. „Budzet" zamiast „Cykliczne", bo w tej grupie sa takze
   /// pozycje jednorazowe (premia, wieksze zakupy) — nazwa musi je objac.
   String get label => switch (this) {
-        CalendarItemKind.bill => 'Bieżące',
+        CalendarItemKind.spending => 'Bieżące',
         CalendarItemKind.subscription => 'Subskrypcje',
         CalendarItemKind.budgetEntry => 'Budżet',
       };
@@ -80,9 +80,9 @@ class DayCashflow {
 enum BalanceContributionKind {
   oneTimeIncome, // jednorazowy wpływ (+)
   oneTimeExpense, // jednorazowy wydatek (−)
-  amountOverride, // korekta kwoty (rachunek/przelew/wpływ, ze znakiem)
+  amountOverride, // korekta kwoty (wydatek/przelew/wpływ, ze znakiem)
   installment, // korekta raty (rata w tym miesiącu vs teraz)
-  billsAllocation, // rezerwa „Na rachunki" oddana z planu (+) — real liczy faktyczne rachunki
+  spendingAllocation, // rezerwa „Na bieżące wydatki" oddana z planu (+) — real liczy faktyczne wydatki bieżące
 }
 
 /// Bilans miesiąca rozłożony na strumienie (do sekcji „Rzeczywisty bilans
@@ -97,17 +97,17 @@ class MonthBalanceParts {
   /// Subskrypcje (kwota/mies).
   final double subscriptions;
 
-  /// Rachunki tego miesiąca — realne kwoty, zbiorczo.
-  final double bills;
+  /// Wydatki bieżące tego miesiąca — realne kwoty, zbiorczo.
+  final double spending;
 
   const MonthBalanceParts({
     required this.income,
     required this.recurring,
     required this.subscriptions,
-    required this.bills,
+    required this.spending,
   });
 
-  double get costs => recurring + subscriptions + bills;
+  double get costs => recurring + subscriptions + spending;
 
   double get balance => income - costs;
 }
@@ -132,11 +132,11 @@ class BalanceContribution {
 /// żadnemu realnemu miesiącowi.
 enum ExpenseView {
   /// Jak budżet zakłada, że wygląda miesiąc: kwoty bazowe uśrednione na
-  /// miesiąc, raty w oknie spłaty, a zamiast rachunków — koperta „Na rachunki".
+  /// miesiąc, raty w oknie spłaty, a zamiast wydatków — koperta „Na bieżące wydatki".
   plan,
 
   /// Co faktycznie wyszło w danym miesiącu: kwoty z korektami tego miesiąca,
-  /// tylko pozycje, które wtedy istniały, i realne rachunki (`billPayment`).
+  /// tylko pozycje, które wtedy istniały, i realne wydatki bieżące (`billPayment`).
   ///
   /// Dla miesięcy wstecz to ODTWORZENIE, nie zapis: aplikacja nie trzyma
   /// historii zmian kwot, tylko korekty miesięczne i daty. Bieżący miesiąc
@@ -213,7 +213,7 @@ class BudgetService {
     return _currency.convert(ov!.amount! - e.amount, e.currency, t);
   }
 
-  /// Realne koszty cykliczne danego miesiąca — BEZ subskrypcji i BEZ rachunków.
+  /// Realne koszty cykliczne danego miesiąca — BEZ subskrypcji i BEZ wydatków.
   /// Różni się od [monthlyBudgetExpenses] tym, że bierze korekty tego miesiąca
   /// i liczy tylko pozycje, które wtedy istniały (raty w oknie spłaty).
   double recurringExpensesForMonth(
@@ -248,7 +248,7 @@ class BudgetService {
         .fold(0.0, (sum, e) => sum + _monthly(e, t));
   }
 
-  /// Suma kosztów cyklicznych budżetu (rachunki + koszty cykliczne) w walucie docelowej.
+  /// Suma kosztów cyklicznych budżetu (wydatki bieżące + koszty cykliczne) w walucie docelowej.
   double monthlyBudgetExpenses(List<BudgetEntry> entries, {Currency? target}) {
     final t = target ?? Currency.PLN;
     return entries
@@ -273,18 +273,18 @@ class BudgetService {
       monthlySubscriptionsExpense(subs, target: target);
 
   /// „Zostaje miesięcznie" = wpływy − (koszty cykliczne + subskrypcje) − rezerwa
-  /// „Na rachunki". [billsAllocation] to koperta planu (zgadywanka na rachunki),
+  /// „Na bieżące wydatki". [spendingAllocation] to koperta planu (zgadywanka na wydatki bieżące),
   /// która pomniejsza plan; w bilansie miesiąca jest oddawana i podmieniana na
-  /// realne rachunki (`billPayment`) — bez podwójnego liczenia (ADR-011).
+  /// realne wydatki bieżące (`billPayment`) — bez podwójnego liczenia (ADR-011).
   double monthlySurplus(
     List<BudgetEntry> entries,
     List<Subscription> subs, {
     Currency? target,
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
   }) =>
       monthlyIncome(entries, target: target) -
       monthlyRecurringExpenses(entries, subs, target: target) -
-      billsAllocation;
+      spendingAllocation;
 
   // ── Wydatki jednorazowe (per miesiąc) ───────────────────────────────────────
 
@@ -331,36 +331,36 @@ class BudgetService {
       _sumAmount(
           oneTimeIncomesForMonth(entries, monthKey), target ?? Currency.PLN);
 
-  // ── Rachunki: realny log ([BudgetEntryType.billPayment]) ────────────────────
+  // ── Bieżące: realny log ([BudgetEntryType.spending]) ────────────────────
 
-  /// Rachunki (realny log opłaconych, trudnych do zaplanowania pozycji)
+  /// Bieżące (realny log opłaconych, trudnych do zaplanowania pozycji)
   /// przypisane do danego miesiąca ("YYYY-MM"). Datowane wydatki — zasilają
   /// bilans miesiąca (jak jednorazowe), NIE plan („zostaje/mies").
-  List<BudgetEntry> billPaymentsForMonth(
+  List<BudgetEntry> spendingForMonth(
     List<BudgetEntry> entries,
     String monthKey,
   ) =>
       entries
           .where((e) =>
               e.isActive &&
-              e.type == BudgetEntryType.billPayment &&
+              e.type == BudgetEntryType.spending &&
               e.month == monthKey)
           .toList();
 
-  /// Suma realnych rachunków danego miesiąca (waluta docelowa) — „rzeczywiste"
-  /// w porównaniu z kopertą „Na rachunki" (plan).
-  double billsActualForMonth(
+  /// Suma realnych wydatków danego miesiąca (waluta docelowa) — „rzeczywiste"
+  /// w porównaniu z kopertą „Na bieżące wydatki" (plan).
+  double spendingActualForMonth(
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
   }) =>
       _sumAmount(
-          billPaymentsForMonth(entries, monthKey), target ?? Currency.PLN);
+          spendingForMonth(entries, monthKey), target ?? Currency.PLN);
 
   // ── Statystyki: trendy i podział na kategorie (do wykresów w Planie) ────────
 
   /// Trend miesięcznych wydatków (ostatnie [months] mies.): koszty cykliczne +
-  /// subskrypcje (bieżące) + jednorazowe i rachunki danego miesiąca.
+  /// subskrypcje (bieżące) + jednorazowe i wydatki bieżące danego miesiąca.
   List<MonthlyDataPoint> expenseTrend(
     List<BudgetEntry> entries,
     List<Subscription> subs, {
@@ -386,7 +386,7 @@ class BudgetService {
   }
 
   /// Trend samych kosztów cyklicznych budżetu (koszty stałe, raty) — BEZ
-  /// subskrypcji i BEZ rachunków. Razem z [subscriptionsTrend] i [billsTrend]
+  /// subskrypcji i BEZ wydatków. Razem z [subscriptionsTrend] i [spendingTrend]
   /// daje rozłączny podział całości wydatków (po ADR-018 „jednorazowy wydatek"
   /// to dokładnie `billPayment`, więc trzy serie niczego nie gubią i niczego
   /// nie liczą dwa razy).
@@ -441,13 +441,13 @@ class BudgetService {
         .toList();
   }
 
-  /// Trend rachunków: w planie płaska koperta „Na rachunki" ([billsAllocation]),
+  /// Trend wydatków: w planie płaska koperta „Na bieżące wydatki" ([spendingAllocation]),
   /// w rzeczywistości realne `billPayment` każdego miesiąca. To jest ta sama
-  /// para plan/realny, którą porównuje karta miesiąca w „Rachunkach".
-  List<MonthlyDataPoint> billsTrend(
+  /// para plan/realny, którą porównuje karta miesiąca w „Bieżących".
+  List<MonthlyDataPoint> spendingTrend(
     List<BudgetEntry> entries, {
     required ExpenseView view,
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
     int months = 6,
     String? fromMonth,
     Currency? target,
@@ -457,8 +457,8 @@ class BudgetService {
       return MonthlyDataPoint(
         month: m,
         amount: view == ExpenseView.plan
-            ? billsAllocation
-            : billsActualForMonth(entries, BudgetEntry.monthKeyOf(m), target: t),
+            ? spendingAllocation
+            : spendingActualForMonth(entries, BudgetEntry.monthKeyOf(m), target: t),
       );
     }).toList();
   }
@@ -486,7 +486,7 @@ class BudgetService {
   // ── Podsumowanie roczne (ADR-029) ──────────────────────────────────────────
 
   /// Realne wydatki JEDNEGO miesiąca: koszty cykliczne z korektami tego miesiąca
-  /// + subskrypcje wtedy aktywne + rachunki tego miesiąca. Ta sama definicja co
+  /// + subskrypcje wtedy aktywne + wydatki bieżące tego miesiąca. Ta sama definicja co
   /// ujęcie „Realne" na wykresach (ADR-028) i co bilans miesiąca.
   double actualExpensesForMonth(
     List<BudgetEntry> entries,
@@ -498,18 +498,18 @@ class BudgetService {
     final key = BudgetEntry.monthKeyOf(month);
     return recurringExpensesForMonth(entries, key, target: t) +
         _analytics.getMonthlyTotalForMonth(subs, month, target: t) +
-        billsActualForMonth(entries, key, target: t);
+        spendingActualForMonth(entries, key, target: t);
   }
 
   /// Planowany koszt miesięczny: koszty cykliczne + subskrypcje + koperta
-  /// „Na rachunki" — dokładnie to, co pomniejsza „zostaje miesięcznie".
+  /// „Na bieżące wydatki" — dokładnie to, co pomniejsza „zostaje miesięcznie".
   double plannedMonthlyExpenses(
     List<BudgetEntry> entries,
     List<Subscription> subs, {
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
     Currency? target,
   }) =>
-      monthlyRecurringExpenses(entries, subs, target: target) + billsAllocation;
+      monthlyRecurringExpenses(entries, subs, target: target) + spendingAllocation;
 
   /// Podsumowanie roku: ile z planu rocznego już wydano, miesiąc po miesiącu.
   ///
@@ -526,7 +526,7 @@ class BudgetService {
     int year, {
     required ExpenseView view,
     int fromMonth = 1,
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
@@ -534,7 +534,7 @@ class BudgetService {
     final planned = plannedMonthlyExpenses(
       entries,
       subs,
-      billsAllocation: billsAllocation,
+      spendingAllocation: spendingAllocation,
       target: t,
     );
     // 13 = ewidencja zaczyna się dopiero w kolejnym roku, więc ten rok jest
@@ -594,11 +594,11 @@ class BudgetService {
   /// rozłączne, więc to zwykła suma per kategoria.
   ///
   /// [ExpenseView.plan]: koszty bazowe uśrednione na miesiąc, a zamiast
-  /// rachunków — pozycje koperty „Na rachunki" ([allocationItems], rozbite po
+  /// wydatków — pozycje koperty „Na bieżące wydatki" ([allocationItems], rozbite po
   /// swoich kategoriach). Tak liczy plan „zostaje miesięcznie".
   ///
   /// [ExpenseView.actual]: koszty tego miesiąca (z korektami, bez pozycji,
-  /// które wtedy nie istniały) + realne rachunki miesiąca. Tak liczy bilans
+  /// które wtedy nie istniały) + realne wydatki bieżące miesiąca. Tak liczy bilans
   /// miesiąca.
   ///
   /// Pozycje bez kategorii z obu światów (`budget_other` z budżetu,
@@ -609,7 +609,7 @@ class BudgetService {
     List<Subscription> subs,
     String monthKey, {
     required ExpenseView view,
-    List<BillsAllocationItem> allocationItems = const [],
+    List<SpendingAllocationItem> allocationItems = const [],
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
@@ -630,7 +630,7 @@ class BudgetService {
     addAll(
       view == ExpenseView.plan
           ? allocationBreakdownByCategory(allocationItems)
-          : billsBreakdownByCategory(entries, monthKey, target: t),
+          : spendingBreakdownByCategory(entries, monthKey, target: t),
     );
     return out;
   }
@@ -658,10 +658,10 @@ class BudgetService {
     return out;
   }
 
-  /// Podział koperty „Na rachunki" wg kategorii jej pozycji (ujęcie planu).
+  /// Podział koperty „Na bieżące wydatki" wg kategorii jej pozycji (ujęcie planu).
   /// Kwoty koperty są już w walucie docelowej — to zwykła suma z ustawień.
   Map<String, double> allocationBreakdownByCategory(
-    List<BillsAllocationItem> items,
+    List<SpendingAllocationItem> items,
   ) {
     final out = <String, double>{};
     for (final it in items.where((it) => !it.deleted)) {
@@ -671,15 +671,15 @@ class BudgetService {
     return out;
   }
 
-  /// Podział realnych rachunków danego miesiąca wg kategorii (wykres kołowy).
-  Map<String, double> billsBreakdownByCategory(
+  /// Podział realnych wydatków danego miesiąca wg kategorii (wykres kołowy).
+  Map<String, double> spendingBreakdownByCategory(
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
   }) {
     final t = target ?? Currency.PLN;
     final out = <String, double>{};
-    for (final e in billPaymentsForMonth(entries, monthKey)) {
+    for (final e in spendingForMonth(entries, monthKey)) {
       final key = e.categoryId ?? 'budget_other';
       out[key] = (out[key] ?? 0) + _currency.convert(e.amount, e.currency, t);
     }
@@ -688,7 +688,7 @@ class BudgetService {
 
   /// Wpływ korekt kwoty na bilans miesiąca, ze znakiem (ADR-008). Dla każdej
   /// aktywnej pozycji z nadpisaną kwotą w tym miesiącu: wpływ `+ (korekta−baza)`,
-  /// wydatek `− (korekta−baza)`. Dotyczy rachunku, przelewu do domowego oraz
+  /// wydatek `− (korekta−baza)`. Dotyczy wydatku, przelewu do domowego oraz
   /// lustrzanego wpływu w domowym. Korekta samej daty nie wpływa na bilans.
   double overrideDeltaForMonth(
     List<BudgetEntry> entries,
@@ -710,7 +710,7 @@ class BudgetService {
   /// Korekta bilansu z tytułu rat: surplus liczy raty aktywne *teraz*, a dla
   /// wskazanego miesiąca liczą się raty aktywne *w tym miesiącu*. Zwraca
   /// `(rata w miesiącu) − (rata teraz)` — dodatnia = w tym miesiącu drożej niż
-  /// w bieżącym, więc bilans niższy (odejmowana, jak delta rachunku).
+  /// w bieżącym, więc bilans niższy (odejmowana, jak delta wydatku).
   double installmentDeltaForMonth(
     List<BudgetEntry> entries,
     String monthKey, {
@@ -729,20 +729,20 @@ class BudgetService {
   }
 
   /// Bilans wskazanego miesiąca: surplus + jednorazowe wpływy − jednorazowe wydatki
-  /// + korekty kwot (rachunek/przelew/wpływ, ze znakiem) − korekta rat tego miesiąca.
+  /// + korekty kwot (wydatek/przelew/wpływ, ze znakiem) − korekta rat tego miesiąca.
   /// Surplus pozostaje „planem"; różnicę realnego miesiąca pokazuje bilans (ADR-008).
   double balanceForMonth(
     List<BudgetEntry> entries,
     List<Subscription> subs,
     String monthKey, {
     Currency? target,
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
   }) =>
-      // Rezerwa „Na rachunki" jest oddawana (+billsAllocation) — plan ją rezerwuje,
-      // ale realny miesiąc liczy faktyczne rachunki (w oneTimeTotalForMonth).
+      // Rezerwa „Na bieżące wydatki" jest oddawana (+spendingAllocation) — plan ją rezerwuje,
+      // ale realny miesiąc liczy faktyczne wydatki bieżące (w oneTimeTotalForMonth).
       monthlySurplus(entries, subs,
-              target: target, billsAllocation: billsAllocation) +
-      billsAllocation +
+              target: target, spendingAllocation: spendingAllocation) +
+      spendingAllocation +
       oneTimeIncomeTotalForMonth(entries, monthKey, target: target) -
       oneTimeTotalForMonth(entries, monthKey, target: target) +
       overrideDeltaForMonth(entries, monthKey, target: target) -
@@ -750,7 +750,7 @@ class BudgetService {
 
   /// Bilans miesiąca rozbity na cztery strumienie — tyle, ile potrzeba, by
   /// odpowiedzieć „skąd się wziął ten bilans", bez wyliczania pojedynczych
-  /// pozycji. Zawsze zachodzi: `income − recurring − subscriptions − bills`
+  /// pozycji. Zawsze zachodzi: `income − recurring − subscriptions − spending`
   /// = [balanceForMonth] dla tego samego miesiąca (jest na to test).
   MonthBalanceParts monthBalanceParts(
     List<BudgetEntry> entries,
@@ -764,7 +764,7 @@ class BudgetService {
     // inaczej „koszty cykliczne" pokazywałyby plan, a nie realny miesiąc.
     double incomeOverride = 0;
     double recurringOverride = 0;
-    double billOverride = 0;
+    double spendingOverride = 0;
     for (final e in entries.where(
       (e) => e.isActive && e.monthOverrides != null,
     )) {
@@ -773,8 +773,8 @@ class BudgetService {
       final d = _currency.convert(ov!.amount! - e.amount, e.currency, t);
       if (e.isIncome) {
         incomeOverride += d;
-      } else if (e.type == BudgetEntryType.billPayment) {
-        billOverride += d;
+      } else if (e.type == BudgetEntryType.spending) {
+        spendingOverride += d;
       } else {
         recurringOverride += d;
       }
@@ -788,14 +788,14 @@ class BudgetService {
         recurringOverride +
         installmentDeltaForMonth(entries, monthKey, target: t);
     final subscriptions = monthlySubscriptionsExpense(subs, target: t);
-    final bills =
-        oneTimeTotalForMonth(entries, monthKey, target: t) + billOverride;
+    final spending =
+        oneTimeTotalForMonth(entries, monthKey, target: t) + spendingOverride;
 
     return MonthBalanceParts(
       income: income,
       recurring: recurring,
       subscriptions: subscriptions,
-      bills: bills,
+      spending: spending,
     );
   }
 
@@ -807,19 +807,19 @@ class BudgetService {
     List<BudgetEntry> entries,
     String monthKey, {
     Currency? target,
-    double billsAllocation = 0,
+    double spendingAllocation = 0,
   }) {
     final t = target ?? Currency.PLN;
     final out = <BalanceContribution>[];
 
-    // Rezerwa „Na rachunki" oddana z planu (+): plan ją rezerwował, real liczy
-    // faktyczne rachunki (poniżej jako jednorazowe wydatki). Utrzymuje inwariant
+    // Rezerwa „Na bieżące wydatki" oddana z planu (+): plan ją rezerwował, real liczy
+    // faktyczne wydatki bieżące (poniżej jako jednorazowe wydatki). Utrzymuje inwariant
     // suma delt == bilans − surplus (ADR-008/011).
-    if (billsAllocation != 0) {
+    if (spendingAllocation != 0) {
       out.add(BalanceContribution(
         name: 'Na bieżące wydatki (rezerwa planu)',
-        delta: billsAllocation,
-        kind: BalanceContributionKind.billsAllocation,
+        delta: spendingAllocation,
+        kind: BalanceContributionKind.spendingAllocation,
       ));
     }
 
@@ -923,9 +923,9 @@ class BudgetService {
     bool autoOf(String? pm) => pm != null && (autoByPayment?[pm] ?? false);
 
     for (final e in entries.where((e) => e.isActive)) {
-      // Rachunek (realny log oplaty) ma wlasna grupe w widoku Dashboardu.
-      final kind = e.type == BudgetEntryType.billPayment
-          ? CalendarItemKind.bill
+      // Wydatek (realny log oplaty) ma wlasna grupe w widoku Dashboardu.
+      final kind = e.type == BudgetEntryType.spending
+          ? CalendarItemKind.spending
           : CalendarItemKind.budgetEntry;
       if (e.isOneTime) {
         final d = e.startDate ?? _monthFallbackDate(e.month);
@@ -950,7 +950,7 @@ class BudgetService {
             !e.isInstallmentActiveInMonth(BudgetEntry.monthKeyOf(mStart))) {
           continue;
         }
-        // Korekta miesiąca (rachunek / przelew / lustro wpływu) — ADR-008:
+        // Korekta miesiąca (wydatek / przelew / lustro wpływu) — ADR-008:
         // data korekty zastępuje projekcję, kwota korekty zastępuje bazę.
         if (e.monthOverrides != null) {
           final ov = e.overrideForMonth(BudgetEntry.monthKeyOf(mStart));

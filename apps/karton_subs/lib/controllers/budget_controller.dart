@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/budget_entry.dart';
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/subscription.dart';
 import '../utils/dictionary_usage.dart';
 import '../services/storage_service.dart';
@@ -116,7 +116,7 @@ class BudgetController extends ChangeNotifier {
       all.where((e) => e.isIncome).toList()
         ..sort((a, b) => a.name.compareTo(b.name));
 
-  /// Koszty cykliczne (rachunki, koszty cykliczne, raty) — BEZ przelewu do domowego,
+  /// Koszty cykliczne (wydatki bieżące, koszty cykliczne, raty) — BEZ przelewu do domowego,
   /// który ma własną sekcję „Przelew wewnętrzny".
   List<BudgetEntry> get recurringExpenses =>
       all
@@ -168,12 +168,12 @@ class BudgetController extends ChangeNotifier {
   /// Waluta docelowa (kod) — do formatowania w UI.
   String get targetCurrencyLabel => _target.label;
 
-  /// Rachunki ([BudgetEntryType.billPayment]) aktywnego zakresu — najnowsze
-  /// u góry (ekran „Rachunki"). Obejmuje wydatki jednorazowe: po scaleniu
+  /// Bieżące ([BudgetEntryType.spending]) aktywnego zakresu — najnowsze
+  /// u góry (ekran „Bieżące"). Obejmuje wydatki jednorazowe: po scaleniu
   /// typów (ADR-018) to jeden byt — datowany wydatek poza planem.
-  List<BudgetEntry> get billPayments {
+  List<BudgetEntry> get spendingEntries {
     final list = all
-        .where((e) => e.type == BudgetEntryType.billPayment)
+        .where((e) => e.type == BudgetEntryType.spending)
         .toList();
     list.sort(
       (a, b) => (b.startDate ?? b.dataDodania).compareTo(
@@ -193,7 +193,7 @@ class BudgetController extends ChangeNotifier {
   double get monthlySubscriptionsExpense =>
       _budget.monthlySubscriptionsExpense(_subsForScope, target: _target);
 
-  /// Koszty/mies w planie: cykliczne + subskrypcje + rezerwa „Na rachunki".
+  /// Koszty/mies w planie: cykliczne + subskrypcje + rezerwa „Na bieżące wydatki".
   /// (Dzięki temu wpływy − koszty = „zostaje/mies".)
   double get monthlyExpenses =>
       _budget.monthlyRecurringExpenses(all, _subsForScope, target: _target) +
@@ -203,7 +203,7 @@ class BudgetController extends ChangeNotifier {
     all,
     _subsForScope,
     target: _target,
-    billsAllocation: _alloc,
+    spendingAllocation: _alloc,
   );
 
   /// Bilans miesiąca rozbity na strumienie (sekcja „Rzeczywisty bilans").
@@ -215,38 +215,38 @@ class BudgetController extends ChangeNotifier {
     _subsForScope,
     monthKey,
     target: _target,
-    billsAllocation: _alloc,
+    spendingAllocation: _alloc,
   );
 
   /// Pozycje, które sprawiają, że bilans miesiąca różni się od salda planu
-  /// (jednorazowe, korekty kwot i rat, rezerwa „Na rachunki"). Do bottom sheeta.
+  /// (jednorazowe, korekty kwot i rat, rezerwa „Na bieżące wydatki"). Do bottom sheeta.
   List<BalanceContribution> balanceBreakdownForMonth(String monthKey) =>
       _budget.balanceBreakdownForMonth(
         all,
         monthKey,
         target: _target,
-        billsAllocation: _alloc,
+        spendingAllocation: _alloc,
       );
 
-  // ── Rachunki: koperta „Na rachunki" (plan) vs realne rachunki ──────────────
+  // ── Bieżące: koperta „Na bieżące wydatki" (plan) vs realne wydatki bieżące ──────────────
 
-  /// Suma „Na rachunki" (plan/koperta) aktywnego zakresu. `null` = nie ustawiono.
-  double? get billsAllocation => _storage.getBillsAllocation(_scope);
+  /// Suma „Na bieżące wydatki" (plan/koperta) aktywnego zakresu. `null` = nie ustawiono.
+  double? get spendingAllocation => _storage.getSpendingAllocation(_scope);
 
   /// Wartość koperty do obliczeń (0 gdy nieustawiona).
-  double get _alloc => billsAllocation ?? 0;
+  double get _alloc => spendingAllocation ?? 0;
 
-  /// Pozycje koperty „Na rachunki" aktywnego zakresu (nazwa + kwota + metoda).
-  List<BillsAllocationItem> get billsAllocationItems =>
-      _storage.getBillsAllocationItems(_scope);
+  /// Pozycje koperty „Na bieżące wydatki" aktywnego zakresu (nazwa + kwota + metoda).
+  List<SpendingAllocationItem> get spendingAllocationItems =>
+      _storage.getSpendingAllocationItems(_scope);
 
   /// Pozycje Plannera z nagrobkami — podstawa KAZDEJ mutacji. Budowanie nowej
   /// listy z widocznych pozycji gubiloby nagrobki, a wtedy usuniecie przestaloby
   /// docierac do drugiego telefonu (ADR-022).
-  List<BillsAllocationItem> get _allocRaw =>
-      _storage.getBillsAllocationItemsRaw(_scope);
+  List<SpendingAllocationItem> get _allocRaw =>
+      _storage.getSpendingAllocationItemsRaw(_scope);
 
-  Future<void> addBillsAllocationItem({
+  Future<void> addSpendingAllocationItem({
     required String name,
     required double amount,
     String? paymentMethod,
@@ -254,7 +254,7 @@ class BudgetController extends ChangeNotifier {
   }) async {
     final items = [
       ..._allocRaw,
-      BillsAllocationItem(
+      SpendingAllocationItem(
         id: _uuid.v4(),
         name: name,
         amount: amount,
@@ -266,7 +266,7 @@ class BudgetController extends ChangeNotifier {
     await _saveAllocation(items);
   }
 
-  Future<void> updateBillsAllocationItem(BillsAllocationItem item) async {
+  Future<void> updateSpendingAllocationItem(SpendingAllocationItem item) async {
     final stamped = item.copyWith(updatedAt: DateTime.now());
     final items = _allocRaw
         .map((e) => e.id == item.id ? stamped : e)
@@ -276,7 +276,7 @@ class BudgetController extends ChangeNotifier {
 
   /// Usuwa pozycję Plannera. W zakresie DOMOWYM zostawia nagrobek, by usunięcie
   /// dotarło do drugiego telefonu; w osobistym (bez synchronizacji) kasuje twardo.
-  Future<void> removeBillsAllocationItem(String id) async {
+  Future<void> removeSpendingAllocationItem(String id) async {
     final items = isHousehold
         ? _allocRaw
             .map(
@@ -291,18 +291,18 @@ class BudgetController extends ChangeNotifier {
 
   /// Zapis Plannera + powiadomienie UI; w zakresie domowym wyzwala też
   /// synchronizację (ADR-022 — Planner jedzie w tej samej paczce co pozycje).
-  Future<void> _saveAllocation(List<BillsAllocationItem> items) async {
-    await _storage.setBillsAllocationItems(_scope, items);
+  Future<void> _saveAllocation(List<SpendingAllocationItem> items) async {
+    await _storage.setSpendingAllocationItems(_scope, items);
     _notifyMutation(touchedHousehold: isHousehold);
   }
 
   // ── Słowniki: użycie i kaskady (Kategorie / Metody płatności) ───────────────
   // Kategorie i metody płatności są współdzielone przez oba zakresy budżetu oraz
-  // pozycje „Na rachunki". Zarządzanie słownikami (Ustawienia) jest globalne, więc
+  // pozycje „Na bieżące wydatki". Zarządzanie słownikami (Ustawienia) jest globalne, więc
   // te operacje działają PONAD oboma zakresami, niezależnie od aktywnego.
 
   /// Liczba pozycji budżetu (oba zakresy, bez nagrobków) oraz pozycji koperty
-  /// „Na rachunki" (oba zakresy) w danej kategorii.
+  /// „Na bieżące wydatki" (oba zakresy) w danej kategorii.
   int countCategoryUsage(String categoryId) {
     var n = 0;
     for (final scope in BudgetScope.values) {
@@ -311,7 +311,7 @@ class BudgetController extends ChangeNotifier {
         categoryId,
       );
       n += DictionaryUsage.categoryInItems(
-        _storage.getBillsAllocationItems(scope),
+        _storage.getSpendingAllocationItems(scope),
         categoryId,
       );
     }
@@ -319,7 +319,7 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Liczba użyć metody płatności (po nazwie) w pozycjach budżetu (oba zakresy)
-  /// oraz w kopertach „Na rachunki" (oba zakresy).
+  /// oraz w kopertach „Na bieżące wydatki" (oba zakresy).
   int countPaymentMethodUsage(String name) {
     var n = 0;
     for (final scope in BudgetScope.values) {
@@ -328,14 +328,14 @@ class BudgetController extends ChangeNotifier {
         name,
       );
       n += DictionaryUsage.methodInItems(
-        _storage.getBillsAllocationItems(scope),
+        _storage.getSpendingAllocationItems(scope),
         name,
       );
     }
     return n;
   }
 
-  /// Przenosi pozycje budżetu (oba zakresy) oraz pozycje koperty „Na rachunki"
+  /// Przenosi pozycje budżetu (oba zakresy) oraz pozycje koperty „Na bieżące wydatki"
   /// (oba zakresy, lokalne — bez synchronizacji) z kategorii [fromId] do [toId].
   /// Zwraca liczbę zmienionych pozycji. Wywoływane przy usunięciu kategorii.
   Future<int> reassignCategoryEverywhere(String fromId, String toId) async {
@@ -353,10 +353,10 @@ class BudgetController extends ChangeNotifier {
         affected += entries.length;
         if (scope == BudgetScope.household) touchedHousehold = true;
       }
-      final items = _storage.getBillsAllocationItems(scope);
+      final items = _storage.getSpendingAllocationItems(scope);
       final hit = items.where((i) => i.categoryId == fromId).length;
       if (hit > 0) {
-        await _storage.setBillsAllocationItems(
+        await _storage.setSpendingAllocationItems(
           scope,
           items
               .map(
@@ -374,7 +374,7 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Zmienia nazwę metody płatności wszędzie w budżecie: pozycje (oba zakresy)
-  /// i koperty „Na rachunki" (oba zakresy). Zwraca liczbę zmienionych.
+  /// i koperty „Na bieżące wydatki" (oba zakresy). Zwraca liczbę zmienionych.
   Future<int> renamePaymentMethodEverywhere(
     String oldName,
     String newName,
@@ -394,11 +394,11 @@ class BudgetController extends ChangeNotifier {
         affected += entries.length;
         if (scope == BudgetScope.household) touchedHousehold = true;
       }
-      // Koperty „Na rachunki" — lokalne (bez synchronizacji).
-      final items = _storage.getBillsAllocationItems(scope);
+      // Koperty „Na bieżące wydatki" — lokalne (bez synchronizacji).
+      final items = _storage.getSpendingAllocationItems(scope);
       final hit = items.where((i) => i.paymentMethod == oldName).length;
       if (hit > 0) {
-        await _storage.setBillsAllocationItems(
+        await _storage.setSpendingAllocationItems(
           scope,
           items
               .map(
@@ -416,7 +416,7 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Czyści metodę płatności (po nazwie) wszędzie w budżecie: pozycje (oba
-  /// zakresy) i koperty „Na rachunki" (oba zakresy). Zwraca liczbę zmienionych.
+  /// zakresy) i koperty „Na bieżące wydatki" (oba zakresy). Zwraca liczbę zmienionych.
   Future<int> clearPaymentMethodEverywhere(String name) async {
     var affected = 0;
     var touchedHousehold = false;
@@ -432,10 +432,10 @@ class BudgetController extends ChangeNotifier {
         affected += entries.length;
         if (scope == BudgetScope.household) touchedHousehold = true;
       }
-      final items = _storage.getBillsAllocationItems(scope);
+      final items = _storage.getSpendingAllocationItems(scope);
       final hit = items.where((i) => i.paymentMethod == name).length;
       if (hit > 0) {
-        await _storage.setBillsAllocationItems(
+        await _storage.setSpendingAllocationItems(
           scope,
           items
               .map(
@@ -452,9 +452,9 @@ class BudgetController extends ChangeNotifier {
     return affected;
   }
 
-  /// Suma realnych rachunków ([billPayment]) danego miesiąca w walucie docelowej.
-  double billsActualForMonth(String monthKey) =>
-      _budget.billsActualForMonth(all, monthKey, target: _target);
+  /// Suma realnych wydatków ([spending]) danego miesiąca w walucie docelowej.
+  double spendingActualForMonth(String monthKey) =>
+      _budget.spendingActualForMonth(all, monthKey, target: _target);
 
   // ── Statystyki (Plan): trendy i podział na kategorie ────────────────────────
 
@@ -468,7 +468,7 @@ class BudgetController extends ChangeNotifier {
 
   /// Rozłączne serie wspólnego wykresu trendu (suma trzech = całość wydatków).
   /// [view] wybiera ujęcie: plan (kwoty bazowe + koperta) albo rzeczywistość
-  /// (kwoty miesiąca z korektami + realne rachunki) — ADR-028.
+  /// (kwoty miesiąca z korektami + realne wydatki bieżące) — ADR-028.
   /// Wykres zaczyna się od początku ewidencji (ADR-029): wcześniejsze miesiące
   /// byłyby odtworzone z dzisiejszych kwot, czyli zmyślone.
   List<MonthlyDataPoint> recurringExpenseTrend(ExpenseView view) =>
@@ -487,10 +487,10 @@ class BudgetController extends ChangeNotifier {
         target: _target,
       );
 
-  List<MonthlyDataPoint> billsTrend(ExpenseView view) => _budget.billsTrend(
+  List<MonthlyDataPoint> spendingTrend(ExpenseView view) => _budget.spendingTrend(
     all,
     view: view,
-    billsAllocation: billsAllocation ?? 0,
+    spendingAllocation: spendingAllocation ?? 0,
     fromMonth: trackingStartMonth,
     target: _target,
   );
@@ -522,7 +522,7 @@ class BudgetController extends ChangeNotifier {
       year,
       view: view,
       fromMonth: fromMonth,
-      billsAllocation: _alloc,
+      spendingAllocation: _alloc,
       target: _target,
     );
   }
@@ -534,12 +534,12 @@ class BudgetController extends ChangeNotifier {
   Map<String, double> get expenseByCategory =>
       _budget.expenseBreakdownByCategory(all, target: _target);
 
-  Map<String, double> billsByCategory(String monthKey) =>
-      _budget.billsBreakdownByCategory(all, monthKey, target: _target);
+  Map<String, double> spendingByCategory(String monthKey) =>
+      _budget.spendingBreakdownByCategory(all, monthKey, target: _target);
 
   /// Podział całych wydatków miesiąca wg kategorii: cykliczne + subskrypcje
-  /// + trzeci strumień zależny od ujęcia — koperta „Na rachunki" (plan) albo
-  /// realne rachunki tego miesiąca (rzeczywistość), ADR-028.
+  /// + trzeci strumień zależny od ujęcia — koperta „Na bieżące wydatki" (plan) albo
+  /// realne wydatki bieżące tego miesiąca (rzeczywistość), ADR-028.
   Map<String, double> combinedExpenseByCategory(
     String monthKey,
     ExpenseView view,
@@ -548,7 +548,7 @@ class BudgetController extends ChangeNotifier {
     _subsForScope,
     monthKey,
     view: view,
-    allocationItems: billsAllocationItems,
+    allocationItems: spendingAllocationItems,
     target: _target,
   );
 
@@ -624,7 +624,7 @@ class BudgetController extends ChangeNotifier {
     String? month,
     String? categoryId,
     String? paymentMethod,
-    Map<String, BillMonthOverride>? monthOverrides,
+    Map<String, MonthAmountOverride>? monthOverrides,
     int? installmentCount,
     DateTime? startDate,
     String? note,
@@ -690,12 +690,12 @@ class BudgetController extends ChangeNotifier {
       dataDodania: now,
     );
     await add(entry);
-    // Rachunek z datą dzisiejszą lub wcześniejszą to log JUŻ zapłaconej
+    // Wydatek z datą dzisiejszą lub wcześniejszą to log JUŻ zapłaconej
     // pozycji — oznaczamy go od razu jako wykonany, bez ręcznego odhaczania.
-    // Rachunek z datą PRZYSZŁĄ to plan: zostaje nieodhaczony, żeby nie udawał
+    // Wydatek z datą PRZYSZŁĄ to plan: zostaje nieodhaczony, żeby nie udawał
     // zapłaconego (ADR-018). Klucz musi zgadzać się z kalendarzem: sourceId=id,
     // data = dzień płatności (startDate; fallback pierwszy dzień miesiąca).
-    if (type == BudgetEntryType.billPayment) {
+    if (type == BudgetEntryType.spending) {
       final payDate = startDate ??
           (month != null ? DateTime.tryParse('$month-01') : null) ??
           now;
@@ -797,11 +797,11 @@ class BudgetController extends ChangeNotifier {
   Future<int> setActiveForAll(Iterable<String> ids, bool active) =>
       _updateAll(ids, (e) => e.copyWith(isActive: active));
 
-  /// Ustawia datę wielu pozycjom datowanym (rachunki).
+  /// Ustawia datę wielu pozycjom datowanym (wydatki bieżące).
   ///
-  /// Data rachunku wyznacza jego MIESIĄC, więc ta operacja przenosi pozycje
+  /// Data wydatku wyznacza jego MIESIĄC, więc ta operacja przenosi pozycje
   /// między bilansami miesięcy — i dlatego musi zabrać ze sobą **odhaczenie
-  /// płatności**, którego klucz zawiera datę. Bez tego rachunek po zmianie daty
+  /// płatności**, którego klucz zawiera datę. Bez tego wydatek po zmianie daty
   /// po cichu wracałby na listę „do zapłaty".
   Future<int> setDateForAll(Iterable<String> ids, DateTime date) async {
     var changed = 0;
@@ -828,7 +828,7 @@ class BudgetController extends ChangeNotifier {
   }
 
   /// Usuwa wiele pozycji naraz (z nagrobkami w domowym, jak pojedyncze
-  /// usunięcie). Zdjęcia rachunków kasuje wołający — mieszkają poza budżetem.
+  /// usunięcie). Zdjęcia wydatków kasuje wołający — mieszkają poza budżetem.
   Future<int> deleteAll(Iterable<String> ids) async {
     var changed = 0;
     var touchedHousehold = false;
@@ -871,7 +871,7 @@ class BudgetController extends ChangeNotifier {
   ///    więc zwykłe wyjęcie rekordu skończyłoby się przywróceniem pozycji
   ///    z serwera przy najbliższej synchronizacji — i liczeniem jej w obu
   ///    budżetach naraz.
-  /// 2. **Zdjęcie rachunku**, trzymane poza pozycją (mapa po `id`).
+  /// 2. **Zdjęcie wydatku**, trzymane poza pozycją (mapa po `id`).
   /// 3. **Odhaczenie płatności**, którego klucz zawiera zakres ORAZ `id`.
   ///
   /// Nowe `id` jest celowe: nagrobek zostaje przy starym, więc pozycja nie ma

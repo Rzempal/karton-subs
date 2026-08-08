@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
-import '../models/bills_allocation_item.dart';
+import '../models/spending_allocation_item.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/subscription.dart' show PaymentMethod;
@@ -155,8 +155,8 @@ class SyncService extends ChangeNotifier {
 
   /// Planner budżetu domowego — z nagrobkami, żeby usunięcie propagowało się
   /// na drugi telefon (ADR-022).
-  final List<BillsAllocationItem> Function() _readAllocation;
-  final Future<void> Function(List<BillsAllocationItem>) _writeAllocation;
+  final List<SpendingAllocationItem> Function() _readAllocation;
+  final Future<void> Function(List<SpendingAllocationItem>) _writeAllocation;
 
   /// Słowniki (kategorie, metody płatności) — ADR-025. Czytane w całości,
   /// wysyłane w części (tylko wpisy używane przez budżet domowy).
@@ -185,8 +185,8 @@ class SyncService extends ChangeNotifier {
     String? apiKey,
     List<BudgetEntry> Function()? readHousehold,
     Future<void> Function(List<BudgetEntry>)? writeHousehold,
-    List<BillsAllocationItem> Function()? readAllocation,
-    Future<void> Function(List<BillsAllocationItem>)? writeAllocation,
+    List<SpendingAllocationItem> Function()? readAllocation,
+    Future<void> Function(List<SpendingAllocationItem>)? writeAllocation,
     List<Category> Function()? readCategories,
     Future<void> Function(List<Category>)? writeCategories,
     List<PaymentMethod> Function()? readPaymentMethods,
@@ -197,9 +197,9 @@ class SyncService extends ChangeNotifier {
             ((entries) =>
                 storage.replaceBudgetEntries(BudgetScope.household, entries)),
         _readAllocation = readAllocation ??
-            (() => storage.getBillsAllocationItemsRaw(BudgetScope.household)),
+            (() => storage.getSpendingAllocationItemsRaw(BudgetScope.household)),
         _writeAllocation = writeAllocation ??
-            ((items) => storage.setBillsAllocationItems(
+            ((items) => storage.setSpendingAllocationItems(
                   BudgetScope.household,
                   items,
                 )),
@@ -474,7 +474,7 @@ class SyncService extends ChangeNotifier {
     return jsonEncode([for (final e in sorted) e.toJson()]);
   }
 
-  String _allocSignature(List<BillsAllocationItem> items) {
+  String _allocSignature(List<SpendingAllocationItem> items) {
     final sorted = [...items]..sort((a, b) => a.id.compareTo(b.id));
     return jsonEncode([for (final e in sorted) e.toJson()]);
   }
@@ -493,7 +493,7 @@ class SyncService extends ChangeNotifier {
   /// w subskrypcjach zostaje prywatna, mimo że słownik jest wspólny.
   SyncDictionaries _usedDictionaries(
     List<BudgetEntry> entries,
-    List<BillsAllocationItem> allocation,
+    List<SpendingAllocationItem> allocation,
   ) {
     final categoryIds = <String>{
       for (final e in entries)

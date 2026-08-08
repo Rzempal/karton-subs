@@ -24,7 +24,7 @@ class _PaymentMethodManagementScreenState
   Widget build(BuildContext context) {
     final storage = context.read<StorageService>();
     // Watch controllers to rebuild after rename/clear bulk ops — metody są
-    // używane przez subskrypcje i budżet (pozycje + „Na rachunki").
+    // używane przez subskrypcje i budżet (pozycje + „Na bieżące wydatki").
     context.watch<SubscriptionController>();
     context.watch<BudgetController>();
     final methods = storage.getPaymentMethods();

@@ -1,15 +1,15 @@
-/// Pojedyncza pozycja koperty „Na rachunki" (plan rezerwy na rachunki).
+/// Pojedyncza pozycja koperty „Na bieżące wydatki" (plan rezerwy na wydatki bieżące).
 ///
 /// Koperta danego zakresu to lista takich pozycji; ich suma = rezerwa
-/// „Na rachunki", która pomniejsza „zostaje/mies" (a w bilansie miesiąca jest
-/// podmieniana na realne rachunki — patrz [BudgetService]). Bufor dodaje się
+/// „Na bieżące wydatki", która pomniejsza „zostaje/mies" (a w bilansie miesiąca jest
+/// podmieniana na realne wydatki bieżące — patrz [BudgetService]). Bufor dodaje się
 /// jako zwykła pozycja o nazwie „bufor".
 ///
 /// Wchodzi do backupu (format v6+) oraz — w zakresie DOMOWYM — do synchronizacji
 /// (ADR-022). Dlatego pozycja nosi [updatedAt] i [deleted]: scalanie między
 /// telefonami działa per pozycja („ostatnia zmiana wygrywa" + nagrobki), tak jak
 /// dla pozycji budżetu. Zakres osobisty zostaje lokalny.
-class BillsAllocationItem {
+class SpendingAllocationItem {
   final String id;
   final String name;
   final double amount;
@@ -29,7 +29,7 @@ class BillsAllocationItem {
   /// kropki przed nazwą pozycji, bez wypisywania nazwy kategorii. `null` = brak.
   final String? categoryId;
 
-  const BillsAllocationItem({
+  const SpendingAllocationItem({
     required this.id,
     required this.name,
     required this.amount,
@@ -39,8 +39,8 @@ class BillsAllocationItem {
     this.deleted = false,
   });
 
-  factory BillsAllocationItem.fromJson(Map<String, dynamic> json) =>
-      BillsAllocationItem(
+  factory SpendingAllocationItem.fromJson(Map<String, dynamic> json) =>
+      SpendingAllocationItem(
         id: json['id'] as String,
         name: json['name'] as String,
         amount: (json['amount'] as num).toDouble(),
@@ -62,7 +62,7 @@ class BillsAllocationItem {
     if (deleted) 'deleted': true,
   };
 
-  BillsAllocationItem copyWith({
+  SpendingAllocationItem copyWith({
     String? name,
     double? amount,
     String? paymentMethod,
@@ -71,7 +71,7 @@ class BillsAllocationItem {
     bool clearCategoryId = false,
     DateTime? updatedAt,
     bool? deleted,
-  }) => BillsAllocationItem(
+  }) => SpendingAllocationItem(
     id: id,
     name: name ?? this.name,
     amount: amount ?? this.amount,

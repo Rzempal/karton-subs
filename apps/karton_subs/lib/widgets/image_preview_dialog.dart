@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-/// Pełnoekranowy podgląd zdjęcia rachunku (z zoomem). Otwierany z miniaturki
-/// pozycji „Do zatwierdzenia" oraz z formularza edycji rozpoznanego rachunku —
+/// Pełnoekranowy podgląd zdjęcia paragonu (z zoomem). Otwierany z miniaturki
+/// pozycji „Do zatwierdzenia" oraz z formularza edycji rozpoznanego paragonu —
 /// żeby porównać rozpoznane pola ze źródłem.
 ///
 /// [onCrop] (opcjonalne) dokłada przycisk „Przytnij". Podaje go tylko podgląd
-/// pozycji oczekującej — zdjęcie zapisanego rachunku jest już zamknięte.
+/// pozycji oczekującej — zdjęcie zapisanego paragonu jest już zamknięte.
 class ImagePreviewDialog extends StatelessWidget {
   final String imagePath;
   final VoidCallback? onCrop;

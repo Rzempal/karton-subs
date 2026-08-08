@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karton_subs/models/budget_entry.dart';
-import 'package:karton_subs/models/pending_bill_scan.dart';
+import 'package:karton_subs/models/pending_receipt_scan.dart';
 
 // Test-strażnik przycinania rachunku: akcja „Przytnij" podmienia zdjęcie
-// pozycji oczekującej na docięte (BillScanController.recrop). Cała podmiana
+// pozycji oczekującej na docięte (ReceiptScanController.recrop). Cała podmiana
 // stoi na dwóch rzeczach — copyWith musi umieć zmienić [imagePath], a nowa
 // ścieżka musi przeżyć zapis pozycji. Gdyby któraś z nich cicho przestała
 // działać, użytkownik zobaczyłby z powrotem nieprzycięte zdjęcie (albo pustą
 // miniaturę po skasowaniu starego pliku).
 
-PendingBillScan _pending({String imagePath = '/scans/oryginal.jpg'}) =>
-    PendingBillScan(
+PendingReceiptScan _pending({String imagePath = '/scans/oryginal.jpg'}) =>
+    PendingReceiptScan(
       id: 'scan-1',
       imagePath: imagePath,
       scope: BudgetScope.personal,
@@ -24,7 +24,7 @@ PendingBillScan _pending({String imagePath = '/scans/oryginal.jpg'}) =>
     );
 
 void main() {
-  group('PendingBillScan — podmiana zdjęcia po przycięciu', () {
+  group('PendingReceiptScan — podmiana zdjęcia po przycięciu', () {
     test('copyWith(imagePath) zmienia zdjęcie i nie rusza rozpoznanych pól', () {
       final item = _pending();
 
@@ -56,7 +56,7 @@ void main() {
     test('przycięta ścieżka przeżywa zapis i odczyt pozycji', () {
       final cropped = _pending().copyWith(imagePath: '/scans/dociety.jpg');
 
-      final restored = PendingBillScan.fromJson(cropped.toJson());
+      final restored = PendingReceiptScan.fromJson(cropped.toJson());
 
       // Bez tego po restarcie apki wróciłaby ścieżka do skasowanego pliku.
       expect(restored.imagePath, '/scans/dociety.jpg');

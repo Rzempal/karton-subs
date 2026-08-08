@@ -6,10 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
-import '../controllers/bill_scan_controller.dart';
+import '../controllers/receipt_scan_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
-import '../models/pending_bill_scan.dart';
+import '../models/pending_receipt_scan.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
@@ -25,38 +25,38 @@ import '../widgets/selection_bar.dart';
 import '../widgets/image_preview_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/sync_refresh.dart';
-import 'add_bill_payment_screen.dart';
-import 'bills_planner_screen.dart';
+import 'add_spending_screen.dart';
+import 'spending_planner_screen.dart';
 
-/// Ekran „Rachunki" — datowane wydatki jednorazowe ([BudgetEntryType.billPayment]):
+/// Ekran „Bieżące" — datowane wydatki jednorazowe ([BudgetEntryType.spending]):
 /// log opłaconych oraz pozycje zaplanowane na przyszłą datę (ADR-018).
 ///
-/// Trzy części, w tej kolejności: **Planner** (plan koperty „Na rachunki" — nie
-/// zależy od miesiąca), **miesiąc** (wybór miesiąca + realne rachunki wobec
-/// planu) i **lista** rachunków tego miesiąca. Podział idzie po tym, co od
+/// Trzy części, w tej kolejności: **Planner** (plan koperty „Na bieżące wydatki" — nie
+/// zależy od miesiąca), **miesiąc** (wybór miesiąca + realne wydatki bieżące wobec
+/// planu) i **lista** wydatków tego miesiąca. Podział idzie po tym, co od
 /// czego zależy: plan jest jeden, wykonanie liczy się per miesiąc.
 ///
-/// Rachunki zasilają bilans miesiąca, a nie plan „zostaje/mies" (ADR-008).
+/// Bieżące zasilają bilans miesiąca, a nie plan „zostaje/mies" (ADR-008).
 /// Zakres (osobisty/domowy) jak w reszcie aplikacji.
-class RachunkiScreen extends StatefulWidget {
-  const RachunkiScreen({super.key});
+class SpendingScreen extends StatefulWidget {
+  const SpendingScreen({super.key});
 
   @override
-  State<RachunkiScreen> createState() => _RachunkiScreenState();
+  State<SpendingScreen> createState() => _SpendingScreenState();
 }
 
-/// Sortowanie listy rachunków. Domyślnie od najnowszego — rachunek najczęściej
+/// Sortowanie listy wydatków. Domyślnie od najnowszego — wydatek najczęściej
 /// szuka się „ten sprzed chwili", a nie alfabetycznie.
-enum _BillSort { dateDesc, amountDesc, alpha }
+enum _SpendingSort { dateDesc, amountDesc, alpha }
 
-class _RachunkiScreenState extends State<RachunkiScreen> {
+class _SpendingScreenState extends State<SpendingScreen> {
   /// Filtry listy (jak w „Wydatkach"): kategoria + czas. Start na bieżącym
   /// miesiącu, bo to najczęstsze pytanie — ale jedno tapnięcie w „Wszystkie
   /// lata" otwiera całe archiwum.
   String? _filterCategoryId;
   int? _filterYear;
   int? _filterMonth;
-  _BillSort _sort = _BillSort.dateDesc;
+  _SpendingSort _sort = _SpendingSort.dateDesc;
 
   /// Zaznaczone pozycje (tryb zaznaczania). Pusty zbiór + `_selecting = false`
   /// = zwykła lista; wejście długim przytrzymaniem wiersza.
@@ -73,7 +73,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     _filterMonth = now.month;
   }
 
-  /// Miesiąc rachunku: własny `month`, a dla starych rekordów wyliczony z daty.
+  /// Miesiąc wydatku: własny `month`, a dla starych rekordów wyliczony z daty.
   String _monthKeyOf(BudgetEntry e) =>
       e.month ?? BudgetEntry.monthKeyOf(e.startDate ?? e.dataDodania);
 
@@ -174,7 +174,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
 
   Future<void> _bulkDelete(Set<String> ids) async {
     final ctrl = context.read<BudgetController>();
-    final scanCtrl = context.read<BillScanController>();
+    final scanCtrl = context.read<ReceiptScanController>();
     final ok = await showDialog<bool>(
       context: context,
       builder: (dctx) => AlertDialog(
@@ -234,15 +234,15 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   /// „Wydatkach": stoi przy liście, na którą działa.
   Widget _sortButton() {
     final (icon, tip) = switch (_sort) {
-      _BillSort.dateDesc => (
+      _SpendingSort.dateDesc => (
         LucideIcons.arrowDownWideNarrow,
         'Sortuj: od najnowszych',
       ),
-      _BillSort.amountDesc => (
+      _SpendingSort.amountDesc => (
         LucideIcons.arrowDown10,
         'Sortuj: kwota malejąco',
       ),
-      _BillSort.alpha => (LucideIcons.arrowDownAZ, 'Sortuj: A→Z'),
+      _SpendingSort.alpha => (LucideIcons.arrowDownAZ, 'Sortuj: A→Z'),
     };
     return IconButton(
       visualDensity: VisualDensity.compact,
@@ -250,9 +250,9 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       icon: Icon(icon, size: 18),
       onPressed: () => setState(() {
         _sort = switch (_sort) {
-          _BillSort.dateDesc => _BillSort.amountDesc,
-          _BillSort.amountDesc => _BillSort.alpha,
-          _BillSort.alpha => _BillSort.dateDesc,
+          _SpendingSort.dateDesc => _SpendingSort.amountDesc,
+          _SpendingSort.amountDesc => _SpendingSort.alpha,
+          _SpendingSort.alpha => _SpendingSort.dateDesc,
         };
       }),
     );
@@ -261,7 +261,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   Future<void> _openAdd(BudgetController ctrl) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddBillPaymentScreen(scope: ctrl.scope),
+        builder: (_) => AddSpendingScreen(scope: ctrl.scope),
       ),
     );
   }
@@ -269,14 +269,14 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  /// Skan rachunku ze zdjęcia (aparat/galeria) → pozycja „Do zatwierdzenia".
+  /// Skan wydatku ze zdjęcia (aparat/galeria) → pozycja „Do zatwierdzenia".
   ///
   /// Odczyt robi sama aplikacja (model OCR wbudowany w APK, ADR-017), więc
   /// działa zawsze — bez sieci i bez dodatkowych aplikacji. Asystent AI
   /// (osobna apka z modelem językowym) tylko dokłada się do dokumentów,
   /// których reguły nie ogarnęły. Zero chmury na obu ścieżkach.
-  Future<void> _scanBill(ImageSource source) async {
-    final scanCtrl = context.read<BillScanController>();
+  Future<void> _scanReceipt(ImageSource source) async {
+    final scanCtrl = context.read<ReceiptScanController>();
     final budgetCtrl = context.read<BudgetController>();
 
     // Zmniejszenie zdjęcia po stronie apki: OCR nie potrzebuje pełnych 12 MP,
@@ -299,28 +299,28 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       // Czas zależy od ścieżki: własny odczyt to sekundy, silnik ~minuta.
       _snack(
         scanCtrl.aiAssistantEnabled
-            ? 'Odczytuję rachunek — trudniejsze dokumenty biorę silnikiem '
+            ? 'Odczytuję wydatek — trudniejsze dokumenty biorę silnikiem '
                   '(ok. 1 min). Pojawi się w „Do zatwierdzenia".'
-            : 'Odczytuję rachunek — pojawi się w „Do zatwierdzenia".',
+            : 'Odczytuję wydatek — pojawi się w „Do zatwierdzenia".',
       );
     }
   }
 
-  Future<void> _approveScan(PendingBillScan item) async {
-    final scanCtrl = context.read<BillScanController>();
+  Future<void> _approveScan(PendingReceiptScan item) async {
+    final scanCtrl = context.read<ReceiptScanController>();
     final budgetCtrl = context.read<BudgetController>();
     final archiveError = await scanCtrl.approve(item.id, budgetCtrl);
-    if (mounted) _snack(archiveError ?? 'Rachunek dodany.');
+    if (mounted) _snack(archiveError ?? 'Wydatek dodany.');
   }
 
-  /// Edycja przed zatwierdzeniem: formularz z prefill; zapis tworzy rachunek,
+  /// Edycja przed zatwierdzeniem: formularz z prefill; zapis tworzy wydatek,
   /// wiąże z nim zdjęcie (podgląd + archiwum) i usuwa pozycję oczekującą.
-  Future<void> _editScan(PendingBillScan item) async {
-    final scanCtrl = context.read<BillScanController>();
+  Future<void> _editScan(PendingReceiptScan item) async {
+    final scanCtrl = context.read<ReceiptScanController>();
     final result = await Navigator.of(context)
         .push<({BudgetEntry entry, String? imagePath})>(
           MaterialPageRoute(
-            builder: (_) => AddBillPaymentScreen(
+            builder: (_) => AddSpendingScreen(
               scope: item.scope,
               initialName: item.name,
               initialAmount: item.amount,
@@ -352,20 +352,20 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   }
 
   /// Przycięcie zdjęcia pozycji czekającej w „Do zatwierdzenia" — głównie dla
-  /// rachunków z „Udostępnij", które trafiają tu w pełnym kadrze. Podmienia samo
+  /// wydatków z „Udostępnij", które trafiają tu w pełnym kadrze. Podmienia samo
   /// zdjęcie (archiwum i podgląd dostaną docięte); rozpoznane pola zostają.
-  Future<void> _cropScan(PendingBillScan item) async {
-    final scanCtrl = context.read<BillScanController>();
+  Future<void> _cropScan(PendingReceiptScan item) async {
+    final scanCtrl = context.read<ReceiptScanController>();
     final cropped = await ReceiptCropService.crop(item.imagePath);
     if (cropped == item.imagePath) return; // anulowane
     await scanCtrl.recrop(item.id, cropped);
   }
 
-  Future<void> _rejectScan(PendingBillScan item) async {
+  Future<void> _rejectScan(PendingReceiptScan item) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Odrzucić rozpoznany rachunek?'),
+        title: const Text('Odrzucić rozpoznany wydatek?'),
         content: const Text('Pozycja i miniatura zdjęcia zostaną usunięte.'),
         actions: [
           TextButton(
@@ -380,7 +380,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
       ),
     );
     if (ok == true && mounted) {
-      await context.read<BillScanController>().remove(item.id);
+      await context.read<ReceiptScanController>().remove(item.id);
     }
   }
 
@@ -388,7 +388,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     final ctrl = context.read<BudgetController>();
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddBillPaymentScreen(existing: e, scope: ctrl.scope),
+        builder: (_) => AddSpendingScreen(existing: e, scope: ctrl.scope),
       ),
     );
   }
@@ -397,7 +397,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Usunąć rachunek?'),
+        title: const Text('Usunąć wydatek?'),
         content: Text('„${e.name}" zniknie z listy i bilansu miesiąca.'),
         actions: [
           TextButton(
@@ -417,21 +417,21 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<BudgetController>();
-    final scanCtrl = context.watch<BillScanController>();
-    final all = ctrl.billPayments;
+    final scanCtrl = context.watch<ReceiptScanController>();
+    final all = ctrl.spendingEntries;
     final today = _today;
 
     // Paski filtrów budowane z tego, co realnie jest na liście (plus bieżący
     // miesiąc, żeby „Dzisiaj" miał gdzie zaznaczyć).
-    final billMonths = all.map(_monthKeyOf).toSet();
-    final availableYears = ExpensesFilter.yearsFor(billMonths, today);
+    final spendingMonths = all.map(_monthKeyOf).toSet();
+    final availableYears = ExpensesFilter.yearsFor(spendingMonths, today);
     final activeYear =
         (_filterYear != null && availableYears.contains(_filterYear))
         ? _filterYear
         : null;
     final monthsOfYear = activeYear == null
         ? <int>[]
-        : ExpensesFilter.monthsOfYear(billMonths, activeYear, today);
+        : ExpensesFilter.monthsOfYear(spendingMonths, activeYear, today);
     final activeMonth =
         (_filterMonth != null && monthsOfYear.contains(_filterMonth))
         ? _filterMonth
@@ -452,9 +452,9 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
         ? _filterCategoryId
         : null;
 
-    // Te same reguły co na liście wydatków — rachunek jest datowaną pozycją
+    // Te same reguły co na liście wydatków — wydatek jest datowaną pozycją
     // jednorazową, więc filtr czasu działa na nim bez żadnego wyjątku.
-    // `showHidden`: rachunek to log tego, co się wydarzyło; nie chowamy go.
+    // `showHidden`: wydatek to log tego, co się wydarzyło; nie chowamy go.
     final filter = ExpensesFilter(
       categoryId: activeCat,
       year: activeYear,
@@ -464,11 +464,11 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
     final items = all.where(filter.keepEntry).toList()
       ..sort(
         (a, b) => switch (_sort) {
-          _BillSort.dateDesc => (b.startDate ?? b.dataDodania).compareTo(
+          _SpendingSort.dateDesc => (b.startDate ?? b.dataDodania).compareTo(
             a.startDate ?? a.dataDodania,
           ),
-          _BillSort.amountDesc => b.amount.compareTo(a.amount),
-          _BillSort.alpha => a.name.toLowerCase().compareTo(
+          _SpendingSort.amountDesc => b.amount.compareTo(a.amount),
+          _SpendingSort.alpha => a.name.toLowerCase().compareTo(
             b.name.toLowerCase(),
           ),
         },
@@ -494,7 +494,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
         actions: [
           AuroraAddAction(
             icon: LucideIcons.plus,
-            label: 'Dodaj rachunek',
+            label: 'Dodaj wydatek',
             primary: true,
             onTap: () => _openAdd(ctrl),
           ),
@@ -503,12 +503,12 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
           AuroraAddAction(
             icon: LucideIcons.camera,
             label: 'Zeskanuj (aparat)',
-            onTap: () => _scanBill(ImageSource.camera),
+            onTap: () => _scanReceipt(ImageSource.camera),
           ),
           AuroraAddAction(
             icon: LucideIcons.image,
             label: 'Zeskanuj (galeria)',
-            onTap: () => _scanBill(ImageSource.gallery),
+            onTap: () => _scanReceipt(ImageSource.gallery),
           ),
         ],
       ),
@@ -594,14 +594,14 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
             ),
           // Planner i lista objęte swipe zakresu; wiersze listy to Dismissible
           // (swipe = usuń), więc karty są pewną strefą flicku. Wszystko w jednej
-          // przewijanej liście: rozwinięty Planner nie może spychać rachunków
+          // przewijanej liście: rozwinięty Planner nie może spychać wydatków
           // poza ekran na stałe.
           Expanded(
             child: ScopeSwipeArea(
               enabled: ctrl.scopeSelectable,
               child: SyncRefresh(
                 // Slivery, nie `ListView(children:)`: przy filtrze „Wszystkie
-                // lata" lista rachunków rośnie do setek pozycji, a zwykła lista
+                // lata" lista wydatków rośnie do setek pozycji, a zwykła lista
                 // budowałaby JE WSZYSTKIE przy każdym odświeżeniu kontrolera
                 // (a synchronizacja odświeża go regularnie). Nagłówek zostaje
                 // zwykłym elementem, leniwie budowane są same wiersze.
@@ -633,7 +633,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                                 onReject: () => _rejectScan(p),
                                 onCrop: () => _cropScan(p),
                                 onRetry: () => context
-                                    .read<BillScanController>()
+                                    .read<ReceiptScanController>()
                                     .retry(p.id),
                               ),
                               const SizedBox(height: 8),
@@ -642,12 +642,12 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                           ],
                           // Nagłówek sekcji z sumą TEGO, co widać po filtrach —
                           // plus porównanie z kopertą przy jednym miesiącu.
-                          _BillsSectionHeader(
+                          _SpendingSectionHeader(
                             total: ctrl.sumAmounts(items),
                             count: items.length,
                             currency: ctrl.targetCurrencyLabel,
                             allocation: singleMonth
-                                ? ctrl.billsAllocation
+                                ? ctrl.spendingAllocation
                                 : null,
                           ),
                           if (items.isEmpty) const _EmptyState(),
@@ -693,7 +693,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
                             ),
                             confirmDismiss: (_) => _confirmDelete(e),
                             onDismissed: (_) {
-                              context.read<BillScanController>().deletePhotoFor(
+                              context.read<ReceiptScanController>().deletePhotoFor(
                                 e.id,
                               );
                               context.read<BudgetController>().delete(e.id);
@@ -718,7 +718,7 @@ class _RachunkiScreenState extends State<RachunkiScreen> {
 /// użytkownika, tap → podgląd z przycinaniem) + rozpoznane dane + akcje
 /// Zatwierdź / Edytuj / Odrzuć.
 class _PendingScanCard extends StatelessWidget {
-  final PendingBillScan item;
+  final PendingReceiptScan item;
   final bool isActive;
   final VoidCallback onApprove;
   final VoidCallback onEdit;
@@ -747,7 +747,7 @@ class _PendingScanCard extends StatelessWidget {
     final String title;
     final String subtitle;
     if (processing) {
-      title = isActive ? 'Rozpoznaję rachunek…' : 'W kolejce…';
+      title = isActive ? 'Rozpoznaję wydatek…' : 'W kolejce…';
       subtitle = isActive
           ? 'Lokalny silnik AI pracuje w tle (ok. 1 min)'
           : 'Czeka na swoją kolej rozpoznania';
@@ -755,7 +755,7 @@ class _PendingScanCard extends StatelessWidget {
       title = 'Uzupełnij ręcznie';
       subtitle = item.errorMessage ?? 'Spróbuj ponownie';
     } else {
-      title = item.name ?? 'Rozpoznany rachunek';
+      title = item.name ?? 'Rozpoznany wydatek';
       final parts = <String>[
         if (item.amount != null)
           '${budgetNf.format(item.amount)} ${item.currency ?? 'PLN'}',
@@ -846,7 +846,7 @@ class _PendingScanCard extends StatelessWidget {
             ),
           ] else if (failed) ...[
             // Edycja jest tu ważniejsza niż ponowienie: zdjęcie już mamy,
-            // więc rachunek da się dokończyć ręcznie także wtedy, gdy żaden
+            // więc wydatek da się dokończyć ręcznie także wtedy, gdy żaden
             // automat go nie odczytał.
             IconButton(
               tooltip: 'Uzupełnij ręcznie',
@@ -897,10 +897,10 @@ class _PendingScanCard extends StatelessWidget {
   }
 }
 
-/// Karta „Planner" — wejście do planu koperty „Na rachunki" (ADR-012): nazwa,
+/// Karta „Planner" — wejście do planu koperty „Na bieżące wydatki" (ADR-012): nazwa,
 /// suma planu i przejście do edycji.
 ///
-/// Sam plan mieszka na własnym ekranie ([BillsPlannerScreen]), bo dotyczy dwóch
+/// Sam plan mieszka na własnym ekranie ([SpendingPlannerScreen]), bo dotyczy dwóch
 /// miejsc naraz: tu jest realizowany, a w „Wydatkach cyklicznych" pomniejsza
 /// plan jako rezerwa — więc oba ekrany prowadzą do tego samego miejsca zamiast
 /// odsyłać się nawzajem.
@@ -912,13 +912,13 @@ class _PlannerCard extends StatelessWidget {
     final ctrl = context.watch<BudgetController>();
     final theme = Theme.of(context);
     final cur = ctrl.targetCurrencyLabel;
-    final alloc = ctrl.billsAllocation;
-    final count = ctrl.billsAllocationItems.length;
+    final alloc = ctrl.spendingAllocation;
+    final count = ctrl.spendingAllocationItems.length;
 
     return FrostCard(
       onTap: () => Navigator.of(
         context,
-      ).push(MaterialPageRoute(builder: (_) => const BillsPlannerScreen())),
+      ).push(MaterialPageRoute(builder: (_) => const SpendingPlannerScreen())),
       child: Row(
         children: [
           Expanded(
@@ -971,12 +971,12 @@ class _PlannerCard extends StatelessWidget {
   }
 }
 
-/// Nagłówek listy rachunków: suma TEGO, co widać po filtrach, a przy jednym
-/// wybranym miesiącu także porównanie z kopertą „Na rachunki".
+/// Nagłówek listy wydatków: suma TEGO, co widać po filtrach, a przy jednym
+/// wybranym miesiącu także porównanie z kopertą „Na bieżące wydatki".
 ///
 /// Zastąpił kartę miesiąca ze strzałkami: miesiąc jest teraz jednym z filtrów,
 /// więc suma musi mówić o zestawie na ekranie, a nie o sztywnym miesiącu.
-class _BillsSectionHeader extends StatelessWidget {
+class _SpendingSectionHeader extends StatelessWidget {
   final double total;
   final int count;
   final String currency;
@@ -985,7 +985,7 @@ class _BillsSectionHeader extends StatelessWidget {
   /// (koperta jest miesięczna, więc porównanie nie miałoby sensu).
   final double? allocation;
 
-  const _BillsSectionHeader({
+  const _SpendingSectionHeader({
     required this.total,
     required this.count,
     required this.currency,

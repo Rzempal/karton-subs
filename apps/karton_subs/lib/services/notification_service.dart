@@ -196,7 +196,7 @@ class NotificationService {
     }
   }
 
-  // ── Skan rachunku: powiadomienia o zakonczeniu ───────────────────────────
+  // ── Skan wydatku: powiadomienia o zakonczeniu ───────────────────────────
   //
   // Powiadomienie „w toku" wystawia natywna usluga skanujaca (jest warunkiem
   // jej pracy na pierwszym planie — ADR-016). Tutaj zostaja tylko powiadomienia

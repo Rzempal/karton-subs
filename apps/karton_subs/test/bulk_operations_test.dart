@@ -28,7 +28,7 @@ void main() {
     );
   });
 
-  Future<BudgetEntry> addBill({
+  Future<BudgetEntry> addSpending({
     required String name,
     required DateTime date,
     String? categoryId,
@@ -36,7 +36,7 @@ void main() {
   }) async {
     final e = await ctrl.create(
       name: name,
-      type: BudgetEntryType.billPayment,
+      type: BudgetEntryType.spending,
       amount: 100,
       currency: Currency.PLN,
       startDate: date,
@@ -48,9 +48,9 @@ void main() {
   }
 
   test('kategoria zmienia się dla wszystkich zaznaczonych', () async {
-    final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
-    final b = await addBill(name: 'b', date: DateTime(2026, 8, 4));
-    final c = await addBill(name: 'c', date: DateTime(2026, 8, 5));
+    final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
+    final b = await addSpending(name: 'b', date: DateTime(2026, 8, 4));
+    final c = await addSpending(name: 'c', date: DateTime(2026, 8, 5));
 
     final changed = await ctrl.setCategoryForAll([a.id, b.id], 'cat_home');
 
@@ -62,7 +62,7 @@ void main() {
   });
 
   test('kategorię da się wyczyścić (null), a nie tylko podmienić', () async {
-    final a = await addBill(
+    final a = await addSpending(
       name: 'a',
       date: DateTime(2026, 8, 3),
       categoryId: 'cat_home',
@@ -72,8 +72,8 @@ void main() {
   });
 
   test('metoda płatności zmienia się zbiorczo i da się ją wyczyścić', () async {
-    final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
-    final b = await addBill(
+    final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
+    final b = await addSpending(
       name: 'b',
       date: DateTime(2026, 8, 4),
       paymentMethod: 'BLIK',
@@ -89,14 +89,14 @@ void main() {
 
   group('Zmiana daty', () {
     test('przenosi rachunek do bilansu innego miesiąca', () async {
-      final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
+      final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
       await ctrl.setDateForAll([a.id], DateTime(2026, 9, 10));
 
       final moved = storage.getBudgetEntry(a.id)!;
       expect(moved.month, '2026-09');
       expect(moved.startDate, DateTime(2026, 9, 10));
-      expect(ctrl.billsActualForMonth('2026-08'), 0);
-      expect(ctrl.billsActualForMonth('2026-09'), 100);
+      expect(ctrl.spendingActualForMonth('2026-08'), 0);
+      expect(ctrl.spendingActualForMonth('2026-09'), 100);
     });
 
     // Stan „wykonane" ustawiamy jawnie, bo `create` odhacza tylko rachunki
@@ -109,7 +109,7 @@ void main() {
     }
 
     test('odhaczenie płatności idzie razem z datą', () async {
-      final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
+      final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
       await setDone(a, DateTime(2026, 8, 3), true);
 
       await ctrl.setDateForAll([a.id], DateTime(2026, 9, 10));
@@ -120,7 +120,7 @@ void main() {
     });
 
     test('nieodhaczona pozycja nie robi się odhaczona po zmianie daty', () async {
-      final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
+      final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
       await setDone(a, DateTime(2026, 8, 3), false);
 
       await ctrl.setDateForAll([a.id], DateTime(2026, 9, 10));
@@ -129,9 +129,9 @@ void main() {
   });
 
   test('usuwanie zbiorcze kasuje tylko zaznaczone', () async {
-    final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
-    final b = await addBill(name: 'b', date: DateTime(2026, 8, 4));
-    final c = await addBill(name: 'c', date: DateTime(2026, 8, 5));
+    final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
+    final b = await addSpending(name: 'b', date: DateTime(2026, 8, 4));
+    final c = await addSpending(name: 'c', date: DateTime(2026, 8, 5));
 
     final removed = await ctrl.deleteAll([a.id, c.id]);
 
@@ -144,7 +144,7 @@ void main() {
   test('w budżecie domowym usuwanie zostawia nagrobki (dla synchronizacji)',
       () async {
     ctrl.setScope(BudgetScope.household);
-    final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
+    final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
 
     await ctrl.deleteAll([a.id]);
 
@@ -187,7 +187,7 @@ void main() {
   });
 
   test('nieistniejące id są pomijane, a nie wywracają operacji', () async {
-    final a = await addBill(name: 'a', date: DateTime(2026, 8, 3));
+    final a = await addSpending(name: 'a', date: DateTime(2026, 8, 3));
     final changed = await ctrl.setCategoryForAll([a.id, 'brak'], 'cat_home');
     expect(changed, 1);
   });

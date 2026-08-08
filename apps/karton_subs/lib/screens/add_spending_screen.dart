@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
-import '../controllers/bill_scan_controller.dart';
+import '../controllers/receipt_scan_controller.dart';
 import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
@@ -14,20 +14,20 @@ import '../theme/app_theme.dart' show AppColors;
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
 import '../widgets/image_preview_dialog.dart';
 
-/// Formularz rachunku — realny log opłaconej pozycji ([BudgetEntryType.billPayment]).
+/// Formularz wydatku — realny log opłaconej pozycji ([BudgetEntryType.spending]).
 ///
 /// Minimalny zestaw pól: Nazwa, Osobisty/Domowy, Data (zapłaty), Kwota, plus
-/// opcjonalnie Kategoria i Notatka. Rachunek jest datowanym wydatkiem: zasila
+/// opcjonalnie Kategoria i Notatka. Wydatek jest datowanym wydatkiem: zasila
 /// bilans miesiąca, a NIE plan „zostaje/mies" (ADR-008). Zakres (osobisty/domowy)
 /// wybiera pudełko danych przez [BudgetController.setScope] — spójnie z resztą
 /// aplikacji (osobisty lokalny, domowy synchronizowany E2E).
-class AddBillPaymentScreen extends StatefulWidget {
+class AddSpendingScreen extends StatefulWidget {
   final BudgetEntry? existing;
 
-  /// Zakres, w którym dodajemy (domyślnie aktywny z ekranu Rachunki).
+  /// Zakres, w którym dodajemy (domyślnie aktywny z ekranu Bieżące).
   final BudgetScope scope;
 
-  /// Prefill nowej pozycji (skan rachunku przez lokalny silnik AI).
+  /// Prefill nowej pozycji (skan wydatku przez lokalny silnik AI).
   /// Używane tylko, gdy [existing] == null.
   final String? initialName;
   final double? initialAmount;
@@ -35,11 +35,11 @@ class AddBillPaymentScreen extends StatefulWidget {
   final String? initialCategoryId;
   final Currency? initialCurrency;
 
-  /// Zdjęcie rozpoznanego rachunku (skan) — miniatura u góry formularza
+  /// Zdjęcie rozpoznanego wydatku (skan) — miniatura u góry formularza
   /// z podglądem po kliknięciu. Pozwala sprawdzić rozpoznane pola ze źródłem.
   final String? initialImagePath;
 
-  const AddBillPaymentScreen({
+  const AddSpendingScreen({
     super.key,
     this.existing,
     this.scope = BudgetScope.personal,
@@ -52,10 +52,10 @@ class AddBillPaymentScreen extends StatefulWidget {
   });
 
   @override
-  State<AddBillPaymentScreen> createState() => _AddBillPaymentScreenState();
+  State<AddSpendingScreen> createState() => _AddSpendingScreenState();
 }
 
-class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
+class _AddSpendingScreenState extends State<AddSpendingScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameCtrl;
@@ -70,7 +70,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
   bool _isSubmitting = false;
 
   /// Ścieżka zdjęcia do podglądu: prefill ze skanu (nowy) albo powiązane
-  /// zdjęcie zapisanego rachunku (edycja).
+  /// zdjęcie zapisanego wydatku (edycja).
   String? _photoPath;
 
   bool get _isEditing => widget.existing != null;
@@ -91,7 +91,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     _categoryId = e?.categoryId ?? widget.initialCategoryId;
     _paymentMethod = e?.paymentMethod;
 
-    // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego rachunku.
+    // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego wydatku.
     _photoPath = widget.initialImagePath ??
         (e != null
             ? context.read<StorageService>().getReceiptPhotoPath(e.id)
@@ -148,10 +148,10 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  /// Przycięcie zdjęcia z podglądu w formularzu. Zapisany rachunek podmienia
+  /// Przycięcie zdjęcia z podglądu w formularzu. Zapisany wydatek podmienia
   /// prywatną kopię od razu (mamy id). Skan przed zatwierdzeniem nie ma jeszcze
   /// id — docięta ścieżka wraca z formularza i trafia do prywatnej kopii oraz
-  /// archiwum dopiero przy zatwierdzeniu ([BillScanController.finalizeApproval]).
+  /// archiwum dopiero przy zatwierdzeniu ([ReceiptScanController.finalizeApproval]).
   Future<void> _cropPhoto() async {
     final current = _photoPath;
     if (current == null) return;
@@ -162,7 +162,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
       // w archiwum, więc bez nich nie da się podmienić właściwej kopii.
       final existing = widget.existing!;
       final persisted = await context
-          .read<BillScanController>()
+          .read<ReceiptScanController>()
           .replaceReceiptPhoto(
             existing.id,
             cropped,
@@ -191,7 +191,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     final name = _nameCtrl.text.trim();
 
     try {
-      // Zwracamy utworzoną/edytowaną pozycję — ekran Rachunki po skanie wiąże
+      // Zwracamy utworzoną/edytowaną pozycję — ekran Bieżące po skanie wiąże
       // z nią zdjęcie (podgląd + archiwum).
       final BudgetEntry result;
       if (_isEditing) {
@@ -215,7 +215,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
         ctrl.setScope(_scope);
         result = await ctrl.create(
           name: name,
-          type: BudgetEntryType.billPayment,
+          type: BudgetEntryType.spending,
           amount: amount,
           currency: _currency,
           month: monthKey,
@@ -226,8 +226,8 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
         );
       }
       // Zwracamy też aktualną ścieżkę zdjęcia — po docięciu w edycji skanu to
-      // wersja przycięta, którą ekran Rachunki zapisze do prywatnej kopii i
-      // archiwum. Dla zapisanego rachunku pole jest ignorowane (podmiana już
+      // wersja przycięta, którą ekran Bieżące zapisze do prywatnej kopii i
+      // archiwum. Dla zapisanego wydatku pole jest ignorowane (podmiana już
       // się wydarzyła w [_cropPhoto]).
       if (mounted) {
         Navigator.of(context).pop((entry: result, imagePath: _photoPath));
@@ -241,7 +241,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Usunąć rachunek?'),
+        title: const Text('Usunąć wydatek?'),
         content: Text('„${widget.existing!.name}" zniknie z listy i bilansu.'),
         actions: [
           TextButton(
@@ -255,13 +255,13 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     );
     if (ok != true || !mounted) return;
     final ctrl = context.read<BudgetController>();
-    // Sprzątamy powiązane zdjęcie rachunku (prywatna kopia podglądu).
-    await context.read<BillScanController>().deletePhotoFor(widget.existing!.id);
+    // Sprzątamy powiązane zdjęcie wydatku (prywatna kopia podglądu).
+    await context.read<ReceiptScanController>().deletePhotoFor(widget.existing!.id);
     await ctrl.delete(widget.existing!.id);
     if (mounted) Navigator.of(context).pop(true);
   }
 
-  /// Przenosi rachunek do drugiego budżetu. Zdjęcie i odhaczenie płatności idą
+  /// Przenosi wydatek do drugiego budżetu. Zdjęcie i odhaczenie płatności idą
   /// razem z nim; szczegóły w [BudgetController.moveToScope].
   Future<void> _moveToOtherScope() async {
     final ctrl = context.read<BudgetController>();
@@ -274,7 +274,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
         title: Text('Przenieść do budżetu $target?'),
         content: Text(
           toHousehold
-              // Domowy jest synchronizowany — mówimy wprost, że rachunek
+              // Domowy jest synchronizowany — mówimy wprost, że wydatek
               // zobaczy druga osoba.
               ? '„${widget.existing!.name}" zniknie z Twojego budżetu '
                     'osobistego i pojawi się w domowym — także na telefonie '
@@ -305,7 +305,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
           .showSnackBar(SnackBar(content: Text(error)));
       return;
     }
-    // Po przeniesieniu pokazujemy budżet, w którym rachunek teraz jest —
+    // Po przeniesieniu pokazujemy budżet, w którym wydatek teraz jest —
     // inaczej użytkownik wraca na listę, na której go nie ma.
     ctrl.setScope(
       toHousehold ? BudgetScope.household : BudgetScope.personal,
@@ -324,7 +324,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edytuj rachunek' : 'Dodaj rachunek'),
+        title: Text(_isEditing ? 'Edytuj wydatek' : 'Dodaj wydatek'),
         actions: [
           if (_isEditing)
             IconButton(
@@ -339,7 +339,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            // Podgląd zdjęcia rachunku (skan lub powiązane zdjęcie) — tap powiększa.
+            // Podgląd zdjęcia wydatku (skan lub powiązane zdjęcie) — tap powiększa.
             if (_photoPath != null && File(_photoPath!).existsSync()) ...[
               _SectionLabel('Zdjęcie paragonu'),
               const SizedBox(height: 8),
@@ -383,7 +383,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
               const SizedBox(height: 24),
             ],
 
-            _SectionLabel('Rachunek'),
+            _SectionLabel('Wydatek'),
             const SizedBox(height: 8),
             TextFormField(
               controller: _nameCtrl,
@@ -514,7 +514,7 @@ class _AddBillPaymentScreenState extends State<AddBillPaymentScreen> {
 
             FilledButton(
               onPressed: _isSubmitting ? null : _submit,
-              child: Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj rachunek'),
+              child: Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj wydatek'),
             ),
             // Przeniesienie tylko przy edycji i tylko wtedy, gdy oba budżety są
             // w użyciu — w trybie jednozakresowym nie ma dokąd przenosić.

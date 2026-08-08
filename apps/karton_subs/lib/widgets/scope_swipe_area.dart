@@ -5,7 +5,7 @@ import '../controllers/budget_controller.dart';
 import '../models/budget_entry.dart';
 
 /// Warstwa gestu: poziomy „flick" przełącza aktywny zakres Osobisty/Domowy
-/// ([BudgetController.scope]) — spójnie na Dashboardzie, Rachunkach, Budżecie
+/// ([BudgetController.scope]) — spójnie na Dashboardzie, Bieżących, Budżecie
 /// i Subskrypcjach (jeden globalny tryb).
 ///
 /// Kierunek zgodny z układem przełącznika `[Osobisty | Domowy]`: palec w lewo →

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -117,8 +117,8 @@ void main() {
     SyncStore? store,
     // Planner budzetu domowego (ADR-022) — domyslnie pusty i bez zapisu, zeby
     // istniejace testy nie musialy o nim wiedziec.
-    List<BillsAllocationItem> Function()? readAlloc,
-    Future<void> Function(List<BillsAllocationItem>)? writeAlloc,
+    List<SpendingAllocationItem> Function()? readAlloc,
+    Future<void> Function(List<SpendingAllocationItem>)? writeAlloc,
   }) =>
       SyncService(
         StorageService(), // nieużywany — dostęp przez closury poniżej
@@ -129,7 +129,7 @@ void main() {
         apiKey: 'test-key',
         readHousehold: read,
         writeHousehold: write,
-        readAllocation: readAlloc ?? () => const <BillsAllocationItem>[],
+        readAllocation: readAlloc ?? () => const <SpendingAllocationItem>[],
         writeAllocation: writeAlloc ?? (_) async {},
       );
 
@@ -206,7 +206,7 @@ void main() {
       fs.seed(pack([entry('a', at: DateTime(2026, 6, 10))]), 1);
       var household = <BudgetEntry>[];
       var alloc = [
-        BillsAllocationItem(
+        SpendingAllocationItem(
           id: 'p1',
           name: 'Paliwo',
           amount: 300,
@@ -234,7 +234,7 @@ void main() {
       final theirs = SyncMerge.encodeSnapshot(
         [entry('a', at: DateTime(2026, 6, 10))],
         allocation: [
-          BillsAllocationItem(
+          SpendingAllocationItem(
             id: 'p2',
             name: 'Barber',
             amount: 120,
@@ -246,7 +246,7 @@ void main() {
 
       var household = <BudgetEntry>[];
       var alloc = [
-        BillsAllocationItem(
+        SpendingAllocationItem(
           id: 'p1',
           name: 'Paliwo',
           amount: 300,

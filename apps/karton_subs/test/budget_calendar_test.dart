@@ -93,7 +93,7 @@ void main() {
             amount: 200,
             startDate: DateTime(2026, 1, 10)),
         _entry(
-            type: BudgetEntryType.billPayment,
+            type: BudgetEntryType.spending,
             amount: 3000,
             startDate: DateTime(2026, 3, 18),
             month: '2026-03'),
@@ -116,7 +116,7 @@ void main() {
     test('typ glowny: rachunek, subskrypcja, pozycja budzetu', () {
       final entries = [
         _entry(
-            type: BudgetEntryType.billPayment,
+            type: BudgetEntryType.spending,
             amount: 184,
             startDate: DateTime(2026, 3, 8),
             month: '2026-03'),
@@ -131,7 +131,7 @@ void main() {
         monthStart,
       );
 
-      expect(cal[8]!.items.single.kind, CalendarItemKind.bill);
+      expect(cal[8]!.items.single.kind, CalendarItemKind.spending);
       expect(cal[12]!.items.single.kind, CalendarItemKind.budgetEntry);
       expect(cal[5]!.items.single.kind, CalendarItemKind.subscription);
     });
@@ -152,7 +152,7 @@ void main() {
     test('jednorazowy bez startDate — fallback na 1. dzień miesiąca', () {
       final entries = [
         _entry(
-            type: BudgetEntryType.billPayment,
+            type: BudgetEntryType.spending,
             amount: 500,
             month: '2026-03'),
       ];

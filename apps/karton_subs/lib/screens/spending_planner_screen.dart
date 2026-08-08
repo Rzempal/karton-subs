@@ -4,25 +4,25 @@ import 'package:provider/provider.dart';
 import '../controllers/budget_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
-import '../widgets/bills_allocation_editor.dart';
+import '../widgets/spending_allocation_editor.dart';
 import '../widgets/budget_widgets.dart' show budgetNf;
 
-/// Ekran „Planner" — plan koperty „Na rachunki" (ADR-012): z czego się składa
+/// Ekran „Planner" — plan koperty „Na bieżące wydatki" (ADR-012): z czego się składa
 /// i ile razem wynosi.
 ///
-/// Osobny ekran, a nie sekcja zwijana na „Rachunkach", bo plan dotyczy dwóch
-/// miejsc naraz: rachunki go realizują, a wydatki cykliczne pomniejsza jako
+/// Osobny ekran, a nie sekcja zwijana na „Bieżących", bo plan dotyczy dwóch
+/// miejsc naraz: wydatki bieżące go realizują, a wydatki cykliczne pomniejsza jako
 /// rezerwa. Z obu tych ekranów wchodzi się tutaj, zamiast trzymać edycję
 /// w jednym z nich i odsyłać z drugiego.
 ///
 /// Plan jest JEDEN dla wszystkich miesięcy, dlatego nie ma tu nawigacji po
-/// miesiącach — wykonanie planu w danym miesiącu pokazuje karta na „Rachunkach".
+/// miesiącach — wykonanie planu w danym miesiącu pokazuje karta na „Bieżących".
 ///
 /// Zakres (osobisty/domowy) jest dziedziczony z ekranu, z którego tu weszliśmy —
 /// koperty są dwie, a przełącznik w podekranie byłby prostą drogą do edycji nie
 /// tej, o którą chodziło. Zakres stoi w podtytule.
-class BillsPlannerScreen extends StatelessWidget {
-  const BillsPlannerScreen({super.key});
+class SpendingPlannerScreen extends StatelessWidget {
+  const SpendingPlannerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +30,8 @@ class BillsPlannerScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
     final cur = ctrl.targetCurrencyLabel;
-    final alloc = ctrl.billsAllocation;
-    final items = ctrl.billsAllocationItems.toList()
+    final alloc = ctrl.spendingAllocation;
+    final items = ctrl.spendingAllocationItems.toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return Scaffold(
@@ -65,12 +65,12 @@ class BillsPlannerScreen extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(color: c.textSecondary),
           ),
           const SizedBox(height: 16),
-          BillsAllocationItems(
+          SpendingAllocationEditor(
             items: items,
             currency: cur,
-            onAdd: () => showBillsAllocationItemEditor(context),
+            onAdd: () => showSpendingAllocationItemEditor(context),
             onEdit: (it) =>
-                showBillsAllocationItemEditor(context, existing: it),
+                showSpendingAllocationItemEditor(context, existing: it),
             onFillToRound: () => _fillToRound(context),
           ),
           const Divider(height: 32),
@@ -114,7 +114,7 @@ class BillsPlannerScreen extends StatelessWidget {
       context: context,
       builder: (dctx) => StatefulBuilder(
         builder: (dctx, setLocal) {
-          final planTotal = ctrl.billsAllocation ?? 0;
+          final planTotal = ctrl.spendingAllocation ?? 0;
           final expensesTotal = ctrl.monthlyExpenses;
           final base = basePlanner ? planTotal : expensesTotal;
           final gap = ctrl.roundUpGap(base, step);
@@ -200,18 +200,18 @@ class BillsPlannerScreen extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
 
     final base = basePlanner
-        ? (ctrl.billsAllocation ?? 0)
+        ? (ctrl.spendingAllocation ?? 0)
         : ctrl.monthlyExpenses;
     final gap = ctrl.roundUpGap(base, step);
     if (gap == 0) return;
 
     // Istniejący bufor podbijamy zamiast dokładać drugi — po kilku użyciach
     // plan miałby inaczej pięć pozycji „Bufor" i nikt by nie wiedział, czemu.
-    final existing = ctrl.billsAllocationItems
+    final existing = ctrl.spendingAllocationItems
         .where((it) => it.name.toLowerCase() == _bufferName.toLowerCase())
         .firstOrNull;
 
-    await showBillsAllocationItemEditor(
+    await showSpendingAllocationItemEditor(
       context,
       existing: existing,
       initialName: _bufferName,

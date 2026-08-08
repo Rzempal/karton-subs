@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart' show Currency;
 import 'package:karton_subs/utils/dictionary_usage.dart';
@@ -22,8 +22,8 @@ BudgetEntry _entry({
   deleted: deleted,
 );
 
-BillsAllocationItem _item({String? paymentMethod, String? categoryId}) =>
-    BillsAllocationItem(
+SpendingAllocationItem _item({String? paymentMethod, String? categoryId}) =>
+    SpendingAllocationItem(
       id: 'i',
       name: 'x',
       amount: 10,

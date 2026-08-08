@@ -4,10 +4,11 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/subscription.dart';
 import '../models/category.dart';
 import '../models/budget_entry.dart';
-import '../models/bills_allocation_item.dart';
-import '../models/pending_bill_scan.dart';
+import '../models/spending_allocation_item.dart';
+import '../models/pending_receipt_scan.dart';
 import '../utils/money_format.dart';
 import 'app_logger.dart';
+import 'storage_keys.dart';
 
 /// Hive-based storage — wzorzec z APPteczka, zaadaptowany na modele karton-subs.
 /// Boxy: 'subscriptions', 'categories', 'payment_methods', 'budget_entries', 'settings'.
@@ -316,7 +317,7 @@ class StorageService {
     bool budgetPersonal = false,
     bool budgetHousehold = false,
     bool paymentDone = false,
-    bool billsAllocation = false,
+    bool spendingAllocation = false,
   }) async {
     if (subscriptions) await _subscriptionsBox.clear();
     if (budgetPersonal) {
@@ -334,9 +335,9 @@ class StorageService {
         await _categoriesBox.delete(key);
       }
     }
-    if (billsAllocation) {
-      await setBillsAllocationItems(BudgetScope.personal, const []);
-      await setBillsAllocationItems(BudgetScope.household, const []);
+    if (spendingAllocation) {
+      await setSpendingAllocationItems(BudgetScope.personal, const []);
+      await setSpendingAllocationItems(BudgetScope.household, const []);
     }
     _log.info('Wyczyszczono dane przed odtworzeniem z backupu');
   }
@@ -382,9 +383,9 @@ class StorageService {
     }
   }
 
-  /// Przepina odhaczenia płatności na nowy klucz — przy przeniesieniu rachunku
+  /// Przepina odhaczenia płatności na nowy klucz — przy przeniesieniu wydatku
   /// między budżetami zmienia się i zakres, i `id`, a klucz zawiera oba
-  /// (`zakres|id|data`). Bez tego zapłacony rachunek wróciłby na listę
+  /// (`zakres|id|data`). Bez tego zapłacony wydatek wróciłby na listę
   /// „Płatności" do odhaczenia. Zwraca liczbę przeniesionych wpisów.
   Future<int> movePaymentDone(String fromPrefix, String toPrefix) async {
     final moved = <String, bool>{};
@@ -469,38 +470,38 @@ class StorageService {
     }
   }
 
-  /// Kwota „Na rachunki" (koperta/plan przydzielony na rachunki) — per zakres,
+  /// Kwota „Na bieżące wydatki" (koperta/plan przydzielony na wydatki bieżące) — per zakres,
   /// bo osobisty i domowy to osobne budżety. `null` = nie ustawiono. Lokalne
   /// (jak `budgetLimit`) — nie wchodzi do synchronizacji domowego.
-  /// Pozycje koperty „Na rachunki" danego zakresu (nazwa + kwota + metoda).
-  /// Migracja: stara pojedyncza kwota (`billsAllocation|scope`) jest czytana jako
-  /// jedna pozycja „Na rachunki", dopóki użytkownik nie zapisze listy pozycji.
+  /// Pozycje koperty „Na bieżące wydatki" danego zakresu (nazwa + kwota + metoda).
+  /// Migracja: stara pojedyncza kwota (`spendingAllocation|scope`) jest czytana jako
+  /// jedna pozycja „Na bieżące wydatki", dopóki użytkownik nie zapisze listy pozycji.
   /// Pozycje Plannera WIDOCZNE (bez nagrobkow) — UI i sumy.
-  List<BillsAllocationItem> getBillsAllocationItems(BudgetScope scope) =>
+  List<SpendingAllocationItem> getSpendingAllocationItems(BudgetScope scope) =>
       List.unmodifiable(
-        getBillsAllocationItemsRaw(scope).where((e) => !e.deleted),
+        getSpendingAllocationItemsRaw(scope).where((e) => !e.deleted),
       );
 
   /// Pozycje Plannera Z NAGROBKAMI — do synchronizacji i backupu, gdzie
   /// usuniecie musi dotrzec do drugiego telefonu (ADR-022).
-  List<BillsAllocationItem> getBillsAllocationItemsRaw(BudgetScope scope) {
-    final raw = _settingsBox.get('billsAllocationItems|${scope.name}');
+  List<SpendingAllocationItem> getSpendingAllocationItemsRaw(BudgetScope scope) {
+    final raw = _settingsBox.get(StorageKeys.spendingAllocationItems(scope));
     if (raw is String && raw.isNotEmpty) {
       try {
         final list = (jsonDecode(raw) as List)
-            .map((e) => BillsAllocationItem.fromJson(e as Map<String, dynamic>))
+            .map((e) => SpendingAllocationItem.fromJson(e as Map<String, dynamic>))
             .toList();
         return List.unmodifiable(list);
       } catch (e) {
-        _log.warning('Nie udalo sie odczytac billsAllocationItems: $e');
+        _log.warning('Nie udalo sie odczytac pozycji koperty: $e');
       }
     }
-    // Migracja starej pojedynczej kwoty -> jedna pozycja „Na rachunki".
-    final legacy = _settingsBox.get('billsAllocation|${scope.name}');
+    // Migracja starej pojedynczej kwoty -> jedna pozycja koperty.
+    final legacy = _settingsBox.get(StorageKeys.spendingAllocationLegacy(scope));
     final amount = legacy is num ? legacy.toDouble() : null;
     if (amount != null && amount > 0) {
       return [
-        BillsAllocationItem(
+        SpendingAllocationItem(
           id: 'legacy-${scope.name}',
           name: 'Na bieżące wydatki',
           amount: amount,
@@ -510,11 +511,11 @@ class StorageService {
     return const [];
   }
 
-  Future<void> setBillsAllocationItems(
+  Future<void> setSpendingAllocationItems(
     BudgetScope scope,
-    List<BillsAllocationItem> items,
+    List<SpendingAllocationItem> items,
   ) async {
-    final key = 'billsAllocationItems|${scope.name}';
+    final key = StorageKeys.spendingAllocationItems(scope);
     if (items.isEmpty) {
       await _settingsBox.delete(key);
     } else {
@@ -524,24 +525,24 @@ class StorageService {
       );
     }
     // Stara pojedyncza kwota jest już zmigrowana do listy — usuń, by nie wracała.
-    await _settingsBox.delete('billsAllocation|${scope.name}');
+    await _settingsBox.delete(StorageKeys.spendingAllocationLegacy(scope));
   }
 
-  /// Suma koperty „Na rachunki" danego zakresu (= Σ pozycji). `null` = pusto.
+  /// Suma koperty „Na bieżące wydatki" danego zakresu (= Σ pozycji). `null` = pusto.
   /// Silnik obliczeń dostaje jedną liczbę (jak dawniej) — matematyka bez zmian.
-  double? getBillsAllocation(BudgetScope scope) {
-    final items = getBillsAllocationItems(scope);
+  double? getSpendingAllocation(BudgetScope scope) {
+    final items = getSpendingAllocationItems(scope);
     if (items.isEmpty) return null;
     final sum = items.fold<double>(0, (a, b) => a + b.amount);
     return sum > 0 ? sum : null;
   }
 
-  /// Powiązanie zdjęcia rachunku z zapisaną pozycją budżetu (id → ścieżka do
+  /// Powiązanie zdjęcia wydatku z zapisaną pozycją budżetu (id → ścieżka do
   /// prywatnej kopii w katalogu apki). LOKALNE, poza synchronizacją i backupem
   /// — ścieżka nie ma sensu na drugim urządzeniu. Służy podglądowi zdjęcia
-  /// przy edycji zatwierdzonego rachunku.
+  /// przy edycji zatwierdzonego wydatku.
   Map<String, String> getReceiptPhotoPaths() {
-    final raw = _settingsBox.get('receiptPhotoPaths');
+    final raw = _settingsBox.get(StorageKeys.receiptPhotoPaths);
     if (raw is String && raw.isNotEmpty) {
       try {
         return (jsonDecode(raw) as Map).map((k, v) => MapEntry('$k', '$v'));
@@ -557,25 +558,25 @@ class StorageService {
 
   Future<void> setReceiptPhotoPath(String entryId, String path) async {
     final map = getReceiptPhotoPaths()..[entryId] = path;
-    await _settingsBox.put('receiptPhotoPaths', jsonEncode(map));
+    await _settingsBox.put(StorageKeys.receiptPhotoPaths, jsonEncode(map));
   }
 
   Future<void> removeReceiptPhotoPath(String entryId) async {
     final map = getReceiptPhotoPaths();
     if (map.remove(entryId) != null) {
-      await _settingsBox.put('receiptPhotoPaths', jsonEncode(map));
+      await _settingsBox.put(StorageKeys.receiptPhotoPaths, jsonEncode(map));
     }
   }
 
-  /// Rachunki rozpoznane przez lokalny silnik AI, oczekujące na zatwierdzenie.
+  /// Bieżące rozpoznane przez lokalny silnik AI, oczekujące na zatwierdzenie.
   /// LOKALNE (jak koperta): poza synchronizacją, backupem i bilansem — do budżetu
   /// trafiają dopiero po zatwierdzeniu (wtedy stają się zwykłym billPayment).
-  List<PendingBillScan> getPendingBillScans() {
-    final raw = _settingsBox.get('pendingBillScans');
+  List<PendingReceiptScan> getPendingReceiptScans() {
+    final raw = _settingsBox.get(StorageKeys.pendingReceiptScans);
     if (raw is String && raw.isNotEmpty) {
       try {
         return (jsonDecode(raw) as List)
-            .map((e) => PendingBillScan.fromJson(e as Map<String, dynamic>))
+            .map((e) => PendingReceiptScan.fromJson(e as Map<String, dynamic>))
             .toList();
       } catch (e) {
         _log.warning('Nie udalo sie odczytac pendingBillScans: $e');
@@ -597,29 +598,30 @@ class StorageService {
   Future<void> setBudgetMode(BudgetMode mode) =>
       _settingsBox.put('budgetMode', mode.name);
 
-  /// Asystent AI (skan rachunków lokalnym silnikiem): opt-in, domyślnie
-  /// wyłączony. Wyłączony ukrywa opcje skanowania w menu „Dodaj rachunek".
+  /// Asystent AI (skan wydatków lokalnym silnikiem): opt-in, domyślnie
+  /// wyłączony. Wyłączony ukrywa opcje skanowania w menu „Dodaj wydatek".
   bool getAiAssistantEnabled() =>
       _settingsBox.get('aiAssistantEnabled', defaultValue: false) as bool;
 
   Future<void> setAiAssistantEnabled(bool value) =>
       _settingsBox.put('aiAssistantEnabled', value);
 
-  /// Archiwum rachunków: trwały zapis zdjęć zatwierdzonych rachunków do
+  /// Archiwum wydatków: trwały zapis zdjęć zatwierdzonych wydatków do
   /// publicznego katalogu `Documents/[podfolder]`. Opt-in, lokalne (poza sync).
   bool getReceiptArchiveEnabled() =>
-      _settingsBox.get('receiptArchiveEnabled', defaultValue: false) as bool;
+      _settingsBox.get(StorageKeys.receiptArchiveEnabled, defaultValue: false)
+          as bool;
 
   Future<void> setReceiptArchiveEnabled(bool value) =>
-      _settingsBox.put('receiptArchiveEnabled', value);
+      _settingsBox.put(StorageKeys.receiptArchiveEnabled, value);
 
   /// Podfolder w Documents dla archiwum (domyślnie „Zostaje").
-  // ── Nazwy plikow w publicznym archiwum (per rachunek) ──────────────────────
+  // ── Nazwy plikow w publicznym archiwum (per wydatek) ──────────────────────
   //
-  // Zapamietujemy, pod jaka nazwa rachunek lezy w `Documents/<podfolder>`, bo
+  // Zapamietujemy, pod jaka nazwa wydatek lezy w `Documents/<podfolder>`, bo
   // przy podmianie docietego zdjecia trzeba usunac STARY plik — MediaStore nie
   // nadpisuje po nazwie, tylko dokłada „nazwa (1).jpg". Nazwa zawiera date,
-  // nazwe i kwote, wiec po edycji rachunku nie da sie jej odtworzyc.
+  // nazwe i kwote, wiec po edycji wydatku nie da sie jej odtworzyc.
 
   Map<String, String> getArchivedReceiptNames() {
     final raw = _settingsBox.get('archivedReceiptNames');
@@ -653,7 +655,7 @@ class StorageService {
   // Android przy wznowieniu zadania z listy ostatnich potrafi PONOWIC pierwotny
   // intent ACTION_SEND, wiec `getInitialMedia()` oddaje to samo zdjecie przy
   // kolejnych startach aplikacji. Bez trwalej pamieci co juz przyjelismy, ten
-  // sam rachunek dokladal sie do kolejki po kazdym uruchomieniu.
+  // sam wydatek dokladal sie do kolejki po kazdym uruchomieniu.
   //
   // Klucz to „podpis" pliku (sciezka + rozmiar + czas modyfikacji), nie sama
   // sciezka: katalog udostepnien bywa recyklingowany pod te sama nazwe.
@@ -691,12 +693,12 @@ class StorageService {
     );
   }
 
-  Future<void> savePendingBillScans(List<PendingBillScan> items) async {
+  Future<void> savePendingReceiptScans(List<PendingReceiptScan> items) async {
     if (items.isEmpty) {
-      await _settingsBox.delete('pendingBillScans');
+      await _settingsBox.delete(StorageKeys.pendingReceiptScans);
     } else {
       await _settingsBox.put(
-        'pendingBillScans',
+        StorageKeys.pendingReceiptScans,
         jsonEncode(items.map((e) => e.toJson()).toList()),
       );
     }

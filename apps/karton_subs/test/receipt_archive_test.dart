@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/controllers/bill_scan_controller.dart';
+import 'package:karton_subs/controllers/receipt_scan_controller.dart';
 import 'package:karton_subs/services/ai_engine_service.dart';
 import 'package:karton_subs/services/notification_service.dart';
 import 'package:karton_subs/services/storage_service.dart';
@@ -22,7 +22,7 @@ import 'support/hive_test_env.dart';
 // zostac skasowana PRZED zapisem nowej.
 
 late StorageService _storage;
-late BillScanController _controller;
+late ReceiptScanController _controller;
 late Directory _photos;
 
 /// Slad wywolan kanalu natywnego.
@@ -86,7 +86,7 @@ void main() {
     }
     _calls.clear();
     await _storage.setReceiptArchiveEnabled(true);
-    _controller = BillScanController(
+    _controller = ReceiptScanController(
       _storage,
       AiEngineService(),
       const NotificationService(),

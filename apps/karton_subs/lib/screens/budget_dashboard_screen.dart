@@ -23,7 +23,7 @@ import '../widgets/subscription_row.dart';
 import '../widgets/sync_refresh.dart';
 import 'add_budget_entry_screen.dart';
 import 'add_subscription_screen.dart';
-import 'bills_planner_screen.dart';
+import 'spending_planner_screen.dart';
 
 /// Sortowanie listy budżetu.
 enum _BudgetSort { alpha, amountDesc }
@@ -67,8 +67,8 @@ class _Bucket {
 /// Ekran zarządzania pozycjami PLANOWALNYMI budżetu — w dwóch wariantach
 /// ([BudgetEntriesMode]): „Wydatki cykliczne" i „Wpływy" (ADR-019).
 ///
-/// Datowane wydatki jednorazowe = rachunki, więc mieszkają na ekranie
-/// „Rachunki" (ADR-018). Przegląd liczbowy (surplus, bilans miesiąca) jest
+/// Datowane wydatki jednorazowe = wydatki bieżące, więc mieszkają na ekranie
+/// „Bieżące" (ADR-018). Przegląd liczbowy (surplus, bilans miesiąca) jest
 /// w zakładce „Budżet". Subskrypcje są trzecią sekcją wydatków (ADR-027) —
 /// osobnym modelem danych, ale tym samym strumieniem pieniędzy.
 class BudgetDashboardScreen extends StatefulWidget {
@@ -118,7 +118,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   _BudgetSort _sort = _BudgetSort.alpha;
   _BudgetGrouping _grouping = _BudgetGrouping.byType;
 
-  /// Zwinięte sekcje (klucze) — stan trwały, jak Planner w „Rachunkach".
+  /// Zwinięte sekcje (klucze) — stan trwały, jak Planner w „Bieżących".
   late Set<String> _collapsed;
 
   @override
@@ -261,8 +261,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
 
     // Kubełki pozycji planowalnych zależne od trybu ekranu: wydatki (koszty
     // stałe, raty, przelew) albo wpływy. Datowane wydatki jednorazowe TU NIE
-    // WCHODZĄ — to ten sam byt co rachunek i mieszkają na ekranie
-    // „Rachunki" (ADR-018).
+    // WCHODZĄ — to ten sam byt co wydatek i mieszkają na ekranie
+    // „Bieżące" (ADR-018).
     // Flaga `true` = kubełek kategoryzowalny (wydatki), w którym przycisk
     // grupowania włącza podgrupy po kategoriach.
     final rawBuckets = _onIncomes
@@ -593,7 +593,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                           ctrl,
                           buckets,
                           subs,
-                          // Koperta „Na rachunki" należy do wydatków — na ekranie
+                          // Koperta „Na bieżące wydatki" należy do wydatków — na ekranie
                           // Wpływy nie ma czego nią pomniejszać. Przy aktywnym
                           // filtrze też nie: nie ma kategorii ani typu, więc
                           // filtr by ją mylił.
@@ -610,7 +610,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     );
   }
 
-  /// Buduje sekcje listy budżetu. „Na rachunki" (koperta) jest przypięta na
+  /// Buduje sekcje listy budżetu. „Na bieżące wydatki" (koperta) jest przypięta na
   /// górze sekcji wydatków i wliczona do jej sumy — pokazywana tylko gdy
   /// [showAlloc] (brak aktywnych filtrów).
   List<Widget> _sections(
@@ -622,16 +622,16 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     required bool byCategory,
   }) {
     final cur = ctrl.targetCurrencyLabel;
-    final alloc = ctrl.billsAllocation;
-    // Koperta „Na rachunki" jest tu tylko POKAZYWANA — pomniejsza plan, więc
-    // suma wydatków musi się tłumaczyć. Edycja mieszka na ekranie Rachunki,
-    // przy realnych rachunkach tej samej puli (ADR-019).
+    final alloc = ctrl.spendingAllocation;
+    // Koperta „Na bieżące wydatki" jest tu tylko POKAZYWANA — pomniejsza plan, więc
+    // suma wydatków musi się tłumaczyć. Edycja mieszka na ekranie Bieżące,
+    // przy realnych wydatkach tej samej puli (ADR-019).
     Widget allocCard() => _AllocationSummaryRow(
       total: alloc ?? 0,
-      itemCount: ctrl.billsAllocationItems.length,
+      itemCount: ctrl.spendingAllocationItems.length,
       currency: cur,
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const BillsPlannerScreen()),
+        MaterialPageRoute(builder: (_) => const SpendingPlannerScreen()),
       ),
     );
 
@@ -697,7 +697,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       );
     }
 
-    // Brak sekcji wydatków (sam wpływ) — pokaż „Na rachunki" w osobnej sekcji.
+    // Brak sekcji wydatków (sam wpływ) — pokaż „Na bieżące wydatki" w osobnej sekcji.
     if (showAlloc && !pinned) {
       out.add(
         _Section(
@@ -985,7 +985,7 @@ class _Section extends StatelessWidget {
   final bool collapsed;
   final VoidCallback onToggle;
 
-  /// Widget przypięty na górze sekcji (np. „Na rachunki"), przed pozycjami.
+  /// Widget przypięty na górze sekcji (np. „Na bieżące wydatki"), przed pozycjami.
   final Widget? pinnedTop;
 
   /// Gotowe wiersze sekcji (ewentualnie już pogrupowane po kategoriach).
@@ -1219,13 +1219,13 @@ class _EmptyBudget extends StatelessWidget {
   }
 }
 
-/// Koperta „Na rachunki" na ekranie „Wydatki cykliczne" — suma planu i wejście
+/// Koperta „Na bieżące wydatki" na ekranie „Wydatki cykliczne" — suma planu i wejście
 /// do niego.
 ///
 /// Rezerwa pomniejsza „zostaje/mies", więc musi być widoczna w sumie wydatków,
 /// inaczej plan przestałby się tłumaczyć. Skład koperty edytuje się na własnym
-/// ekranie ([BillsPlannerScreen]) — ten sam, do którego prowadzi karta na
-/// „Rachunkach". Wcześniej wiersz tylko odsyłał tekstem („edycja w Rachunkach").
+/// ekranie ([SpendingPlannerScreen]) — ten sam, do którego prowadzi karta na
+/// „Bieżących". Wcześniej wiersz tylko odsyłał tekstem („edycja w Bieżących").
 class _AllocationSummaryRow extends StatelessWidget {
   final double total;
   final int itemCount;

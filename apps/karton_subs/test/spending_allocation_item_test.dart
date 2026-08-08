@@ -1,19 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 
 // Strażnik serializacji pozycji koperty „Na rachunki" — od niej zależy trwałość
 // (JSON w boxie ustawień) i migracja starej pojedynczej kwoty.
 void main() {
-  group('BillsAllocationItem', () {
+  group('SpendingAllocationItem', () {
     test('json round-trip zachowuje wszystkie pola', () {
-      const item = BillsAllocationItem(
+      const item = SpendingAllocationItem(
         id: 'a',
         name: 'Paliwo',
         amount: 300,
         paymentMethod: 'BLIK',
         categoryId: 'cat_transport',
       );
-      final back = BillsAllocationItem.fromJson(item.toJson());
+      final back = SpendingAllocationItem.fromJson(item.toJson());
       expect(back.id, 'a');
       expect(back.name, 'Paliwo');
       expect(back.amount, 300);
@@ -22,15 +22,15 @@ void main() {
     });
 
     test('toJson pomija metodę i kategorię gdy null; round-trip daje null', () {
-      const item = BillsAllocationItem(id: 'b', name: 'Bufor', amount: 100);
+      const item = SpendingAllocationItem(id: 'b', name: 'Bufor', amount: 100);
       expect(item.toJson().containsKey('paymentMethod'), isFalse);
       expect(item.toJson().containsKey('categoryId'), isFalse);
-      expect(BillsAllocationItem.fromJson(item.toJson()).paymentMethod, isNull);
-      expect(BillsAllocationItem.fromJson(item.toJson()).categoryId, isNull);
+      expect(SpendingAllocationItem.fromJson(item.toJson()).paymentMethod, isNull);
+      expect(SpendingAllocationItem.fromJson(item.toJson()).categoryId, isNull);
     });
 
     test('copyWith: zmiana kwoty zachowuje metodę, clear czyści metodę', () {
-      const item = BillsAllocationItem(
+      const item = SpendingAllocationItem(
         id: 'c',
         name: 'Barber',
         amount: 120,
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('copyWith: ustawienie i czyszczenie kategorii', () {
-      const item = BillsAllocationItem(
+      const item = SpendingAllocationItem(
         id: 'd',
         name: 'Paliwo',
         amount: 300,

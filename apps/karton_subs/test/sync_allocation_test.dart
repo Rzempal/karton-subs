@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:karton_subs/models/bills_allocation_item.dart';
+import 'package:karton_subs/models/spending_allocation_item.dart';
 import 'package:karton_subs/models/budget_entry.dart';
 import 'package:karton_subs/models/subscription.dart' show Currency;
 import 'package:karton_subs/services/sync_merge.dart';
@@ -11,14 +11,14 @@ import 'package:karton_subs/services/sync_merge.dart';
 // strony: telefon ze STARSZA aplikacja wysyla paczke BEZ sekcji Plannera i to
 // nie moze wyczyscic Plannera nowszemu telefonowi.
 
-BillsAllocationItem _item(
+SpendingAllocationItem _item(
   String id,
   double amount, {
   DateTime? updatedAt,
   bool deleted = false,
   String name = 'Paliwo',
 }) =>
-    BillsAllocationItem(
+    SpendingAllocationItem(
       id: id,
       name: name,
       amount: amount,
@@ -72,7 +72,7 @@ void main() {
         _item('a', 350, updatedAt: DateTime(2026, 7, 26, 12)),
         _item('c', 80, updatedAt: DateTime(2026, 7, 26, 9)),
       ];
-      String sig(List<BillsAllocationItem> items) {
+      String sig(List<SpendingAllocationItem> items) {
         final sorted = [...items]..sort((x, y) => x.id.compareTo(y.id));
         return sorted.map((e) => '${e.id}:${e.amount}:${e.deleted}').join('|');
       }
