@@ -51,6 +51,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   MonthFlowSort _flowSort = MonthFlowSort.byDate;
   MonthFlowGrouping _flowGrouping = MonthFlowGrouping.none;
 
+  /// Czy wydatki bieżące są zwinięte do jednego wiersza z sumą — wspólne dla
+  /// „Płatności" i „Podsumowania", jak sortowanie i grupowanie. Też nietrwałe:
+  /// to sposób patrzenia na konkretny miesiąc, a nie ustawienie aplikacji.
+  bool _spendingCollapsed = false;
+
   /// Ujęcie obu wykresów „Planu" — osobno dla trendu i kategorii (ADR-028),
   /// stan trwały. Podsumowanie roczne ma własne (ADR-029).
   late _TrendView _trendView;
@@ -348,7 +353,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       AnnualCostsSection(
         // Te same składniki co w rozpisie salda, tylko w skali roku — koszty
         // cykliczne bez subskrypcji i bez rezerwy, bo obie są osobno.
-        recurring: budget.monthlyExpenses -
+        recurring:
+            budget.monthlyExpenses -
             (budget.spendingAllocation ?? 0) -
             budget.monthlySubscriptionsExpense,
         subscriptions: budget.monthlySubscriptionsExpense,
@@ -419,74 +425,70 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       ),
       if (!_statsGroupCompact) ...[
-      const SizedBox(height: 12),
-      SpendingChart.multi(
-        currencySymbol: currency,
-        trailing: _ViewToggle<_TrendView>(
-          value: _trendView,
-          options: const [
-            (_TrendView.plan, 'Plan'),
-            (_TrendView.actual, 'Realne'),
-            (_TrendView.both, 'Oba'),
-          ],
-          onChanged: _setTrendView,
+        const SizedBox(height: 12),
+        SpendingChart.multi(
+          currencySymbol: currency,
+          trailing: _ViewToggle<_TrendView>(
+            value: _trendView,
+            options: const [
+              (_TrendView.plan, 'Plan'),
+              (_TrendView.actual, 'Realne'),
+              (_TrendView.both, 'Oba'),
+            ],
+            onChanged: _setTrendView,
+          ),
+          series: _trendView == _TrendView.both
+              ? [
+                  ChartSeries(label: 'Realne', data: total, color: palette[0]),
+                  ChartSeries(
+                    label: 'Plan',
+                    data: planTotal,
+                    color: c.textSecondary,
+                    dashed: true,
+                  ),
+                ]
+              : [
+                  ChartSeries(
+                    label: 'Cykliczne',
+                    data: recurring,
+                    color: palette[0],
+                  ),
+                  ChartSeries(
+                    label: 'Subskrypcje',
+                    data: subscriptions,
+                    color: palette[1],
+                  ),
+                  ChartSeries(
+                    label: 'Bieżące',
+                    data: spending,
+                    color: palette[2],
+                  ),
+                  // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
+                  // składowe przy pierwszym spojrzeniu.
+                  ChartSeries(
+                    label: 'Razem',
+                    data: total,
+                    color: c.textSecondary,
+                    dashed: true,
+                    hiddenByDefault: true,
+                  ),
+                ],
         ),
-        series: _trendView == _TrendView.both
-            ? [
-                ChartSeries(
-                  label: 'Realne',
-                  data: total,
-                  color: palette[0],
-                ),
-                ChartSeries(
-                  label: 'Plan',
-                  data: planTotal,
-                  color: c.textSecondary,
-                  dashed: true,
-                ),
-              ]
-            : [
-                ChartSeries(
-                  label: 'Cykliczne',
-                  data: recurring,
-                  color: palette[0],
-                ),
-                ChartSeries(
-                  label: 'Subskrypcje',
-                  data: subscriptions,
-                  color: palette[1],
-                ),
-                ChartSeries(
-                  label: 'Bieżące',
-                  data: spending,
-                  color: palette[2],
-                ),
-                // Domyślnie wyłączona: suma jest zawsze najwyższa i spłaszczałaby
-                // składowe przy pierwszym spojrzeniu.
-                ChartSeries(
-                  label: 'Razem',
-                  data: total,
-                  color: c.textSecondary,
-                  dashed: true,
-                  hiddenByDefault: true,
-                ),
-              ],
-      ),
-      const SizedBox(height: 16),
-      // Plan roczny od drugiej strony: ile z niego już wydano (ADR-029).
-      // Zostaje w statystykach, bo liczy się dla wybranego roku — inaczej niż
-      // „Koszty roczne", które są samym założeniem.
-      AnnualSummarySection(
-        summary: budget.yearExpenseSummary(_selectedMonth.year, _yearView),
-        currency: currency,
-        compact: _annualSummaryCompact,
-        onToggle: _toggleAnnualSummary,
-        trailing: _ViewToggle<ExpenseView>(
-          value: _yearView,
-          options: _ViewToggle.planActual,
-          onChanged: _setYearView,
+        const SizedBox(height: 16),
+        // Plan roczny od drugiej strony: ile z niego już wydano (ADR-029).
+        // Zostaje w statystykach, bo liczy się dla wybranego roku — inaczej niż
+        // „Koszty roczne", które są samym założeniem.
+        AnnualSummarySection(
+          summary: budget.yearExpenseSummary(_selectedMonth.year, _yearView),
+          currency: currency,
+          compact: _annualSummaryCompact,
+          onToggle: _toggleAnnualSummary,
+          trailing: _ViewToggle<ExpenseView>(
+            value: _yearView,
+            options: _ViewToggle.planActual,
+            onChanged: _setYearView,
+          ),
         ),
-      ),
       ],
     ];
   }
@@ -544,110 +546,124 @@ class _DashboardScreenState extends State<DashboardScreen>
                   // konkretnego miesiąca sprawdza się na drugim kroku ──
                   SyncRefresh(
                     child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                    // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
-                    // ekranu (np. swiezy budzet bez pozycji).
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      ..._planStats(budget, currency, monthKey),
-                      if (SubscriptionStatsView.hasPlanDetails(
-                        context,
-                        budget.isHousehold
-                            ? SubscriptionScope.household
-                            : SubscriptionScope.personal,
-                      )) ...[
-                        const SizedBox(height: 24),
-                        _DetailsSection(
-                          compact: _planDetailsCompact,
-                          onToggleCompact: _togglePlanDetails,
-                          children: _planDetails(budget),
-                        ),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                      // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
+                      // ekranu (np. swiezy budzet bez pozycji).
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        ..._planStats(budget, currency, monthKey),
+                        if (SubscriptionStatsView.hasPlanDetails(
+                          context,
+                          budget.isHousehold
+                              ? SubscriptionScope.household
+                              : SubscriptionScope.personal,
+                        )) ...[
+                          const SizedBox(height: 24),
+                          _DetailsSection(
+                            compact: _planDetailsCompact,
+                            onToggleCompact: _togglePlanDetails,
+                            children: _planDetails(budget),
+                          ),
+                        ],
                       ],
-                    ],
                     ),
                   ),
                   // ── „Bilans miesiąca" — realny wybrany miesiąc ──
                   SyncRefresh(
                     child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
-                    // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
-                    // ekranu (np. swiezy budzet bez pozycji).
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      // Skąd bierze się bilans — nad kalendarzem, bo to on jest
-                      // odpowiedzią tej zakładki; kalendarz pokazuje rozkład
-                      // w czasie, nie sumę.
-                      MonthBalanceSection(
-                        month: _selectedMonth,
-                        parts: budget.monthBalanceParts(monthKey),
-                        surplus: budget.monthlySurplus,
-                        breakdown: budget.balanceBreakdownForMonth(monthKey),
-                        currency: currency,
-                        compact: _monthBalanceCompact,
-                        onToggle: _toggleMonthBalance,
-                      ),
-                      const SizedBox(height: 16),
-                      BudgetMonthSection(
-                        month: _selectedMonth,
-                        currency: currency,
-                        calendar: calendar,
-                        selectedDay: _selectedDay,
-                        today: _today,
-                        compact: _monthCompact,
-                        onToggleCompact: _toggleMonth,
-                        onPrev: () => _shiftMonth(-1),
-                        onNext: () => _shiftMonth(1),
-                        onPickMonth: _pickStatsMonth,
-                        onSelectDay: (d) => setState(() => _selectedDay = d),
-                      ),
-                      if (MonthPaymentsSection.hasAny(calendar)) ...[
-                        const SizedBox(height: 24),
-                        MonthPaymentsSection(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
+                      // Gest musi dzialac takze wtedy, gdy tresc nie wypelnia
+                      // ekranu (np. swiezy budzet bez pozycji).
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        // Skąd bierze się bilans — nad kalendarzem, bo to on jest
+                        // odpowiedzią tej zakładki; kalendarz pokazuje rozkład
+                        // w czasie, nie sumę.
+                        MonthBalanceSection(
                           month: _selectedMonth,
-                          calendar: calendar,
+                          parts: budget.monthBalanceParts(monthKey),
+                          surplus: budget.monthlySurplus,
+                          breakdown: budget.balanceBreakdownForMonth(monthKey),
                           currency: currency,
-                          compact: _paymentsCompact,
-                          onToggleCompact: _togglePayments,
-                          isDone: budget.isPaymentDone,
-                          onToggle: budget.togglePaymentDone,
-                          onSetAll: (items, done) =>
-                              budget.setPaymentsDone(items, done),
-                          sort: _flowSort,
-                          grouping: _flowGrouping,
-                          viewControls: FlowViewControls(
+                          compact: _monthBalanceCompact,
+                          onToggle: _toggleMonthBalance,
+                        ),
+                        const SizedBox(height: 16),
+                        BudgetMonthSection(
+                          month: _selectedMonth,
+                          currency: currency,
+                          calendar: calendar,
+                          selectedDay: _selectedDay,
+                          today: _today,
+                          compact: _monthCompact,
+                          onToggleCompact: _toggleMonth,
+                          onPrev: () => _shiftMonth(-1),
+                          onNext: () => _shiftMonth(1),
+                          onPickMonth: _pickStatsMonth,
+                          onSelectDay: (d) => setState(() => _selectedDay = d),
+                        ),
+                        if (MonthPaymentsSection.hasAny(calendar)) ...[
+                          const SizedBox(height: 24),
+                          MonthPaymentsSection(
+                            month: _selectedMonth,
+                            calendar: calendar,
+                            currency: currency,
+                            compact: _paymentsCompact,
+                            onToggleCompact: _togglePayments,
+                            isDone: budget.isPaymentDone,
+                            onToggle: budget.togglePaymentDone,
+                            onSetAll: (items, done) =>
+                                budget.setPaymentsDone(items, done),
                             sort: _flowSort,
                             grouping: _flowGrouping,
-                            onSortChanged: (v) =>
-                                setState(() => _flowSort = v),
-                            onGroupingChanged: (v) =>
-                                setState(() => _flowGrouping = v),
+                            spendingCollapsed: _spendingCollapsed,
+                            viewControls: FlowViewControls(
+                              sort: _flowSort,
+                              grouping: _flowGrouping,
+                              onSortChanged: (v) =>
+                                  setState(() => _flowSort = v),
+                              onGroupingChanged: (v) =>
+                                  setState(() => _flowGrouping = v),
+                              spendingCollapsed: _spendingCollapsed,
+                              onSpendingCollapsedChanged:
+                                  spendingItemCount(calendar) > 1
+                                  ? (v) =>
+                                        setState(() => _spendingCollapsed = v)
+                                  : null,
+                            ),
                           ),
-                        ),
-                      ],
-                      // Karta „Bieżące miesiąca" zniknęła: te same wydatki bieżące
-                      // stoją pozycja po pozycji w „Podsumowaniu miesiąca"
-                      // poniżej, a ich suma jest w rozpisie bilansu wyżej.
-                      if (MonthSummarySection.hasAny(calendar)) ...[
-                        const SizedBox(height: 24),
-                        MonthSummarySection(
-                          month: _selectedMonth,
-                          calendar: calendar,
-                          currency: currency,
-                          compact: _monthSummaryCompact,
-                          onToggleCompact: _toggleMonthSummary,
-                          sort: _flowSort,
-                          grouping: _flowGrouping,
-                          viewControls: FlowViewControls(
+                        ],
+                        // Karta „Bieżące miesiąca" zniknęła: te same wydatki bieżące
+                        // stoją pozycja po pozycji w „Podsumowaniu miesiąca"
+                        // poniżej, a ich suma jest w rozpisie bilansu wyżej.
+                        if (MonthSummarySection.hasAny(calendar)) ...[
+                          const SizedBox(height: 24),
+                          MonthSummarySection(
+                            month: _selectedMonth,
+                            calendar: calendar,
+                            currency: currency,
+                            compact: _monthSummaryCompact,
+                            onToggleCompact: _toggleMonthSummary,
                             sort: _flowSort,
                             grouping: _flowGrouping,
-                            onSortChanged: (v) =>
-                                setState(() => _flowSort = v),
-                            onGroupingChanged: (v) =>
-                                setState(() => _flowGrouping = v),
+                            spendingCollapsed: _spendingCollapsed,
+                            viewControls: FlowViewControls(
+                              sort: _flowSort,
+                              grouping: _flowGrouping,
+                              onSortChanged: (v) =>
+                                  setState(() => _flowSort = v),
+                              onGroupingChanged: (v) =>
+                                  setState(() => _flowGrouping = v),
+                              spendingCollapsed: _spendingCollapsed,
+                              onSpendingCollapsedChanged:
+                                  spendingItemCount(calendar) > 1
+                                  ? (v) =>
+                                        setState(() => _spendingCollapsed = v)
+                                  : null,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
                     ),
                   ),
                 ],
@@ -892,9 +908,7 @@ class _SectionHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Icon(
-                    collapsed
-                        ? LucideIcons.chevronDown
-                        : LucideIcons.chevronUp,
+                    collapsed ? LucideIcons.chevronDown : LucideIcons.chevronUp,
                     size: 18,
                     color: c.textMuted,
                   ),
@@ -1156,4 +1170,3 @@ class _PredictionCard extends StatelessWidget {
     );
   }
 }
-

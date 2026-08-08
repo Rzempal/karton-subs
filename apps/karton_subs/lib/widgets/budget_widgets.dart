@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+// Ikona squareSigma (zwiniete biezace) jest tylko w nowszym pakiecie.
+import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
@@ -1336,6 +1338,19 @@ IconData _flowIcon(CalendarItem it) => switch (it.kind) {
         : (it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown),
 };
 
+/// Podpis wiersza zbiorczego, który zastępuje wszystkie wydatki bieżące
+/// miesiąca. Bez odmiany („sierpień 2026", nie „w sierpniu") — miesiąc jest tu
+/// etykietą, a nie częścią zdania.
+String spendingSummaryLabel(DateTime month) =>
+    'Bieżące · ${DateFormat('LLLL yyyy', 'pl').format(month)}';
+
+/// Ile wydatków bieżących ma miesiąc — przełącznik zwijania pokazujemy dopiero
+/// od dwóch. Zwijanie jednej pozycji w „sumę jednej pozycji" to sam szum.
+int spendingItemCount(Map<int, DayCashflow> calendar) => calendar.values
+    .expand((f) => f.items)
+    .where((it) => it.kind == CalendarItemKind.spending)
+    .length;
+
 /// Podpis podgrupy typu głównego (wewnątrz sekcji).
 Widget _kindLabel(
   ThemeData theme,
@@ -1366,6 +1381,11 @@ class MonthSummarySection extends StatelessWidget {
   final MonthFlowSort sort;
   final MonthFlowGrouping grouping;
 
+  /// Czy wydatki bieżące zwinąć do jednego wiersza z sumą. Miesiąc z kilkunastoma
+  /// paragonami zasypywał pozostałe strumienie, choć w bilansie liczą się
+  /// zbiorczo — rozwinięta lista jest do przeglądania, zwinięta do porównania.
+  final bool spendingCollapsed;
+
   /// Sterowanie widokiem (sortowanie/grupowanie) w naglowku sekcji — tam, gdzie
   /// dziala. `null` = sekcja bez kontrolek.
   final Widget? viewControls;
@@ -1379,6 +1399,7 @@ class MonthSummarySection extends StatelessWidget {
     required this.onToggleCompact,
     this.sort = MonthFlowSort.byDate,
     this.grouping = MonthFlowGrouping.none,
+    this.spendingCollapsed = false,
     this.viewControls,
   });
 
@@ -1491,17 +1512,72 @@ class MonthSummarySection extends StatelessWidget {
     AppSemanticColors c,
     List<({int day, CalendarItem item})> rows,
   ) {
+    // Zwiniete biezace: znikaja z listy i wracaja jako jeden wiersz na koncu.
+    // Na koncu, bo to podsumowanie strumienia, a nie zdarzenie konkretnego dnia
+    // — wstawione miedzy pozycje z datami psuloby porzadek chronologiczny.
+    final spending = rows
+        .where((r) => r.item.kind == CalendarItemKind.spending)
+        .toList();
+    final collapse = spendingCollapsed && spending.length > 1;
+    final visible = collapse
+        ? rows.where((r) => r.item.kind != CalendarItemKind.spending).toList()
+        : rows;
+    final collapsedRow = collapse
+        ? _collapsedSpendingRow(
+            theme,
+            c,
+            spending.fold(0.0, (s, r) => s + r.item.amount),
+            spending.length,
+          )
+        : null;
+
     if (grouping == MonthFlowGrouping.none) {
-      return [for (final r in rows) _itemRow(theme, c, r.day, r.item)];
+      return [
+        for (final r in visible) _itemRow(theme, c, r.day, r.item),
+        ?collapsedRow,
+      ];
     }
-    final groups = _groupByKind(rows, (r) => r.item.kind);
+    final groups = _groupByKind(visible, (r) => r.item.kind);
     return [
       for (final g in groups) ...[
         if (groups.length > 1) _kindLabel(theme, c, g.kind),
         for (final r in g.rows) _itemRow(theme, c, r.day, r.item),
       ],
+      // Bez podpisu podgrupy — wiersz sam sie przedstawia („Biezace · ...").
+      ?collapsedRow,
     ];
   }
+
+  /// Jeden wiersz zamiast wszystkich wydatkow biezacych miesiaca.
+  Widget _collapsedSpendingRow(
+    ThemeData theme,
+    AppSemanticColors c,
+    double total,
+    int count,
+  ) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      children: [
+        Icon(lucide.LucideIcons.squareSigma, size: 16, color: c.negative),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '${spendingSummaryLabel(month)} ($count)',
+            style: theme.textTheme.bodyMedium,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '−${budgetNf.format(total)}${curLabelSuffix(currency)}',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: c.negative,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _sectionHeader(
     ThemeData theme,
@@ -1596,6 +1672,11 @@ class MonthPaymentsSection extends StatelessWidget {
   final MonthFlowSort sort;
   final MonthFlowGrouping grouping;
 
+  /// Czy wydatki bieżące zwinąć do jednego wiersza. Wiersz zachowuje checkbox:
+  /// odhacza WSZYSTKIE bieżące naraz (przez [onSetAll]) i pokazuje stan
+  /// zbiorczy — inaczej zwinięcie odbierałoby jedyną funkcję tej sekcji.
+  final bool spendingCollapsed;
+
   /// Sterowanie widokiem (sortowanie/grupowanie) w naglowku sekcji — tam, gdzie
   /// dziala. `null` = sekcja bez kontrolek.
   final Widget? viewControls;
@@ -1612,6 +1693,7 @@ class MonthPaymentsSection extends StatelessWidget {
     required this.onSetAll,
     this.sort = MonthFlowSort.byDate,
     this.grouping = MonthFlowGrouping.none,
+    this.spendingCollapsed = false,
     this.viewControls,
   });
 
@@ -1780,16 +1862,81 @@ class MonthPaymentsSection extends StatelessWidget {
     AppSemanticColors c,
     List<_PayRow> rows,
   ) {
+    final spending = rows
+        .where((r) => r.kind == CalendarItemKind.spending)
+        .toList();
+    final collapse = spendingCollapsed && spending.length > 1;
+    final visible = collapse
+        ? rows.where((r) => r.kind != CalendarItemKind.spending).toList()
+        : rows;
+    final collapsedRow = collapse
+        ? _collapsedSpendingItem(context, spending)
+        : null;
+
     if (grouping == MonthFlowGrouping.none) {
-      return [for (final r in rows) _item(context, r)];
+      return [for (final r in visible) _item(context, r), ?collapsedRow];
     }
-    final groups = _groupByKind(rows, (r) => r.kind);
+    final groups = _groupByKind(visible, (r) => r.kind);
     return [
       for (final g in groups) ...[
         if (groups.length > 1) _kindLabel(theme, c, g.kind),
         for (final r in g.rows) _item(context, r),
       ],
+      ?collapsedRow,
     ];
+  }
+
+  /// Zwiniete biezace jako jedna pozycja do odhaczenia. Stan zbiorczy:
+  /// odhaczone dopiero wtedy, gdy odhaczone sa wszystkie; tapniecie ustawia
+  /// wszystkie na raz (odwrotnie do obecnego stanu).
+  Widget _collapsedSpendingItem(BuildContext context, List<_PayRow> rows) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final doneCount = rows.where((r) => isDone(r.sourceId, r.date)).length;
+    final allDone = doneCount == rows.length;
+    final total = rows.fold(0.0, (s, r) => s + r.amount);
+    final items = [for (final r in rows) (sourceId: r.sourceId, date: r.date)];
+
+    return InkWell(
+      onTap: () => onSetAll(items, !allDone),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(
+              allDone
+                  ? LucideIcons.checkSquare
+                  : (doneCount > 0
+                        ? LucideIcons.minusSquare
+                        : LucideIcons.square),
+              size: 20,
+              color: allDone ? c.positive : c.textMuted,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${spendingSummaryLabel(month)} ($doneCount/${rows.length})',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  decoration: allDone ? TextDecoration.lineThrough : null,
+                  color: allDone ? c.textMuted : null,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '−${budgetNf.format(total)}${curLabelSuffix(currency)}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: allDone ? c.textMuted : c.negative,
+                decoration: allDone ? TextDecoration.lineThrough : null,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _item(BuildContext context, _PayRow r) {
