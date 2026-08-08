@@ -1,9 +1,14 @@
 {
-  "releaseNotes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080803",
-  "versionCode": 2026080803,
-  "version": "0.22.26080803",
+  "releaseNotes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace",
+  "versionCode": 2026080804,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080804",
+  "version": "0.22.26080804",
+  "releaseDate": "2026-08-08T23:21:01Z",
   "changelog": [
+    {
+      "version": "0.22.26080804",
+      "notes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace"
+    },
     {
       "version": "0.22.26080803",
       "notes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem"
@@ -39,11 +44,6 @@
     {
       "version": "0.20.26080209",
       "notes": "- zaznaczanie wielu pozycji takze w Wydatkach i Wplywach\n- akcje zbiorcze tam: kategoria, metoda platnosci, wstrzymaj/wznow, usun"
-    },
-    {
-      "version": "0.20.26080208",
-      "notes": "- pasek zaznaczania zastepuje pasek kategorii zamiast spychac liste w dol"
     }
-  ],
-  "releaseDate": "2026-08-08T22:19:01Z"
+  ]
 }
