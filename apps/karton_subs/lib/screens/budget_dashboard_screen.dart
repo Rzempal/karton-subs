@@ -15,6 +15,7 @@ import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
+import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
 import '../widgets/import_summary_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
@@ -397,7 +398,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         actions: [
           AuroraAddAction(
             icon: LucideIcons.plus,
-            label: _onIncomes ? 'Dodaj wpływ' : 'Dodaj ręcznie',
+            // „Dodaj ręcznie" nie mówiło CO się dodaje — a menu ma obok
+            // subskrypcję i dwa importy, więc odróżnienie musi być w nazwie.
+            label: _onIncomes ? 'Dodaj wpływ' : 'Dodaj wydatek cykliczny',
             primary: true,
             // Na ekranie Wpływy formularz startuje od razu jako wpływ.
             onTap: () => _openAdd(
@@ -406,7 +409,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           ),
           if (!_onIncomes)
             AuroraAddAction(
-              icon: LucideIcons.badgeCheck,
+              icon: subscriptionIcon,
               label: 'Dodaj subskrypcję',
               onTap: _openAddSubscription,
             ),

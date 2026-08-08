@@ -30,6 +30,11 @@ class CalendarItem {
   /// Id zrodla (BudgetEntry lub Subscription) — do trwalego stanu „wykonane".
   final String? sourceId;
 
+  /// Rodzaj pozycji budzetu, z ktorej powstal ten przeplyw. Sluzy WYLACZNIE
+  /// do ikony (ADR-032): [kind] grupuje zgrubnie, a lista musi pokazac te sama
+  /// ikone co zakladka, na ktorej pozycja mieszka. `null` dla subskrypcji.
+  final BudgetEntryType? entryType;
+
   const CalendarItem({
     required this.name,
     required this.amount,
@@ -37,6 +42,7 @@ class CalendarItem {
     this.kind = CalendarItemKind.budgetEntry,
     this.isAutomatic = false,
     this.sourceId,
+    this.entryType,
   });
 }
 
@@ -940,6 +946,7 @@ class BudgetService {
               kind: kind,
               isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
               sourceId: e.id,
+              entryType: e.type,
             ),
           );
         }
@@ -969,7 +976,7 @@ class BudgetService {
                       isIncome: e.isIncome,
                       kind: kind,
                       isAutomatic: auto,
-                      sourceId: e.id));
+                      sourceId: e.id, entryType: e.type));
               continue;
             }
             if (anchor != null) {
@@ -985,7 +992,7 @@ class BudgetService {
                         isIncome: e.isIncome,
                         kind: kind,
                         isAutomatic: auto,
-                        sourceId: e.id));
+                        sourceId: e.id, entryType: e.type));
               }
               continue;
             }
@@ -1004,6 +1011,7 @@ class BudgetService {
               kind: kind,
               isAutomatic: !e.isIncome && autoOf(e.paymentMethod),
               sourceId: e.id,
+              entryType: e.type,
             ),
           );
         }

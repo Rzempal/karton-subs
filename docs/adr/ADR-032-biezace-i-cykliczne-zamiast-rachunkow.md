@@ -63,6 +63,16 @@ jest prawdziwa.
 tym, co te powiadomienia generuje, więc dzwonek przy subskrypcji czytałby się
 jako „ma ustawione przypomnienie", a nie „to jest subskrypcja".
 
+**Reguła obowiązuje też WIERSZE list, nie tylko pasek:** ikona pozycji bez
+własnej kategorii = ikona zakładki, do której ta pozycja należy. Zapisana raz,
+w `budgetEntryIcon` (`widgets/category_icons.dart`), i używana przez kartę
+pozycji, listę „Płatności" i „Podsumowanie miesiąca". Wcześniej reguła żyła
+w dwóch miejscach i przy tej zmianie nazw się rozjechała — wydatek bieżący oraz
+koszt cykliczny dostawały tę samą strzałkę kierunku, mimo różnych zakładek.
+Żeby lista przepływów znała rodzaj pozycji, `CalendarItem` niesie `entryType`
+(wyłącznie do ikony — grupowanie dalej idzie po `kind`). Pilnuje tego
+`test/entry_icons_test.dart`.
+
 ### 3. Nazwy w kodzie idą za nazwami w UI
 
 ADR-019 §3 mówił „nazwy tylko w UI" — tamta decyzja zostaje **odwrócona** dla tej

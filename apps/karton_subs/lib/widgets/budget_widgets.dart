@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-// Ikona receiptText (paragon) jest tylko w nowszym pakiecie — ten sam alias
-// co w pasku nawigacji, żeby wydatek bieżący miał wszędzie tę samą ikonę.
-import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 import 'package:provider/provider.dart';
 import '../models/budget_entry.dart';
 import '../models/subscription.dart';
@@ -13,7 +10,8 @@ import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
-import 'category_icons.dart' show categoryIcon;
+import 'category_icons.dart'
+    show budgetEntryIcon, categoryIcon, subscriptionIcon;
 import 'plan_progress_bar.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
@@ -1326,14 +1324,16 @@ List<({CalendarItemKind kind, List<T> rows})> _groupByKind<T>(
   return out;
 }
 
-/// Ikona pozycji przepływu. Wydatek bieżący ma WŁASNĄ ikonę — tę samą, co
-/// zakładka „Bieżące" w pasku; wcześniej dostawał strzałkę kierunku, czyli
-/// dokładnie to samo co zwykły koszt, choć to osobny rodzaj pozycji (ADR-018).
+/// Ikona pozycji przepływu — ta sama reguła co na listach ([budgetEntryIcon]),
+/// żeby jedna pozycja nie wyglądała inaczej w „Płatnościach" niż na swojej
+/// zakładce. Strzałka kierunku zostaje tylko awaryjnie, gdy rodzaj pozycji nie
+/// dojechał (starsze wywołania bez `entryType`).
 IconData _flowIcon(CalendarItem it) => switch (it.kind) {
-  CalendarItemKind.spending => lucide.LucideIcons.receiptText,
-  CalendarItemKind.subscription => LucideIcons.badgeCheck,
-  CalendarItemKind.budgetEntry =>
-    it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown,
+  CalendarItemKind.subscription => subscriptionIcon,
+  _ =>
+    it.entryType != null
+        ? budgetEntryIcon(it.entryType!)
+        : (it.isIncome ? LucideIcons.trendingUp : LucideIcons.trendingDown),
 };
 
 /// Podpis podgrupy typu głównego (wewnątrz sekcji).
@@ -1979,13 +1979,12 @@ class BudgetEntryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Ikona kategorii, gdy pozycja ja ma — niesie wiecej informacji
-              // niz strzalka kierunku, ktora i tak powtarza kolor kwoty.
+              // niz rodzaj pozycji. Bez kategorii: ikona rodzaju, czyli ta sama,
+              // co ikona zakladki, do ktorej pozycja nalezy (ADR-032).
               Icon(
                 category != null
                     ? categoryIcon(category.iconName)
-                    : (entry.isIncome
-                          ? LucideIcons.trendingUp
-                          : LucideIcons.trendingDown),
+                    : budgetEntryIcon(entry.type),
                 size: 18,
                 color: category?.color ?? color,
               ),

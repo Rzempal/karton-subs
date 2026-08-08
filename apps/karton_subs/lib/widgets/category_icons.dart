@@ -2,6 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 
+import '../models/budget_entry.dart';
+
+/// Ikona RODZAJU pozycji — pokazywana, gdy pozycja nie ma własnej kategorii.
+///
+/// Jedna reguła: **ikona wiersza = ikona zakładki, do której pozycja należy**
+/// (ADR-032). Dzięki temu ta sama pozycja wygląda tak samo na liście, w
+/// „Płatnościach" i w „Podsumowaniu miesiąca". Wcześniej reguła była
+/// zduplikowana w dwóch miejscach i rozjechała się przy zmianie nazw: wydatek
+/// bieżący dostawał strzałkę kierunku, czyli to samo co koszt cykliczny.
+IconData budgetEntryIcon(BudgetEntryType type) => switch (type) {
+  // „Bieżące" — ta sama ikona co w pasku nawigacji.
+  BudgetEntryType.spending => lucide.LucideIcons.receiptText,
+  // „Cykliczne" — powtarzalność jest sednem tej sekcji. Rata też tu należy:
+  // to koszt cykliczny z końcem, a nie osobny rodzaj pieniędzy.
+  BudgetEntryType.recurringCost ||
+  BudgetEntryType.installment => LucideIcons.repeat,
+  // „Wpływy".
+  BudgetEntryType.income ||
+  BudgetEntryType.oneTimeIncome => LucideIcons.trendingUp,
+  // Przesunięcie między budżetami — nie koszt, więc ani strzałka w dół, ani
+  // powtarzalność nie byłyby prawdą.
+  BudgetEntryType.householdTransfer => LucideIcons.arrowRightLeft,
+};
+
+/// Ikona subskrypcji — `repeat` należy do zakładki „Cykliczne", więc
+/// subskrypcja (jej sekcja) musi mieć własną (ADR-032).
+const IconData subscriptionIcon = LucideIcons.badgeCheck;
+
 /// Ikony kategorii — słownik wspólny dla subskrypcji, pozycji budżetu i ekranu
 /// zarządzania kategoriami. Mieszkały przy karcie subskrypcji, ale z kategorii
 /// korzysta dziś każda lista, a wiersz subskrypcji potrzebuje formatowania
