@@ -7,7 +7,6 @@ import '../controllers/subscription_controller.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/subscription.dart';
-import '../services/excel_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/expenses_filter.dart';
@@ -17,7 +16,6 @@ import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_icons.dart' show subscriptionIcon;
 import '../widgets/filter_bars.dart';
-import '../widgets/import_summary_dialog.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
 import '../widgets/subscription_row.dart';
@@ -85,8 +83,6 @@ class BudgetDashboardScreen extends StatefulWidget {
 }
 
 class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
-  bool _isBusy = false;
-
   bool get _onIncomes => widget.mode == BudgetEntriesMode.incomes;
 
   /// Aktywny filtr kategorii (null = wszystkie). Filtruje sekcje wydatków.
@@ -407,7 +403,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           AuroraAddAction(
             icon: LucideIcons.plus,
             // „Dodaj ręcznie" nie mówiło CO się dodaje — a menu ma obok
-            // subskrypcję i dwa importy, więc odróżnienie musi być w nazwie.
+            // subskrypcję, więc odróżnienie musi być w nazwie.
             label: _onIncomes ? 'Dodaj wpływ' : 'Dodaj wydatek cykliczny',
             primary: true,
             // Na ekranie Wpływy formularz startuje od razu jako wpływ.
@@ -430,17 +426,10 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                 initialName: 'Wkład — ',
               ),
             ),
-          AuroraAddAction(
-            icon: LucideIcons.fileInput,
-            label: 'Importuj z Excela',
-            onTap: _importExcel,
-          ),
-          if (!_onIncomes)
-            AuroraAddAction(
-              icon: LucideIcons.fileInput,
-              label: 'Importuj subskrypcje z Excela',
-              onTap: _importSubscriptionsExcel,
-            ),
+          // Import z Excela mieszka w Ustawieniach → „Eksport/import danych".
+          // Wczytanie arkusza to operacja na całym zbiorze, a nie dodanie
+          // pozycji — menu „Dodaj" sugerowało coś przeciwnego i stawiało dwa
+          // rzadkie importy obok akcji używanej codziennie.
         ],
       ),
       body: Column(
@@ -919,80 +908,6 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
             child: const Text('Usuń'),
           ),
         ],
-      ),
-    );
-  }
-
-  // ── Import ─────────────────────────────────────────────────────────────────
-
-  Future<void> _importExcel() async {
-    // Straznik podwojnego uruchomienia: import trwa, a menu „Dodaj" nie blokuje
-    // sie samo — drugie tapniecie wciagneloby te same pozycje po raz drugi.
-    if (_isBusy) return;
-    setState(() => _isBusy = true);
-    try {
-      final excel = context.read<ExcelService>();
-      final result = await excel.pickAndParseBudget();
-      if (mounted) {
-        final ctrl = context.read<BudgetController>();
-        for (final e in result.entries) {
-          await ctrl.add(e);
-        }
-      }
-      if (mounted) {
-        await showImportSummaryDialog(
-          context,
-          title: 'Import budżetu z Excela',
-          importedCount: result.importedCount,
-          importedNoun: 'pozycji budżetu',
-          skipped: result.skipped,
-        );
-      }
-    } on FormatException catch (e) {
-      if (mounted) _showError(e.message);
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
-  Future<void> _importSubscriptionsExcel() async {
-    if (_isBusy) return;
-    setState(() => _isBusy = true);
-    try {
-      final excel = context.read<ExcelService>();
-      final result = await excel.pickAndParse();
-      if (mounted) {
-        final ctrl = context.read<SubscriptionController>();
-        for (final sub in result.subscriptions) {
-          await ctrl.add(sub);
-        }
-      }
-      if (mounted) {
-        await showImportSummaryDialog(
-          context,
-          title: 'Import subskrypcji z Excela',
-          importedCount: result.importedCount,
-          importedNoun: 'subskrypcji',
-          skipped: result.skipped,
-          warnings: result.warnings,
-        );
-      }
-    } on FormatException catch (e) {
-      if (mounted) _showError(e.message);
-    } catch (e) {
-      if (mounted) _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
-    }
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Błąd: $msg'),
-        backgroundColor: context.semanticColors.negative,
       ),
     );
   }

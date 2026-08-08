@@ -140,8 +140,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // pracy — i był rozrzucony po dwóch ekranach.
             _navTile(context,
                 icon: LucideIcons.fileSpreadsheet,
-                title: 'Eksport danych',
-                subtitle: 'Arkusz XLSX i raport PDF',
+                title: 'Eksport/import danych',
+                subtitle: 'Arkusz XLSX (w obie strony) i raport PDF',
                 screen: const DataExportScreen()),
           ]),
 
