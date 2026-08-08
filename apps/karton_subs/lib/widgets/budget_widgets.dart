@@ -774,7 +774,7 @@ class AnnualSummarySection extends StatelessWidget {
                   Text(
                     s.planned > 0
                         ? 'z ${budgetNf.format(s.planned)}${curLabelSuffix(currency)} planowanych'
-                            ' (${((progress ?? 0) * 100).round()}%)'
+                              ' (${((progress ?? 0) * 100).round()}%)'
                         : 'brak planu do porównania',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: c.textSecondary,
@@ -1925,7 +1925,21 @@ class BudgetEntryCard extends StatelessWidget {
   final BudgetEntry entry;
   final VoidCallback onTap;
 
-  const BudgetEntryCard({super.key, required this.entry, required this.onTap});
+  /// Miesiąc wybrany w filtrze czasu („YYYY-MM") — `null` przy filtrze na rok
+  /// albo „wszystkie lata". Gdy jest ustawiony, karta dokłada po prawej stronie
+  /// drugiej linii **kwotę korekty tego miesiąca** (ADR-008).
+  ///
+  /// Kwota w pierwszej linii to zawsze kwota BAZOWA (plan), więc bez tego przy
+  /// zawężeniu do jednego miesiąca nie było jak zobaczyć, ile ta pozycja
+  /// naprawdę kosztowała — licznik „korekt: N" mówił tylko, że jakieś są.
+  final String? monthKey;
+
+  const BudgetEntryCard({
+    super.key,
+    required this.entry,
+    required this.onTap,
+    this.monthKey,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1968,6 +1982,13 @@ class BudgetEntryCard extends StatelessWidget {
       if (overrideCount > 0) 'korekt: $overrideCount',
       if (dimmed) 'wstrzymane',
     ].join(' · ');
+
+    // Korekta wybranego miesiąca. Korekta samej DATY (bez kwoty) nie ma tu co
+    // pokazać — kwota miesiąca jest wtedy równa bazowej.
+    final mk = monthKey;
+    final overrideAmount = mk != null
+        ? entry.overrideForMonth(mk)?.amount
+        : null;
 
     return InkWell(
       onTap: onTap,
@@ -2017,37 +2038,61 @@ class BudgetEntryCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    // Linia 2 jako JEDEN ciag: typ · data · metoda · kategoria.
+                    // Linia 2: opis jako JEDEN ciag (typ · data · metoda ·
+                    // kategoria), a kwota korekty POZA nim, dosunieta w prawo.
                     // Osobne elastyczne czesci dzielily szerokosc po rowno,
-                    // wiec data urywala sie mimo wolnego miejsca obok.
-                    Text.rich(
-                      TextSpan(
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: c.textMuted,
-                        ),
-                        children: [
-                          TextSpan(text: details),
-                          if (method != null) ...[
-                            const TextSpan(text: ' · '),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Icon(
-                                methodAuto ? LucideIcons.zap : LucideIcons.hand,
-                                size: 12,
+                    // wiec data urywala sie mimo wolnego miejsca obok; kwota
+                    // stoi na zewnatrz, zeby nigdy nie wpadla w wielokropek.
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              style: theme.textTheme.labelSmall?.copyWith(
                                 color: c.textMuted,
                               ),
+                              children: [
+                                TextSpan(text: details),
+                                if (method != null) ...[
+                                  const TextSpan(text: ' · '),
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Icon(
+                                      methodAuto
+                                          ? LucideIcons.zap
+                                          : LucideIcons.hand,
+                                      size: 12,
+                                      color: c.textMuted,
+                                    ),
+                                  ),
+                                  TextSpan(text: ' $method'),
+                                ],
+                                if (category != null)
+                                  TextSpan(
+                                    text: ' · ${category.name}',
+                                    style: TextStyle(color: category.color),
+                                  ),
+                              ],
                             ),
-                            TextSpan(text: ' $method'),
-                          ],
-                          if (category != null)
-                            TextSpan(
-                              text: ' · ${category.name}',
-                              style: TextStyle(color: category.color),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (overrideAmount != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '$sign${budgetNf.format(overrideAmount)}'
+                            '${curLabelSuffix(cur)}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
+                          ),
                         ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      ],
                     ),
                   ],
                 ),

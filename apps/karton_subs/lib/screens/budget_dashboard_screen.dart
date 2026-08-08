@@ -229,7 +229,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
 
   void _afterBulk(String message) {
     _endSelection();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<({T value})?> _pickOption<T>({
@@ -275,7 +277,12 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
               ctrl.internalTransfers,
               false,
             ),
-            _Bucket(_kSectionFixed, _expensesTitle, ctrl.recurringExpenses, true),
+            _Bucket(
+              _kSectionFixed,
+              _expensesTitle,
+              ctrl.recurringExpenses,
+              true,
+            ),
           ];
     // Subskrypcje to trzecia sekcja wydatków (ADR-027) — inny model danych,
     // ten sam strumień pieniędzy. Na Wpływach nie mają czego robić.
@@ -355,9 +362,10 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         _BudgetSort.alpha => a.name.toLowerCase().compareTo(
           b.name.toLowerCase(),
         ),
-        _BudgetSort.amountDesc => ctrl
-            .monthlySubscriptionAmount(b)
-            .compareTo(ctrl.monthlySubscriptionAmount(a)),
+        _BudgetSort.amountDesc =>
+          ctrl
+              .monthlySubscriptionAmount(b)
+              .compareTo(ctrl.monthlySubscriptionAmount(a)),
       };
     }
 
@@ -603,6 +611,12 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
                           showAlloc: !filter.hasAny && !_onIncomes,
                           isEmpty: isEmpty,
                           byCategory: _grouping == _BudgetGrouping.byCategory,
+                          // Tylko gdy filtr zawezony do JEDNEGO miesiaca —
+                          // wtedy „kwota korekty" ma jednoznaczne znaczenie.
+                          monthKey: (activeYear != null && activeMonth != null)
+                              ? '$activeYear-'
+                                    '${activeMonth.toString().padLeft(2, '0')}'
+                              : null,
                         ),
                       ),
               ),
@@ -623,6 +637,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     required bool showAlloc,
     required bool isEmpty,
     required bool byCategory,
+    String? monthKey,
   }) {
     final cur = ctrl.targetCurrencyLabel;
     final alloc = ctrl.spendingAllocation;
@@ -633,9 +648,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       total: alloc ?? 0,
       itemCount: ctrl.spendingAllocationItems.length,
       currency: cur,
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const SpendingPlannerScreen()),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const SpendingPlannerScreen())),
     );
 
     if (isEmpty) {
@@ -658,7 +673,11 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
         selected: _selected.contains(e.id),
         onTap: () => _toggleSelection(e.id),
         onLongPress: () => _startSelection(e.id),
-        child: BudgetEntryCard(entry: e, onTap: () => _openEdit(e)),
+        child: BudgetEntryCard(
+          entry: e,
+          onTap: () => _openEdit(e),
+          monthKey: monthKey,
+        ),
       );
       out.add(
         _Section(
@@ -819,8 +838,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     ),
   );
 
-  Future<void> _openEditSubscription(Subscription sub) => Navigator.of(context)
-      .push(
+  Future<void> _openEditSubscription(Subscription sub) =>
+      Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => AddSubscriptionScreen(existing: sub)),
       );
 
@@ -844,7 +863,9 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(sub.isPinned ? LucideIcons.pinOff : LucideIcons.pin),
+              leading: Icon(
+                sub.isPinned ? LucideIcons.pinOff : LucideIcons.pin,
+              ),
               title: Text(sub.isPinned ? 'Odepnij' : 'Przypnij na górze'),
               onTap: () {
                 Navigator.pop(ctx);
