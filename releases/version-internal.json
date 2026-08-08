@@ -1,6 +1,14 @@
 {
-  "releaseDate": "2026-08-04T23:11:17Z",
+  "version": "0.21.26080800",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080800",
+  "versionCode": 2026080800,
+  "releaseDate": "2026-08-08T14:09:53Z",
+  "releaseNotes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne\n- Koperta Plannera: Na biezace wydatki\n- Subskrypcje maja wlasna ikone (dawna przeszla do zakladki Cykliczne)\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian",
   "changelog": [
+    {
+      "version": "0.21.26080800",
+      "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne\n- Koperta Plannera: Na biezace wydatki\n- Subskrypcje maja wlasna ikone (dawna przeszla do zakladki Cykliczne)\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian"
+    },
     {
       "version": "0.21.26080400",
       "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
@@ -36,14 +44,6 @@
     {
       "version": "0.20.26080205",
       "notes": "- lista rachunkow buduje sie leniwie (dluga historia nie spowalnia ekranu)\n- metody platnosci liczone raz zamiast przy kazdym wierszu listy"
-    },
-    {
-      "version": "0.19.26080204",
-      "notes": "- pasek plan/realny pokazuje sile przekroczenia (zielone = plan, czerwone = nadwyzka)\n- kalendarz w bilansie: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty po polsku (byly po angielsku)"
     }
-  ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080400",
-  "releaseNotes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby",
-  "versionCode": 2026080400,
-  "version": "0.21.26080400"
+  ]
 }
