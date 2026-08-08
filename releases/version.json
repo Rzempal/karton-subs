@@ -1,8 +1,13 @@
 {
-  "releaseDate": "2026-08-04T23:15:40Z",
-  "releaseNotes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080400",
+  "version": "0.22.26080800",
+  "releaseNotes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne. Nazwy mowia, czym te sekcje sie roznia: biezace to wydatek z konkretna data, cykliczne to koszt usredniany na miesiac\n- Koperta Plannera: Na biezace wydatki\n- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian\n- Zmiana nie rusza zapisanych danych: synchronizacja z telefonem na starszej wersji dziala dalej",
+  "releaseDate": "2026-08-08T16:02:30Z",
+  "versionCode": 2026080800,
   "changelog": [
+    {
+      "version": "0.22.26080800",
+      "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne. Nazwy mowia, czym te sekcje sie roznia: biezace to wydatek z konkretna data, cykliczne to koszt usredniany na miesiac\n- Koperta Plannera: Na biezace wydatki\n- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian\n- Zmiana nie rusza zapisanych danych: synchronizacja z telefonem na starszej wersji dziala dalej"
+    },
     {
       "version": "0.21.26080400",
       "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
@@ -38,12 +43,7 @@
     {
       "version": "0.15.26080100",
       "notes": "- Wiecej miejsca na tresc: znikly paski z nazwami ekranow (nazwa jest w pasku nawigacji)\n- Przelacznik Osobisty/Domowy na samej gorze, wspolny dla calej aplikacji\n- Sortowanie i grupowanie przy sekcjach, ktorych dotycza\n- Opis sekcji (ikona i) obok przelacznika zakresu"
-    },
-    {
-      "version": "0.14.26073102",
-      "notes": "- Synchronizacja gestem: przeciagnij liste w dol (zamiast przycisku w pasku)\n- Eksport XLSX i PDF w jednym miejscu: Ustawienia -> Dane -> Eksport danych\n- Kategorie i metody platnosci przeniesione do sekcji Personalizacja"
     }
   ],
-  "versionCode": 2026080400,
-  "version": "0.21.26080400"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080800"
 }
