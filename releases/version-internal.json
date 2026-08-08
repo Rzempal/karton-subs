@@ -1,10 +1,10 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080801",
-  "versionCode": 2026080801,
-  "releaseDate": "2026-08-08T15:30:30Z",
-  "version": "0.21.26080801",
-  "releaseNotes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie",
+  "versionCode": 2026080802,
   "changelog": [
+    {
+      "version": "0.22.26080802",
+      "notes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia"
+    },
     {
       "version": "0.21.26080801",
       "notes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
@@ -40,10 +40,10 @@
     {
       "version": "0.20.26080207",
       "notes": "- pasek zaznaczania wyroznia sie jako osobny tryb (pigulka z akcentem)"
-    },
-    {
-      "version": "0.20.26080206",
-      "notes": "- zaznaczanie wielu rachunkow (dlugie przytrzymanie) i zmiana kategorii, metody, daty albo usuniecie naraz\n- Zaznacz wszystkie dotyczy pozycji widocznych po filtrach"
     }
-  ]
+  ],
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080802",
+  "releaseNotes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia",
+  "version": "0.22.26080802",
+  "releaseDate": "2026-08-08T22:00:38Z"
 }
