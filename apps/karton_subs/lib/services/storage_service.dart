@@ -484,12 +484,16 @@ class StorageService {
 
   /// Pozycje Plannera Z NAGROBKAMI — do synchronizacji i backupu, gdzie
   /// usuniecie musi dotrzec do drugiego telefonu (ADR-022).
-  List<SpendingAllocationItem> getSpendingAllocationItemsRaw(BudgetScope scope) {
+  List<SpendingAllocationItem> getSpendingAllocationItemsRaw(
+    BudgetScope scope,
+  ) {
     final raw = _settingsBox.get(StorageKeys.spendingAllocationItems(scope));
     if (raw is String && raw.isNotEmpty) {
       try {
         final list = (jsonDecode(raw) as List)
-            .map((e) => SpendingAllocationItem.fromJson(e as Map<String, dynamic>))
+            .map(
+              (e) => SpendingAllocationItem.fromJson(e as Map<String, dynamic>),
+            )
             .toList();
         return List.unmodifiable(list);
       } catch (e) {
@@ -497,7 +501,9 @@ class StorageService {
       }
     }
     // Migracja starej pojedynczej kwoty -> jedna pozycja koperty.
-    final legacy = _settingsBox.get(StorageKeys.spendingAllocationLegacy(scope));
+    final legacy = _settingsBox.get(
+      StorageKeys.spendingAllocationLegacy(scope),
+    );
     final amount = legacy is num ? legacy.toDouble() : null;
     if (amount != null && amount > 0) {
       return [
@@ -683,7 +689,8 @@ class StorageService {
   }
 
   String getReceiptArchiveSubfolder() =>
-      _settingsBox.get('receiptArchiveSubfolder', defaultValue: 'Zostaje') as String;
+      _settingsBox.get('receiptArchiveSubfolder', defaultValue: 'Zostaje')
+          as String;
 
   Future<void> setReceiptArchiveSubfolder(String value) {
     final clean = value.trim().replaceAll(RegExp(r'^/+|/+$'), '');
@@ -754,6 +761,37 @@ class StorageService {
   Future<void> setDashboardPaymentsCompact(bool value) async =>
       _settingsBox.put('dashboardPaymentsCompact', value);
 
+  // ── Widok sekcji miesiaca (Platnosci / Podsumowanie) ───────────────────────
+  //
+  // Sortowanie, grupowanie i zwijanie biezacych — OSOBNO dla kazdej sekcji
+  // (`section` = „payments" / „summary"), bo obie listy oglada sie w innym celu.
+  // Klucz sekcji jest staly: tytuly na ekranie bywaja poprawiane, klucz nie.
+  //
+  // Poza backupem, jak reszta stanu widoku Dashboardu — to sposob patrzenia na
+  // konkretnym telefonie, a nie preferencja, ktora ma wedrowac z kopia.
+  //
+  // Wartosci to nazwy enumow. Przemianowanie enuma nie psuje danych: odczyt ma
+  // `orElse`, wiec najgorsze, co sie stanie, to powrot do domyslnego widoku.
+
+  String getFlowSort(String section) =>
+      _settingsBox.get('flowSort|$section', defaultValue: 'byDate') as String;
+
+  Future<void> setFlowSort(String section, String value) async =>
+      _settingsBox.put('flowSort|$section', value);
+
+  String getFlowGrouping(String section) =>
+      _settingsBox.get('flowGrouping|$section', defaultValue: 'none') as String;
+
+  Future<void> setFlowGrouping(String section, String value) async =>
+      _settingsBox.put('flowGrouping|$section', value);
+
+  bool getFlowSpendingCollapsed(String section) =>
+      _settingsBox.get('flowSpendingCollapsed|$section', defaultValue: false)
+          as bool;
+
+  Future<void> setFlowSpendingCollapsed(String section, bool value) async =>
+      _settingsBox.put('flowSpendingCollapsed|$section', value);
+
   bool getDashboardAutoPaymentsCompact() =>
       _settingsBox.get('dashboardAutoPaymentsCompact', defaultValue: false)
           as bool;
@@ -798,7 +836,10 @@ class StorageService {
     return v is String && v.isNotEmpty ? v : null;
   }
 
-  Future<void> setTrackingStartMonth(BudgetScope scope, String? monthKey) async {
+  Future<void> setTrackingStartMonth(
+    BudgetScope scope,
+    String? monthKey,
+  ) async {
     final key = 'trackingStartMonth|${scope.name}';
     if (monthKey == null) {
       await _settingsBox.delete(key);

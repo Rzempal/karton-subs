@@ -14,9 +14,10 @@ import 'budget_widgets.dart' show MonthFlowSort, MonthFlowGrouping;
 /// i widoczne także wtedy, gdy nie było czego sortować. Tutaj są przy samej
 /// treści, więc związek jest oczywisty bez tłumaczenia.
 ///
-/// **Każda sekcja ma własny stan** — te same trzy ikony sterują wyłącznie listą
-/// pod sobą. Wspólny stan zmuszał do przełączania w tę i z powrotem, bo obie
-/// listy ogląda się w innym celu.
+/// **Każda sekcja ma własny stan, trwały** — te same trzy ikony sterują
+/// wyłącznie listą pod sobą, a ustawienie przeżywa wyjście z zakładki. Wspólny
+/// stan zmuszał do przełączania w tę i z powrotem, bo obie listy ogląda się
+/// w innym celu.
 class FlowViewControls extends StatelessWidget {
   final MonthFlowSort sort;
   final MonthFlowGrouping grouping;

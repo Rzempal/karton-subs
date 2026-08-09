@@ -26,10 +26,28 @@ import '../widgets/subscription_stats_view.dart' show SubscriptionStatsView;
 /// Sortowanie, grupowanie i zwijanie JEDNEJ sekcji miesiąca. Trzy ustawienia
 /// razem, bo razem stoją w nagłówku sekcji i razem opisują „jak patrzę na tę
 /// listę" — rozdzielanie ich na trzy pola po dwa razy tylko by je rozjeżdżało.
+///
+/// Trwałe: wczytywane w `initState`, zapisywane przy każdej zmianie. Ustawienie
+/// listy raz na jakiś czas i zastawanie jej tak samo jest wygodniejsze niż
+/// powrót do domyślnego po każdym wyjściu z zakładki.
 class _FlowViewState {
-  MonthFlowSort sort = MonthFlowSort.byDate;
-  MonthFlowGrouping grouping = MonthFlowGrouping.none;
-  bool spendingCollapsed = false;
+  /// Klucz sekcji w ustawieniach. Stały — tytuły na ekranie bywają poprawiane.
+  final String section;
+
+  MonthFlowSort sort;
+  MonthFlowGrouping grouping;
+  bool spendingCollapsed;
+
+  _FlowViewState(this.section, StorageService storage)
+    : sort = MonthFlowSort.values.firstWhere(
+        (v) => v.name == storage.getFlowSort(section),
+        orElse: () => MonthFlowSort.byDate,
+      ),
+      grouping = MonthFlowGrouping.values.firstWhere(
+        (v) => v.name == storage.getFlowGrouping(section),
+        orElse: () => MonthFlowGrouping.none,
+      ),
+      spendingCollapsed = storage.getFlowSpendingCollapsed(section);
 }
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
@@ -55,13 +73,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   late bool _annualCostsCompact;
   late bool _monthBalanceCompact;
 
-  /// Ustawienia widoku sekcji miesiąca — **osobne dla każdej sekcji**.
+  /// Ustawienia widoku sekcji miesiąca — **osobne dla każdej sekcji** i trwałe.
   /// „Płatności" to lista do odhaczenia, więc chce się ją mieć po dacie;
   /// „Podsumowanie" odpowiada na „co zjadło miesiąc", więc częściej po kwocie.
   /// Wspólny stan zmuszał do przełączania w tę i z powrotem.
-  /// Nietrwałe, jak w Budżecie: to sposób patrzenia na konkretny miesiąc.
-  final _paymentsView = _FlowViewState();
-  final _summaryView = _FlowViewState();
+  late final _FlowViewState _paymentsView;
+  late final _FlowViewState _summaryView;
 
   /// Ujęcie obu wykresów „Planu" — osobno dla trendu i kategorii (ADR-028),
   /// stan trwały. Podsumowanie roczne ma własne (ADR-029).
@@ -89,6 +106,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     _selectedMonth = DateTime(now.year, now.month, 1);
     _selectedDay = now.day; // bieżący miesiąc → domyślnie dziś
     final storage = context.read<StorageService>();
+    _paymentsView = _FlowViewState('payments', storage);
+    _summaryView = _FlowViewState('summary', storage);
     _summaryCompact = storage.getDashboardSummaryCompact();
     _monthCompact = storage.getDashboardMonthCompact();
     _monthSummaryCompact = storage.getDashboardMonthSummaryCompact();
@@ -109,18 +128,29 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   /// Kontrolki widoku dla jednej sekcji miesiąca. Każda sekcja dostaje własny
   /// [_FlowViewState], więc te same trzy ikony sterują tylko listą pod sobą.
-  Widget _controlsFor(_FlowViewState view, Map<int, DayCashflow> calendar) =>
-      FlowViewControls(
-        sort: view.sort,
-        grouping: view.grouping,
-        spendingCollapsed: view.spendingCollapsed,
-        onSortChanged: (v) => setState(() => view.sort = v),
-        onGroupingChanged: (v) => setState(() => view.grouping = v),
-        // Bez czego zwijać nie ma przełącznika (patrz `spendingItemCount`).
-        onSpendingCollapsedChanged: spendingItemCount(calendar) > 1
-            ? (v) => setState(() => view.spendingCollapsed = v)
-            : null,
-      );
+  Widget _controlsFor(_FlowViewState view, Map<int, DayCashflow> calendar) {
+    final storage = context.read<StorageService>();
+    return FlowViewControls(
+      sort: view.sort,
+      grouping: view.grouping,
+      spendingCollapsed: view.spendingCollapsed,
+      onSortChanged: (v) {
+        setState(() => view.sort = v);
+        storage.setFlowSort(view.section, v.name);
+      },
+      onGroupingChanged: (v) {
+        setState(() => view.grouping = v);
+        storage.setFlowGrouping(view.section, v.name);
+      },
+      // Bez czego zwijać nie ma przełącznika (patrz `spendingItemCount`).
+      onSpendingCollapsedChanged: spendingItemCount(calendar) > 1
+          ? (v) {
+              setState(() => view.spendingCollapsed = v);
+              storage.setFlowSpendingCollapsed(view.section, v);
+            }
+          : null,
+    );
+  }
 
   void _toggleMonthGroup() {
     setState(() => _monthGroupCompact = !_monthGroupCompact);
