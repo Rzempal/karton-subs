@@ -1,10 +1,10 @@
 {
-  "releaseNotes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace",
-  "versionCode": 2026080804,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080804",
-  "version": "0.22.26080804",
-  "releaseDate": "2026-08-08T23:21:01Z",
+  "releaseDate": "2026-08-09T10:23:03Z",
   "changelog": [
+    {
+      "version": "0.23.26080900",
+      "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie"
+    },
     {
       "version": "0.22.26080804",
       "notes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace"
@@ -40,10 +40,10 @@
     {
       "version": "0.21.26080210",
       "notes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)"
-    },
-    {
-      "version": "0.20.26080209",
-      "notes": "- zaznaczanie wielu pozycji takze w Wydatkach i Wplywach\n- akcje zbiorcze tam: kategoria, metoda platnosci, wstrzymaj/wznow, usun"
     }
-  ]
+  ],
+  "version": "0.23.26080900",
+  "releaseNotes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie",
+  "versionCode": 2026080900,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080900"
 }
