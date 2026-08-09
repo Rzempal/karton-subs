@@ -11,7 +11,7 @@ import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import '../services/analytics_service.dart' show MonthlyDataPoint;
-import '../services/budget_service.dart' show ExpenseView;
+import '../services/budget_service.dart' show DayCashflow, ExpenseView;
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_breakdown_chart.dart';
@@ -22,6 +22,15 @@ import '../widgets/scope_swipe_area.dart';
 import '../widgets/spending_chart.dart';
 import '../widgets/sync_refresh.dart';
 import '../widgets/subscription_stats_view.dart' show SubscriptionStatsView;
+
+/// Sortowanie, grupowanie i zwijanie JEDNEJ sekcji miesiąca. Trzy ustawienia
+/// razem, bo razem stoją w nagłówku sekcji i razem opisują „jak patrzę na tę
+/// listę" — rozdzielanie ich na trzy pola po dwa razy tylko by je rozjeżdżało.
+class _FlowViewState {
+  MonthFlowSort sort = MonthFlowSort.byDate;
+  MonthFlowGrouping grouping = MonthFlowGrouping.none;
+  bool spendingCollapsed = false;
+}
 
 /// Dashboard — pełny obraz finansów: budżet domowy razem z subskrypcjami.
 class DashboardScreen extends StatefulWidget {
@@ -46,15 +55,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   late bool _annualCostsCompact;
   late bool _monthBalanceCompact;
 
-  /// Sortowanie i grupowanie sekcji miesiąca („Płatności", „Podsumowanie") —
-  /// jak w Budżecie: stan widoku, nietrwały.
-  MonthFlowSort _flowSort = MonthFlowSort.byDate;
-  MonthFlowGrouping _flowGrouping = MonthFlowGrouping.none;
-
-  /// Czy wydatki bieżące są zwinięte do jednego wiersza z sumą — wspólne dla
-  /// „Płatności" i „Podsumowania", jak sortowanie i grupowanie. Też nietrwałe:
-  /// to sposób patrzenia na konkretny miesiąc, a nie ustawienie aplikacji.
-  bool _spendingCollapsed = false;
+  /// Ustawienia widoku sekcji miesiąca — **osobne dla każdej sekcji**.
+  /// „Płatności" to lista do odhaczenia, więc chce się ją mieć po dacie;
+  /// „Podsumowanie" odpowiada na „co zjadło miesiąc", więc częściej po kwocie.
+  /// Wspólny stan zmuszał do przełączania w tę i z powrotem.
+  /// Nietrwałe, jak w Budżecie: to sposób patrzenia na konkretny miesiąc.
+  final _paymentsView = _FlowViewState();
+  final _summaryView = _FlowViewState();
 
   /// Ujęcie obu wykresów „Planu" — osobno dla trendu i kategorii (ADR-028),
   /// stan trwały. Podsumowanie roczne ma własne (ADR-029).
@@ -99,6 +106,21 @@ class _DashboardScreenState extends State<DashboardScreen>
     _monthGroupCompact = storage.getPlanMonthGroupCompact();
     _statsGroupCompact = storage.getPlanStatsGroupCompact();
   }
+
+  /// Kontrolki widoku dla jednej sekcji miesiąca. Każda sekcja dostaje własny
+  /// [_FlowViewState], więc te same trzy ikony sterują tylko listą pod sobą.
+  Widget _controlsFor(_FlowViewState view, Map<int, DayCashflow> calendar) =>
+      FlowViewControls(
+        sort: view.sort,
+        grouping: view.grouping,
+        spendingCollapsed: view.spendingCollapsed,
+        onSortChanged: (v) => setState(() => view.sort = v),
+        onGroupingChanged: (v) => setState(() => view.grouping = v),
+        // Bez czego zwijać nie ma przełącznika (patrz `spendingItemCount`).
+        onSpendingCollapsedChanged: spendingItemCount(calendar) > 1
+            ? (v) => setState(() => view.spendingCollapsed = v)
+            : null,
+      );
 
   void _toggleMonthGroup() {
     setState(() => _monthGroupCompact = !_monthGroupCompact);
@@ -614,23 +636,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                             onToggle: budget.togglePaymentDone,
                             onSetAll: (items, done) =>
                                 budget.setPaymentsDone(items, done),
-                            sort: _flowSort,
-                            grouping: _flowGrouping,
-                            spendingCollapsed: _spendingCollapsed,
-                            viewControls: FlowViewControls(
-                              sort: _flowSort,
-                              grouping: _flowGrouping,
-                              onSortChanged: (v) =>
-                                  setState(() => _flowSort = v),
-                              onGroupingChanged: (v) =>
-                                  setState(() => _flowGrouping = v),
-                              spendingCollapsed: _spendingCollapsed,
-                              onSpendingCollapsedChanged:
-                                  spendingItemCount(calendar) > 1
-                                  ? (v) =>
-                                        setState(() => _spendingCollapsed = v)
-                                  : null,
-                            ),
+                            sort: _paymentsView.sort,
+                            grouping: _paymentsView.grouping,
+                            spendingCollapsed: _paymentsView.spendingCollapsed,
+                            viewControls: _controlsFor(_paymentsView, calendar),
                           ),
                         ],
                         // Karta „Bieżące miesiąca" zniknęła: te same wydatki bieżące
@@ -644,23 +653,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                             currency: currency,
                             compact: _monthSummaryCompact,
                             onToggleCompact: _toggleMonthSummary,
-                            sort: _flowSort,
-                            grouping: _flowGrouping,
-                            spendingCollapsed: _spendingCollapsed,
-                            viewControls: FlowViewControls(
-                              sort: _flowSort,
-                              grouping: _flowGrouping,
-                              onSortChanged: (v) =>
-                                  setState(() => _flowSort = v),
-                              onGroupingChanged: (v) =>
-                                  setState(() => _flowGrouping = v),
-                              spendingCollapsed: _spendingCollapsed,
-                              onSpendingCollapsedChanged:
-                                  spendingItemCount(calendar) > 1
-                                  ? (v) =>
-                                        setState(() => _spendingCollapsed = v)
-                                  : null,
-                            ),
+                            sort: _summaryView.sort,
+                            grouping: _summaryView.grouping,
+                            spendingCollapsed: _summaryView.spendingCollapsed,
+                            viewControls: _controlsFor(_summaryView, calendar),
                           ),
                         ],
                       ],

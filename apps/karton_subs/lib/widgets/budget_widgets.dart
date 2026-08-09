@@ -1306,7 +1306,16 @@ class _BalanceBreakdownSheet extends StatelessWidget {
 
 /// Sortowanie pozycji w sekcjach miesiąca („Płatności", „Podsumowanie miesiąca").
 /// Przełącznik siedzi w prawym górnym rogu Dashboardu i rządzi obiema sekcjami.
-enum MonthFlowSort { byDate, byName }
+enum MonthFlowSort {
+  /// Chronologicznie — domyślne, bo miesiąc czyta się dzień po dniu.
+  byDate,
+
+  /// A→Z po nazwie — do szukania konkretnej pozycji.
+  byName,
+
+  /// Od największej kwoty — do pytania „co zjadło ten miesiąc".
+  amountDesc,
+}
 
 /// Grupowanie pozycji po typie głównym (bieżące / subskrypcje / budżet).
 /// Działa jak „warstwy" w Budżecie: nie zastępuje istniejącego podziału sekcji,
@@ -1421,13 +1430,20 @@ class MonthSummarySection extends StatelessWidget {
       }
     }
     if (incomes.isEmpty && expenses.isEmpty) return const SizedBox.shrink();
-    if (sort == MonthFlowSort.byName) {
-      int byName(
-        ({int day, CalendarItem item}) a,
-        ({int day, CalendarItem item}) b,
-      ) => a.item.name.toLowerCase().compareTo(b.item.name.toLowerCase());
-      incomes.sort(byName);
-      expenses.sort(byName);
+    // Wpływy i wydatki sortujemy tą samą regułą, ale osobno — to dwie listy,
+    // a nie jedna przecięta nagłówkiem. `null` = zostaw kolejność dni.
+    final Comparator<({int day, CalendarItem item})>? cmp = switch (sort) {
+      MonthFlowSort.byDate => null,
+      MonthFlowSort.byName => (a, b) => a.item.name.toLowerCase().compareTo(
+        b.item.name.toLowerCase(),
+      ),
+      MonthFlowSort.amountDesc => (a, b) => b.item.amount.compareTo(
+        a.item.amount,
+      ),
+    };
+    if (cmp != null) {
+      incomes.sort(cmp);
+      expenses.sort(cmp);
     }
 
     final incomeTotal = incomes.fold(0.0, (s, r) => s + r.item.amount);
@@ -1721,8 +1737,15 @@ class MonthPaymentsSection extends StatelessWidget {
         );
       }
     }
-    if (sort == MonthFlowSort.byName) {
-      out.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    switch (sort) {
+      case MonthFlowSort.byDate:
+        break; // kolejność dni z kalendarza
+      case MonthFlowSort.byName:
+        out.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+      case MonthFlowSort.amountDesc:
+        out.sort((a, b) => b.amount.compareTo(a.amount));
     }
     return out;
   }
