@@ -1,9 +1,13 @@
 {
-  "releaseDate": "2026-08-09T10:26:53Z",
-  "releaseNotes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej",
-  "version": "0.23.26080900",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080900",
+  "versionCode": 2026080901,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080901",
+  "version": "0.24.26080901",
+  "releaseDate": "2026-08-09T23:01:59Z",
   "changelog": [
+    {
+      "version": "0.24.26080901",
+      "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie\n- Ustawienia widoku sa zapamietywane i przezywaja wyjscie z zakladki"
+    },
     {
       "version": "0.23.26080900",
       "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej"
@@ -39,11 +43,7 @@
     {
       "version": "0.18.26080103",
       "notes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca"
-    },
-    {
-      "version": "0.17.26080102",
-      "notes": "- Subskrypcje sa teraz sekcja Wydatkow — koniec osobnej zakladki (5 zakladek zamiast 6)\n- Sekcje listy zwijane tapnieciem w naglowek; suma sekcji zostaje widoczna\n- Pokaz ukryte przy filtrze lat odslania wstrzymane pozycje i anulowane subskrypcje\n- Planner ma wlasny ekran — wejscie z Rachunkow i z Wydatkow\n- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- Czytelne ikony paska stanu w jasnym motywie"
     }
   ],
-  "versionCode": 2026080900
+  "releaseNotes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie\n- Ustawienia widoku sa zapamietywane i przezywaja wyjscie z zakladki"
 }
