@@ -1,7 +1,11 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080901",
-  "releaseNotes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080902",
+  "releaseDate": "2026-08-09T22:58:42Z",
   "changelog": [
+    {
+      "version": "0.23.26080902",
+      "notes": "- Sortowanie, grupowanie i zwijanie w Bilansie miesiaca sa zapamietywane — osobno dla Platnosci i dla Podsumowania"
+    },
     {
       "version": "0.23.26080901",
       "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie"
@@ -37,13 +41,9 @@
     {
       "version": "0.21.26080212",
       "notes": "- wydanie testowe: sprawdzenie kanalu DEV w Obtainium (pre-release)\n- bez zmian w aplikacji wzgledem 0.21.26080211"
-    },
-    {
-      "version": "0.21.26080211",
-      "notes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)"
     }
   ],
-  "version": "0.23.26080901",
-  "releaseDate": "2026-08-09T22:36:08Z",
-  "versionCode": 2026080901
+  "version": "0.23.26080902",
+  "releaseNotes": "- Sortowanie, grupowanie i zwijanie w Bilansie miesiaca sa zapamietywane — osobno dla Platnosci i dla Podsumowania",
+  "versionCode": 2026080902
 }
