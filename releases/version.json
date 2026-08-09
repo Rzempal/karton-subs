@@ -1,6 +1,13 @@
 {
-  "versionCode": 2026080801,
+  "releaseDate": "2026-08-09T10:26:53Z",
+  "releaseNotes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej",
+  "version": "0.23.26080900",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080900",
   "changelog": [
+    {
+      "version": "0.23.26080900",
+      "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie\n- Import DOKLADA pozycje z arkusza; nie zastepuje kopii zapasowej"
+    },
     {
       "version": "0.23.26080801",
       "notes": "- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca, a poza tym licznik korekt\n- W Bilansie miesiaca mozna zwinac liste biezacych do jednego wiersza z suma (Platnosci i Podsumowanie miesiaca)\n- W Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
@@ -36,14 +43,7 @@
     {
       "version": "0.17.26080102",
       "notes": "- Subskrypcje sa teraz sekcja Wydatkow — koniec osobnej zakladki (5 zakladek zamiast 6)\n- Sekcje listy zwijane tapnieciem w naglowek; suma sekcji zostaje widoczna\n- Pokaz ukryte przy filtrze lat odslania wstrzymane pozycje i anulowane subskrypcje\n- Planner ma wlasny ekran — wejscie z Rachunkow i z Wydatkow\n- 14 nowych ikon kategorii (ubrania, transport, dom, sport, podroze)\n- Czytelne ikony paska stanu w jasnym motywie"
-    },
-    {
-      "version": "0.16.26080101",
-      "notes": "- Smuklejsze listy: pozycje bez ramek, rozdzielone separatorem, w dwoch liniach\n- Ikona kategorii przy pozycji, kwota przy nazwie, opis na pelnej szerokosci\n- Jeden format daty w calej liscie (RRRR-MM-DD)\n- Sortowanie i grupowanie w paskach filtrow zamiast osobnej linii ikon\n- Formularz pokazuje tylko typy z tej sekcji; filtr kategorii tylko tam, gdzie sa kategorie"
     }
   ],
-  "releaseNotes": "- Ikona pozycji bez kategorii pokazuje, do ktorej zakladki nalezy; subskrypcje maja wlasna ikone\n- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca, a poza tym licznik korekt\n- W Bilansie miesiaca mozna zwinac liste biezacych do jednego wiersza z suma (Platnosci i Podsumowanie miesiaca)\n- W Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie",
-  "version": "0.23.26080801",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080801",
-  "releaseDate": "2026-08-08T23:44:15Z"
+  "versionCode": 2026080900
 }
