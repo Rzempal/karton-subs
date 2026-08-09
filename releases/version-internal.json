@@ -1,6 +1,11 @@
 {
-  "releaseDate": "2026-08-09T10:23:03Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080901",
+  "releaseNotes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie",
   "changelog": [
+    {
+      "version": "0.23.26080901",
+      "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie"
+    },
     {
       "version": "0.23.26080900",
       "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie"
@@ -36,14 +41,9 @@
     {
       "version": "0.21.26080211",
       "notes": "- wydanie przez ship.ps1 (kontrole, deploy, commit, push, GitHub Release)"
-    },
-    {
-      "version": "0.21.26080210",
-      "notes": "- test nowej numeracji wersji (0.21 bylo wczesniej niemozliwe do zbudowania)"
     }
   ],
-  "version": "0.23.26080900",
-  "releaseNotes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie",
-  "versionCode": 2026080900,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080900"
+  "version": "0.23.26080901",
+  "releaseDate": "2026-08-09T22:36:08Z",
+  "versionCode": 2026080901
 }
