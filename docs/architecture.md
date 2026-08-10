@@ -252,6 +252,7 @@ miesiaca (ten sam klucz co kalendarz) — bez recznego odhaczania.
 > | [ADR-011 Rachunki (realny log) + scalenie typow cyklicznych](adr/ADR-011-rachunki-realny-log-i-scalenie-typow-cyklicznych.md)
 > | [ADR-012 Koperta „Na rachunki" jako lista pozycji](adr/ADR-012-koperta-na-rachunki-lista-pozycji.md)
 > | [ADR-032 „Biezace" i „Cykliczne" zamiast „Rachunkow"](adr/ADR-032-biezace-i-cykliczne-zamiast-rachunkow.md)
+> | [ADR-033 Karta kredytowa: pozyczka i splata](adr/ADR-033-karta-kredytowa-pozyczka-i-splata.md)
 
 > **Uwaga do starszych ADR:** dokumenty ADR-008/011/012/018/019 uzywaja nazwy
 > „Rachunki" — to zapis historyczny, nie blad. Dzisiejsza nazwa tej sekcji to
@@ -306,6 +307,18 @@ tego podzialu.
 **Przelew do domowego** (`householdTransfer`): koszt w osobistym + lustrzany wplyw w
 domowym, spiete `linkId` (kaskada edycji/usuwania; lustro read-only). Patrz
 [ADR-006](adr/ADR-006-budzet-domowy-osobny-zbior.md).
+
+**Karta kredytowa (ADR-033):** metoda platnosci z flaga `isCreditCard` i liczba
+`graceDays`. Karta POZYCZA pieniadze, wiec operacja nia rodzi zestaw pozycji
+spietych `creditLinkId` (osobne pole, bo `linkId` laczy ROZNE zakresy, a te
+pozycje siedza w jednym):
+- **wplyw z karty** -> wplyw + splata za `graceDays` dni (netto zero),
+- **zakup karta** -> zakup + lustrzany wplyw „Karta: …" tego samego dnia +
+  splata za `graceDays` dni. Bez tego wplywu ten sam zakup obciazalby budzet
+  DWA razy — raz jako zakup, raz jako splata.
+
+Automat obejmuje tylko `spending` i `oneTimeIncome`; cykliczne i raty wchodza do
+planu, wiec doklejanie do nich splaty rozjechaloby „zostaje/mies".
 
 **Planner w synchronizacji (ADR-022):** koperta „Na biezace wydatki" zakresu DOMOWEGO jedzie
 w tej samej paczce co pozycje — jako **sekcja opcjonalna przy tej samej wersji paczki**,

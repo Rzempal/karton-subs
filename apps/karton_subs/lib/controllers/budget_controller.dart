@@ -75,10 +75,10 @@ class BudgetController extends ChangeNotifier {
 
   /// Wymuszony zakres dla trybu (null dla „oba" — zakres wybiera użytkownik).
   BudgetScope? _scopeForMode(BudgetMode m) => switch (m) {
-        BudgetMode.personalOnly => BudgetScope.personal,
-        BudgetMode.householdOnly => BudgetScope.household,
-        BudgetMode.both => null,
-      };
+    BudgetMode.personalOnly => BudgetScope.personal,
+    BudgetMode.householdOnly => BudgetScope.household,
+    BudgetMode.both => null,
+  };
 
   Future<void> setBudgetMode(BudgetMode m) async {
     if (_mode == m) return;
@@ -172,9 +172,7 @@ class BudgetController extends ChangeNotifier {
   /// u góry (ekran „Bieżące"). Obejmuje wydatki jednorazowe: po scaleniu
   /// typów (ADR-018) to jeden byt — datowany wydatek poza planem.
   List<BudgetEntry> get spendingEntries {
-    final list = all
-        .where((e) => e.type == BudgetEntryType.spending)
-        .toList();
+    final list = all.where((e) => e.type == BudgetEntryType.spending).toList();
     list.sort(
       (a, b) => (b.startDate ?? b.dataDodania).compareTo(
         a.startDate ?? a.dataDodania,
@@ -268,9 +266,7 @@ class BudgetController extends ChangeNotifier {
 
   Future<void> updateSpendingAllocationItem(SpendingAllocationItem item) async {
     final stamped = item.copyWith(updatedAt: DateTime.now());
-    final items = _allocRaw
-        .map((e) => e.id == item.id ? stamped : e)
-        .toList();
+    final items = _allocRaw.map((e) => e.id == item.id ? stamped : e).toList();
     await _saveAllocation(items);
   }
 
@@ -279,12 +275,12 @@ class BudgetController extends ChangeNotifier {
   Future<void> removeSpendingAllocationItem(String id) async {
     final items = isHousehold
         ? _allocRaw
-            .map(
-              (e) => e.id == id
-                  ? e.copyWith(deleted: true, updatedAt: DateTime.now())
-                  : e,
-            )
-            .toList()
+              .map(
+                (e) => e.id == id
+                    ? e.copyWith(deleted: true, updatedAt: DateTime.now())
+                    : e,
+              )
+              .toList()
         : _allocRaw.where((e) => e.id != id).toList();
     await _saveAllocation(items);
   }
@@ -360,9 +356,8 @@ class BudgetController extends ChangeNotifier {
           scope,
           items
               .map(
-                (i) => i.categoryId == fromId
-                    ? i.copyWith(categoryId: toId)
-                    : i,
+                (i) =>
+                    i.categoryId == fromId ? i.copyWith(categoryId: toId) : i,
               )
               .toList(),
         );
@@ -487,13 +482,14 @@ class BudgetController extends ChangeNotifier {
         target: _target,
       );
 
-  List<MonthlyDataPoint> spendingTrend(ExpenseView view) => _budget.spendingTrend(
-    all,
-    view: view,
-    spendingAllocation: spendingAllocation ?? 0,
-    fromMonth: trackingStartMonth,
-    target: _target,
-  );
+  List<MonthlyDataPoint> spendingTrend(ExpenseView view) =>
+      _budget.spendingTrend(
+        all,
+        view: view,
+        spendingAllocation: spendingAllocation ?? 0,
+        fromMonth: trackingStartMonth,
+        target: _target,
+      );
 
   /// Początek ewidencji aktywnego zakresu („YYYY-MM") — `null` = cały rok.
   String? get trackingStartMonth => _storage.getTrackingStartMonth(_scope);
@@ -671,6 +667,11 @@ class BudgetController extends ChangeNotifier {
       return personal;
     }
 
+    // Karta kredytowa (ADR-033) — pozycje spięte `creditLinkId` powstają razem
+    // ze źródłem, więc identyfikator musi być znany PRZED zapisem.
+    final card = _creditCardFor(paymentMethod, type);
+    final creditLinkId = card != null ? _uuid.v4() : null;
+
     final entry = BudgetEntry(
       id: _uuid.v4(),
       name: name,
@@ -688,6 +689,7 @@ class BudgetController extends ChangeNotifier {
       startDate: startDate,
       note: note,
       dataDodania: now,
+      creditLinkId: creditLinkId,
     );
     await add(entry);
     // Wydatek z datą dzisiejszą lub wcześniejszą to log JUŻ zapłaconej
@@ -696,7 +698,8 @@ class BudgetController extends ChangeNotifier {
     // zapłaconego (ADR-018). Klucz musi zgadzać się z kalendarzem: sourceId=id,
     // data = dzień płatności (startDate; fallback pierwszy dzień miesiąca).
     if (type == BudgetEntryType.spending) {
-      final payDate = startDate ??
+      final payDate =
+          startDate ??
           (month != null ? DateTime.tryParse('$month-01') : null) ??
           now;
       final today = DateTime(now.year, now.month, now.day);
@@ -704,8 +707,100 @@ class BudgetController extends ChangeNotifier {
         await _storage.setPaymentDone(_paymentKey(entry.id, payDate), true);
       }
     }
+    if (card != null) {
+      await _createCreditEntries(entry, card, creditLinkId!, now);
+    }
     return entry;
   }
+
+  // ── Karta kredytowa (ADR-033) ──────────────────────────────────────────────
+
+  /// Karta z gotowymi warunkami dla podanej metody — `null`, gdy metoda nie
+  /// jest kartą, nie ma liczby dni albo typ pozycji nie pożycza pieniędzy.
+  ///
+  /// Automat obejmuje TYLKO wydatek bieżący i wpływ jednorazowy: koszt cykliczny
+  /// czy rata rozkładają się na miesiące i doklejanie do nich spłaty rozjechałoby
+  /// plan („zostaje/mies"), a nie sam bilans miesiąca.
+  PaymentMethod? _creditCardFor(String? methodName, BudgetEntryType type) {
+    if (methodName == null) return null;
+    if (type != BudgetEntryType.spending &&
+        type != BudgetEntryType.oneTimeIncome) {
+      return null;
+    }
+    for (final pm in _storage.getPaymentMethods()) {
+      if (pm.name == methodName) return pm.hasCreditTerms ? pm : null;
+    }
+    return null;
+  }
+
+  /// Dokłada pozycje, które sprawiają, że karta liczy się poprawnie.
+  ///
+  /// **Wpływ z karty** (pożyczka gotówkowa): dochodzi sama spłata za `graceDays`
+  /// dni. Netto zero — wziąłeś i oddajesz.
+  ///
+  /// **Zakup kartą**: dochodzi lustrzany WPŁYW tego samego dnia (karta pożycza
+  /// pieniądze) oraz spłata za `graceDays` dni. Bez tego wpływu ten sam zakup
+  /// obciążyłby budżet DWA razy — raz jako zakup, raz jako spłata. Z nim miesiąc
+  /// zakupu wychodzi na zero, a koszt ląduje tam, gdzie pieniądze naprawdę
+  /// wychodzą z konta.
+  Future<void> _createCreditEntries(
+    BudgetEntry source,
+    PaymentMethod card,
+    String creditLinkId,
+    DateTime now,
+  ) async {
+    final buyDate =
+        source.startDate ??
+        (source.month != null
+            ? DateTime.tryParse('${source.month}-01')
+            : null) ??
+        now;
+    final repayDate = buyDate.add(Duration(days: card.graceDays!));
+
+    if (source.type == BudgetEntryType.spending) {
+      await _saveStamped(
+        BudgetEntry(
+          id: _uuid.v4(),
+          name: '${card.name}: ${source.name}',
+          type: BudgetEntryType.oneTimeIncome,
+          amount: source.amount,
+          currency: source.currency,
+          month: BudgetEntry.monthKeyOf(buyDate),
+          startDate: buyDate,
+          note: 'Karta pożycza na ten zakup — spłata ${_dayLabel(repayDate)}',
+          dataDodania: now,
+          creditLinkId: creditLinkId,
+        ),
+        _scope,
+      );
+    }
+
+    await _saveStamped(
+      BudgetEntry(
+        id: _uuid.v4(),
+        name: 'Spłata: ${source.name}',
+        type: BudgetEntryType.spending,
+        amount: source.amount,
+        currency: source.currency,
+        month: BudgetEntry.monthKeyOf(repayDate),
+        startDate: repayDate,
+        categoryId: source.categoryId,
+        note: '${card.name} — ${card.graceDays} dni od ${_dayLabel(buyDate)}',
+        dataDodania: now,
+        creditLinkId: creditLinkId,
+      ),
+      _scope,
+    );
+
+    _log.info(
+      'Karta ${card.name}: pozycje splaty (link $creditLinkId) dla ${source.name}',
+    );
+    _notifyMutation(touchedHousehold: _scope == BudgetScope.household);
+  }
+
+  static String _dayLabel(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.'
+      '${d.month.toString().padLeft(2, '0')}.${d.year}';
 
   Future<void> update(BudgetEntry entry) async {
     await _saveStamped(entry, _scope);
@@ -732,12 +827,33 @@ class BudgetController extends ChangeNotifier {
         );
       }
     }
+    // Kaskada karty (ADR-033): zmiana kwoty ŹRÓDŁA musi przejść na pożyczkę
+    // i spłatę. Bez tego zakup na 200 poprawiony na 300 zostawiłby pożyczkę
+    // 200 i spłatę 200 — miesiąc zakupu przestałby wychodzić na zero.
+    //
+    // Daty NIE przeliczamy: nie wiadomo, czy zmiana dnia zakupu ma przesunąć
+    // termin spłaty (bank liczy od rozliczenia cyklu, nie od transakcji).
+    // Zgadywanie byłoby gorsze niż zostawienie terminu, który użytkownik widzi
+    // i może poprawić ręcznie.
+    if (entry.creditLinkId != null && !entry.deleted) {
+      await _cascadeCreditAmount(entry);
+    }
     _log.info('Updated budget entry ($_scope): ${entry.name}');
     _notifyMutation(
       touchedHousehold:
           _scope == BudgetScope.household ||
           entry.type == BudgetEntryType.householdTransfer,
     );
+  }
+
+  /// Wyrównuje kwoty pozostałych pozycji tej samej operacji kartą.
+  Future<void> _cascadeCreditAmount(BudgetEntry source) async {
+    for (final e in _storage.getBudgetEntries(_scope)) {
+      if (e.id == source.id || e.deleted) continue;
+      if (e.creditLinkId != source.creditLinkId) continue;
+      if (e.amount == source.amount) continue;
+      await _saveStamped(e.copyWith(amount: source.amount), _scope);
+    }
   }
 
   Future<void> delete(String id) async {
@@ -761,6 +877,18 @@ class BudgetController extends ChangeNotifier {
       final partner = _findByLinkId(entry.linkId!, other);
       if (partner != null) {
         await _removeOrTombstone(partner, other);
+      }
+    }
+    // Kaskada karty (ADR-033): pozycje jednej operacji leżą w TYM SAMYM boxie.
+    // Zostawienie choćby jednej rozjechałoby bilans — sama spłata bez zakupu to
+    // wydatek znikąd, sam wpływ z karty to pieniądze, których nikt nie oddaje.
+    final creditLink = entry.creditLinkId;
+    if (creditLink != null) {
+      for (final e in _storage.getBudgetEntries(_scope)) {
+        if (e.id == entry.id || e.deleted) continue;
+        if (e.creditLinkId == creditLink) {
+          await _removeOrTombstone(e, _scope);
+        }
       }
     }
     return _scope == BudgetScope.household || entry.linkId != null;

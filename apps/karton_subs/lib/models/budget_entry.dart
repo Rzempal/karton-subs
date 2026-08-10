@@ -48,7 +48,7 @@ enum BudgetEntryType {
 const Map<BudgetEntryType, String> _typeWireNames = {
   BudgetEntryType.income: 'income',
   BudgetEntryType.recurringCost: 'recurringCost',
-  // Wartość z czasów, gdy sekcja nazywała się „Bieżące" (dziś „Bieżące").
+  // Wartość z czasów, gdy sekcja nazywała się „Rachunki" (dziś „Bieżące").
   BudgetEntryType.spending: 'billPayment',
   BudgetEntryType.oneTimeIncome: 'oneTimeIncome',
   BudgetEntryType.householdTransfer: 'householdTransfer',
@@ -95,20 +95,19 @@ class MonthAmountOverride {
       );
 
   Map<String, dynamic> toJson() => {
-        if (amount != null) 'amount': amount,
-        if (date != null) 'date': date!.toIso8601String(),
-      };
+    if (amount != null) 'amount': amount,
+    if (date != null) 'date': date!.toIso8601String(),
+  };
 
   MonthAmountOverride copyWith({
     double? amount,
     bool clearAmount = false,
     DateTime? date,
     bool clearDate = false,
-  }) =>
-      MonthAmountOverride(
-        amount: clearAmount ? null : (amount ?? this.amount),
-        date: clearDate ? null : (date ?? this.date),
-      );
+  }) => MonthAmountOverride(
+    amount: clearAmount ? null : (amount ?? this.amount),
+    date: clearDate ? null : (date ?? this.date),
+  );
 }
 
 /// Pozycja budżetu domowego.
@@ -167,6 +166,15 @@ class BudgetEntry {
   /// Ustawione na obu pozycjach (ten sam identyfikator).
   final String? linkId;
 
+  /// Spina pozycje jednej operacji kartą kredytową (ADR-033): źródło (zakup
+  /// albo pożyczka), lustrzany wpływ z karty i spłatę po okresie bezodsetkowym.
+  ///
+  /// **Osobne pole, a nie [linkId]**, bo to inna relacja: [linkId] łączy dwa
+  /// RÓŻNE zakresy (osobisty ↔ domowy), a te pozycje siedzą w JEDNYM. Kaskady
+  /// szukają partnera po przeciwnej stronie, więc wspólne pole gubiłoby jedną
+  /// z dwóch relacji.
+  final String? creditLinkId;
+
   /// Znacznik ostatniej zmiany pozycji — podstawa scalania przy synchronizacji
   /// budżetu domowego (Last-Write-Wins per pozycja, ADR-009). `null` dla starych
   /// danych sprzed synchronizacji — patrz [effectiveUpdatedAt].
@@ -196,6 +204,7 @@ class BudgetEntry {
     this.note,
     required this.dataDodania,
     this.linkId,
+    this.creditLinkId,
     this.updatedAt,
     this.deleted = false,
   });
@@ -260,8 +269,7 @@ class BudgetEntry {
   bool get isIncome =>
       type == BudgetEntryType.income || type == BudgetEntryType.oneTimeIncome;
   bool get isOneTime =>
-      type == BudgetEntryType.oneTimeIncome ||
-      type == BudgetEntryType.spending;
+      type == BudgetEntryType.oneTimeIncome || type == BudgetEntryType.spending;
   bool get isExpense => !isIncome;
 
   /// Kwota znormalizowana do miesięcznej (bez znaku).
@@ -323,8 +331,10 @@ class BudgetEntry {
           .toList(),
       month: json['month'] as String?,
       monthOverrides: (json['monthOverrides'] as Map<String, dynamic>?)?.map(
-        (k, v) =>
-            MapEntry(k, MonthAmountOverride.fromJson(v as Map<String, dynamic>)),
+        (k, v) => MapEntry(
+          k,
+          MonthAmountOverride.fromJson(v as Map<String, dynamic>),
+        ),
       ),
       categoryId: json['categoryId'] as String?,
       paymentMethod: json['paymentMethod'] as String?,
@@ -336,6 +346,7 @@ class BudgetEntry {
       note: json['note'] as String?,
       dataDodania: DateTime.parse(json['dataDodania'] as String),
       linkId: json['linkId'] as String?,
+      creditLinkId: json['creditLinkId'] as String?,
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
@@ -344,30 +355,31 @@ class BudgetEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'type': type.wireName,
-        'amount': amount,
-        'currency': currency.name,
-        'cycle': cycle.name,
-        if (customCycleDays != null) 'customCycleDays': customCycleDays,
-        if (cycleMonths != null) 'cycleMonths': cycleMonths,
-        if (month != null) 'month': month,
-        if (monthOverrides != null && monthOverrides!.isNotEmpty)
-          'monthOverrides': {
-            for (final e in monthOverrides!.entries) e.key: e.value.toJson()
-          },
-        if (categoryId != null) 'categoryId': categoryId,
-        if (paymentMethod != null) 'paymentMethod': paymentMethod,
-        if (installmentCount != null) 'installmentCount': installmentCount,
-        if (startDate != null) 'startDate': startDate!.toIso8601String(),
-        'isActive': isActive,
-        if (note != null) 'note': note,
-        'dataDodania': dataDodania.toIso8601String(),
-        if (linkId != null) 'linkId': linkId,
-        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
-        if (deleted) 'deleted': true,
-      };
+    'id': id,
+    'name': name,
+    'type': type.wireName,
+    'amount': amount,
+    'currency': currency.name,
+    'cycle': cycle.name,
+    if (customCycleDays != null) 'customCycleDays': customCycleDays,
+    if (cycleMonths != null) 'cycleMonths': cycleMonths,
+    if (month != null) 'month': month,
+    if (monthOverrides != null && monthOverrides!.isNotEmpty)
+      'monthOverrides': {
+        for (final e in monthOverrides!.entries) e.key: e.value.toJson(),
+      },
+    if (categoryId != null) 'categoryId': categoryId,
+    if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    if (installmentCount != null) 'installmentCount': installmentCount,
+    if (startDate != null) 'startDate': startDate!.toIso8601String(),
+    'isActive': isActive,
+    if (note != null) 'note': note,
+    'dataDodania': dataDodania.toIso8601String(),
+    if (linkId != null) 'linkId': linkId,
+    if (creditLinkId != null) 'creditLinkId': creditLinkId,
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+    if (deleted) 'deleted': true,
+  };
 
   BudgetEntry copyWith({
     String? id,
@@ -398,6 +410,8 @@ class BudgetEntry {
     DateTime? dataDodania,
     String? linkId,
     bool clearLinkId = false,
+    String? creditLinkId,
+    bool clearCreditLinkId = false,
     DateTime? updatedAt,
     bool clearUpdatedAt = false,
     bool? deleted,
@@ -412,15 +426,15 @@ class BudgetEntry {
       customCycleDays: clearCustomCycleDays
           ? null
           : (customCycleDays ?? this.customCycleDays),
-      cycleMonths:
-          clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
+      cycleMonths: clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
       month: clearMonth ? null : (month ?? this.month),
       monthOverrides: clearMonthOverrides
           ? null
           : (monthOverrides ?? this.monthOverrides),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
-      paymentMethod:
-          clearPaymentMethod ? null : (paymentMethod ?? this.paymentMethod),
+      paymentMethod: clearPaymentMethod
+          ? null
+          : (paymentMethod ?? this.paymentMethod),
       installmentCount: clearInstallmentCount
           ? null
           : (installmentCount ?? this.installmentCount),
@@ -429,6 +443,9 @@ class BudgetEntry {
       note: clearNote ? null : (note ?? this.note),
       dataDodania: dataDodania ?? this.dataDodania,
       linkId: clearLinkId ? null : (linkId ?? this.linkId),
+      creditLinkId: clearCreditLinkId
+          ? null
+          : (creditLinkId ?? this.creditLinkId),
       updatedAt: clearUpdatedAt ? null : (updatedAt ?? this.updatedAt),
       deleted: deleted ?? this.deleted,
     );
