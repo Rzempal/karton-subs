@@ -1,5 +1,13 @@
 {
+  "releaseNotes": "- Naprawione skanowanie paragonow: po zmianie nazw przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Poprawki odczytu: stawka VAT nie jest brana za kwote, nazwa nie moze byc numerem ani etykieta dokumentu",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081003",
+  "version": "0.25.26081003",
+  "versionCode": 2026081003,
   "changelog": [
+    {
+      "version": "0.25.26081003",
+      "notes": "- Naprawione skanowanie paragonow: po zmianie nazw przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Poprawki odczytu: stawka VAT nie jest brana za kwote, nazwa nie moze byc numerem ani etykieta dokumentu"
+    },
     {
       "version": "0.25.26081002",
       "notes": "- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu (39 pkt, Nazwa na wyciagu, Identyfikator transakcji)\n- Przy zrzucie platnosci nazwa sklepu jest szukana takze ponizej kwoty, gdy nad nia stoja same etykiety"
@@ -35,15 +43,7 @@
     {
       "version": "0.22.26080802",
       "notes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia"
-    },
-    {
-      "version": "0.21.26080801",
-      "notes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081002",
-  "version": "0.25.26081002",
-  "releaseNotes": "- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu (39 pkt, Nazwa na wyciagu, Identyfikator transakcji)\n- Przy zrzucie platnosci nazwa sklepu jest szukana takze ponizej kwoty, gdy nad nia stoja same etykiety",
-  "versionCode": 2026081002,
-  "releaseDate": "2026-08-10T19:43:25Z"
+  "releaseDate": "2026-08-10T20:16:22Z"
 }
