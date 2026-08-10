@@ -1,9 +1,13 @@
 {
-  "versionCode": 2026080901,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026080901",
-  "version": "0.24.26080901",
-  "releaseDate": "2026-08-09T23:01:59Z",
+  "versionCode": 2026081000,
+  "releaseDate": "2026-08-10T18:08:41Z",
+  "version": "0.25.26081000",
+  "releaseNotes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE karty\n- Ikona metody platnosci jest teraz taka sama na wszystkich listach",
   "changelog": [
+    {
+      "version": "0.25.26081000",
+      "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE karty\n- Ikona metody platnosci jest teraz taka sama na wszystkich listach"
+    },
     {
       "version": "0.24.26080901",
       "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie\n- Ustawienia widoku sa zapamietywane i przezywaja wyjscie z zakladki"
@@ -39,11 +43,7 @@
     {
       "version": "0.19.26080200",
       "notes": "- Plan podzielony na grupy: Miesiac (Plan vs Realne, Kategorie) i Statystyki (trend, podsumowanie roczne)\n- wybor miesiaca i punkt startu ewidencji przeniesione do naglowkow grup\n- trend zaczyna sie od punktu startu i ma tryb Oba: realne i plan na jednym wykresie\n- smuklejsze karty Saldo i Koszty roczne\n- rachunki maja wlasna ikone na listach miesiaca"
-    },
-    {
-      "version": "0.18.26080103",
-      "notes": "- Wykresy w Planie maja przelacznik Plan / Realne\n- Nowe Podsumowanie roczne: ile z rocznego planu juz wydano, miesiac po miesiacu\n- Poczatek ewidencji — uczciwe porownanie, gdy budzet zaczal sie w polowie roku\n- Planner: Uzupelnij do pelnej kwoty (10 / 100 / 1000)\n- Predykcja vs rzeczywistosc nazywa sie teraz Plan vs Realne\n- Bilans miesiaca bez powtorzonej karty Rachunki miesiaca"
     }
   ],
-  "releaseNotes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie\n- Ustawienia widoku sa zapamietywane i przezywaja wyjscie z zakladki"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081000"
 }
