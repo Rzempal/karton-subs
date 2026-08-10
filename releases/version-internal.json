@@ -1,6 +1,10 @@
 {
   "changelog": [
     {
+      "version": "0.25.26081002",
+      "notes": "- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu (39 pkt, Nazwa na wyciagu, Identyfikator transakcji)\n- Przy zrzucie platnosci nazwa sklepu jest szukana takze ponizej kwoty, gdy nad nia stoja same etykiety"
+    },
+    {
       "version": "0.24.26081001",
       "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE: karta automatyczna splaca sie sama, manualna trafia na liste Platnosci\n- Ikona metody wszedzie ta sama: raczka, piorun, karta czerwona (splata reczna) i karta zolta (splata automatyczna)"
     },
@@ -35,15 +39,11 @@
     {
       "version": "0.21.26080801",
       "notes": "- Pozycja bez kategorii ma ikone swojej zakladki: paragon dla biezacych, powtarzalnosc dla cyklicznych i rat, strzalka w gore dla wplywow\n- Ta sama pozycja wyglada tak samo na liscie, w Platnosciach i w Podsumowaniu miesiaca\n- Przelew do domowego dostal wlasna ikone (strzalka w obie strony)\n- Menu Dodaj na Cyklicznych: Dodaj wydatek cykliczny zamiast Dodaj recznie"
-    },
-    {
-      "version": "0.21.26080800",
-      "notes": "- Zakladka Rachunki nazywa sie teraz Biezace, a Wydatki - Cykliczne\n- Koperta Plannera: Na biezace wydatki\n- Subskrypcje maja wlasna ikone (dawna przeszla do zakladki Cykliczne)\n- Eksport Excela pisze Wydatek biezacy; stare arkusze importuja sie bez zmian"
     }
   ],
-  "releaseDate": "2026-08-10T17:50:12Z",
-  "version": "0.24.26081001",
-  "releaseNotes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE: karta automatyczna splaca sie sama, manualna trafia na liste Platnosci\n- Ikona metody wszedzie ta sama: raczka, piorun, karta czerwona (splata reczna) i karta zolta (splata automatyczna)",
-  "versionCode": 2026081001,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081001"
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081002",
+  "version": "0.25.26081002",
+  "releaseNotes": "- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu (39 pkt, Nazwa na wyciagu, Identyfikator transakcji)\n- Przy zrzucie platnosci nazwa sklepu jest szukana takze ponizej kwoty, gdy nad nia stoja same etykiety",
+  "versionCode": 2026081002,
+  "releaseDate": "2026-08-10T19:43:25Z"
 }
