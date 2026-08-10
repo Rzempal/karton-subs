@@ -1,7 +1,13 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026080902",
-  "releaseDate": "2026-08-09T22:58:42Z",
+  "version": "0.24.26081000",
+  "releaseDate": "2026-08-10T17:22:01Z",
+  "releaseNotes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty — splata powstaje sama po okresie bezodsetkowym\n- Zakup karta tworzy dodatkowo lustrzany wplyw z karty, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Usuniecie dowolnej pozycji kasuje caly zestaw, zmiana kwoty przechodzi na pozostale",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081000",
   "changelog": [
+    {
+      "version": "0.24.26081000",
+      "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty — splata powstaje sama po okresie bezodsetkowym\n- Zakup karta tworzy dodatkowo lustrzany wplyw z karty, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Usuniecie dowolnej pozycji kasuje caly zestaw, zmiana kwoty przechodzi na pozostale"
+    },
     {
       "version": "0.23.26080902",
       "notes": "- Sortowanie, grupowanie i zwijanie w Bilansie miesiaca sa zapamietywane — osobno dla Platnosci i dla Podsumowania"
@@ -37,13 +43,7 @@
     {
       "version": "0.21.26080400",
       "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
-    },
-    {
-      "version": "0.21.26080212",
-      "notes": "- wydanie testowe: sprawdzenie kanalu DEV w Obtainium (pre-release)\n- bez zmian w aplikacji wzgledem 0.21.26080211"
     }
   ],
-  "version": "0.23.26080902",
-  "releaseNotes": "- Sortowanie, grupowanie i zwijanie w Bilansie miesiaca sa zapamietywane — osobno dla Platnosci i dla Podsumowania",
-  "versionCode": 2026080902
+  "versionCode": 2026081000
 }
