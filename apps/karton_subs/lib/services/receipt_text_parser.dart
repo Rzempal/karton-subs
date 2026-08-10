@@ -128,16 +128,32 @@ class ReceiptTextParser {
 
   /// Czy linia w ogóle może być nazwą sklepu.
   ///
-  /// Dwa warunki, oba z realnych wpadek: **dość liter** (żeby „39 pkt" nie
-  /// przeszło jako nazwa) i **przewaga liter nad cyframi** (żeby nie przeszedł
-  /// numer paragonu „000077 #003 023").
+  /// Trzy warunki, każdy z realnej wpadki:
+  ///   * **dość liter** — żeby „39 pkt" nie przeszło jako nazwa;
+  ///   * **przewaga liter nad cyframi** — żeby nie przeszedł numer paragonu
+  ///     „000077 #003 023";
+  ///   * **to nie zdanie** — zrzut płatności niesie cały akapit o karcie
+  ///     wirtualnej; ma mnóstwo liter, więc dwa pierwsze warunki go przepuszczą.
+  ///     Nazwa sklepu jest krótka i nie kończy się kropką.
   static bool _looksLikeMerchant(String line) {
     if (_notAName.hasMatch(line)) return false;
     final letters =
         RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]').allMatches(line).length;
     if (letters < 4) return false;
     final digits = RegExp(r'\d').allMatches(line).length;
-    return digits < letters;
+    if (digits >= letters) return false;
+    return !_looksLikeSentence(line);
+  }
+
+  /// Zdanie, a nie nazwa: kończy się kropką albo ma więcej niż sześć słów.
+  /// Najdłuższa realna nazwa w danych to „SMYK CH Europa Centralna" (4 słowa),
+  /// więc szóstka zostawia zapas, a akapit regulaminu odcina.
+  static bool _looksLikeSentence(String line) {
+    final trimmed = line.trim();
+    if (trimmed.endsWith('.') && !RegExp(r'\bo\.o\.$').hasMatch(trimmed)) {
+      return true;
+    }
+    return trimmed.split(RegExp(r'\s+')).length > 6;
   }
 
   /// Skrót nazwy: ucina hasło reklamowe w cudzysłowie i zbyt długie ogony.
@@ -269,13 +285,29 @@ class ReceiptTextParser {
 
   /// Sprzedawca: najbliższa linia NAD kwotą, pominąwszy pasek stanu telefonu
   /// (godzina, procent baterii, data) — on też trafia do OCR ze zrzutu ekranu.
+  ///
+  /// „Nad" liczy się w kolejności, w jakiej tekst oddał OCR, a ta NIE MUSI być
+  /// kolejnością na ekranie: rozpoznawanie grupuje tekst w bloki i potrafi
+  /// oddać blok „Nazwa na wyciągu / JMP S.A. BIEDRONKA" przed blokiem z kwotą.
+  /// Dlatego nie wystarczy „pierwsza linia z literami" — musi jeszcze przejść
+  /// [_looksLikeMerchant], które odrzuca etykiety dokumentu.
   static String? _merchantAbove(List<String> lines, int amountIndex) {
     final statusBar = RegExp(r'\d{1,2}:\d{2}|%|^\d{1,2}\.\d{2}$');
     for (var i = amountIndex - 1; i >= 0; i--) {
       final line = lines[i];
       if (statusBar.hasMatch(line)) continue;
-      if (RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]{3,}').firstMatch(line) == null) continue;
+      if (!_looksLikeMerchant(line)) continue;
       return _shorten(line);
+    }
+    // Etykiety zjadły wszystko nad kwotą — poszukajmy sprzedawcy PONIŻEJ.
+    // Zrzut płatności powtarza nazwę sklepu w „Nazwa na wyciągu", więc gdy
+    // bloki przyszły w odwrotnej kolejności, prawdziwa nazwa jest niżej.
+    // Ten sam filtr paska stanu: pod kwotą stoi data z godziną („czwartek,
+    // 6 sie o 18:23"), która ma dość liter, by udać nazwę.
+    for (var i = amountIndex + 1; i < lines.length; i++) {
+      final line = lines[i];
+      if (statusBar.hasMatch(line)) continue;
+      if (_looksLikeMerchant(line)) return _shorten(line);
     }
     return null;
   }
