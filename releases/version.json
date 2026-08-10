@@ -1,9 +1,9 @@
 {
-  "versionCode": 2026081000,
-  "releaseDate": "2026-08-10T18:08:41Z",
-  "version": "0.25.26081000",
-  "releaseNotes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE karty\n- Ikona metody platnosci jest teraz taka sama na wszystkich listach",
   "changelog": [
+    {
+      "version": "0.25.26081001",
+      "notes": "- Naprawione skanowanie paragonow: w poprzednim wydaniu przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu"
+    },
     {
       "version": "0.25.26081000",
       "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE karty\n- Ikona metody platnosci jest teraz taka sama na wszystkich listach"
@@ -39,11 +39,11 @@
     {
       "version": "0.19.26080201",
       "notes": "- grupy Miesiac i Statystyki zwijaja sie tapnieciem w nazwe\n- sekcja Szczegoly nazywa sie teraz Limity i okresy probne"
-    },
-    {
-      "version": "0.19.26080200",
-      "notes": "- Plan podzielony na grupy: Miesiac (Plan vs Realne, Kategorie) i Statystyki (trend, podsumowanie roczne)\n- wybor miesiaca i punkt startu ewidencji przeniesione do naglowkow grup\n- trend zaczyna sie od punktu startu i ma tryb Oba: realne i plan na jednym wykresie\n- smuklejsze karty Saldo i Koszty roczne\n- rachunki maja wlasna ikone na listach miesiaca"
     }
   ],
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081000"
+  "versionCode": 2026081001,
+  "releaseDate": "2026-08-10T20:19:15Z",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081001",
+  "version": "0.25.26081001",
+  "releaseNotes": "- Naprawione skanowanie paragonow: w poprzednim wydaniu przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Stawka VAT nie jest juz brana za kwote (paragon na 39,00 zapisywal sie jako 23,00)\n- Nazwa wydatku nie moze byc numerem ani etykieta dokumentu"
 }
