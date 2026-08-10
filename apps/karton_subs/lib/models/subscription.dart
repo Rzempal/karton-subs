@@ -166,7 +166,8 @@ class Subscription {
   int get daysUntilRenewal => nextRenewalDate.difference(_now).inDays;
 
   /// Czy odnowienie jest bliskie
-  bool get isRenewalSoon => isActive && daysUntilRenewal <= (reminderDaysBefore ?? 3);
+  bool get isRenewalSoon =>
+      isActive && daysUntilRenewal <= (reminderDaysBefore ?? 3);
 
   int? get daysSinceLastUse {
     if (usageLog.isEmpty) return null;
@@ -226,11 +227,11 @@ class Subscription {
   /// Normalizacja do kwoty miesięcznej — wspólny wzór z budżetem
   /// (`cycle_math.monthlyFromCycle`), bez duplikowania arytmetyki cykli.
   double _monthlyFromAmount(double amt) => monthlyFromCycle(
-        amt,
-        billingCycle,
-        customCycleDays,
-        cycleMonths: cycleMonths,
-      );
+    amt,
+    billingCycle,
+    customCycleDays,
+    cycleMonths: cycleMonths,
+  );
 
   factory Subscription.fromJson(Map<String, dynamic> json) {
     return Subscription(
@@ -247,7 +248,8 @@ class Subscription {
         orElse: () => BillingCycle.monthly,
       ),
       customCycleDays: json['customCycleDays'] as int?,
-      cycleMonths: (json['cycleMonths'] as List?)?.whereType<num>()
+      cycleMonths: (json['cycleMonths'] as List?)
+          ?.whereType<num>()
           .map((e) => e.toInt())
           .toList(),
       categoryId: json['categoryId'] as String?,
@@ -280,35 +282,33 @@ class Subscription {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        if (description != null) 'description': description,
-        'amount': amount,
-        'currency': currency.name,
-        'billingCycle': billingCycle.name,
-        if (customCycleDays != null) 'customCycleDays': customCycleDays,
-        if (cycleMonths != null) 'cycleMonths': cycleMonths,
-        if (categoryId != null) 'categoryId': categoryId,
-        'startDate': startDate.toIso8601String(),
-        if (cancellationUrl != null) 'cancellationUrl': cancellationUrl,
-        if (iconName != null) 'iconName': iconName,
-        if (colorHex != null) 'colorHex': colorHex,
-        'isPinned': isPinned,
-        'isActive': isActive,
-        if (reminderDaysBefore != null)
-          'reminderDaysBefore': reminderDaysBefore,
-        'usageLog': usageLog.map((e) => e.toJson()).toList(),
-        'dataDodania': dataDodania.toIso8601String(),
-        if (cancelledDate != null)
-          'cancelledDate': cancelledDate!.toIso8601String(),
-        if (sharedWith != null) 'sharedWith': sharedWith,
-        if (paymentMethod != null) 'paymentMethod': paymentMethod,
-        'isTrial': isTrial,
-        if (trialEndDate != null)
-          'trialEndDate': trialEndDate!.toIso8601String(),
-        if (postTrialAmount != null) 'postTrialAmount': postTrialAmount,
-        'scope': scope.name,
-      };
+    'id': id,
+    'name': name,
+    if (description != null) 'description': description,
+    'amount': amount,
+    'currency': currency.name,
+    'billingCycle': billingCycle.name,
+    if (customCycleDays != null) 'customCycleDays': customCycleDays,
+    if (cycleMonths != null) 'cycleMonths': cycleMonths,
+    if (categoryId != null) 'categoryId': categoryId,
+    'startDate': startDate.toIso8601String(),
+    if (cancellationUrl != null) 'cancellationUrl': cancellationUrl,
+    if (iconName != null) 'iconName': iconName,
+    if (colorHex != null) 'colorHex': colorHex,
+    'isPinned': isPinned,
+    'isActive': isActive,
+    if (reminderDaysBefore != null) 'reminderDaysBefore': reminderDaysBefore,
+    'usageLog': usageLog.map((e) => e.toJson()).toList(),
+    'dataDodania': dataDodania.toIso8601String(),
+    if (cancelledDate != null)
+      'cancelledDate': cancelledDate!.toIso8601String(),
+    if (sharedWith != null) 'sharedWith': sharedWith,
+    if (paymentMethod != null) 'paymentMethod': paymentMethod,
+    'isTrial': isTrial,
+    if (trialEndDate != null) 'trialEndDate': trialEndDate!.toIso8601String(),
+    if (postTrialAmount != null) 'postTrialAmount': postTrialAmount,
+    'scope': scope.name,
+  };
 
   Subscription copyWith({
     String? id,
@@ -360,8 +360,7 @@ class Subscription {
       customCycleDays: clearCustomCycleDays
           ? null
           : (customCycleDays ?? this.customCycleDays),
-      cycleMonths:
-          clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
+      cycleMonths: clearCycleMonths ? null : (cycleMonths ?? this.cycleMonths),
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       startDate: startDate ?? this.startDate,
       cancellationUrl: clearCancellationUrl
@@ -379,9 +378,7 @@ class Subscription {
       cancelledDate: clearCancelledDate
           ? null
           : (cancelledDate ?? this.cancelledDate),
-      sharedWith: clearSharedWith
-          ? null
-          : (sharedWith ?? this.sharedWith),
+      sharedWith: clearSharedWith ? null : (sharedWith ?? this.sharedWith),
       paymentMethod: clearPaymentMethod
           ? null
           : (paymentMethod ?? this.paymentMethod),
@@ -416,6 +413,19 @@ class PaymentMethod {
   /// Wpływa na kolor na kalendarzu (auto = żółty) i listę „Płatności".
   final bool isAutomatic;
 
+  /// Karta kredytowa — metoda, która POŻYCZA pieniądze zamiast je wydać.
+  ///
+  /// Zapłata taką kartą nie zabiera pieniędzy z konta od razu: robi to spłata
+  /// po okresie bezodsetkowym. Aplikacja odwzorowuje to parą pozycji spiętych
+  /// `linkId` (ADR-033), więc bilans miesiąca zakupu wychodzi na zero, a koszt
+  /// ląduje w miesiącu spłaty.
+  final bool isCreditCard;
+
+  /// Ile dni od zakupu do spłaty (okres bezodsetkowy). Ma znaczenie tylko przy
+  /// [isCreditCard]. `null` = nieustawione; automat wtedy nie działa, bo nie ma
+  /// jak wyliczyć daty spłaty.
+  final int? graceDays;
+
   /// Znacznik ostatniej zmiany — rozstrzyga scalanie przy synchronizacji
   /// budżetu domowego (ADR-025). `null` = wpis sprzed tej funkcji albo
   /// domyślny; liczy się jak epoka zero.
@@ -426,41 +436,58 @@ class PaymentMethod {
     required this.name,
     this.order = 0,
     this.isAutomatic = false,
+    this.isCreditCard = false,
+    this.graceDays,
     this.updatedAt,
   });
+
+  /// Czy z tej metody da się zbudować automat spłaty — sama flaga nie wystarczy,
+  /// bez liczby dni nie ma jak wyznaczyć terminu.
+  bool get hasCreditTerms =>
+      isCreditCard && graceDays != null && graceDays! > 0;
 
   PaymentMethod copyWith({
     String? id,
     String? name,
     int? order,
     bool? isAutomatic,
+    bool? isCreditCard,
+    int? graceDays,
+    bool clearGraceDays = false,
     DateTime? updatedAt,
-  }) =>
-      PaymentMethod(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        order: order ?? this.order,
-        isAutomatic: isAutomatic ?? this.isAutomatic,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  }) => PaymentMethod(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    order: order ?? this.order,
+    isAutomatic: isAutomatic ?? this.isAutomatic,
+    isCreditCard: isCreditCard ?? this.isCreditCard,
+    graceDays: clearGraceDays ? null : (graceDays ?? this.graceDays),
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
 
+  // Nowe pola sa OPCJONALNE w JSON-ie: starsza aplikacja po drugiej stronie
+  // synchronizacji (ADR-025) po prostu ich nie zna i czyta metode jak dotad.
   factory PaymentMethod.fromJson(Map<String, dynamic> json) => PaymentMethod(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        order: (json['order'] as num?)?.toInt() ?? 0,
-        isAutomatic: json['isAutomatic'] as bool? ?? false,
-        updatedAt: json['updatedAt'] != null
-            ? DateTime.tryParse(json['updatedAt'] as String)
-            : null,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String,
+    order: (json['order'] as num?)?.toInt() ?? 0,
+    isAutomatic: json['isAutomatic'] as bool? ?? false,
+    isCreditCard: json['isCreditCard'] as bool? ?? false,
+    graceDays: (json['graceDays'] as num?)?.toInt(),
+    updatedAt: json['updatedAt'] != null
+        ? DateTime.tryParse(json['updatedAt'] as String)
+        : null,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'order': order,
-        'isAutomatic': isAutomatic,
-        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'order': order,
+    'isAutomatic': isAutomatic,
+    if (isCreditCard) 'isCreditCard': true,
+    if (graceDays != null) 'graceDays': graceDays,
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+  };
 }
 
 /// Domyślne metody płatności — seed przy pierwszym uruchomieniu.

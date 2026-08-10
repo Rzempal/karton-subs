@@ -78,11 +78,28 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
       _type == BudgetEntryType.installment ||
       _type == BudgetEntryType.householdTransfer;
 
-  /// Metoda płatności dotyczy tylko wydatków — bez przelewu do domowego (nie
-  /// ma sensu jako „metoda płatności" wewnętrznego przesunięcia środków).
+  /// Metoda płatności dotyczy wydatków — bez przelewu do domowego (nie ma
+  /// sensu jako „metoda płatności" wewnętrznego przesunięcia środków).
+  ///
+  /// Wpływ jednorazowy jest wyjątkiem: dostaje to pole WYŁĄCZNIE po to, żeby
+  /// dało się wskazać kartę kredytową, czyli powiedzieć „te pieniądze są
+  /// pożyczone" (ADR-033). Bez zdefiniowanej karty pole się nie pokazuje —
+  /// pensja żadnej „metody płatności" nie ma.
   bool get _typeHasPaymentMethod =>
       _type == BudgetEntryType.recurringCost ||
-      _type == BudgetEntryType.installment;
+      _type == BudgetEntryType.installment ||
+      (_type == BudgetEntryType.oneTimeIncome && _creditCards.isNotEmpty);
+
+  /// Karty kredytowe z gotowymi warunkami — tylko takie mogą być źródłem
+  /// pożyczki, bo bez liczby dni nie ma jak wyznaczyć terminu spłaty.
+  List<PaymentMethod> get _creditCards => context
+      .read<StorageService>()
+      .getPaymentMethods()
+      .where((pm) => pm.hasCreditTerms)
+      .toList();
+
+  /// Wpływ wybiera tylko spośród kart; wydatek — spośród wszystkich metod.
+  bool get _paymentMethodIsCreditOnly => _type == BudgetEntryType.oneTimeIncome;
 
   /// Koszt cykliczny — typ z opcjonalnymi korektami miesięcznymi (ADR-008).
   bool get _isRecurring => _type == BudgetEntryType.recurringCost;
@@ -488,7 +505,21 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
             ],
 
             if (_typeHasPaymentMethod) ...[
-              _SectionLabel('Metoda płatności'),
+              _SectionLabel(
+                _paymentMethodIsCreditOnly
+                    ? 'Pożyczone z karty'
+                    : 'Metoda płatności',
+              ),
+              if (_paymentMethodIsCreditOnly) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Wskaż kartę, jeśli to pieniądze pożyczone — spłata powstanie '
+                  'sama po okresie bezodsetkowym.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -499,23 +530,26 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     selected: _paymentMethod == null,
                     onSelected: (_) => setState(() => _paymentMethod = null),
                   ),
-                  ...context.read<StorageService>().getPaymentMethods().map(
-                    (pm) => FilterChip(
-                      avatar: Icon(
-                        pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
-                        size: 16,
-                        // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
-                        // byc kontrastowa (onAccent), tak jak tekst.
-                        color: _paymentMethod == pm.name
-                            ? AppColors.onAccent
-                            : null,
+                  ...(_paymentMethodIsCreditOnly
+                          ? _creditCards
+                          : context.read<StorageService>().getPaymentMethods())
+                      .map(
+                        (pm) => FilterChip(
+                          avatar: Icon(
+                            pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                            size: 16,
+                            // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
+                            // byc kontrastowa (onAccent), tak jak tekst.
+                            color: _paymentMethod == pm.name
+                                ? AppColors.onAccent
+                                : null,
+                          ),
+                          label: Text(pm.name),
+                          selected: _paymentMethod == pm.name,
+                          onSelected: (_) =>
+                              setState(() => _paymentMethod = pm.name),
+                        ),
                       ),
-                      label: Text(pm.name),
-                      selected: _paymentMethod == pm.name,
-                      onSelected: (_) =>
-                          setState(() => _paymentMethod = pm.name),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 4),
@@ -974,7 +1008,10 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                     return;
                   }
                 }
-                Navigator.pop(ctx, MonthAmountOverride(amount: amt, date: date));
+                Navigator.pop(
+                  ctx,
+                  MonthAmountOverride(amount: amt, date: date),
+                );
               },
               child: const Text('Zapisz'),
             ),

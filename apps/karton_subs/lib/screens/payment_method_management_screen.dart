@@ -223,19 +223,27 @@ class _PaymentMethodEditor extends StatefulWidget {
 
 class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
   late TextEditingController _nameCtrl;
+  late TextEditingController _graceCtrl;
   late bool _isAutomatic;
+  late bool _isCreditCard;
   String? _errorText;
+  String? _graceError;
 
   @override
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.existing?.name ?? '');
     _isAutomatic = widget.existing?.isAutomatic ?? false;
+    _isCreditCard = widget.existing?.isCreditCard ?? false;
+    _graceCtrl = TextEditingController(
+      text: widget.existing?.graceDays?.toString() ?? '',
+    );
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _graceCtrl.dispose();
     super.dispose();
   }
 
@@ -285,6 +293,33 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
                   : 'Przelew do zrobienia ręcznie (lista „Płatności")',
             ),
           ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _isCreditCard,
+            onChanged: (v) => setState(() => _isCreditCard = v),
+            secondary: const Icon(LucideIcons.creditCard),
+            title: const Text('Karta kredytowa'),
+            subtitle: const Text(
+              'Pożycza pieniądze: zakup nie obciąża miesiąca, '
+              'robi to spłata po okresie bezodsetkowym',
+            ),
+          ),
+          // Pole tylko przy włączonej karcie — przy zwykłej metodzie „dni
+          // bezodsetkowych" nie ma czego opisywać.
+          if (_isCreditCard) ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _graceCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Dni bezodsetkowe *',
+                hintText: 'np. 50',
+                helperText: 'Po tylu dniach od zakupu powstanie spłata',
+                errorText: _graceError,
+                prefixIcon: const Icon(LucideIcons.calendarClock),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -309,6 +344,22 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
       return;
     }
 
+    // Karta bez liczby dni nie ma jak wyznaczyć terminu spłaty, więc automat
+    // po cichu by nie zadziałał — lepiej powiedzieć to teraz niż zostawić
+    // użytkownika z kartą, która „nic nie robi".
+    int? graceDays;
+    if (_isCreditCard) {
+      graceDays = int.tryParse(_graceCtrl.text.trim());
+      if (graceDays == null || graceDays <= 0) {
+        setState(() => _graceError = 'Podaj liczbę dni większą od zera');
+        return;
+      }
+      if (graceDays > 365) {
+        setState(() => _graceError = 'Najwyżej 365 dni');
+        return;
+      }
+    }
+
     // Walidacja unikalności (case-insensitive)
     final storage = context.read<StorageService>();
     final duplicate = storage.getPaymentMethods().any(
@@ -323,12 +374,22 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
 
     final oldName = widget.existing?.name;
     final pm = widget.existing != null
-        ? widget.existing!.copyWith(name: name, isAutomatic: _isAutomatic)
+        ? widget.existing!.copyWith(
+            name: name,
+            isAutomatic: _isAutomatic,
+            isCreditCard: _isCreditCard,
+            graceDays: graceDays,
+            // Wyłączenie karty musi wyczyścić dni — inaczej zostałaby martwa
+            // liczba, która ożyłaby przy ponownym włączeniu.
+            clearGraceDays: !_isCreditCard,
+          )
         : PaymentMethod(
             id: const Uuid().v4(),
             name: name,
             order: storage.getPaymentMethods().length,
             isAutomatic: _isAutomatic,
+            isCreditCard: _isCreditCard,
+            graceDays: graceDays,
           );
 
     await widget.onSave(pm, oldName);
