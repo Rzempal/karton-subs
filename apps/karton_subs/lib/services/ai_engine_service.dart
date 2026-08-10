@@ -97,6 +97,16 @@ class AiEngineService {
     }
   }
 
+  /// Nazwa metody kanału platformowego — **UMOWA Z WARSTWĄ NATYWNĄ** (Kotlin,
+  /// `AiEngineBridge.kt`). Nazwa pochodzi z czasów sekcji „Rachunki" i zostaje.
+  ///
+  /// Kotlin nie kompiluje się razem z tym plikiem, więc przemianowanie tej
+  /// wartości NIE jest błędem kompilacji — wychodzi dopiero na telefonie, jako
+  /// „skanowanie niedostępne". Raz się już tak stało (ADR-032, refaktor nazw).
+  /// Pilnuje tego `test/platform_channel_guard_test.dart`, który czyta OBIE
+  /// strony kanału i porównuje je ze sobą.
+  static const methodStartScan = 'startBillScan';
+
   /// Zleca rozpoznanie paragonu i wraca od razu — pracę prowadzi natywna
   /// usługa pierwszoplanowa (przeżywa wyjście z aplikacji), a wynik przychodzi
   /// przez [drainScanResults]. Rzuca [AiEngineException], gdy zlecenia nie da
@@ -106,16 +116,20 @@ class AiEngineService {
     required String imagePath,
   }) async {
     try {
-      await _channel.invokeMethod<bool>('startReceiptScan', {
+      await _channel.invokeMethod<bool>(methodStartScan, {
         'scanId': scanId,
         'imagePath': imagePath,
       });
     } on PlatformException catch (e) {
       throw AiEngineException(code: e.code, message: _describe(e));
     } on MissingPluginException {
+      // Na Androidzie ten wyjątek NIE znaczy „zły system", tylko „warstwa
+      // natywna nie zna tej metody" — czyli rozjazd nazwy między Dartem
+      // a Kotlinem. Komunikat mówił wtedy nieprawdę i wysyłał w ślepy zaułek.
       throw const AiEngineException(
         code: 'NO_PLATFORM',
-        message: 'Skanowanie paragonów działa tylko na urządzeniu z Androidem',
+        message: 'Skanowanie niedostępne na tym urządzeniu '
+            '(brak połączenia z warstwą systemową)',
       );
     }
   }
