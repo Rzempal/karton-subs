@@ -9,6 +9,8 @@ import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/category_icons.dart'
+    show paymentMethodIcon, paymentMethodIconColor;
 
 class PaymentMethodManagementScreen extends StatefulWidget {
   const PaymentMethodManagementScreen({super.key});
@@ -69,11 +71,27 @@ class _PaymentMethodManagementScreenState
                 return Card(
                   key: ValueKey(pm.id),
                   child: ListTile(
-                    leading: const Icon(LucideIcons.creditCard),
+                    // Ta sama regula co wszedzie indziej (ADR-033) — wczesniej
+                    // KAZDA metoda miala tu karte, wiec lista przeczyla temu,
+                    // co uzytkownik widzial przy pozycjach budzetu.
+                    leading: Icon(
+                      paymentMethodIcon(pm),
+                      color: paymentMethodIconColor(
+                        pm,
+                        context.semanticColors,
+                      ),
+                    ),
                     title: Text(pm.name),
                     subtitle: Text(
-                      '${_usageLabel(subsCount, budgetCount)} · '
-                      '${pm.isAutomatic ? 'Automatyczna' : 'Manualna'}',
+                      [
+                        _usageLabel(subsCount, budgetCount),
+                        if (pm.isCreditCard) 'Karta · ${pm.graceDays} dni',
+                        pm.isCreditCard
+                            ? (pm.isAutomatic
+                                  ? 'Spłata automatyczna'
+                                  : 'Spłata ręczna')
+                            : (pm.isAutomatic ? 'Automatyczna' : 'Manualna'),
+                      ].join(' · '),
                       style: theme.textTheme.labelMedium,
                     ),
                     trailing: Row(
@@ -274,7 +292,18 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
               labelText: 'Nazwa',
               hintText: 'np. Apple Pay',
               errorText: _errorText,
-              prefixIcon: const Icon(LucideIcons.creditCard),
+              // Podglad na zywo: ikona zmienia sie razem z togglami ponizej,
+              // wiec widac, jak metoda bedzie wygladac na listach.
+              prefixIcon: Icon(
+                _isCreditCard
+                    ? LucideIcons.creditCard
+                    : (_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
+                color: _isCreditCard
+                    ? (_isAutomatic
+                          ? context.semanticColors.warning
+                          : context.semanticColors.negative)
+                    : null,
+              ),
             ),
             autofocus: true,
             textInputAction: TextInputAction.done,

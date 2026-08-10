@@ -13,7 +13,12 @@ import '../utils/money_format.dart';
 import 'aurora_segmented.dart';
 import 'cashflow_calendar.dart';
 import 'category_icons.dart'
-    show budgetEntryIcon, categoryIcon, subscriptionIcon;
+    show
+        budgetEntryIcon,
+        categoryIcon,
+        paymentMethodIcon,
+        paymentMethodIconColor,
+        subscriptionIcon;
 import 'plan_progress_bar.dart';
 
 /// Współdzielone widgety budżetu — używane przez Dashboard i ekran Budżet.
@@ -2129,13 +2134,14 @@ class BudgetEntryCard extends StatelessWidget {
         ? storage.getCategory(entry.categoryId!)
         : null;
 
-    // Metoda płatności — ikona ⚡/✋ = automatyczna/manualna.
+    // Metoda płatności — ikona wg wspólnej reguły (ADR-033): kształt mówi,
+    // skąd pieniądze, kolor kto płaci. Bierzemy CAŁĄ metodę, nie samą flagę
+    // „automatyczna": inaczej zakup kartą kredytową pokazywałby tu rączkę,
+    // choć wszędzie indziej ma kartę.
     final method = entry.paymentMethod;
-    final methodAuto =
-        method != null &&
-        storage.getPaymentMethods().any(
-          (p) => p.name == method && p.isAutomatic,
-        );
+    final methodPm = method == null
+        ? null
+        : storage.getPaymentMethods().where((p) => p.name == method).firstOrNull;
 
     // Druga linia: typ · data · metoda. Data tylko tam, gdzie coś znaczy —
     // pozycja jednorazowa ma swój miesiąc, cykliczna datę startu cyklu.
@@ -2234,11 +2240,21 @@ class BudgetEntryCard extends StatelessWidget {
                                   WidgetSpan(
                                     alignment: PlaceholderAlignment.middle,
                                     child: Icon(
-                                      methodAuto
-                                          ? LucideIcons.zap
-                                          : LucideIcons.hand,
+                                      methodPm == null
+                                          ? LucideIcons.hand
+                                          : paymentMethodIcon(methodPm),
                                       size: 12,
-                                      color: c.textMuted,
+                                      // Karta niesie własny kolor (czerwony /
+                                      // żółty); zwykła metoda zostaje szara,
+                                      // żeby nie krzyczeć w drugiej linii.
+                                      color:
+                                          (methodPm == null
+                                              ? null
+                                              : paymentMethodIconColor(
+                                                  methodPm,
+                                                  c,
+                                                )) ??
+                                          c.textMuted,
                                     ),
                                   ),
                                   TextSpan(text: ' $method'),
