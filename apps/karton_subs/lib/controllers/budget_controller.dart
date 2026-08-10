@@ -785,6 +785,12 @@ class BudgetController extends ChangeNotifier {
         month: BudgetEntry.monthKeyOf(repayDate),
         startDate: repayDate,
         categoryId: source.categoryId,
+        // Spłata dziedziczy kartę, żeby toggle „automatyczna" cokolwiek
+        // znaczył. Oba przełączniki metody opisują RÓŻNE momenty: „karta
+        // kredytowa" mówi o zakupie (karta pożycza), „automatyczna" — o tym,
+        // czy SPŁATA schodzi sama. To spłatę można przegapić, więc to ona
+        // decyduje, czy pozycja trafi na listę „Płatności" do odhaczenia.
+        paymentMethod: card.name,
         note: '${card.name} — ${card.graceDays} dni od ${_dayLabel(buyDate)}',
         dataDodania: now,
         creditLinkId: creditLinkId,
@@ -801,6 +807,34 @@ class BudgetController extends ChangeNotifier {
   static String _dayLabel(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}.'
       '${d.month.toString().padLeft(2, '0')}.${d.year}';
+
+  /// Opis tego, co automat karty dołożył do właśnie zapisanej pozycji —
+  /// `null`, gdy nic nie dołożył.
+  ///
+  /// Pozycje nie mogą pojawiać się po cichu: użytkownik wpisał JEDEN zakup,
+  /// a na liście przybyły trzy. Bez komunikatu wyglądałoby to na błąd apki.
+  String? creditSummaryFor(BudgetEntry entry) {
+    final link = entry.creditLinkId;
+    if (link == null) return null;
+    final repayment = _storage
+        .getBudgetEntries(_scope)
+        .where(
+          (e) =>
+              e.creditLinkId == link &&
+              e.id != entry.id &&
+              e.type == BudgetEntryType.spending &&
+              !e.deleted,
+        )
+        .firstOrNull;
+    if (repayment?.startDate == null) return null;
+    final day = _dayLabel(repayment!.startDate!);
+
+    return entry.isIncome
+        ? 'Dodano spłatę na $day. Pożyczka i spłata znoszą się — '
+              'budżet obciąży dopiero spłata.'
+        : 'Karta pożycza na ten zakup, więc ten miesiąc wychodzi na zero. '
+              'Dodano spłatę na $day.';
+  }
 
   Future<void> update(BudgetEntry entry) async {
     await _saveStamped(entry, _scope);

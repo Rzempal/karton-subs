@@ -3,6 +3,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart' as lucide;
 
 import '../models/budget_entry.dart';
+import '../models/subscription.dart' show PaymentMethod;
+import '../theme/app_theme.dart' show AppSemanticColors;
 
 /// Ikona RODZAJU pozycji — pokazywana, gdy pozycja nie ma własnej kategorii.
 ///
@@ -30,6 +32,27 @@ IconData budgetEntryIcon(BudgetEntryType type) => switch (type) {
 /// subskrypcja (jej sekcja) musi mieć własną (ADR-032).
 const IconData subscriptionIcon = LucideIcons.badgeCheck;
 
+/// Ikona metody płatności. **Kształt mówi, SKĄD pieniądze, kolor — KTO płaci**
+/// (ADR-033):
+///
+/// | metoda | ikona | kolor |
+/// |---|---|---|
+/// | zwykła manualna | rączka | domyślny |
+/// | zwykła automatyczna | piorun | domyślny |
+/// | kredytowa manualna | karta | czerwony |
+/// | kredytowa automatyczna | karta | żółty |
+///
+/// Żółty i czerwony to ta sama para, którą kalendarz oznacza płatność
+/// automatyczną i manualną — nie wprowadzamy drugiego języka kolorów.
+IconData paymentMethodIcon(PaymentMethod pm) => pm.isCreditCard
+    ? LucideIcons.creditCard
+    : (pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand);
+
+/// Kolor ikony metody — `null` dla zwykłych metod, żeby dziedziczyły kolor
+/// z otoczenia (tak wyglądają dziś i nie ma powodu tego ruszać).
+Color? paymentMethodIconColor(PaymentMethod pm, AppSemanticColors c) =>
+    pm.isCreditCard ? (pm.isAutomatic ? c.warning : c.negative) : null;
+
 /// Ikony kategorii — słownik wspólny dla subskrypcji, pozycji budżetu i ekranu
 /// zarządzania kategoriami. Mieszkały przy karcie subskrypcji, ale z kategorii
 /// korzysta dziś każda lista, a wiersz subskrypcji potrzebuje formatowania
@@ -55,8 +78,9 @@ IconData categoryIcon(String? name) {
     'phone' => LucideIcons.phone,
     'mail' => LucideIcons.mail,
     'drill' || 'tools' => lucide.LucideIcons.drill,
-    'soapDispenserDroplet' || 'soap-dispenser-droplet' || 'soap' =>
-      lucide.LucideIcons.soapDispenserDroplet,
+    'soapDispenserDroplet' ||
+    'soap-dispenser-droplet' ||
+    'soap' => lucide.LucideIcons.soapDispenserDroplet,
     'swatchBook' || 'swatch-book' || 'swatch' => lucide.LucideIcons.swatchBook,
 
     // ── Zakupy i jedzenie ──
@@ -99,7 +123,9 @@ IconData categoryIcon(String? name) {
     'cloud' => LucideIcons.cloud,
     'globe' => LucideIcons.globe,
     'brain' => LucideIcons.brain,
-    'school' || 'graduation-cap' || 'graduationCap' => LucideIcons.graduationCap,
+    'school' ||
+    'graduation-cap' ||
+    'graduationCap' => LucideIcons.graduationCap,
     'shield' => LucideIcons.shield,
 
     // ── Pozostałe ──
@@ -119,7 +145,14 @@ const List<String> availableIconNames = [
   // Zakupy i jedzenie
   'shoppingCart', 'shopping', 'utensils', 'coffee', 'shirt',
   // Transport i podróże
-  'car', 'fuel', 'bike', 'trainFront', 'plane', 'tentTree', 'treePalm', 'camera',
+  'car',
+  'fuel',
+  'bike',
+  'trainFront',
+  'plane',
+  'tentTree',
+  'treePalm',
+  'camera',
   // Zdrowie, sport i rodzina
   'heart', 'dumbbell', 'volleyball', 'baby', 'dog', 'flower2', 'gift',
   'partyPopper',

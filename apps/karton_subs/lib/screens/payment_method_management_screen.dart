@@ -287,10 +287,16 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
             onChanged: (v) => setState(() => _isAutomatic = v),
             secondary: Icon(_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
             title: Text(_isAutomatic ? 'Automatyczna' : 'Manualna'),
+            // Przy karcie ten przełącznik opisuje SPŁATĘ, nie zakup: zakup
+            // kartą schodzi od razu zawsze, a przegapić można właśnie spłatę.
             subtitle: Text(
-              _isAutomatic
-                  ? 'Pobierana automatycznie (żółty na kalendarzu)'
-                  : 'Przelew do zrobienia ręcznie (lista „Płatności")',
+              _isCreditCard
+                  ? (_isAutomatic
+                        ? 'Spłata karty schodzi sama'
+                        : 'Spłatę karty robisz ręcznie (lista „Płatności")')
+                  : (_isAutomatic
+                        ? 'Pobierana automatycznie (żółty na kalendarzu)'
+                        : 'Przelew do zrobienia ręcznie (lista „Płatności")'),
             ),
           ),
           SwitchListTile(

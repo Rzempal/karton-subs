@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
 import 'budget_widgets.dart' show budgetNf;
+import 'category_icons.dart' show paymentMethodIcon;
 
 /// Edycja koperty „Na bieżące wydatki" (ADR-012) — rezerwy planu na pulę wydatków.
 ///
@@ -184,7 +185,9 @@ Future<void> showSpendingAllocationItemEditor(
 }) async {
   final ctrl = context.read<BudgetController>();
   final storage = context.read<StorageService>();
-  final nameC = TextEditingController(text: existing?.name ?? initialName ?? '');
+  final nameC = TextEditingController(
+    text: existing?.name ?? initialName ?? '',
+  );
   final amountC = TextEditingController(
     text: (initialAmount ?? existing?.amount)?.toStringAsFixed(2) ?? '',
   );
@@ -265,7 +268,7 @@ Future<void> showSpendingAllocationItemEditor(
                   ...methods.map(
                     (pm) => FilterChip(
                       avatar: Icon(
-                        pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                        paymentMethodIcon(pm),
                         size: 16,
                         color: method == pm.name ? AppColors.onAccent : null,
                       ),

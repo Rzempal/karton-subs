@@ -10,8 +10,10 @@ import '../models/budget_entry.dart';
 import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
-import '../theme/app_theme.dart' show AppColors;
+import '../theme/app_theme.dart' show AppColors, SemanticColorsExtension;
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
+import '../widgets/category_icons.dart'
+    show paymentMethodIcon, paymentMethodIconColor;
 import '../widgets/image_preview_dialog.dart';
 
 /// Formularz wydatku — realny log opłaconej pozycji ([BudgetEntryType.spending]).
@@ -80,7 +82,9 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
     super.initState();
     final e = widget.existing;
     final now = Subscription.devDateOverride ?? DateTime.now();
-    _nameCtrl = TextEditingController(text: e?.name ?? widget.initialName ?? '');
+    _nameCtrl = TextEditingController(
+      text: e?.name ?? widget.initialName ?? '',
+    );
     _amountCtrl = TextEditingController(
       text: e != null
           ? e.amount.toStringAsFixed(2)
@@ -92,21 +96,25 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
     _paymentMethod = e?.paymentMethod;
 
     // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego wydatku.
-    _photoPath = widget.initialImagePath ??
+    _photoPath =
+        widget.initialImagePath ??
         (e != null
             ? context.read<StorageService>().getReceiptPhotoPath(e.id)
             : null);
 
-    final fallbackMonth =
-        e?.month != null ? DateTime.tryParse('${e!.month}-01') : null;
-    _date = e?.startDate ??
+    final fallbackMonth = e?.month != null
+        ? DateTime.tryParse('${e!.month}-01')
+        : null;
+    _date =
+        e?.startDate ??
         fallbackMonth ??
         widget.initialDate ??
         DateTime(now.year, now.month, now.day);
 
     // Domyślna waluta z ustawień (tylko dla nowej pozycji).
     final code = context.read<StorageService>().getCurrency();
-    _currency = e?.currency ??
+    _currency =
+        e?.currency ??
         widget.initialCurrency ??
         Currency.values.firstWhere(
           (c) => c.name == code || c.label == code,
@@ -229,6 +237,17 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
       // wersja przycięta, którą ekran Bieżące zapisze do prywatnej kopii i
       // archiwum. Dla zapisanego wydatku pole jest ignorowane (podmiana już
       // się wydarzyła w [_cropPhoto]).
+      // Automat karty (ADR-033) dokłada pozycje — bez komunikatu użytkownik
+      // zobaczyłby na liście trzy wiersze zamiast jednego i wziąłby to za błąd.
+      final creditNote = ctrl.creditSummaryFor(result);
+      if (mounted && creditNote != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(creditNote),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
       if (mounted) {
         Navigator.of(context).pop((entry: result, imagePath: _photoPath));
       }
@@ -245,18 +264,22 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
         content: Text('„${widget.existing!.name}" zniknie z listy i bilansu.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Anuluj')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Anuluj'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Usuń')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Usuń'),
+          ),
         ],
       ),
     );
     if (ok != true || !mounted) return;
     final ctrl = context.read<BudgetController>();
     // Sprzątamy powiązane zdjęcie wydatku (prywatna kopia podglądu).
-    await context.read<ReceiptScanController>().deletePhotoFor(widget.existing!.id);
+    await context.read<ReceiptScanController>().deletePhotoFor(
+      widget.existing!.id,
+    );
     await ctrl.delete(widget.existing!.id);
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -301,19 +324,18 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
     if (!mounted) return;
     if (error != null) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     // Po przeniesieniu pokazujemy budżet, w którym wydatek teraz jest —
     // inaczej użytkownik wraca na listę, na której go nie ma.
-    ctrl.setScope(
-      toHousehold ? BudgetScope.household : BudgetScope.personal,
-    );
+    ctrl.setScope(toHousehold ? BudgetScope.household : BudgetScope.personal);
     Navigator.of(context).pop(true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Przeniesiono do budżetu $target.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Przeniesiono do budżetu $target.')));
   }
 
   @override
@@ -364,8 +386,8 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
               Text(
                 'Dotknij, aby powiększyć i przyciąć.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
             ],
@@ -418,7 +440,8 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
                     controller: _amountCtrl,
                     decoration: const InputDecoration(labelText: 'Kwota *'),
                     keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                      decimal: true,
+                    ),
                     validator: (v) {
                       final a = _parseAmount(v ?? '');
                       if (a == null || a <= 0) return 'Kwota > 0';
@@ -433,8 +456,10 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
                     initialValue: _currency,
                     decoration: const InputDecoration(labelText: 'Waluta'),
                     items: Currency.values
-                        .map((c) => DropdownMenuItem(
-                            value: c, child: Text(c.label)))
+                        .map(
+                          (c) =>
+                              DropdownMenuItem(value: c, child: Text(c.label)),
+                        )
                         .toList(),
                     onChanged: (c) =>
                         setState(() => _currency = c ?? _currency),
@@ -459,8 +484,7 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
                   FilterChip(
                     label: Text(cat.name),
                     selected: _categoryId == cat.id,
-                    avatar: CircleAvatar(
-                        backgroundColor: cat.color, radius: 6),
+                    avatar: CircleAvatar(backgroundColor: cat.color, radius: 6),
                     onSelected: (_) => setState(() => _categoryId = cat.id),
                   ),
               ],
@@ -484,18 +508,17 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
                     in context.read<StorageService>().getPaymentMethods())
                   FilterChip(
                     avatar: Icon(
-                      pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                      paymentMethodIcon(pm),
                       size: 16,
                       // Zaznaczony chip ma ciemne tło akcentu — ikona musi być
                       // kontrastowa (onAccent), tak jak tekst.
                       color: _paymentMethod == pm.name
                           ? AppColors.onAccent
-                          : null,
+                          : paymentMethodIconColor(pm, context.semanticColors),
                     ),
                     label: Text(pm.name),
                     selected: _paymentMethod == pm.name,
-                    onSelected: (_) =>
-                        setState(() => _paymentMethod = pm.name),
+                    onSelected: (_) => setState(() => _paymentMethod = pm.name),
                   ),
               ],
             ),
@@ -506,7 +529,9 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
             TextFormField(
               controller: _noteCtrl,
               decoration: const InputDecoration(
-                  labelText: 'Notatka', hintText: 'np. numer faktury'),
+                labelText: 'Notatka',
+                hintText: 'np. numer faktury',
+              ),
               textCapitalization: TextCapitalization.sentences,
               maxLines: 2,
             ),
@@ -525,8 +550,7 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
                 onPressed: _isSubmitting ? null : _moveToOtherScope,
                 icon: const Icon(LucideIcons.arrowLeftRight, size: 18),
                 label: Text(
-                  context.read<BudgetController>().scope ==
-                          BudgetScope.personal
+                  context.read<BudgetController>().scope == BudgetScope.personal
                       ? 'Przenieś do budżetu domowego'
                       : 'Przenieś do budżetu osobistego',
                 ),
@@ -547,10 +571,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context)
-          .textTheme
-          .labelLarge
-          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }

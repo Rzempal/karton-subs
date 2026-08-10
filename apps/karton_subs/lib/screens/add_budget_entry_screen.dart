@@ -8,6 +8,8 @@ import '../controllers/budget_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/money_format.dart';
+import '../widgets/category_icons.dart'
+    show paymentMethodIcon, paymentMethodIconColor;
 import '../widgets/cycle_months_picker.dart';
 
 class AddBudgetEntryScreen extends StatefulWidget {
@@ -536,13 +538,16 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
                       .map(
                         (pm) => FilterChip(
                           avatar: Icon(
-                            pm.isAutomatic ? LucideIcons.zap : LucideIcons.hand,
+                            paymentMethodIcon(pm),
                             size: 16,
                             // Zaznaczony chip ma ciemne tlo akcentu — ikona musi
                             // byc kontrastowa (onAccent), tak jak tekst.
                             color: _paymentMethod == pm.name
                                 ? AppColors.onAccent
-                                : null,
+                                : paymentMethodIconColor(
+                                    pm,
+                                    context.semanticColors,
+                                  ),
                           ),
                           label: Text(pm.name),
                           selected: _paymentMethod == pm.name,
@@ -839,7 +844,7 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           ),
         );
       } else {
-        await ctrl.create(
+        final created = await ctrl.create(
           name: _nameCtrl.text.trim(),
           type: _type,
           amount: amount,
@@ -855,6 +860,17 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
           startDate: effStartDate,
           note: note,
         );
+        // Automat karty (ADR-033) dokłada pozycje — mówimy o tym wprost,
+        // inaczej wyglądałoby to na błąd apki.
+        final creditNote = ctrl.creditSummaryFor(created);
+        if (mounted && creditNote != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(creditNote),
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
       }
       if (mounted) Navigator.of(context).pop(true);
     } finally {

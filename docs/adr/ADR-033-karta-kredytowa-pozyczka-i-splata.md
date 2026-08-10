@@ -80,7 +80,39 @@ pozwala wybrać wyłącznie karty (pensja żadnej metody płatności nie ma).
 Zysk: zero zmian w formacie zapisu, czyli zero ryzyka dla synchronizacji
 i starszych kopii (ADR-032 §4).
 
-### 6. Kaskady
+### 6. Dwa przełączniki metody opisują dwa różne momenty
+
+Metoda płatności ma teraz dwa toggle i trzeba powiedzieć wprost, czego dotyczą:
+
+- **„Karta kredytowa"** mówi o **zakupie** — karta pożycza pieniądze.
+- **„Automatyczna"** mówi o **spłacie** — czy schodzi sama, czy trzeba ją zrobić.
+
+Zakup kartą schodzi natychmiast zawsze, więc pytanie „czy automatyczna" ma sens
+tylko wobec spłaty — i to ją można przegapić. Dlatego pozycja spłaty **dziedziczy
+kartę jako metodę płatności**: przy karcie automatycznej trafia do „Płatności
+automatycznych", przy manualnej — na listę do odhaczenia.
+
+Ikona metody: **kształt mówi, skąd pieniądze, kolor — kto płaci**.
+
+| metoda | ikona | kolor |
+|---|---|---|
+| zwykła manualna | rączka | domyślny |
+| zwykła automatyczna | piorun | domyślny |
+| kredytowa manualna | karta | czerwony |
+| kredytowa automatyczna | karta | żółty |
+
+Żółty i czerwony to ta sama para, którą kalendarz oznacza płatność automatyczną
+i manualną — nie wprowadzamy drugiego języka kolorów. Reguła siedzi w jednym
+miejscu (`paymentMethodIcon` / `paymentMethodIconColor`), bo przy ADR-032 ta
+sama reguła zduplikowana w dwóch miejscach zdążyła się już raz rozjechać.
+
+### 7. Automat mówi, co zrobił
+
+Po zapisie pozycji z kartą pojawia się komunikat: co dołożono i na kiedy.
+Użytkownik wpisał JEDEN zakup, a na liście przybyły trzy pozycje — bez
+komunikatu wyglądałoby to na błąd aplikacji.
+
+### 8. Kaskady
 
 - **Usunięcie dowolnej pozycji** kasuje całą resztę zestawu. Sama spłata bez
   zakupu to wydatek znikąd; sam wpływ z karty to pieniądze, których nikt nie

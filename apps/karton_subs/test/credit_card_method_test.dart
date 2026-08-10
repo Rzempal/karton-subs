@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:karton_subs/models/subscription.dart';
+import 'package:karton_subs/theme/app_theme.dart'
+    show AppColors, AppSemanticColors;
+import 'package:karton_subs/widgets/category_icons.dart';
 
 /// Karta kredytowa jako metoda płatności (ADR-033). Pola są opcjonalne w JSON-ie,
 /// bo metody jadą w paczce synchronizacji (ADR-025) — telefon na starszej wersji
@@ -84,6 +88,41 @@ void main() {
       // kluczy, które mogłaby zapisać z powrotem i rozjechać scalanie.
       expect(json.containsKey('isCreditCard'), isFalse);
       expect(json.containsKey('graceDays'), isFalse);
+    });
+
+    test('cztery kombinacje toggli dają cztery różne wyglądy', () {
+      const zwyklaManualna = PaymentMethod(id: '1', name: 'a');
+      const zwyklaAuto = PaymentMethod(id: '2', name: 'b', isAutomatic: true);
+      const kartaManualna = PaymentMethod(
+        id: '3',
+        name: 'c',
+        isCreditCard: true,
+        graceDays: 30,
+      );
+      const kartaAuto = PaymentMethod(
+        id: '4',
+        name: 'd',
+        isCreditCard: true,
+        graceDays: 30,
+        isAutomatic: true,
+      );
+
+      // Kształt: skąd pieniądze. Karta ma własny, niezależnie od automatu.
+      expect(paymentMethodIcon(zwyklaManualna), LucideIcons.hand);
+      expect(paymentMethodIcon(zwyklaAuto), LucideIcons.zap);
+      expect(paymentMethodIcon(kartaManualna), LucideIcons.creditCard);
+      expect(paymentMethodIcon(kartaAuto), LucideIcons.creditCard);
+
+      // Kolor: kto płaci. Rozróżnia dwie karty od siebie.
+      final c = AppSemanticColors.of(AppColors.active);
+      expect(paymentMethodIconColor(zwyklaManualna, c), isNull);
+      expect(paymentMethodIconColor(zwyklaAuto, c), isNull);
+      expect(paymentMethodIconColor(kartaManualna, c), c.negative);
+      expect(paymentMethodIconColor(kartaAuto, c), c.warning);
+      expect(
+        paymentMethodIconColor(kartaManualna, c),
+        isNot(paymentMethodIconColor(kartaAuto, c)),
+      );
     });
 
     test('wyłączenie karty czyści dni', () {
