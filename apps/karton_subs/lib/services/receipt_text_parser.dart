@@ -32,7 +32,13 @@ class ReceiptTextParser {
   static final _sumaPln = RegExp(r'SUMA\s+PLN', caseSensitive: false);
 
   /// Kwota w polskim zapisie: „19,99", „1 234,56", „50.30".
-  static final _amount = RegExp(r'(\d[\d\s]*[,.]\d{2})');
+  ///
+  /// Negatywne spojrzenie w przód odcina STAWKI PODATKU. Na paragonie tuż nad
+  /// sumą stoi „Kwota A 23,00%" — liczba wygląda identycznie jak pieniądze, ma
+  /// przy sobie słowo „Kwota", a bywa BLIŻEJ etykiety „SUMA PLN" niż prawdziwa
+  /// suma (OCR miesza kolumny). Bez tego zastrzeżenia paragon na 39,00 zł
+  /// zapisywał się jako 23,00 zł.
+  static final _amount = RegExp(r'(\d[\d\s]*[,.]\d{2})(?!\s*%)');
 
   /// Data ISO drukowana na paragonie: „2026-07-24 11:41".
   static final _isoDate = RegExp(r'(20\d{2})-(\d{1,2})-(\d{1,2})');
@@ -103,11 +109,35 @@ class ReceiptTextParser {
     );
     for (final line in lines.take(8)) {
       if (skip.hasMatch(line)) continue;
-      if (RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]{3,}').firstMatch(line) == null) continue;
+      if (!_looksLikeMerchant(line)) continue;
       if (RegExp(r'\d{2}-\d{3}').hasMatch(line)) continue; // kod pocztowy
       return _shorten(line);
     }
     return null;
+  }
+
+  /// Słowa, które NIGDY nie są nazwą sprzedawcy — to etykiety i jednostki
+  /// z dokumentu. Wszystkie zaobserwowane na prawdziwych odczytach: „39 pkt"
+  /// z programu lojalnościowego i „Nazwa na wyciągu" ze zrzutu płatności
+  /// trafiały do pola nazwy zamiast sklepu.
+  static final _notAName = RegExp(
+    r'\b(pkt|szt|nazwa\s+na\s+wyci[ąa]gu|identyfikator|nr\s+transakcji'
+    r'|kasjer|reszta|got[óo]wka|karta\s+kr|p[łl]atno[śs][ćc])\b',
+    caseSensitive: false,
+  );
+
+  /// Czy linia w ogóle może być nazwą sklepu.
+  ///
+  /// Dwa warunki, oba z realnych wpadek: **dość liter** (żeby „39 pkt" nie
+  /// przeszło jako nazwa) i **przewaga liter nad cyframi** (żeby nie przeszedł
+  /// numer paragonu „000077 #003 023").
+  static bool _looksLikeMerchant(String line) {
+    if (_notAName.hasMatch(line)) return false;
+    final letters =
+        RegExp(r'[A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]').allMatches(line).length;
+    if (letters < 4) return false;
+    final digits = RegExp(r'\d').allMatches(line).length;
+    return digits < letters;
   }
 
   /// Skrót nazwy: ucina hasło reklamowe w cudzysłowie i zbyt długie ogony.
