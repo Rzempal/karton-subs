@@ -11,6 +11,7 @@ import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
+import '../widgets/form_action_bar.dart';
 
 class PaymentMethodManagementScreen extends StatefulWidget {
   const PaymentMethodManagementScreen({super.key});
@@ -76,10 +77,7 @@ class _PaymentMethodManagementScreenState
                     // co uzytkownik widzial przy pozycjach budzetu.
                     leading: Icon(
                       paymentMethodIcon(pm),
-                      color: paymentMethodIconColor(
-                        pm,
-                        context.semanticColors,
-                      ),
+                      color: paymentMethodIconColor(pm, context.semanticColors),
                     ),
                     title: Text(pm.name),
                     subtitle: Text(
@@ -267,108 +265,85 @@ class _PaymentMethodEditorState extends State<_PaymentMethodEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
+    return FormSheet(
+      title: widget.existing != null
+          ? 'Edytuj metodę płatności'
+          : 'Nowa metoda płatności',
+      actions: FormActionBar(
+        onCancel: () => Navigator.pop(context),
+        onSave: _save,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.existing != null
-                ? 'Edytuj metodę płatności'
-                : 'Nowa metoda płatności',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _nameCtrl,
-            decoration: InputDecoration(
-              labelText: 'Nazwa',
-              hintText: 'np. Apple Pay',
-              errorText: _errorText,
-              // Podglad na zywo: ikona zmienia sie razem z togglami ponizej,
-              // wiec widac, jak metoda bedzie wygladac na listach.
-              prefixIcon: Icon(
-                _isCreditCard
-                    ? LucideIcons.creditCard
-                    : (_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
-                color: _isCreditCard
-                    ? (_isAutomatic
-                          ? context.semanticColors.warning
-                          : context.semanticColors.negative)
-                    : null,
-              ),
-            ),
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _save(),
-          ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _isAutomatic,
-            onChanged: (v) => setState(() => _isAutomatic = v),
-            secondary: Icon(_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
-            title: Text(_isAutomatic ? 'Automatyczna' : 'Manualna'),
-            // Przy karcie ten przełącznik opisuje SPŁATĘ, nie zakup: zakup
-            // kartą schodzi od razu zawsze, a przegapić można właśnie spłatę.
-            subtitle: Text(
+      children: [
+        TextFormField(
+          controller: _nameCtrl,
+          decoration: InputDecoration(
+            labelText: 'Nazwa',
+            hintText: 'np. Apple Pay',
+            errorText: _errorText,
+            // Podglad na zywo: ikona zmienia sie razem z togglami ponizej,
+            // wiec widac, jak metoda bedzie wygladac na listach.
+            prefixIcon: Icon(
               _isCreditCard
+                  ? LucideIcons.creditCard
+                  : (_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
+              color: _isCreditCard
                   ? (_isAutomatic
-                        ? 'Spłata karty schodzi sama'
-                        : 'Spłatę karty robisz ręcznie (lista „Płatności")')
-                  : (_isAutomatic
-                        ? 'Pobierana automatycznie (żółty na kalendarzu)'
-                        : 'Przelew do zrobienia ręcznie (lista „Płatności")'),
+                        ? context.semanticColors.warning
+                        : context.semanticColors.negative)
+                  : null,
             ),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _isCreditCard,
-            onChanged: (v) => setState(() => _isCreditCard = v),
-            secondary: const Icon(LucideIcons.creditCard),
-            title: const Text('Karta kredytowa'),
-            subtitle: const Text(
-              'Pożycza pieniądze: zakup nie obciąża miesiąca, '
-              'robi to spłata po okresie bezodsetkowym',
-            ),
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _save(),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _isAutomatic,
+          onChanged: (v) => setState(() => _isAutomatic = v),
+          secondary: Icon(_isAutomatic ? LucideIcons.zap : LucideIcons.hand),
+          title: Text(_isAutomatic ? 'Automatyczna' : 'Manualna'),
+          // Przy karcie ten przełącznik opisuje SPŁATĘ, nie zakup: zakup
+          // kartą schodzi od razu zawsze, a przegapić można właśnie spłatę.
+          subtitle: Text(
+            _isCreditCard
+                ? (_isAutomatic
+                      ? 'Spłata karty schodzi sama'
+                      : 'Spłatę karty robisz ręcznie (lista „Płatności")')
+                : (_isAutomatic
+                      ? 'Pobierana automatycznie (żółty na kalendarzu)'
+                      : 'Przelew do zrobienia ręcznie (lista „Płatności")'),
           ),
-          // Pole tylko przy włączonej karcie — przy zwykłej metodzie „dni
-          // bezodsetkowych" nie ma czego opisywać.
-          if (_isCreditCard) ...[
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _graceCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Dni bezodsetkowe *',
-                hintText: 'np. 50',
-                helperText: 'Po tylu dniach od zakupu powstanie spłata',
-                errorText: _graceError,
-                prefixIcon: const Icon(LucideIcons.calendarClock),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _save,
-              child: Text(
-                widget.existing != null
-                    ? 'Zapisz zmiany'
-                    : 'Dodaj metodę płatności',
-              ),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _isCreditCard,
+          onChanged: (v) => setState(() => _isCreditCard = v),
+          secondary: const Icon(LucideIcons.creditCard),
+          title: const Text('Karta kredytowa'),
+          subtitle: const Text(
+            'Pożycza pieniądze: zakup nie obciąża miesiąca, '
+            'robi to spłata po okresie bezodsetkowym',
+          ),
+        ),
+        // Pole tylko przy włączonej karcie — przy zwykłej metodzie „dni
+        // bezodsetkowych" nie ma czego opisywać.
+        if (_isCreditCard) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _graceCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Dni bezodsetkowe *',
+              hintText: 'np. 50',
+              helperText: 'Po tylu dniach od zakupu powstanie spłata',
+              errorText: _graceError,
+              prefixIcon: const Icon(LucideIcons.calendarClock),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 

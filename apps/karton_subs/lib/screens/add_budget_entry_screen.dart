@@ -11,6 +11,7 @@ import '../utils/money_format.dart';
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
 import '../widgets/cycle_months_picker.dart';
+import '../widgets/form_action_bar.dart';
 
 class AddBudgetEntryScreen extends StatefulWidget {
   final BudgetEntry? existing;
@@ -203,20 +204,19 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // Zapis w stałym miejscu — pasek tytułu nie musi go już dublować.
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FormActionBar(
+        onCancel: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        onSave: _isSubmitting ? null : _submit,
+      ),
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj pozycję' : 'Dodaj pozycję budżetu'),
-        actions: [
-          if (_isEditing)
-            TextButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: const Text('Zapisz'),
-            ),
-        ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
             _SectionLabel('Typ pozycji'),
             const SizedBox(height: 8),
@@ -578,17 +578,6 @@ class _AddBudgetEntryScreenState extends State<AddBudgetEntryScreen> {
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 32),
-
-            FilledButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj pozycję'),
-            ),
             if (_isEditing) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(

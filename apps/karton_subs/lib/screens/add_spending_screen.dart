@@ -14,6 +14,7 @@ import '../theme/app_theme.dart' show AppColors, SemanticColorsExtension;
 import '../widgets/budget_widgets.dart' show BudgetScopeToggle;
 import '../widgets/category_icons.dart'
     show paymentMethodIcon, paymentMethodIconColor;
+import '../widgets/form_action_bar.dart';
 import '../widgets/image_preview_dialog.dart';
 
 /// Formularz wydatku — realny log opłaconej pozycji ([BudgetEntryType.spending]).
@@ -345,6 +346,13 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // Pigułka zapisu w stałym miejscu — Scaffold sam podnosi ją nad
+      // klawiaturę, bo `resizeToAvoidBottomInset` zostaje domyślne.
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FormActionBar(
+        onCancel: _isSubmitting ? null : () => Navigator.of(context).pop(),
+        onSave: _isSubmitting ? null : _submit,
+      ),
       appBar: AppBar(
         title: Text(_isEditing ? 'Edytuj wydatek' : 'Dodaj wydatek'),
         actions: [
@@ -359,7 +367,9 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          // Zapas na dole pod pigułkę zapisu — bez niego ostatnie pole chowa
+          // się pod nią i nie da się w nie kliknąć.
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
             // Podgląd zdjęcia wydatku (skan lub powiązane zdjęcie) — tap powiększa.
             if (_photoPath != null && File(_photoPath!).existsSync()) ...[
@@ -537,15 +547,10 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
             ),
             const SizedBox(height: 28),
 
-            FilledButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: Text(_isEditing ? 'Zapisz zmiany' : 'Dodaj wydatek'),
-            ),
             // Przeniesienie tylko przy edycji i tylko wtedy, gdy oba budżety są
             // w użyciu — w trybie jednozakresowym nie ma dokąd przenosić.
             if (_isEditing &&
                 context.watch<BudgetController>().scopeSelectable) ...[
-              const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: _isSubmitting ? null : _moveToOtherScope,
                 icon: const Icon(LucideIcons.arrowLeftRight, size: 18),

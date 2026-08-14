@@ -9,8 +9,8 @@ import '../controllers/budget_controller.dart';
 import '../controllers/subscription_controller.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/category_icons.dart'
-    show categoryIcon, availableIconNames;
+import '../widgets/form_action_bar.dart';
+import '../widgets/category_icons.dart' show categoryIcon, availableIconNames;
 
 class CategoryManagementScreen extends StatefulWidget {
   const CategoryManagementScreen({super.key});
@@ -267,131 +267,111 @@ class _CategoryEditorState extends State<_CategoryEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        MediaQuery.of(context).viewInsets.bottom + 16,
+    return FormSheet(
+      title: widget.existing != null ? 'Edytuj kategorię' : 'Nowa kategoria',
+      actions: FormActionBar(
+        onCancel: () => Navigator.pop(context),
+        onSave: _save,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.existing != null ? 'Edytuj kategorię' : 'Nowa kategoria',
-            style: theme.textTheme.titleMedium,
+      children: [
+        TextFormField(
+          controller: _nameCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Nazwa',
+            hintText: 'np. AI',
           ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _nameCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Nazwa',
-              hintText: 'np. AI',
-            ),
-            autofocus: widget.existing == null,
-          ),
-          const SizedBox(height: 16),
+          autofocus: widget.existing == null,
+        ),
+        const SizedBox(height: 16),
 
-          // Kolor
-          Text('Kolor', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _palette.map((hex) {
+        // Kolor
+        Text('Kolor', style: theme.textTheme.labelMedium),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _palette.map((hex) {
+            final color = Color(
+              int.parse('FF${hex.replaceFirst('#', '')}', radix: 16),
+            );
+            final isSelected = _colorHex == hex;
+            return GestureDetector(
+              onTap: () => setState(() => _colorHex = hex),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: isSelected
+                      ? Border.all(color: theme.colorScheme.primary, width: 3)
+                      : null,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+
+        // Ikona
+        Text('Ikona', style: theme.textTheme.labelMedium),
+        const SizedBox(height: 8),
+        // Siatka przewijana W DÓŁ, nie w bok: ikon jest kilkadziesiąt, a
+        // ułożone są tematycznie (dom, zakupy, transport, …). Dwa rzędy
+        // przewijane poziomo rozbijały tę kolejność na pary i szukanie
+        // sprowadzało się do przesuwania przez cały zestaw.
+        SizedBox(
+          height: 168,
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 48,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemCount: availableIconNames.length,
+            itemBuilder: (context, index) {
+              final name = availableIconNames[index];
+              final isSelected = _iconName == name;
               final color = Color(
-                int.parse('FF${hex.replaceFirst('#', '')}', radix: 16),
+                int.parse('FF${_colorHex.replaceFirst('#', '')}', radix: 16),
               );
-              final isSelected = _colorHex == hex;
               return GestureDetector(
-                onTap: () => setState(() => _colorHex = hex),
+                onTap: () => setState(() => _iconName = name),
                 child: Container(
-                  width: 32,
-                  height: 32,
                   decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? color.withValues(alpha: 0.2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
                     border: isSelected
-                        ? Border.all(color: theme.colorScheme.primary, width: 3)
-                        : null,
+                        ? Border.all(color: color, width: 2)
+                        : Border.all(color: theme.dividerColor),
+                  ),
+                  child: Icon(
+                    categoryIcon(name),
+                    color: isSelected ? color : theme.colorScheme.onSurface,
+                    size: 20,
                   ),
                 ),
               );
-            }).toList(),
+            },
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          // Ikona
-          Text('Ikona', style: theme.textTheme.labelMedium),
-          const SizedBox(height: 8),
-          // Siatka przewijana W DÓŁ, nie w bok: ikon jest kilkadziesiąt, a
-          // ułożone są tematycznie (dom, zakupy, transport, …). Dwa rzędy
-          // przewijane poziomo rozbijały tę kolejność na pary i szukanie
-          // sprowadzało się do przesuwania przez cały zestaw.
-          SizedBox(
-            height: 168,
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 48,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-              ),
-              itemCount: availableIconNames.length,
-              itemBuilder: (context, index) {
-                final name = availableIconNames[index];
-                final isSelected = _iconName == name;
-                final color = Color(
-                  int.parse('FF${_colorHex.replaceFirst('#', '')}', radix: 16),
-                );
-                return GestureDetector(
-                  onTap: () => setState(() => _iconName = name),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? color.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      border: isSelected
-                          ? Border.all(color: color, width: 2)
-                          : Border.all(color: theme.dividerColor),
-                    ),
-                    child: Icon(
-                      categoryIcon(name),
-                      color: isSelected ? color : theme.colorScheme.onSurface,
-                      size: 20,
-                    ),
-                  ),
-                );
-              },
-            ),
+        // Wykluczenie z analizy ghost
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Pomijaj w analizie nieużywanych'),
+          subtitle: Text(
+            'Subskrypcje w tej kategorii nie będą oznaczane jako nieużywane',
+            style: theme.textTheme.bodySmall,
           ),
-          const SizedBox(height: 16),
-
-          // Wykluczenie z analizy ghost
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Pomijaj w analizie nieużywanych'),
-            subtitle: Text(
-              'Subskrypcje w tej kategorii nie będą oznaczane jako nieużywane',
-              style: theme.textTheme.bodySmall,
-            ),
-            value: _excludeFromGhost,
-            onChanged: (v) => setState(() => _excludeFromGhost = v),
-          ),
-          const SizedBox(height: 16),
-
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _save,
-              child: Text(
-                widget.existing != null ? 'Zapisz zmiany' : 'Dodaj kategorię',
-              ),
-            ),
-          ),
-        ],
-      ),
+          value: _excludeFromGhost,
+          onChanged: (v) => setState(() => _excludeFromGhost = v),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
