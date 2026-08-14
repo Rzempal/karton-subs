@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
@@ -36,37 +38,41 @@ class FormActionBar extends StatelessWidget {
     final theme = Theme.of(context);
     final c = context.semanticColors;
 
-    return Material(
-      color: c.surface,
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
-      borderRadius: BorderRadius.circular(28),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: c.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _action(
-              theme,
-              label: cancelLabel,
-              onTap: onCancel,
-              color: c.textSecondary,
-            ),
-            // Kreska rozdzielająca, jak w pigułce systemowej — bez niej dwa
-            // teksty obok siebie czytają się jak jedna etykieta.
-            Container(width: 1, height: 24, color: c.border),
-            _action(
-              theme,
-              label: saveLabel,
-              onTap: onSave,
-              color: c.primary,
-              bold: true,
-            ),
-          ],
+    // To samo szkło co pasek nawigacji: bez rozmycia pigułka była tylko
+    // półprzezroczysta i treść pod nią prześwitywała, przez co obie warstwy
+    // były nieczytelne. Jedna warstwa `BackdropFilter` na ekran — formularze
+    // nie mają paska nawigacji, więc limit z docs/design.md zostaje dotrzymany.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.pill),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.navGlass,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            border: Border.all(color: c.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _action(
+                theme,
+                label: cancelLabel,
+                onTap: onCancel,
+                color: c.textSecondary,
+              ),
+              // Kreska rozdzielająca, jak w pigułce systemowej — bez niej dwa
+              // teksty obok siebie czytają się jak jedna etykieta.
+              Container(width: 1, height: 24, color: c.border),
+              _action(
+                theme,
+                label: saveLabel,
+                onTap: onSave,
+                color: c.primary,
+                bold: true,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -96,11 +102,16 @@ class FormActionBar extends StatelessWidget {
 /// Odstęp na dole formularza, żeby ostatnie pole nie chowało się pod pigułką.
 const double kFormActionBarSpace = 88;
 
-/// Arkusz wysuwany z formularzem: treść się przewija, pigułka stoi na dole.
+/// Arkusz wysuwany z formularzem: treść się przewija, pigułka PŁYWA nad nią.
 ///
 /// Bez tego wysoki formularz (np. kategoria z paletą kolorów i siatką ikon)
 /// wypychał przycisk zapisu poza ekran — arkusz jechał z klawiaturą, ale sam
 /// przycisk bywał już poza widokiem.
+///
+/// Pigułka leży w [Stack], a nie we własnym wierszu [Column]: własny wiersz
+/// zabierał całą wysokość rzędu i zasłaniał siatkę ikon, choć sama pigułka
+/// zajmuje tylko jej środek. Tak samo zachowuje się na ekranach (tam jako
+/// `floatingActionButton`), więc oba miejsca wyglądają jednakowo.
 class FormSheet extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -134,18 +145,30 @@ class FormSheet extends StatelessWidget {
           // Elastyczna, nie sztywna: krótki formularz zostaje niski, długi
           // przewija się zamiast rozpychać arkusz poza ekran.
           Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: children,
-              ),
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  // Zapas pod pigułkę — ostatni rząd ikon musi dać się kliknąć.
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    kFormActionBarSpace,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: children,
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 16,
+                  child: Center(child: actions),
+                ),
+              ],
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: actions,
           ),
         ],
       ),
