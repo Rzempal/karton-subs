@@ -1,9 +1,14 @@
 {
-  "releaseNotes": "- Naprawione skanowanie paragonow: po zmianie nazw przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Poprawki odczytu: stawka VAT nie jest brana za kwote, nazwa nie moze byc numerem ani etykieta dokumentu",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081003",
-  "version": "0.25.26081003",
-  "versionCode": 2026081003,
+  "releaseDate": "2026-08-14T10:35:16Z",
+  "releaseNotes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081400",
+  "version": "0.25.26081400",
+  "versionCode": 2026081400,
   "changelog": [
+    {
+      "version": "0.25.26081400",
+      "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
+    },
     {
       "version": "0.25.26081003",
       "notes": "- Naprawione skanowanie paragonow: po zmianie nazw przestalo dzialac i pokazywalo blednie, ze wymaga Androida\n- Poprawki odczytu: stawka VAT nie jest brana za kwote, nazwa nie moze byc numerem ani etykieta dokumentu"
@@ -39,11 +44,6 @@
     {
       "version": "0.22.26080803",
       "notes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem"
-    },
-    {
-      "version": "0.22.26080802",
-      "notes": "- Przy filtrze na jeden miesiac karta pozycji pokazuje po prawej kwote korekty z tego miesiaca\n- Dziala na Cyklicznych i na Wplywach; przy filtrze na rok lub wszystkie lata nic sie nie pojawia"
     }
-  ],
-  "releaseDate": "2026-08-10T20:16:22Z"
+  ]
 }
