@@ -1,10 +1,12 @@
 {
-  "releaseDate": "2026-08-14T10:35:16Z",
-  "releaseNotes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081400",
-  "version": "0.25.26081400",
-  "versionCode": 2026081400,
+  "version": "0.25.26081401",
+  "releaseNotes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081401",
   "changelog": [
+    {
+      "version": "0.25.26081401",
+      "notes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon"
+    },
     {
       "version": "0.25.26081400",
       "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
@@ -40,10 +42,8 @@
     {
       "version": "0.22.26080804",
       "notes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace"
-    },
-    {
-      "version": "0.22.26080803",
-      "notes": "- Druga linia karty: po prawej albo kwota korekty wybranego miesiaca, albo licznik korekt\n- Opis po lewej krotszy, wiec rzadziej urywa sie wielokropkiem"
     }
-  ]
+  ],
+  "versionCode": 2026081401,
+  "releaseDate": "2026-08-14T11:37:23Z"
 }
