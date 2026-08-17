@@ -1,8 +1,9 @@
 {
-  "version": "0.25.26081401",
-  "releaseNotes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081401",
   "changelog": [
+    {
+      "version": "0.26.26081700",
+      "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow"
+    },
     {
       "version": "0.25.26081401",
       "notes": "- Pigulka Anuluj / Zapisz ma teraz to samo rozmyte szklo co pasek nawigacji — wczesniej tresc pod nia przeswitywala\n- W arkuszach pigulka plywa nad trescia zamiast zajmowac caly wiersz, wiec przy edycji kategorii nie zaslania juz siatki ikon"
@@ -38,12 +39,11 @@
     {
       "version": "0.23.26080900",
       "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie"
-    },
-    {
-      "version": "0.22.26080804",
-      "notes": "- W Bilansie miesiaca trzecia ikona przy naglowku sekcji zwija liste biezacych do jednego wiersza z suma\n- Dziala w Platnosciach i w Podsumowaniu miesiaca; w Platnosciach zwiniety wiersz odhacza wszystkie biezace naraz\n- Ikona pojawia sie dopiero, gdy miesiac ma co najmniej dwa biezace"
     }
   ],
-  "versionCode": 2026081401,
-  "releaseDate": "2026-08-14T11:37:23Z"
+  "versionCode": 2026081700,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081700",
+  "releaseNotes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow",
+  "releaseDate": "2026-08-17T18:21:11Z",
+  "version": "0.26.26081700"
 }

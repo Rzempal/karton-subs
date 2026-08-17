@@ -1007,6 +1007,62 @@ class BudgetController extends ChangeNotifier {
     return changed;
   }
 
+  /// Scala kilka wydatków bieżących w JEDNĄ nową pozycję i usuwa źródłowe.
+  /// Zwraca scaloną pozycję albo `null`, gdy scalanie jest niedozwolone.
+  ///
+  /// **Kolejność jest celowa:** najpierw powstaje scalona pozycja, dopiero
+  /// potem znikają źródła. Gdyby kasowanie padło w połowie, na liście zostaje
+  /// nadmiar wierszy — widoczny i do posprzątania ręcznie. Odwrotna kolejność
+  /// gubiłaby pieniądze bez żadnego śladu.
+  ///
+  /// **Pozycje spięte są odrzucane.** Wydatek z `creditLinkId` (karta
+  /// kredytowa, ADR-033) kasuje się KASKADOWO razem z zakupem i lustrzanym
+  /// wpływem, a `linkId` z drugą stroną przelewu — scalanie zjadłoby wtedy
+  /// dane, których użytkownik nie zaznaczył.
+  ///
+  /// Źródła czytamy ponownie z bazy: między zaznaczeniem a zapisem mogła wejść
+  /// synchronizacja. Gdy zostanie mniej niż dwie pozycje, scalanie nie ma czego
+  /// scalić i nic się nie dzieje.
+  Future<BudgetEntry?> mergeSpendings({
+    required Iterable<String> sourceIds,
+    required String name,
+    required double amount,
+    required Currency currency,
+    required DateTime date,
+    String? categoryId,
+    String? paymentMethod,
+    String? note,
+  }) async {
+    final sources = <BudgetEntry>[];
+    for (final id in sourceIds.toSet()) {
+      final entry = _storage.getBudgetEntry(id, _scope);
+      if (entry != null && !entry.deleted) sources.add(entry);
+    }
+    if (sources.length < 2) {
+      _log.warning('Scalanie przerwane: mniej niz dwie pozycje zrodlowe');
+      return null;
+    }
+    if (sources.any((e) => e.creditLinkId != null || e.linkId != null)) {
+      _log.warning('Scalanie przerwane: pozycja spieta (karta/przelew)');
+      return null;
+    }
+
+    final merged = await create(
+      name: name,
+      type: BudgetEntryType.spending,
+      amount: amount,
+      currency: currency,
+      month: BudgetEntry.monthKeyOf(date),
+      startDate: date,
+      categoryId: categoryId,
+      paymentMethod: paymentMethod,
+      note: note,
+    );
+    await deleteAll(sources.map((e) => e.id));
+    _log.info('Scalono ${sources.length} wydatkow w "$name" ($_scope)');
+    return merged;
+  }
+
   Future<int> _updateAll(
     Iterable<String> ids,
     BudgetEntry Function(BudgetEntry) change,

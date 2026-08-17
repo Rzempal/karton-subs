@@ -38,9 +38,21 @@ class AddSpendingScreen extends StatefulWidget {
   final String? initialCategoryId;
   final Currency? initialCurrency;
 
+  final String? initialPaymentMethod;
+  final String? initialNote;
+
   /// Zdjęcie rozpoznanego wydatku (skan) — miniatura u góry formularza
   /// z podglądem po kliknięciu. Pozwala sprawdzić rozpoznane pola ze źródłem.
   final String? initialImagePath;
+
+  /// Scalanie: pozycje, które ZNIKNĄ po zapisie tego formularza.
+  ///
+  /// Niepusta lista przełącza ekran w tryb scalania — formularz jest wtedy
+  /// podglądem tego, co wyjdzie ze scalenia (użytkownik może wszystko
+  /// poprawić), a zapis idzie przez [BudgetController.mergeSpendings]:
+  /// jedna operacja tworzy scaloną pozycję i kasuje źródła. Anulowanie nie
+  /// rusza niczego.
+  final List<String> mergeSourceIds;
 
   const AddSpendingScreen({
     super.key,
@@ -51,7 +63,10 @@ class AddSpendingScreen extends StatefulWidget {
     this.initialDate,
     this.initialCategoryId,
     this.initialCurrency,
+    this.initialPaymentMethod,
+    this.initialNote,
     this.initialImagePath,
+    this.mergeSourceIds = const [],
   });
 
   @override
@@ -78,6 +93,10 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
 
   bool get _isEditing => widget.existing != null;
 
+  /// Tryb scalania — zapis usuwa pozycje źródłowe, więc formularz mówi o tym
+  /// wprost i ma inny podpis przycisku.
+  bool get _isMerging => widget.mergeSourceIds.length >= 2;
+
   @override
   void initState() {
     super.initState();
@@ -91,10 +110,10 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
           ? e.amount.toStringAsFixed(2)
           : widget.initialAmount?.toStringAsFixed(2) ?? '',
     );
-    _noteCtrl = TextEditingController(text: e?.note ?? '');
+    _noteCtrl = TextEditingController(text: e?.note ?? widget.initialNote ?? '');
     _scope = widget.scope;
     _categoryId = e?.categoryId ?? widget.initialCategoryId;
-    _paymentMethod = e?.paymentMethod;
+    _paymentMethod = e?.paymentMethod ?? widget.initialPaymentMethod;
 
     // Podgląd zdjęcia: skan (prefill) albo powiązane zdjęcie zapisanego wydatku.
     _photoPath =
@@ -195,6 +214,7 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
     }
     setState(() => _isSubmitting = true);
     final ctrl = context.read<BudgetController>();
+    final scanCtrl = context.read<ReceiptScanController>();
     final monthKey = BudgetEntry.monthKeyOf(_date);
     final note = _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim();
     final name = _nameCtrl.text.trim();
@@ -203,7 +223,37 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
       // Zwracamy utworzoną/edytowaną pozycję — ekran Bieżące po skanie wiąże
       // z nią zdjęcie (podgląd + archiwum).
       final BudgetEntry result;
-      if (_isEditing) {
+      if (_isMerging) {
+        // Scalanie idzie jedną operacją kontrolera: nowa pozycja powstaje,
+        // źródła znikają. Zakres bierzemy z ekranu, na którym stał użytkownik
+        // (przełącznik zakresu jest w tym trybie schowany) — inaczej zapis
+        // trafiłby do innego pudełka niż to, z którego kasujemy źródła.
+        final merged = await ctrl.mergeSpendings(
+          sourceIds: widget.mergeSourceIds,
+          name: name,
+          amount: amount,
+          currency: _currency,
+          date: _date,
+          categoryId: _categoryId,
+          paymentMethod: _paymentMethod,
+          note: note,
+        );
+        if (merged == null) {
+          if (mounted) {
+            _snack(
+              'Nie scalono — pozycje zmieniły się w międzyczasie '
+              '(synchronizacja lub usunięcie). Zaznacz je jeszcze raz.',
+            );
+          }
+          return;
+        }
+        // Zdjęcia paragonów mieszkają poza budżetem (mapa po id), więc kasuje
+        // je ten, kto o nich wie — tak samo jak przy usuwaniu zbiorczym.
+        for (final id in widget.mergeSourceIds) {
+          scanCtrl.deletePhotoFor(id);
+        }
+        result = merged;
+      } else if (_isEditing) {
         final updated = widget.existing!.copyWith(
           name: name,
           amount: amount,
@@ -352,9 +402,16 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
       floatingActionButton: FormActionBar(
         onCancel: _isSubmitting ? null : () => Navigator.of(context).pop(),
         onSave: _isSubmitting ? null : _submit,
+        // Przy scalaniu zapis KASUJE pozycje źródłowe — „Zapisz" brzmiałoby
+        // jak dopisanie kolejnego wiersza.
+        saveLabel: _isMerging ? 'Scal' : 'Zapisz',
       ),
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edytuj wydatek' : 'Dodaj wydatek'),
+        title: Text(
+          _isEditing
+              ? 'Edytuj wydatek'
+              : (_isMerging ? 'Scal wydatki' : 'Dodaj wydatek'),
+        ),
         actions: [
           if (_isEditing)
             IconButton(
@@ -371,6 +428,13 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
           // się pod nią i nie da się w nie kliknąć.
           padding: const EdgeInsets.fromLTRB(16, 8, 16, kFormActionBarSpace),
           children: [
+            // Scalanie kasuje dane, więc mówimy o tym PRZED formularzem, a nie
+            // dopiero komunikatem po zapisie.
+            if (_isMerging) ...[
+              _MergeNotice(count: widget.mergeSourceIds.length),
+              const SizedBox(height: 24),
+            ],
+
             // Podgląd zdjęcia wydatku (skan lub powiązane zdjęcie) — tap powiększa.
             if (_photoPath != null && File(_photoPath!).existsSync()) ...[
               _SectionLabel('Zdjęcie paragonu'),
@@ -403,8 +467,12 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
             ],
 
             // Wybór zakresu tylko w trybie „oba"; w trybie jednym zakres jest
-            // wymuszony i przełącznik znika (spójnie z ekranami).
+            // wymuszony i przełącznik znika (spójnie z ekranami). Przy scalaniu
+            // znika zawsze: pozycje źródłowe leżą w jednym pudełku, a zmiana
+            // zakresu zapisałaby scaloną pozycję w drugim — źródła zostałyby
+            // nietknięte i te same pieniądze policzyłyby się dwa razy.
             if (!_isEditing &&
+                !_isMerging &&
                 context.read<BudgetController>().scopeSelectable) ...[
               _SectionLabel('Zakres'),
               const SizedBox(height: 8),
@@ -563,6 +631,44 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Ostrzeżenie u góry formularza w trybie scalania.
+///
+/// Scalanie jest jedyną operacją w tym formularzu, przy której **zapis kasuje
+/// dane**. Użytkownik musi to wiedzieć zanim zacznie poprawiać pola, a nie po
+/// fakcie — stąd pasek nad wszystkim, a nie komunikat po zapisie.
+class _MergeNotice extends StatelessWidget {
+  final int count;
+  const _MergeNotice({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.semanticColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.negative.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.negative.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(LucideIcons.merge, size: 18, color: c.negative),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Scalasz zaznaczone pozycje ($count) w jedną. Po zapisie znikną '
+              'z listy razem ze swoimi zdjęciami — tego nie da się cofnąć. '
+              'Anuluj zostawia wszystko bez zmian.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
       ),
     );
   }

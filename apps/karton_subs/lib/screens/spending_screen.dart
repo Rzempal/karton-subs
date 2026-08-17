@@ -14,6 +14,7 @@ import '../models/subscription.dart';
 import '../services/receipt_crop_service.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/credit_group.dart';
 import '../utils/expenses_filter.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
@@ -62,6 +63,12 @@ class _SpendingScreenState extends State<SpendingScreen> {
   /// = zwykła lista; wejście długim przytrzymaniem wiersza.
   final Set<String> _selected = {};
   bool _selecting = false;
+
+  /// Rozwinięte grupy spłat karty (klucz z [CreditRepaymentGroup.key]).
+  /// Stanu nie zapamiętujemy między wejściami na ekran: grupy powstają
+  /// i znikają razem z filtrami, więc trwałe rozwinięcie dotyczyłoby czegoś,
+  /// czego przy następnym wejściu może już nie być.
+  final Set<String> _expandedGroups = {};
 
   DateTime get _today => Subscription.devDateOverride ?? DateTime.now();
 
@@ -209,6 +216,95 @@ class _SpendingScreenState extends State<SpendingScreen> {
   void _afterBulk(String message) {
     _endSelection();
     _snack(message);
+  }
+
+  /// Scala zaznaczone wydatki w jeden wpis.
+  ///
+  /// Ekran tylko przygotowuje propozycję i sprawdza, czy zaznaczenie w ogóle
+  /// nadaje się do scalenia; decyzja zapada w formularzu, a sam zapis (nowa
+  /// pozycja + usunięcie źródeł) idzie jedną operacją kontrolera.
+  ///
+  /// **Kwota** to suma zaznaczonych. **Data** to najstarsza z nich — przy
+  /// płatnościach kartą to termin, który mija pierwszy, więc data późniejsza
+  /// sugerowałaby więcej czasu, niż go realnie jest. **Wzorzec** (nazwa,
+  /// kategoria, metoda płatności) wybiera użytkownik: przy kilku pozycjach
+  /// żadna reguła automatyczna nie trafiłaby w intencję.
+  Future<void> _bulkMerge(Set<String> ids, List<BudgetEntry> visible) async {
+    final entries = visible.where((e) => ids.contains(e.id)).toList();
+    if (entries.length < 2) {
+      _snack('Scalanie potrzebuje co najmniej dwóch pozycji.');
+      return;
+    }
+    if (entries.map((e) => e.currency).toSet().length > 1) {
+      _snack('Zaznaczone pozycje są w różnych walutach — nie ma jak ich zsumować.');
+      return;
+    }
+    // Pozycje karty kredytowej (ADR-033) kasują się KASKADOWO razem z zakupem
+    // i lustrzanym wpływem. Scalenie spłat zjadłoby więc historię zakupów,
+    // której użytkownik nawet nie zaznaczył.
+    if (entries.any((e) => e.creditLinkId != null)) {
+      _snack(
+        'Spłata karty jest spięta z zakupem — jej usunięcie skasowałoby także '
+        'ten zakup. Scal zwykłe wydatki.',
+      );
+      return;
+    }
+
+    final ctrl = context.read<BudgetController>();
+    final picked = await _pickFromDialog<String>(
+      title: 'Wzorzec: skąd nazwa i kategoria?',
+      options: [
+        for (final e in entries)
+          (
+            e.id,
+            '${e.name} · ${budgetNf.format(e.amount)} · '
+                '${DateFormat('d MMM y', 'pl_PL').format(_dateOf(e))}',
+          ),
+      ],
+    );
+    if (picked == null || !mounted) return;
+
+    final master = entries.firstWhere((e) => e.id == picked.value);
+    final total = entries.fold<double>(0, (sum, e) => sum + e.amount);
+    final oldest = entries
+        .map(_dateOf)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddSpendingScreen(
+          scope: ctrl.scope,
+          mergeSourceIds: entries.map((e) => e.id).toList(),
+          initialName: master.name,
+          initialAmount: total,
+          initialDate: oldest,
+          initialCategoryId: master.categoryId,
+          initialPaymentMethod: master.paymentMethod,
+          initialCurrency: master.currency,
+          initialNote: _mergeNote(entries),
+        ),
+      ),
+    );
+    // Zaznaczenie kończymy niezależnie od tego, czy scalenie doszło do skutku:
+    // po anulowaniu pozycje są te same, ale pasek akcji już nie jest potrzebny.
+    if (mounted) _endSelection();
+  }
+
+  DateTime _dateOf(BudgetEntry e) => e.startDate ?? e.dataDodania;
+
+  /// Notatka scalonego wpisu — jedyny ślad po tym, co zniknęło z listy.
+  /// Przy długim zaznaczeniu wypisujemy kilka pierwszych i liczbę reszty,
+  /// bo notatka ma być czytelna, a nie kompletna.
+  String _mergeNote(List<BudgetEntry> entries) {
+    const shown = 6;
+    final head = entries
+        .take(shown)
+        .map((e) => '${e.name} ${budgetNf.format(e.amount)}')
+        .join(' · ');
+    final rest = entries.length - shown;
+    return rest > 0
+        ? 'Scalono ${entries.length} poz.: $head · i jeszcze $rest'
+        : 'Scalono ${entries.length} poz.: $head';
   }
 
   /// Proste okno wyboru z listy — wspólne dla kategorii i metody płatności.
@@ -481,6 +577,23 @@ class _SpendingScreenState extends State<SpendingScreen> {
     // Zaznaczenie liczone z listy WIDOCZNEJ: pozycja mogła zniknąć przez filtr,
     // usunięcie albo synchronizację, a akcja pracowałaby wtedy na duchu.
     final selection = _liveSelection(items);
+
+    // Spłaty jednej karty z jednego miesiąca zwijamy w jeden wiersz (ADR-034).
+    // W trybie zaznaczania grupy są rozwinięte ZAWSZE: „Zaznacz wszystkie"
+    // obejmuje też pozycje w grupach, więc muszą być widoczne — inaczej licznik
+    // paska mówiłby o pozycjach, których nie widać.
+    final display = <Object>[];
+    for (final row in buildSpendingRows(visible: items, all: all)) {
+      switch (row) {
+        case SpendingEntryRow(:final entry):
+          display.add(entry);
+        case CreditRepaymentGroup group:
+          display.add(group);
+          if (_selecting || _expandedGroups.contains(group.key)) {
+            display.addAll(group.entries);
+          }
+      }
+    }
     // Pozycje oczekujące aktywnego zakresu (niezależne od wybranego miesiąca —
     // wiszą, dopóki nie zostaną zatwierdzone albo odrzucone).
     final pending = scanCtrl.pending
@@ -554,6 +667,11 @@ class _SpendingScreenState extends State<SpendingScreen> {
                           icon: LucideIcons.calendarDays,
                           tooltip: 'Zmień datę',
                           onPressed: () => _bulkDate(selection),
+                        ),
+                        SelectionAction(
+                          icon: LucideIcons.merge,
+                          tooltip: 'Scal w jeden wpis',
+                          onPressed: () => _bulkMerge(selection, items),
                         ),
                         SelectionAction(
                           icon: LucideIcons.trash2,
@@ -659,14 +777,35 @@ class _SpendingScreenState extends State<SpendingScreen> {
                       // Separator zamiast odstępu: wiersze tworzą jedną listę,
                       // a nie ciąg osobnych kart.
                       sliver: SliverList.separated(
-                        itemCount: items.length,
+                        itemCount: display.length,
                         separatorBuilder: (_, _) => Divider(
                           height: 1,
                           thickness: 1,
                           color: context.semanticColors.border,
                         ),
                         itemBuilder: (context, i) {
-                          final e = items[i];
+                          final item = display[i];
+                          // Wiersz grupy nie jest pozycją budżetu: nie ma go co
+                          // edytować, zaznaczać ani usuwać (usunięcie spłaty
+                          // kasuje kaskadą zakup — ADR-033).
+                          if (item is CreditRepaymentGroup) {
+                            return _CreditGroupRow(
+                              group: item,
+                              expanded:
+                                  _selecting ||
+                                  _expandedGroups.contains(item.key),
+                              // W trybie zaznaczania grupa jest rozwinięta na
+                              // sztywno, więc zwijanie jest wtedy wyłączone.
+                              onToggle: _selecting
+                                  ? null
+                                  : () => setState(() {
+                                      if (!_expandedGroups.remove(item.key)) {
+                                        _expandedGroups.add(item.key);
+                                      }
+                                    }),
+                            );
+                          }
+                          final e = item as BudgetEntry;
                           final row = SelectableRow(
                             selectionMode: _selecting,
                             selected: selection.contains(e.id),
@@ -1040,6 +1179,89 @@ class _SpendingSectionHeader extends StatelessWidget {
             PlanProgressBar(value: total, plan: alloc, height: 6),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Zwinięty wiersz spłat jednej karty: nazwa karty, licznik i SUMA składników.
+///
+/// Model karty jest 1:1 (zakup → własna spłata), a z konta schodzi jedna kwota
+/// za okres — ten wiersz pokazuje właśnie ją. Rozwinięcie odsłania te same
+/// pozycje co wcześniej; nic tu nie zmienia danych ani sum sekcji.
+class _CreditGroupRow extends StatelessWidget {
+  final CreditRepaymentGroup group;
+  final bool expanded;
+
+  /// `null` = zwijanie wyłączone (tryb zaznaczania trzyma grupy rozwinięte).
+  final VoidCallback? onToggle;
+
+  const _CreditGroupRow({
+    required this.group,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.semanticColors;
+    final amount =
+        '−${budgetNf.format(group.total)}'
+        '${curLabelSuffix(group.currency.label)}';
+
+    return InkWell(
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              expanded ? LucideIcons.chevronDown : LucideIcons.chevronRight,
+              size: 16,
+              color: c.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Icon(LucideIcons.creditCard, size: 18, color: c.negative),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          group.card,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        amount,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: c.negative,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Spłaty karty · ${group.entries.length} poz.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: c.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
