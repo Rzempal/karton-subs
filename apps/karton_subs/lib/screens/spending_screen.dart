@@ -19,6 +19,7 @@ import '../utils/expenses_filter.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/budget_widgets.dart';
+import '../widgets/credit_group_row.dart';
 import '../widgets/filter_bars.dart';
 import '../widgets/frost_card.dart';
 import '../widgets/plan_progress_bar.dart';
@@ -236,7 +237,9 @@ class _SpendingScreenState extends State<SpendingScreen> {
       return;
     }
     if (entries.map((e) => e.currency).toSet().length > 1) {
-      _snack('Zaznaczone pozycje są w różnych walutach — nie ma jak ich zsumować.');
+      _snack(
+        'Zaznaczone pozycje są w różnych walutach — nie ma jak ich zsumować.',
+      );
       return;
     }
     // Pozycje karty kredytowej (ADR-033) kasują się KASKADOWO razem z zakupem
@@ -266,9 +269,7 @@ class _SpendingScreenState extends State<SpendingScreen> {
 
     final master = entries.firstWhere((e) => e.id == picked.value);
     final total = entries.fold<double>(0, (sum, e) => sum + e.amount);
-    final oldest = entries
-        .map(_dateOf)
-        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final oldest = entries.map(_dateOf).reduce((a, b) => a.isBefore(b) ? a : b);
 
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -356,9 +357,7 @@ class _SpendingScreenState extends State<SpendingScreen> {
 
   Future<void> _openAdd(BudgetController ctrl) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AddSpendingScreen(scope: ctrl.scope),
-      ),
+      MaterialPageRoute(builder: (_) => AddSpendingScreen(scope: ctrl.scope)),
     );
   }
 
@@ -583,14 +582,23 @@ class _SpendingScreenState extends State<SpendingScreen> {
     // obejmuje też pozycje w grupach, więc muszą być widoczne — inaczej licznik
     // paska mówiłby o pozycjach, których nie widać.
     final display = <Object>[];
-    for (final row in buildSpendingRows(visible: items, all: all)) {
+    // Pozycje rozwiniętej grupy rysujemy z wcięciem — bez niego wyglądają jak
+    // zwykłe wiersze listy, które przypadkiem stoją pod wierszem karty.
+    final groupChildIds = <String>{};
+    final rows = buildCreditRows(
+      visible: items,
+      cards: creditRepaymentCards(all),
+      kind: CreditGroupKind.repayment,
+    );
+    for (final row in rows) {
       switch (row) {
-        case SpendingEntryRow(:final entry):
+        case PlainEntryRow(:final entry):
           display.add(entry);
-        case CreditRepaymentGroup group:
+        case CreditGroup group:
           display.add(group);
           if (_selecting || _expandedGroups.contains(group.key)) {
             display.addAll(group.entries);
+            groupChildIds.addAll(group.entries.map((e) => e.id));
           }
       }
     }
@@ -788,8 +796,8 @@ class _SpendingScreenState extends State<SpendingScreen> {
                           // Wiersz grupy nie jest pozycją budżetu: nie ma go co
                           // edytować, zaznaczać ani usuwać (usunięcie spłaty
                           // kasuje kaskadą zakup — ADR-033).
-                          if (item is CreditRepaymentGroup) {
-                            return _CreditGroupRow(
+                          if (item is CreditGroup) {
+                            return CreditGroupRow(
                               group: item,
                               expanded:
                                   _selecting ||
@@ -806,6 +814,12 @@ class _SpendingScreenState extends State<SpendingScreen> {
                             );
                           }
                           final e = item as BudgetEntry;
+                          // Wcięcie należy się CAŁEMU wierszowi, nie samej
+                          // treści: przy zaznaczaniu razem z nim wjeżdża kółko,
+                          // a przy swipe — tło z koszem.
+                          final indent = groupChildIds.contains(e.id)
+                              ? kCreditGroupIndent
+                              : 0.0;
                           final row = SelectableRow(
                             selectionMode: _selecting,
                             selected: selection.contains(e.id),
@@ -818,26 +832,34 @@ class _SpendingScreenState extends State<SpendingScreen> {
                           );
                           // W trybie zaznaczania swipe jest wyłączony: ten sam
                           // gest znaczyłby „usuń jedną" obok zaznaczenia wielu.
-                          if (_selecting) return row;
-                          return Dismissible(
-                            key: ValueKey(e.id),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              child: Icon(
-                                LucideIcons.trash2,
-                                color: AppColors.negative,
+                          if (_selecting) {
+                            return Padding(
+                              padding: EdgeInsets.only(left: indent),
+                              child: row,
+                            );
+                          }
+                          return Padding(
+                            padding: EdgeInsets.only(left: indent),
+                            child: Dismissible(
+                              key: ValueKey(e.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.only(right: 20),
+                                child: Icon(
+                                  LucideIcons.trash2,
+                                  color: AppColors.negative,
+                                ),
                               ),
+                              confirmDismiss: (_) => _confirmDelete(e),
+                              onDismissed: (_) {
+                                context
+                                    .read<ReceiptScanController>()
+                                    .deletePhotoFor(e.id);
+                                context.read<BudgetController>().delete(e.id);
+                              },
+                              child: row,
                             ),
-                            confirmDismiss: (_) => _confirmDelete(e),
-                            onDismissed: (_) {
-                              context.read<ReceiptScanController>().deletePhotoFor(
-                                e.id,
-                              );
-                              context.read<BudgetController>().delete(e.id);
-                            },
-                            child: row,
                           );
                         },
                       ),
@@ -1179,89 +1201,6 @@ class _SpendingSectionHeader extends StatelessWidget {
             PlanProgressBar(value: total, plan: alloc, height: 6),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// Zwinięty wiersz spłat jednej karty: nazwa karty, licznik i SUMA składników.
-///
-/// Model karty jest 1:1 (zakup → własna spłata), a z konta schodzi jedna kwota
-/// za okres — ten wiersz pokazuje właśnie ją. Rozwinięcie odsłania te same
-/// pozycje co wcześniej; nic tu nie zmienia danych ani sum sekcji.
-class _CreditGroupRow extends StatelessWidget {
-  final CreditRepaymentGroup group;
-  final bool expanded;
-
-  /// `null` = zwijanie wyłączone (tryb zaznaczania trzyma grupy rozwinięte).
-  final VoidCallback? onToggle;
-
-  const _CreditGroupRow({
-    required this.group,
-    required this.expanded,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = context.semanticColors;
-    final amount =
-        '−${budgetNf.format(group.total)}'
-        '${curLabelSuffix(group.currency.label)}';
-
-    return InkWell(
-      onTap: onToggle,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-        child: Row(
-          children: [
-            Icon(
-              expanded ? LucideIcons.chevronDown : LucideIcons.chevronRight,
-              size: 16,
-              color: c.textSecondary,
-            ),
-            const SizedBox(width: 6),
-            Icon(LucideIcons.creditCard, size: 18, color: c.negative),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          group.card,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        amount,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: c.negative,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Spłaty karty · ${group.entries.length} poz.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: c.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -9,12 +9,14 @@ import '../models/category.dart';
 import '../models/subscription.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/credit_group.dart';
 import '../utils/expenses_filter.dart';
 import '../utils/money_format.dart';
 import '../widgets/aurora_add_menu.dart';
 import '../widgets/aurora_chip.dart';
 import '../widgets/budget_widgets.dart';
 import '../widgets/category_icons.dart' show subscriptionIcon;
+import '../widgets/credit_group_row.dart';
 import '../widgets/filter_bars.dart';
 import '../widgets/scope_swipe_area.dart';
 import '../widgets/selection_bar.dart';
@@ -110,6 +112,10 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   /// danych, z własnym formularzem i własnym menu pod przytrzymaniem.
   final Set<String> _selected = {};
   bool _selecting = false;
+
+  /// Rozwinięte grupy pozycji karty (klucz z [CreditGroup.key]). Stanu nie
+  /// zapamiętujemy między wejściami: grupy powstają i znikają razem z filtrami.
+  final Set<String> _expandedCreditGroups = {};
 
   /// Sortowanie i grupowanie listy.
   _BudgetSort _sort = _BudgetSort.alpha;
@@ -653,6 +659,13 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
       ];
     }
 
+    // Lustrzane wpływy „karta pożycza na ten zakup" zwijamy w jeden wiersz
+    // (ADR-034) — na „Cyklicznych" nie ma ich wcale, więc mapa jest pusta
+    // i lista idzie bez zmian.
+    final creditCards = _onIncomes
+        ? creditMirrorIncomeCards(ctrl.all)
+        : const <String, String>{};
+
     final out = <Widget>[];
     var pinned = false;
     for (final b in buckets) {
@@ -668,6 +681,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           monthKey: monthKey,
         ),
       );
+      List<Widget> entryRows(List<BudgetEntry> items) =>
+          _creditAwareRows(items, entryRow, creditCards);
       out.add(
         _Section(
           title: b.title,
@@ -681,8 +696,8 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           onToggle: () => _toggleSection(b.key),
           pinnedTop: isExp ? allocCard() : null,
           children: byCategory && b.categorized
-              ? _categoryGroups(b.entries, (e) => e.categoryId, entryRow)
-              : [BudgetEntryList(rows: b.entries.map(entryRow).toList())],
+              ? _categoryGroups(b.entries, (e) => e.categoryId, entryRows)
+              : [BudgetEntryList(rows: entryRows(b.entries))],
         ),
       );
       if (isExp) pinned = true;
@@ -702,7 +717,11 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
           collapsed: _collapsed.contains(_kSectionSubscriptions),
           onToggle: () => _toggleSection(_kSectionSubscriptions),
           children: byCategory
-              ? _categoryGroups(subs, (s) => s.categoryId, subRow)
+              ? _categoryGroups(
+                  subs,
+                  (s) => s.categoryId,
+                  (items) => items.map(subRow).toList(),
+                )
               : [BudgetEntryList(rows: subs.map(subRow).toList())],
         ),
       );
@@ -725,13 +744,73 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     return out;
   }
 
+  /// Wiersze listy z pozycjami karty zwiniętymi w jeden wiersz (ADR-034).
+  ///
+  /// Pusta mapa [cards] = nie ma czego zwijać, więc lista idzie bez zmian —
+  /// tak wygląda ekran „Cykliczne" i każdy budżet bez karty kredytowej.
+  /// Pozycje rozwiniętej grupy dostają wcięcie, żeby było widać, że należą
+  /// do wiersza nad nimi.
+  List<Widget> _creditAwareRows(
+    List<BudgetEntry> items,
+    Widget Function(BudgetEntry) row,
+    Map<String, String> cards,
+  ) {
+    if (cards.isEmpty) return items.map(row).toList();
+
+    final out = <Widget>[];
+    final rows = buildCreditRows(
+      visible: items,
+      cards: cards,
+      kind: CreditGroupKind.cardLoan,
+    );
+    for (final r in rows) {
+      switch (r) {
+        case PlainEntryRow(:final entry):
+          out.add(row(entry));
+        case CreditGroup group:
+          // W trybie zaznaczania grupy są rozwinięte na sztywno: „Zaznacz
+          // wszystkie" obejmuje też pozycje w grupach, więc muszą być widoczne.
+          final expanded =
+              _selecting || _expandedCreditGroups.contains(group.key);
+          out.add(
+            CreditGroupRow(
+              group: group,
+              expanded: expanded,
+              onToggle: _selecting
+                  ? null
+                  : () => setState(() {
+                      if (!_expandedCreditGroups.remove(group.key)) {
+                        _expandedCreditGroups.add(group.key);
+                      }
+                    }),
+            ),
+          );
+          if (expanded) {
+            out.addAll(
+              group.entries.map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(left: kCreditGroupIndent),
+                  child: row(e),
+                ),
+              ),
+            );
+          }
+      }
+    }
+    return out;
+  }
+
   /// Wiersze sekcji z podgrupami po kategoriach (etykietach); „Bez kategorii"
   /// na końcu. Wspólne dla pozycji budżetu i subskrypcji — słownik kategorii
   /// jest ten sam, więc podgrupy muszą wyglądać tak samo po obu stronach.
+  ///
+  /// [rows] dostaje CAŁĄ podgrupę, a nie pojedynczą pozycję: wiersze potrafią
+  /// się zwijać (grupy karty), więc lista widgetów nie odpowiada już
+  /// jeden-do-jednego liście pozycji.
   List<Widget> _categoryGroups<T>(
     List<T> items,
     String? Function(T) categoryOf,
-    Widget Function(T) row,
+    List<Widget> Function(List<T>) rows,
   ) {
     final byId = {
       for (final cat in context.read<StorageService>().getCategories())
@@ -750,7 +829,7 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     return [
       for (final k in keys) ...[
         _CategoryGroupLabel(category: k == null ? null : byId[k]),
-        BudgetEntryList(rows: groups[k]!.map(row).toList()),
+        BudgetEntryList(rows: rows(groups[k]!)),
       ],
     ];
   }

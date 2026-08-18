@@ -9,6 +9,28 @@ import 'package:karton_subs/utils/credit_group.dart';
 /// musi się zgadzać z sumą pozycji, które zastąpiły, a zakup nigdy nie może
 /// wpaść do grupy udając spłatę.
 void main() {
+  /// Same identyfikatory spłat — testom nie zależy na tym, z której karty.
+  Set<String> repaymentIds(Iterable<BudgetEntry> all) =>
+      creditRepaymentCards(all).keys.toSet();
+
+  List<CreditListRow> repaymentRows(
+    List<BudgetEntry> visible,
+    List<BudgetEntry> all,
+  ) => buildCreditRows(
+    visible: visible,
+    cards: creditRepaymentCards(all),
+    kind: CreditGroupKind.repayment,
+  );
+
+  List<CreditListRow> cardLoanRows(
+    List<BudgetEntry> visible,
+    List<BudgetEntry> all,
+  ) => buildCreditRows(
+    visible: visible,
+    cards: creditMirrorIncomeCards(all),
+    kind: CreditGroupKind.cardLoan,
+  );
+
   BudgetEntry spending({
     required String id,
     required String name,
@@ -88,7 +110,7 @@ void main() {
         repay: DateTime(2026, 10, 1),
       );
 
-      expect(creditRepaymentIds(trio), {'l1-repay'});
+      expect(repaymentIds(trio), {'l1-repay'});
     });
 
     test('przy pożyczce gotówkowej spłatą jest jedyny wydatek pary', () {
@@ -109,20 +131,22 @@ void main() {
         ),
       ];
 
-      expect(creditRepaymentIds(pair), {'l2-repay'});
+      expect(repaymentIds(pair), {'l2-repay'});
     });
 
-    test('remis dat nie wskazuje spłaty (lepiej nie zwinąć niż zwinąć zakup)',
-        () {
-      final trio = purchase(
-        link: 'l3',
-        amount: 500,
-        buy: DateTime(2026, 9, 1),
-        repay: DateTime(2026, 9, 1),
-      );
+    test(
+      'remis dat nie wskazuje spłaty (lepiej nie zwinąć niż zwinąć zakup)',
+      () {
+        final trio = purchase(
+          link: 'l3',
+          amount: 500,
+          buy: DateTime(2026, 9, 1),
+          repay: DateTime(2026, 9, 1),
+        );
 
-      expect(creditRepaymentIds(trio), isEmpty);
-    });
+        expect(repaymentIds(trio), isEmpty);
+      },
+    );
 
     test('wydatek bez karty nigdy nie jest spłatą', () {
       final plain = [
@@ -134,7 +158,7 @@ void main() {
         ),
       ];
 
-      expect(creditRepaymentIds(plain), isEmpty);
+      expect(repaymentIds(plain), isEmpty);
     });
   });
 
@@ -172,18 +196,15 @@ void main() {
           .toList();
       expect(visible.length, 4);
 
-      final rows = buildSpendingRows(visible: visible, all: all);
+      final rows = repaymentRows(visible, all);
 
       expect(rows.length, 1);
-      final group = rows.single as CreditRepaymentGroup;
+      final group = rows.single as CreditGroup;
       expect(group.card, 'Karta kredytowa');
       expect(group.entries.length, 4);
       // Suma zwiniętego wiersza = suma pozycji, które zastąpił.
       expect(group.total, 1700);
-      expect(
-        group.total,
-        visible.fold<double>(0, (s, e) => s + e.amount),
-      );
+      expect(group.total, visible.fold<double>(0, (s, e) => s + e.amount));
     });
 
     test('zakupy zostają osobnymi wierszami — zwijamy tylko spłaty', () {
@@ -203,11 +224,11 @@ void main() {
       ];
       final visible = all.where((e) => !e.isIncome).toList();
 
-      final rows = buildSpendingRows(visible: visible, all: all);
+      final rows = repaymentRows(visible, all);
 
       // Dwa zakupy jako zwykłe wiersze + jedna grupa spłat.
-      expect(rows.whereType<SpendingEntryRow>().length, 2);
-      final groups = rows.whereType<CreditRepaymentGroup>().toList();
+      expect(rows.whereType<PlainEntryRow>().length, 2);
+      final groups = rows.whereType<CreditGroup>().toList();
       expect(groups.single.total, 700);
     });
 
@@ -220,9 +241,9 @@ void main() {
       );
       final visible = [all.last];
 
-      final rows = buildSpendingRows(visible: visible, all: all);
+      final rows = repaymentRows(visible, all);
 
-      expect(rows.single, isA<SpendingEntryRow>());
+      expect(rows.single, isA<PlainEntryRow>());
     });
 
     test('różne karty i różne miesiące to osobne grupy', () {
@@ -258,8 +279,8 @@ void main() {
           .where((e) => !e.isIncome && e.month != '2026-08')
           .toList();
 
-      final rows = buildSpendingRows(visible: visible, all: all);
-      final groups = rows.whereType<CreditRepaymentGroup>().toList();
+      final rows = repaymentRows(visible, all);
+      final groups = rows.whereType<CreditGroup>().toList();
 
       expect(groups.length, 2);
       expect(groups.map((g) => g.card).toSet(), {
@@ -269,49 +290,123 @@ void main() {
       expect(groups.map((g) => g.monthKey).toSet(), {'2026-09', '2026-10'});
     });
 
-    test('grupa staje w miejscu swojej pierwszej pozycji (sortowanie zostaje)',
-        () {
+    test(
+      'grupa staje w miejscu swojej pierwszej pozycji (sortowanie zostaje)',
+      () {
+        final all = [
+          ...purchase(
+            link: 'a',
+            amount: 100,
+            buy: DateTime(2026, 8, 1),
+            repay: DateTime(2026, 9, 10),
+          ),
+          ...purchase(
+            link: 'b',
+            amount: 100,
+            buy: DateTime(2026, 8, 2),
+            repay: DateTime(2026, 9, 20),
+          ),
+        ];
+        final plainEarly = spending(
+          id: 'p1',
+          name: 'Paliwo',
+          amount: 50,
+          date: DateTime(2026, 9, 5),
+        );
+        final plainLate = spending(
+          id: 'p2',
+          name: 'Kino',
+          amount: 50,
+          date: DateTime(2026, 9, 25),
+        );
+        // Lista posortowana rosnąco po dacie, tak jak trafia do widgetu.
+        final visible = [
+          plainEarly,
+          all.firstWhere((e) => e.id == 'a-repay'),
+          all.firstWhere((e) => e.id == 'b-repay'),
+          plainLate,
+        ];
+
+        final rows = repaymentRows(visible, all);
+
+        expect(rows.length, 3);
+        expect((rows[0] as PlainEntryRow).entry.id, 'p1');
+        expect(rows[1], isA<CreditGroup>());
+        expect((rows[2] as PlainEntryRow).entry.id, 'p2');
+      },
+    );
+
+    test('lustrzane wpływy „Karta: …" zwijają się na Wpływach', () {
       final all = [
-        ...purchase(
-          link: 'a',
-          amount: 100,
-          buy: DateTime(2026, 8, 1),
-          repay: DateTime(2026, 9, 10),
-        ),
-        ...purchase(
-          link: 'b',
-          amount: 100,
-          buy: DateTime(2026, 8, 2),
-          repay: DateTime(2026, 9, 20),
-        ),
+        for (var i = 0; i < 4; i++)
+          ...purchase(
+            link: 'p$i',
+            amount: 100,
+            buy: DateTime(2026, 9, 10 + i),
+            repay: DateTime(2026, 10, 10 + i),
+          ),
       ];
-      final plainEarly = spending(
-        id: 'p1',
-        name: 'Paliwo',
-        amount: 50,
-        date: DateTime(2026, 9, 5),
-      );
-      final plainLate = spending(
-        id: 'p2',
-        name: 'Kino',
-        amount: 50,
-        date: DateTime(2026, 9, 25),
-      );
-      // Lista posortowana rosnąco po dacie, tak jak trafia do widgetu.
-      final visible = [
-        plainEarly,
-        all.firstWhere((e) => e.id == 'a-repay'),
-        all.firstWhere((e) => e.id == 'b-repay'),
-        plainLate,
-      ];
+      final wplywy = all.where((e) => e.isIncome).toList();
+      expect(wplywy.length, 4);
 
-      final rows = buildSpendingRows(visible: visible, all: all);
+      final rows = cardLoanRows(wplywy, all);
 
-      expect(rows.length, 3);
-      expect((rows[0] as SpendingEntryRow).entry.id, 'p1');
-      expect(rows[1], isA<CreditRepaymentGroup>());
-      expect((rows[2] as SpendingEntryRow).entry.id, 'p2');
+      expect(rows.length, 1);
+      final group = rows.single as CreditGroup;
+      expect(group.kind, CreditGroupKind.cardLoan);
+      expect(group.entries.length, 4);
+      expect(group.total, 400);
+      // Lustro nie ma metody płatności — nazwę karty bierzemy z wydatków
+      // tej samej operacji.
+      expect(group.card, 'Karta kredytowa');
     });
+
+    test(
+      'pożyczka gotówkowa zostaje osobnym wierszem — to prawdziwy wpływ',
+      () {
+        // Pożyczka gotówkowa to PARA: wpływ użytkownika i jedna spłata. Brak
+        // drugiego wydatku (zakupu) jest tym, co odróżnia ją od lustra.
+        final pary = [
+          for (var i = 0; i < 2; i++) ...[
+            mirrorIncome(
+              id: 'cash$i',
+              amount: 300,
+              date: DateTime(2026, 9, 1 + i),
+              creditLinkId: 'c$i',
+            ),
+            spending(
+              id: 'cash$i-repay',
+              name: 'Spłata: pożyczka',
+              amount: 300,
+              date: DateTime(2026, 10, 1 + i),
+              paymentMethod: 'Karta kredytowa',
+              creditLinkId: 'c$i',
+            ),
+          ],
+        ];
+        final zakupy = [
+          for (var i = 0; i < 2; i++)
+            ...purchase(
+              link: 'p$i',
+              amount: 100,
+              buy: DateTime(2026, 9, 20 + i),
+              repay: DateTime(2026, 10, 20 + i),
+            ),
+        ];
+        final all = [...pary, ...zakupy];
+        final wplywy = all.where((e) => e.isIncome).toList();
+
+        final rows = cardLoanRows(wplywy, all);
+
+        // Dwie pożyczki gotówkowe jako zwykłe wiersze + grupa dwóch luster.
+        expect(rows.whereType<PlainEntryRow>().length, 2);
+        expect(rows.whereType<PlainEntryRow>().map((r) => r.entry.id).toSet(), {
+          'cash0',
+          'cash1',
+        });
+        expect(rows.whereType<CreditGroup>().single.total, 200);
+      },
+    );
 
     test('zwijanie nie gubi ani nie dokłada pieniędzy', () {
       final all = [
@@ -330,13 +425,15 @@ void main() {
       ];
       final visible = all.where((e) => e.month == '2026-09').toList();
 
-      final rows = buildSpendingRows(visible: visible, all: all);
+      final rows = repaymentRows(visible, all);
       final shown = rows.fold<double>(
         0,
-        (sum, row) => sum + switch (row) {
-          SpendingEntryRow(:final entry) => entry.amount,
-          CreditRepaymentGroup g => g.total,
-        },
+        (sum, row) =>
+            sum +
+            switch (row) {
+              PlainEntryRow(:final entry) => entry.amount,
+              CreditGroup g => g.total,
+            },
       );
 
       expect(shown, closeTo(400, 0.001));

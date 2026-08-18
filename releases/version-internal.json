@@ -1,5 +1,12 @@
 {
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081800",
+  "versionCode": 2026081800,
+  "version": "0.26.26081800",
   "changelog": [
+    {
+      "version": "0.26.26081800",
+      "notes": "- Lustrzane wplywy z karty zwijaja sie na Wplywach w jeden wiersz z suma\n- Pozycje rozwinietej grupy karty maja wciecie, wiec widac przynaleznosc\n- Wplyw wpisany recznie (pozyczka gotowkowa) zostaje osobnym wierszem"
+    },
     {
       "version": "0.26.26081700",
       "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow"
@@ -35,15 +42,8 @@
     {
       "version": "0.23.26080901",
       "notes": "- Sortowanie sekcji miesiaca ma trzeci tryb: od najwiekszej kwoty (przycisk cykluje data / A-Z / kwota)\n- Platnosci i Podsumowanie miesiaca maja osobne ustawienia widoku — sortowanie, grupowanie i zwijanie dzialaja niezaleznie"
-    },
-    {
-      "version": "0.23.26080900",
-      "notes": "- Import budzetu i subskrypcji z Excela przeniesiony z menu Dodaj do Ustawien -> Eksport/import danych\n- Menu Dodaj na Wplywach i Cyklicznych ma teraz tylko dodawanie"
     }
   ],
-  "versionCode": 2026081700,
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081700",
-  "releaseNotes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Splaty karty kredytowej zwijaja sie w jeden wiersz z suma skladnikow",
-  "releaseDate": "2026-08-17T18:21:11Z",
-  "version": "0.26.26081700"
+  "releaseNotes": "- Lustrzane wplywy z karty zwijaja sie na Wplywach w jeden wiersz z suma\n- Pozycje rozwinietej grupy karty maja wciecie, wiec widac przynaleznosc\n- Wplyw wpisany recznie (pozyczka gotowkowa) zostaje osobnym wierszem",
+  "releaseDate": "2026-08-18T05:05:08Z"
 }

@@ -128,41 +128,43 @@ void main() {
     expect(storage.getBudgetEntry(untouched.id), isNotNull);
   });
 
-  test('scalony wpis bierze datę, kategorię i metodę podane przez ekran',
-      () async {
-    final a = await addSpending(
-      name: 'a',
-      amount: 100,
-      date: DateTime(2026, 9, 9),
-      categoryId: 'cat_home',
-      paymentMethod: 'BLIK',
-    );
-    final b = await addSpending(
-      name: 'b',
-      amount: 100,
-      date: DateTime(2026, 10, 2),
-    );
+  test(
+    'scalony wpis bierze datę, kategorię i metodę podane przez ekran',
+    () async {
+      final a = await addSpending(
+        name: 'a',
+        amount: 100,
+        date: DateTime(2026, 9, 9),
+        categoryId: 'cat_home',
+        paymentMethod: 'BLIK',
+      );
+      final b = await addSpending(
+        name: 'b',
+        amount: 100,
+        date: DateTime(2026, 10, 2),
+      );
 
-    // Data najstarszej pozycji: scalony wpis ląduje we WRZEŚNIU, mimo że jedna
-    // ze scalanych była październikowa.
-    final merged = await merge(
-      [a, b],
-      name: 'Wzorzec a',
-      amount: 200,
-      date: DateTime(2026, 9, 9),
-      categoryId: 'cat_home',
-      paymentMethod: 'BLIK',
-      note: 'Scalono 2 poz.',
-    );
+      // Data najstarszej pozycji: scalony wpis ląduje we WRZEŚNIU, mimo że jedna
+      // ze scalanych była październikowa.
+      final merged = await merge(
+        [a, b],
+        name: 'Wzorzec a',
+        amount: 200,
+        date: DateTime(2026, 9, 9),
+        categoryId: 'cat_home',
+        paymentMethod: 'BLIK',
+        note: 'Scalono 2 poz.',
+      );
 
-    expect(merged!.month, '2026-09');
-    expect(merged.startDate, DateTime(2026, 9, 9));
-    expect(merged.categoryId, 'cat_home');
-    expect(merged.paymentMethod, 'BLIK');
-    expect(merged.note, 'Scalono 2 poz.');
-    expect(ctrl.spendingActualForMonth('2026-09'), 200);
-    expect(ctrl.spendingActualForMonth('2026-10'), 0);
-  });
+      expect(merged!.month, '2026-09');
+      expect(merged.startDate, DateTime(2026, 9, 9));
+      expect(merged.categoryId, 'cat_home');
+      expect(merged.paymentMethod, 'BLIK');
+      expect(merged.note, 'Scalono 2 poz.');
+      expect(ctrl.spendingActualForMonth('2026-09'), 200);
+      expect(ctrl.spendingActualForMonth('2026-10'), 0);
+    },
+  );
 
   group('Karta kredytowa (ADR-033) jest nietykalna', () {
     Future<void> addCard({int graceDays = 30}) => storage.savePaymentMethod(
@@ -174,65 +176,69 @@ void main() {
       ),
     );
 
-    test('scalanie odmawia, gdy w zaznaczeniu jest pozycja spięta z zakupem',
-        () async {
-      await addCard();
-      // Zakup kartą rodzi trójkę: zakup, lustrzany wpływ i spłatę.
-      final purchase = await addSpending(
-        name: 'Microsoft Office',
-        amount: 500,
-        date: DateTime(2026, 9, 1),
-        paymentMethod: 'Karta',
-      );
-      final repayment = ctrl.all.firstWhere(
-        (e) => e.name.startsWith('Spłata:'),
-      );
-      final plain = await addSpending(
-        name: 'Paliwo',
-        amount: 200,
-        date: DateTime(2026, 9, 2),
-      );
+    test(
+      'scalanie odmawia, gdy w zaznaczeniu jest pozycja spięta z zakupem',
+      () async {
+        await addCard();
+        // Zakup kartą rodzi trójkę: zakup, lustrzany wpływ i spłatę.
+        final purchase = await addSpending(
+          name: 'Microsoft Office',
+          amount: 500,
+          date: DateTime(2026, 9, 1),
+          paymentMethod: 'Karta',
+        );
+        final repayment = ctrl.all.firstWhere(
+          (e) => e.name.startsWith('Spłata:'),
+        );
+        final plain = await addSpending(
+          name: 'Paliwo',
+          amount: 200,
+          date: DateTime(2026, 9, 2),
+        );
 
-      final merged = await merge(
-        [repayment, plain],
-        name: 'Proba',
-        amount: 700,
-        date: DateTime(2026, 9, 1),
-      );
+        final merged = await merge(
+          [repayment, plain],
+          name: 'Proba',
+          amount: 700,
+          date: DateTime(2026, 9, 1),
+        );
 
-      expect(merged, isNull);
-      // Nic nie zniknęło: trójka karty i zwykły wydatek są na swoim miejscu.
-      expect(storage.getBudgetEntry(purchase.id), isNotNull);
-      expect(storage.getBudgetEntry(repayment.id), isNotNull);
-      expect(storage.getBudgetEntry(plain.id), isNotNull);
-      expect(ctrl.all.length, 4);
-    });
+        expect(merged, isNull);
+        // Nic nie zniknęło: trójka karty i zwykły wydatek są na swoim miejscu.
+        expect(storage.getBudgetEntry(purchase.id), isNotNull);
+        expect(storage.getBudgetEntry(repayment.id), isNotNull);
+        expect(storage.getBudgetEntry(plain.id), isNotNull);
+        expect(ctrl.all.length, 4);
+      },
+    );
 
-    test('sam zakup kartą też jest odrzucany (kasuje kaskadą spłatę)',
-        () async {
-      await addCard();
-      final purchase = await addSpending(
-        name: 'Buty',
-        amount: 300,
-        date: DateTime(2026, 9, 1),
-        paymentMethod: 'Karta',
-      );
-      final plain = await addSpending(
-        name: 'Paliwo',
-        amount: 100,
-        date: DateTime(2026, 9, 2),
-      );
+    test(
+      'sam zakup kartą też jest odrzucany (kasuje kaskadą spłatę)',
+      () async {
+        await addCard();
+        final purchase = await addSpending(
+          name: 'Buty',
+          amount: 300,
+          date: DateTime(2026, 9, 1),
+          paymentMethod: 'Karta',
+        );
+        final plain = await addSpending(
+          name: 'Paliwo',
+          amount: 100,
+          date: DateTime(2026, 9, 2),
+        );
 
-      final merged = await merge(
-        [purchase, plain],
-        name: 'Proba',
-        amount: 400,
-        date: DateTime(2026, 9, 1),
-      );
+        final merged = await merge(
+          [purchase, plain],
+          name: 'Proba',
+          amount: 400,
+          date: DateTime(2026, 9, 1),
+        );
 
-      expect(merged, isNull);
-      expect(ctrl.all.length, 4);
-    });
+        expect(merged, isNull);
+        expect(ctrl.all.length, 4);
+      },
+    );
   });
 
   group('Sytuacje graniczne', () {
@@ -258,63 +264,67 @@ void main() {
       expect(ctrl.all.length, 1);
     });
 
-    test('pozycja usunięta w międzyczasie nie wciąga reszty w scalenie',
-        () async {
-      final a = await addSpending(
-        name: 'a',
-        amount: 100,
-        date: DateTime(2026, 9, 1),
-      );
-      final b = await addSpending(
-        name: 'b',
-        amount: 100,
-        date: DateTime(2026, 9, 2),
-      );
-      // Symulacja wyścigu: druga pozycja znika (np. z synchronizacji) już po
-      // tym, jak użytkownik ją zaznaczył.
-      await ctrl.delete(b.id);
+    test(
+      'pozycja usunięta w międzyczasie nie wciąga reszty w scalenie',
+      () async {
+        final a = await addSpending(
+          name: 'a',
+          amount: 100,
+          date: DateTime(2026, 9, 1),
+        );
+        final b = await addSpending(
+          name: 'b',
+          amount: 100,
+          date: DateTime(2026, 9, 2),
+        );
+        // Symulacja wyścigu: druga pozycja znika (np. z synchronizacji) już po
+        // tym, jak użytkownik ją zaznaczył.
+        await ctrl.delete(b.id);
 
-      final merged = await merge(
-        [a, b],
-        name: 'ab',
-        amount: 200,
-        date: DateTime(2026, 9, 1),
-      );
+        final merged = await merge(
+          [a, b],
+          name: 'ab',
+          amount: 200,
+          date: DateTime(2026, 9, 1),
+        );
 
-      expect(merged, isNull);
-      expect(storage.getBudgetEntry(a.id), isNotNull);
-    });
+        expect(merged, isNull);
+        expect(storage.getBudgetEntry(a.id), isNotNull);
+      },
+    );
 
-    test('w budżecie domowym źródła zostawiają nagrobki dla synchronizacji',
-        () async {
-      ctrl.setScope(BudgetScope.household);
-      final a = await addSpending(
-        name: 'a',
-        amount: 100,
-        date: DateTime(2026, 9, 1),
-      );
-      final b = await addSpending(
-        name: 'b',
-        amount: 100,
-        date: DateTime(2026, 9, 2),
-      );
+    test(
+      'w budżecie domowym źródła zostawiają nagrobki dla synchronizacji',
+      () async {
+        ctrl.setScope(BudgetScope.household);
+        final a = await addSpending(
+          name: 'a',
+          amount: 100,
+          date: DateTime(2026, 9, 1),
+        );
+        final b = await addSpending(
+          name: 'b',
+          amount: 100,
+          date: DateTime(2026, 9, 2),
+        );
 
-      final merged = await merge(
-        [a, b],
-        name: 'ab',
-        amount: 200,
-        date: DateTime(2026, 9, 1),
-      );
+        final merged = await merge(
+          [a, b],
+          name: 'ab',
+          amount: 200,
+          date: DateTime(2026, 9, 1),
+        );
 
-      expect(merged, isNotNull);
-      final raw = storage.getBudgetEntries(BudgetScope.household);
-      // Bez nagrobków synchronizacja przywróciłaby źródła z serwera i te same
-      // pieniądze policzyłyby się drugi raz — obok scalonego wpisu.
-      for (final id in [a.id, b.id]) {
-        final tomb = raw.where((e) => e.id == id).toList();
-        expect(tomb.single.deleted, isTrue);
-      }
-      expect(ctrl.all.length, 1);
-    });
+        expect(merged, isNotNull);
+        final raw = storage.getBudgetEntries(BudgetScope.household);
+        // Bez nagrobków synchronizacja przywróciłaby źródła z serwera i te same
+        // pieniądze policzyłyby się drugi raz — obok scalonego wpisu.
+        for (final id in [a.id, b.id]) {
+          final tomb = raw.where((e) => e.id == id).toList();
+          expect(tomb.single.deleted, isTrue);
+        }
+        expect(ctrl.all.length, 1);
+      },
+    );
   });
 }

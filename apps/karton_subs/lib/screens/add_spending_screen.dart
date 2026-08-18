@@ -110,7 +110,9 @@ class _AddSpendingScreenState extends State<AddSpendingScreen> {
           ? e.amount.toStringAsFixed(2)
           : widget.initialAmount?.toStringAsFixed(2) ?? '',
     );
-    _noteCtrl = TextEditingController(text: e?.note ?? widget.initialNote ?? '');
+    _noteCtrl = TextEditingController(
+      text: e?.note ?? widget.initialNote ?? '',
+    );
     _scope = widget.scope;
     _categoryId = e?.categoryId ?? widget.initialCategoryId;
     _paymentMethod = e?.paymentMethod ?? widget.initialPaymentMethod;

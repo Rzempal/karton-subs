@@ -70,9 +70,14 @@ i te same pieniądze policzyłyby się dwa razy.
 Zdjęcia paragonów pozycji źródłowych znikają razem z nimi (kopia prywatna);
 publiczne archiwum zostaje, bo to trwały ślad (ADR-013).
 
-### 5. Spłaty karty zwijamy w widoku, danych nie ruszamy
+### 5. Pozycje karty zwijamy w widoku, danych nie ruszamy
 
-Spłaty **tej samej karty, z tego samego miesiąca i w tej samej walucie** rysują
+Dotyczy **obu stron** automatu karty, bo problem jest ten sam po obu:
+
+- **„Bieżące"** — spłaty („Spłata: …"),
+- **„Wpływy"** — lustrzane wpływy „karta pożycza na ten zakup" („Karta: …").
+
+Pozycje **tej samej karty, z tego samego miesiąca i w tej samej walucie** rysują
 się jako jeden wiersz z sumą składników; tapnięcie rozwija oryginalne pozycje,
 które zachowują pełne zachowanie (edycja, odhaczenie, zaznaczanie). Sumy sekcji,
 bilans i wykresy pozostają bez zmian — to sposób rysowania listy, nie operacja
@@ -92,14 +97,24 @@ Szczegóły reguł:
 - **Wiersz grupy nie jest pozycją budżetu**: nie da się go edytować, zaznaczyć
   ani usunąć przesunięciem (usunięcie spłaty kasuje kaskadą zakup).
 
-### 6. Spłatę rozpoznajemy po dacie, bez nowego pola w danych
+### 6. Role rozpoznajemy z układu pozycji, bez nowego pola w danych
 
-W danych nie ma znacznika „to jest spłata" — zakup i jego spłata są wydatkami
-z tą samą metodą płatności, spiętymi wspólnym `creditLinkId`. Rozstrzyga data:
-spłata stoi o `graceDays` PÓŹNIEJ, więc w obrębie jednego identyfikatora spłatą
-jest wydatek o najpóźniejszej dacie. Przy remisie dat (po ręcznej edycji
-terminu) nie wskazujemy żadnej pozycji — lepiej nie zwinąć niczego, niż zwinąć
-zakup i udawać, że to spłata.
+W danych nie ma znacznika „to jest spłata" ani „to jest lustro" — wszystko spina
+wspólny `creditLinkId`. Rozstrzyga więc układ pozycji w obrębie jednej operacji:
+
+- **Spłata** — zakup i jego spłata są wydatkami z tą samą metodą płatności,
+  ale spłata stoi o `graceDays` PÓŹNIEJ, więc spłatą jest wydatek
+  o najpóźniejszej dacie. Przy remisie dat (po ręcznej edycji terminu) nie
+  wskazujemy żadnej pozycji — lepiej nie zwinąć niczego, niż zwinąć zakup
+  i udawać, że to spłata.
+- **Lustro** — zakup kartą daje DWA wydatki (zakup i spłata) plus wpływ,
+  a pożyczka gotówkowa tylko jeden wydatek (spłatę) plus wpływ. Wpływ jest więc
+  lustrem tylko wtedy, gdy jego operacja ma dwa wydatki. Dzięki temu „Pożyczka
+  z karty", którą użytkownik wpisał sam, nigdy nie wpada do grupy: to prawdziwy
+  wpływ, a nie zapis techniczny.
+
+Nazwę karty dla grupy bierzemy z **wydatków** operacji — lustrzany wpływ powstaje
+bez metody płatności, więc sam z siebie nie wie, do której karty należy.
 
 Nowego pola „rola" świadomie NIE dokładamy: pozycje jadą między telefonami
 (ADR-009), a telefon ze starszą wersją skasowałby nieznane pole po cichu przy
@@ -119,8 +134,10 @@ czasie.
 - (−) Reguła „najpóźniejsza data = spłata" jest heurystyką. Ręczne cofnięcie
   terminu spłaty przed datę zakupu wyłącza zwijanie dla tej trójki (nic się nie
   psuje, wiersze wracają do postaci sprzed zwijania).
-- (−) Zwijanie działa na „Bieżących". Lustrzane wpływy „Karta: …" na ekranie
-  „Wpływy" nadal stoją osobno — świadomie odłożone do osobnej decyzji.
+- (−) Reguła lustra opiera się na tym, że operacja ma dwa wydatki. Ręczne
+  usunięcie… jest niemożliwe (kaskada), ale ręczne DODANIE wydatku z tym samym
+  `creditLinkId` nie jest przewidziane żadnym ekranem — gdyby kiedyś było,
+  regułę trzeba przemyśleć.
 
 ## Rozważane alternatywy
 
