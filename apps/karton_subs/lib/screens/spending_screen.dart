@@ -587,8 +587,7 @@ class _SpendingScreenState extends State<SpendingScreen> {
     final groupChildIds = <String>{};
     final rows = buildCreditRows(
       visible: items,
-      cards: creditRepaymentCards(all),
-      kind: CreditGroupKind.repayment,
+      members: creditMembers(all, kinds: const {CreditGroupKind.repayment}),
     );
     for (final row in rows) {
       switch (row) {

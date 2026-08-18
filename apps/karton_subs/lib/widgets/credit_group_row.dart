@@ -38,10 +38,16 @@ class CreditGroupRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.semanticColors;
-    final isIncome = group.kind == CreditGroupKind.cardLoan;
+    final isIncome = group.kind != CreditGroupKind.repayment;
     final color = isIncome ? c.positive : c.negative;
     final sign = isIncome ? '+' : '−';
-    final label = isIncome ? 'Zakupy kartą' : 'Spłaty karty';
+    // Pożyczka gotówkowa ma własny opis, bo znaczy co innego niż lustro:
+    // to pieniądze, które naprawdę wpłynęły, a nie przeciwwaga zakupu.
+    final label = switch (group.kind) {
+      CreditGroupKind.repayment => 'Spłaty karty',
+      CreditGroupKind.cardLoan => 'Zakupy kartą',
+      CreditGroupKind.cashAdvance => 'Pożyczki z karty',
+    };
 
     return InkWell(
       onTap: onToggle,

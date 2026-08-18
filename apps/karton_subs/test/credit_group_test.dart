@@ -11,24 +11,26 @@ import 'package:karton_subs/utils/credit_group.dart';
 void main() {
   /// Same identyfikatory spłat — testom nie zależy na tym, z której karty.
   Set<String> repaymentIds(Iterable<BudgetEntry> all) =>
-      creditRepaymentCards(all).keys.toSet();
+      creditMembers(all, kinds: const {CreditGroupKind.repayment}).keys.toSet();
 
   List<CreditListRow> repaymentRows(
     List<BudgetEntry> visible,
     List<BudgetEntry> all,
   ) => buildCreditRows(
     visible: visible,
-    cards: creditRepaymentCards(all),
-    kind: CreditGroupKind.repayment,
+    members: creditMembers(all, kinds: const {CreditGroupKind.repayment}),
   );
 
-  List<CreditListRow> cardLoanRows(
+  /// Wiersze „Wpływów": obie role wpływów z karty naraz, tak jak na ekranie.
+  List<CreditListRow> incomeRows(
     List<BudgetEntry> visible,
     List<BudgetEntry> all,
   ) => buildCreditRows(
     visible: visible,
-    cards: creditMirrorIncomeCards(all),
-    kind: CreditGroupKind.cardLoan,
+    members: creditMembers(
+      all,
+      kinds: const {CreditGroupKind.cardLoan, CreditGroupKind.cashAdvance},
+    ),
   );
 
   BudgetEntry spending({
@@ -349,7 +351,7 @@ void main() {
       final wplywy = all.where((e) => e.isIncome).toList();
       expect(wplywy.length, 4);
 
-      final rows = cardLoanRows(wplywy, all);
+      final rows = incomeRows(wplywy, all);
 
       expect(rows.length, 1);
       final group = rows.single as CreditGroup;
@@ -361,52 +363,77 @@ void main() {
       expect(group.card, 'Karta kredytowa');
     });
 
-    test(
-      'pożyczka gotówkowa zostaje osobnym wierszem — to prawdziwy wpływ',
-      () {
-        // Pożyczka gotówkowa to PARA: wpływ użytkownika i jedna spłata. Brak
-        // drugiego wydatku (zakupu) jest tym, co odróżnia ją od lustra.
-        final pary = [
-          for (var i = 0; i < 2; i++) ...[
-            mirrorIncome(
-              id: 'cash$i',
-              amount: 300,
-              date: DateTime(2026, 9, 1 + i),
-              creditLinkId: 'c$i',
-            ),
-            spending(
-              id: 'cash$i-repay',
-              name: 'Spłata: pożyczka',
-              amount: 300,
-              date: DateTime(2026, 10, 1 + i),
-              paymentMethod: 'Karta kredytowa',
-              creditLinkId: 'c$i',
-            ),
-          ],
-        ];
-        final zakupy = [
-          for (var i = 0; i < 2; i++)
-            ...purchase(
-              link: 'p$i',
-              amount: 100,
-              buy: DateTime(2026, 9, 20 + i),
-              repay: DateTime(2026, 10, 20 + i),
-            ),
-        ];
-        final all = [...pary, ...zakupy];
-        final wplywy = all.where((e) => e.isIncome).toList();
+    test('pożyczki gotówkowe mają WŁASNĄ grupę, osobną od luster', () {
+      // Pożyczka gotówkowa to PARA: wpływ użytkownika i jedna spłata. Brak
+      // drugiego wydatku (zakupu) odróżnia ją od lustra — i decyduje o tym,
+      // że nie wpadnie z lustrami do jednej sumy.
+      final pary = [
+        for (var i = 0; i < 2; i++) ...[
+          mirrorIncome(
+            id: 'cash$i',
+            amount: 300,
+            date: DateTime(2026, 9, 1 + i),
+            creditLinkId: 'c$i',
+          ),
+          spending(
+            id: 'cash$i-repay',
+            name: 'Spłata: pożyczka',
+            amount: 300,
+            date: DateTime(2026, 10, 1 + i),
+            paymentMethod: 'Karta kredytowa',
+            creditLinkId: 'c$i',
+          ),
+        ],
+      ];
+      final zakupy = [
+        for (var i = 0; i < 2; i++)
+          ...purchase(
+            link: 'p$i',
+            amount: 100,
+            buy: DateTime(2026, 9, 20 + i),
+            repay: DateTime(2026, 10, 20 + i),
+          ),
+      ];
+      final all = [...pary, ...zakupy];
+      final wplywy = all.where((e) => e.isIncome).toList();
 
-        final rows = cardLoanRows(wplywy, all);
+      final rows = incomeRows(wplywy, all);
+      final groups = rows.whereType<CreditGroup>().toList();
 
-        // Dwie pożyczki gotówkowe jako zwykłe wiersze + grupa dwóch luster.
-        expect(rows.whereType<PlainEntryRow>().length, 2);
-        expect(rows.whereType<PlainEntryRow>().map((r) => r.entry.id).toSet(), {
-          'cash0',
-          'cash1',
-        });
-        expect(rows.whereType<CreditGroup>().single.total, 200);
-      },
-    );
+      expect(rows.whereType<PlainEntryRow>(), isEmpty);
+      expect(groups.length, 2);
+      final byKind = {for (final g in groups) g.kind: g};
+      expect(byKind[CreditGroupKind.cashAdvance]!.total, 600);
+      expect(byKind[CreditGroupKind.cardLoan]!.total, 200);
+      // Osobne klucze = osobne rozwijanie; wspólna suma nic by nie znaczyła.
+      expect(
+        byKind[CreditGroupKind.cashAdvance]!.key,
+        isNot(byKind[CreditGroupKind.cardLoan]!.key),
+      );
+    });
+
+    test('pojedyncza pożyczka gotówkowa zostaje zwykłym wierszem', () {
+      final all = [
+        mirrorIncome(
+          id: 'cash',
+          amount: 300,
+          date: DateTime(2026, 9, 1),
+          creditLinkId: 'c',
+        ),
+        spending(
+          id: 'cash-repay',
+          name: 'Spłata: pożyczka',
+          amount: 300,
+          date: DateTime(2026, 10, 1),
+          paymentMethod: 'Karta kredytowa',
+          creditLinkId: 'c',
+        ),
+      ];
+
+      final rows = incomeRows(all.where((e) => e.isIncome).toList(), all);
+
+      expect(rows.single, isA<PlainEntryRow>());
+    });
 
     test('zwijanie nie gubi ani nie dokłada pieniędzy', () {
       final all = [

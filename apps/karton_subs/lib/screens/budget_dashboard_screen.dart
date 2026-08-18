@@ -662,9 +662,18 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
     // Lustrzane wpływy „karta pożycza na ten zakup" zwijamy w jeden wiersz
     // (ADR-034) — na „Cyklicznych" nie ma ich wcale, więc mapa jest pusta
     // i lista idzie bez zmian.
+    // Na „Wpływach" zwijamy OBIE role wpływów z karty, ale osobno: lustro
+    // („Zakupy kartą") znosi się z zakupem, a pożyczka gotówkowa to realne
+    // pieniądze. Wspólna suma nie znaczyłaby nic.
     final creditCards = _onIncomes
-        ? creditMirrorIncomeCards(ctrl.all)
-        : const <String, String>{};
+        ? creditMembers(
+            ctrl.all,
+            kinds: const {
+              CreditGroupKind.cardLoan,
+              CreditGroupKind.cashAdvance,
+            },
+          )
+        : const <String, CreditMember>{};
 
     final out = <Widget>[];
     var pinned = false;
@@ -753,16 +762,12 @@ class _BudgetDashboardScreenState extends State<BudgetDashboardScreen> {
   List<Widget> _creditAwareRows(
     List<BudgetEntry> items,
     Widget Function(BudgetEntry) row,
-    Map<String, String> cards,
+    Map<String, CreditMember> cards,
   ) {
     if (cards.isEmpty) return items.map(row).toList();
 
     final out = <Widget>[];
-    final rows = buildCreditRows(
-      visible: items,
-      cards: cards,
-      kind: CreditGroupKind.cardLoan,
-    );
+    final rows = buildCreditRows(visible: items, members: cards);
     for (final r in rows) {
       switch (r) {
         case PlainEntryRow(:final entry):

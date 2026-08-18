@@ -75,7 +75,13 @@ publiczne archiwum zostaje, bo to trwały ślad (ADR-013).
 Dotyczy **obu stron** automatu karty, bo problem jest ten sam po obu:
 
 - **„Bieżące"** — spłaty („Spłata: …"),
-- **„Wpływy"** — lustrzane wpływy „karta pożycza na ten zakup" („Karta: …").
+- **„Wpływy"** — lustrzane wpływy „karta pożycza na ten zakup" („Karta: …")
+  oraz, w OSOBNEJ grupie, pożyczki gotówkowe z karty.
+
+Lustro i pożyczka gotówkowa nie trafiają do jednego worka, choć oba są wpływami
+z tej samej karty: lustro znosi się z zakupem w tym samym miesiącu, a pożyczka
+to pieniądze, które naprawdę wpłynęły. Wspólna suma nie odpowiadałaby na żadne
+sensowne pytanie.
 
 Pozycje **tej samej karty, z tego samego miesiąca i w tej samej walucie** rysują
 się jako jeden wiersz z sumą składników; tapnięcie rozwija oryginalne pozycje,
@@ -107,11 +113,10 @@ wspólny `creditLinkId`. Rozstrzyga więc układ pozycji w obrębie jednej opera
   o najpóźniejszej dacie. Przy remisie dat (po ręcznej edycji terminu) nie
   wskazujemy żadnej pozycji — lepiej nie zwinąć niczego, niż zwinąć zakup
   i udawać, że to spłata.
-- **Lustro** — zakup kartą daje DWA wydatki (zakup i spłata) plus wpływ,
-  a pożyczka gotówkowa tylko jeden wydatek (spłatę) plus wpływ. Wpływ jest więc
-  lustrem tylko wtedy, gdy jego operacja ma dwa wydatki. Dzięki temu „Pożyczka
-  z karty", którą użytkownik wpisał sam, nigdy nie wpada do grupy: to prawdziwy
-  wpływ, a nie zapis techniczny.
+- **Lustro albo pożyczka** — zakup kartą daje DWA wydatki (zakup i spłatę) plus
+  wpływ, a pożyczka gotówkowa tylko jeden wydatek (spłatę) plus wpływ. Liczba
+  wydatków w operacji rozstrzyga więc, czy wpływ jest zapisem technicznym, czy
+  pieniędzmi, które użytkownik naprawdę wziął — i do której z dwóch grup trafi.
 
 Nazwę karty dla grupy bierzemy z **wydatków** operacji — lustrzany wpływ powstaje
 bez metody płatności, więc sam z siebie nie wie, do której karty należy.
