@@ -839,3 +839,33 @@ potrzebuje". Jesli tresc ma sie czytac jak jeden ciag — sklej ja w jeden widge
 tekstowy; jesli jeden element jest wazniejszy — tylko on ma byc elastyczny.
 Objaw („skraca sie mimo wolnego miejsca") wyglada jak brak miejsca, wiec latwo
 szukac przyczyny nie tam, gdzie trzeba.
+
+---
+
+## 2026-08-18: `dart format` na katalogu przeformatuje CALY projekt
+
+### Problem
+Po dopisaniu jednej klasy uruchomilem `dart format lib test`, zeby uporzadkowac
+wlasny kod. Narzedzie zglosilo „Formatted 142 files (96 changed)" — zmienilo 96
+plikow, z ktorych 93 nie mialy nic wspolnego z zadaniem. Diff zmiany urosl
+z kilkuset linii do kilku tysiecy, a analiza zaczela zglaszac linty
+(`curly_braces_in_flow_control_structures`) w plikach, ktorych nikt nie ruszal —
+bo formatowanie rozbilo `if (x) return;` na dwie linie.
+
+### Przyczyna
+Projekt nie jest utrzymywany w kanonicznym formacie `dart format` i nigdy nie
+byl. Kazde uruchomienie narzedzia na katalogu (a nie na pliku) przepisuje wiec
+cala reszte przy okazji.
+
+### Rozwiazanie
+- Formatowac **tylko pliki, ktore sie zmienialo**: `dart format <sciezka/do/pliku.dart>`.
+- Gdy juz sie stanie: `git diff --name-only`, odfiltrowac wlasne pliki i cofnac
+  reszte przez `git checkout -- <lista>`. Warto to zrobic OD RAZU, zanim wejdzie
+  commit — pozniej zmiany sa nie do odroznienia od merytorycznych.
+
+### Wniosek
+`dart format` bez argumentu pliku to operacja na calym repozytorium, a nie
+„uporzadkuj to, nad czym pracuje". W projekcie, ktory nie ma wymuszonego
+formatowania w CI, jest to zmiana poza zakresem zadania — dokladnie to, czego
+zabrania regula o dyscyplinie zakresu.
+

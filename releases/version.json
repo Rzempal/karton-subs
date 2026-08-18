@@ -1,9 +1,10 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081400",
-  "releaseDate": "2026-08-14T11:47:49Z",
-  "version": "0.26.26081400",
-  "versionCode": 2026081400,
+  "versionCode": 2026081800,
   "changelog": [
+    {
+      "version": "0.26.26081800",
+      "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji"
+    },
     {
       "version": "0.26.26081400",
       "notes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Pigulka ma to samo rozmyte szklo co pasek nawigacji i nie zaslania siatki ikon przy edycji kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
@@ -39,11 +40,10 @@
     {
       "version": "0.20.26080203",
       "notes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie"
-    },
-    {
-      "version": "0.20.26080202",
-      "notes": "- Rachunki z filtrami zamiast przewijania miesiecy: kategoria, czas, sortowanie i suma widocznych pozycji\n- skrot Dzisiaj w filtrze czasu (od razu biezacy miesiac)\n- pasek plan/realny pokazuje sile przekroczenia: zielone = plan, czerwone = nadwyzka\n- kalendarz bilansu: tap w nazwe miesiaca otwiera wybor\n- okna wyboru daty i przyciski systemowe po polsku, tydzien od poniedzialku"
     }
   ],
-  "releaseNotes": "- Zapis w stalym miejscu na dole ekranu zamiast przycisku na koncu przewijanej listy\n- Pigulka Anuluj / Zapisz jedzie nad klawiatura, wiec jest widoczna caly czas\n- Dotyczy dodawania i edycji wydatku biezacego, pozycji budzetu i subskrypcji oraz arkuszy metody platnosci i kategorii\n- Pigulka ma to samo rozmyte szklo co pasek nawigacji i nie zaslania siatki ikon przy edycji kategorii\n- Zapis znika z paska tytulu, gdzie przy edycji dublowal przycisk z dolu"
+  "releaseDate": "2026-08-18T14:49:24Z",
+  "releaseNotes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji",
+  "version": "0.26.26081800",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081800"
 }

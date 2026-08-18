@@ -28,6 +28,12 @@ Aplikacja mobilna do zarzadzania domowymi finansami: subskrypcje cyfrowe + budze
   porownuje sie z planem na te miesiace, a nie na dwanascie (ADR-029)
 - **Planner** („Na biezace wydatki"): osobny ekran dostepny z „Biezacych" i z
   „Cyklicznych", z akcja „Uzupelnij do pelnej kwoty" (domkniecie do 10 / 100 / 1000)
+- **Scalanie wydatkow i zwijanie pozycji karty (ADR-034):** kilka zaznaczonych
+  wydatkow laczy sie w jeden wpis (suma kwot, data najstarszej pozycji, wzorzec
+  nazwy i kategorii wybierany z listy); pozycje karty kredytowej sa z tego
+  wylaczone, bo ich usuniecie kasuje kaskada zakup. Splaty karty na „Biezacych"
+  oraz wplywy z karty na „Wplywach" zwijaja sie w jeden wiersz z suma — to tylko
+  sposob rysowania listy, dane i bilans zostaja bez zmian
 - **Kalendarz przeplywow:** widok miesiaca z zaznaczonymi dniami wplywow i wydatkow
 - **Budzet osobisty i domowy:** osobny wspolny budzet (wklady czlonkow, przelew z osobistego);
   subskrypcje z przynaleznoscia osobista/domowa
