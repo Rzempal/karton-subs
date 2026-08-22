@@ -1,7 +1,9 @@
 {
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026082200",
-  "version": "0.26.26082200",
   "changelog": [
+    {
+      "version": "0.26.26082201",
+      "notes": "- Poprawka: nazwa sklepu w potwierdzeniu z portfela telefonu byla pusta\n- Odczyt nie zaklada juz, ze naglowek stoi przed nazwa — OCR zwraca bloki w dowolnej kolejnosci"
+    },
     {
       "version": "0.26.26082200",
       "notes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt"
@@ -37,13 +39,11 @@
     {
       "version": "0.24.26081001",
       "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty\n- Zakup karta tworzy lustrzany wplyw, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Po zapisie pojawia sie komunikat, co automat dolozyl i na kiedy\n- Toggle automatyczna przy karcie opisuje SPLATE: karta automatyczna splaca sie sama, manualna trafia na liste Platnosci\n- Ikona metody wszedzie ta sama: raczka, piorun, karta czerwona (splata reczna) i karta zolta (splata automatyczna)"
-    },
-    {
-      "version": "0.24.26081000",
-      "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty — splata powstaje sama po okresie bezodsetkowym\n- Zakup karta tworzy dodatkowo lustrzany wplyw z karty, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Usuniecie dowolnej pozycji kasuje caly zestaw, zmiana kwoty przechodzi na pozostale"
     }
   ],
-  "releaseNotes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt",
-  "releaseDate": "2026-08-22T14:15:03Z",
-  "versionCode": 2026082200
+  "releaseNotes": "- Poprawka: nazwa sklepu w potwierdzeniu z portfela telefonu byla pusta\n- Odczyt nie zaklada juz, ze naglowek stoi przed nazwa — OCR zwraca bloki w dowolnej kolejnosci",
+  "releaseDate": "2026-08-22T21:23:14Z",
+  "versionCode": 2026082201,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026082201",
+  "version": "0.26.26082201"
 }

@@ -118,6 +118,15 @@ do użytkownika.
 pewnie, więc nieudany odczyt samej daty nie jest powodem, żeby posyłać
 sekundowy odczyt do czterdziestosekundowego silnika.
 
+**Żadne pole nie może opierać się na pozycji w odczycie.** Pierwsza wersja
+brała nazwę sklepu jako „pierwszą sensowną linię POD nagłówkiem" — na telefonie
+wychodziła pusta, choć kwota i data były poprawne. OCR zwraca tekst **blokami**
+i nie obiecuje kolejności wizualnej: „Potwierdzenie" to mały, osobny blok
+w rogu ekranu, który potrafi trafić w odczycie za nazwę albo nawet za tabelę.
+Kwota i data przeżyły to bez szwanku, bo szuka się ich po etykietach. Nazwa
+bierze więc pierwszą sensowną linię PRZED pierwszą etykietą, a sam nagłówek
+jest z kandydata wycinany (bywa z nazwą sklejony w jedną linię).
+
 **Nazwa karty jest czytana, ale nieużywana.** Kusi, żeby podstawić z niej metodę
 płatności (u właściciela decyduje ona o automacie karty kredytowej, ADR-033),
 ale wymagałoby to przeciągnięcia nowego pola przez cały łańcuch skanu aż do

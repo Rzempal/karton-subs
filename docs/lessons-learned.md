@@ -869,3 +869,36 @@ cala reszte przy okazji.
 formatowania w CI, jest to zmiana poza zakresem zadania — dokladnie to, czego
 zabrania regula o dyscyplinie zakresu.
 
+---
+
+## 2026-08-22: OCR zwraca BLOKI, a nie kolejnosc wizualna
+
+### Problem
+Nowa regula czytania potwierdzen z portfela telefonu dzialala na testach
+i w polowie dzialala na telefonie: kwota i data byly poprawne, ale nazwa sklepu
+wychodzila pusta. Na ekranie nazwa stoi dokladnie pod naglowkiem
+„Potwierdzenie", wiec regula brala „pierwsza sensowna linie POD naglowkiem".
+
+### Przyczyna
+`recognized.text` z ML Kit sklada tekst z BLOKOW, a kolejnosc blokow nie musi
+odpowiadac temu, co widac na ekranie. Naglowek to maly, osobny blok w lewym
+gornym rogu — w odczycie potrafi wyladowac za nazwa albo za cala tabela. Kwota
+i data przezyly to bez szwanku, bo szuka sie ich PO ETYKIETACH („Kwota:",
+„Data:"), czyli niezaleznie od kolejnosci. Nazwa byla jedynym polem opartym
+na pozycji i jako jedyna zawiodla.
+
+### Rozwiazanie
+- Pole wiazac z ETYKIETA, nie z pozycja linii — wszedzie, gdzie dokument
+  jakakolwiek etykiete ma.
+- Gdy pole etykiety nie ma (nazwa sklepu w potwierdzeniu), oprzec je o granice,
+  ktora z kolejnosci blokow nie wynika: „przed pierwsza etykieta" zamiast
+  „pod naglowkiem".
+- Kandydata czyscic z naglowka zamiast odrzucac cala linie — bloki bywaja tez
+  SKLEJANE, wiec „Potwierdzenie Salon psiej urody" to jedna linia.
+
+### Wniosek
+Test napisany z wyrenderowanego zrzutu sprawdza uklad, ktory widzi CZLOWIEK,
+a regula dostaje uklad, ktory zwrocil OCR. To dwie rozne rzeczy. Kazda nowa
+regula dokumentu powinna miec test „to samo, ale w innej kolejnosci linii" —
+inaczej polowa pol dziala, a druga polowa wychodzi pusta dopiero na telefonie.
+

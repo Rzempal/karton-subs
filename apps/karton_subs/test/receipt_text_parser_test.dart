@@ -366,6 +366,78 @@ Kwota:
       expect(parsed.name, isNot(contains('Millennium')));
     });
 
+    // Regresja z telefonu: kwota i data byly czytane, a nazwa wychodzila pusta.
+    // OCR zwraca tekst BLOKAMI i nie obiecuje kolejnosci wizualnej — maly blok
+    // „Potwierdzenie" z rogu ekranu potrafi trafic za nazwe albo za tabele.
+    group('Naglowek w innym miejscu niz na ekranie (kolejnosc blokow OCR)', () {
+      test('naglowek PO nazwie sklepu', () {
+        const raw = '''
+Salon psiej urody Sznup D
+Potwierdzenie
+Data: 20.08.2026 17:22:07
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+''';
+
+        final parsed = ReceiptTextParser.parse(raw, now: _now);
+
+        expect(parsed!.name, 'Salon psiej urody Sznup D');
+        expect(parsed.amount, 150.00);
+      });
+
+      test('naglowek na samym koncu odczytu', () {
+        const raw = '''
+Salon psiej urody Sznup D
+Data: 20.08.2026 17:22:07
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+Potwierdzenie
+''';
+
+        expect(
+          ReceiptTextParser.parse(raw, now: _now)!.name,
+          'Salon psiej urody Sznup D',
+        );
+      });
+
+      test('naglowek sklejony z nazwa w jednej linii', () {
+        const raw = '''
+Potwierdzenie Salon psiej urody Sznup D
+Data: 20.08.2026 17:22:07
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+''';
+
+        expect(
+          ReceiptTextParser.parse(raw, now: _now)!.name,
+          'Salon psiej urody Sznup D',
+        );
+      });
+
+      test('sam naglowek nie moze zostac nazwa sklepu', () {
+        const raw = '''
+Potwierdzenie
+Data: 20.08.2026 17:22:07
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+''';
+
+        expect(ReceiptTextParser.parse(raw, now: _now)!.name, isNull);
+      });
+
+      test('nazwa karty nie zastepuje nazwy sklepu, gdy ta sie nie odczytala', () {
+        const raw = '''
+Potwierdzenie
+Data: 20.08.2026 17:22:07
+Nazwa karty: Millennium VISA Konto 360
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+''';
+
+        expect(ReceiptTextParser.parse(raw, now: _now)!.name, isNull);
+      });
+    });
+
     test('samo slowo „Potwierdzenie" bez etykiet -> null', () {
       const raw = '''
 Potwierdzenie

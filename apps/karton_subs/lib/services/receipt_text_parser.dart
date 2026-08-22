@@ -389,15 +389,27 @@ class ReceiptTextParser {
     );
   }
 
-  /// Nazwa sklepu stoi między nagłówkiem a pierwszą etykietą — portfel nie
-  /// opisuje jej żadnym słowem, więc jedyną wskazówką jest pozycja w układzie.
+  /// Nazwa sklepu: pierwsza sensowna linia PRZED pierwszą etykietą.
+  ///
+  /// Świadomie nie szukamy jej „pod nagłówkiem", choć na ekranie tam właśnie
+  /// stoi. OCR zwraca tekst BLOKAMI i nie obiecuje kolejności wizualnej —
+  /// „Potwierdzenie" to mały, osobny blok w rogu, który potrafi trafić
+  /// w odczycie za nazwę albo nawet za tabelę. Kwota i data przeżywały to bez
+  /// szwanku, bo szuka się ich po etykietach; nazwa była jedynym polem
+  /// opartym na pozycji i jako jedyna wychodziła pusta.
+  ///
+  /// Sam nagłówek nazwą nie jest, ale bywa z nią sklejony w jedną linię —
+  /// dlatego wycinamy go z kandydata zamiast odrzucać całą linię.
   static String? _confirmationMerchant(List<String> lines) {
-    final start = lines.indexWhere(_confirmationHeader.hasMatch);
-    if (start < 0) return null;
-    for (final line in lines.skip(start + 1)) {
-      if (_confirmationLabels.any((label) => label.hasMatch(line))) break;
-      if (!_looksLikeMerchant(line)) continue;
-      return _shorten(line);
+    final firstLabel = lines.indexWhere(
+      (line) => _confirmationLabels.any((label) => label.hasMatch(line)),
+    );
+    final end = firstLabel < 0 ? lines.length : firstLabel;
+    for (final line in lines.take(end)) {
+      final candidate = line.replaceAll(_confirmationHeader, ' ').trim();
+      if (candidate.isEmpty) continue;
+      if (!_looksLikeMerchant(candidate)) continue;
+      return _shorten(candidate);
     }
     return null;
   }
