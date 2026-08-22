@@ -132,3 +132,12 @@ płatności (u właściciela decyduje ona o automacie karty kredytowej, ADR-033)
 ale wymagałoby to przeciągnięcia nowego pola przez cały łańcuch skanu aż do
 formularza. Świadomie odłożone; dziś służy tylko jako element kotwicy.
 
+**Podgląd surowego odczytu (Developer Tools).** Reguły dostają tekst złożony
+z bloków, a nie to, co widać na ekranie — bez możliwości zajrzenia w ten tekst
+każda nietrafiona reguła kończy się zgadywaniem układu i kolejnym wydaniem
+„na próbę". Kafelek „Ostatni odczyt OCR" pokazuje wynik ostatniego skanu
+(wszystkie próbowane obroty) z przyciskiem kopiowania. Tekst siedzi w pamięci
+procesu jak bufor logów, nigdzie nie jest zapisywany, a Developer Tools istnieje
+tylko na kanale DEV — więc zasada „dane nie opuszczają urządzenia" zostaje
+nienaruszona.
+

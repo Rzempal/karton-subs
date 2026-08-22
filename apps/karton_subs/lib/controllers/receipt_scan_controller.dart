@@ -572,6 +572,10 @@ class ReceiptScanController extends ChangeNotifier {
     notifyListeners(); // „Rozpoznaję…" / „W kolejce…"
   }
 
+  /// Surowy tekst ostatniego odczytu OCR — podgląd dla Developer Tools.
+  /// Sam serwis nie jest w drzewie zależności, a kontroler jest.
+  String get lastOcrText => _ocr.lastRawText;
+
   /// Próba odczytu regułami (zwykły OCR). Nigdy nie blokuje — każdy problem
   /// oznacza po prostu „nie trafiono" i sprawę przejmuje silnik AI.
   Future<ParsedReceipt?> _quickRead(PendingReceiptScan item) async {

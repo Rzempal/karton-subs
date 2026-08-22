@@ -115,7 +115,8 @@ lib/
 │   ├── household_sync_screen.dart # Parowanie QR + haslo, ponowne wystawienie kodu QR, sync budzetu domowego (ADR-009)
 │   ├── receipt_archive_screen.dart # Archiwum zdjec paragonow (osobna sekcja Ustawien)
 │   ├── data_export_screen.dart  # Eksport/import XLSX (subskrypcje, budzet) + raport PDF — Ustawienia -> Dane
-│   └── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
+│   ├── settings_screen.dart     # Ustawienia, backup, OTA, synchronizacja domowego
+│   └── dev_tools_screen.dart    # Developer Tools (tylko DEV): override daty, testy powiadomien, podglad surowego odczytu OCR
 ├── widgets/
 │   ├── aurora_background.dart    # Tlo: gradient + 2 statyczne poswiaty (Aurora)
 │   ├── frost_card.dart           # Karta „frost" (przezroczystosc + border, BEZ blur)

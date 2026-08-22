@@ -414,6 +414,22 @@ Kwota: 150,00 zl
         );
       });
 
+      test('artefakt OCR na koncu nazwy nie kasuje jej', () {
+        // „to zdanie, nie nazwa" odrzuca linie konczaca sie kropka — jedna
+        // kropka doklejona przez OCR gubila cala nazwe.
+        const raw = '''
+Potwierdzenie
+Salon psiej urody Sznup D.
+Data: 20.08.2026 17:22:07
+Kwota: 150,00 zl
+''';
+
+        expect(
+          ReceiptTextParser.parse(raw, now: _now)!.name,
+          'Salon psiej urody Sznup D',
+        );
+      });
+
       test('sam naglowek nie moze zostac nazwa sklepu', () {
         const raw = '''
 Potwierdzenie

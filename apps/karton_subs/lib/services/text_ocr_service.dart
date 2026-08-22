@@ -31,18 +31,33 @@ class TextOcrService {
 
   TextRecognizer? _recognizer;
 
+  final StringBuffer _lastRaw = StringBuffer();
+
+  /// Surowy tekst OSTATNIEGO odczytu — wyłącznie do diagnostyki w Developer
+  /// Tools (kanał DEV). Reguły dostają tekst, który zwrócił model, a nie ten,
+  /// który widać na ekranie: OCR składa wynik z bloków i nie obiecuje ich
+  /// kolejności. Bez podglądu każda nietrafiona reguła kończyła się zgadywaniem
+  /// układu i kolejnym wydaniem „na próbę".
+  ///
+  /// Trzymany w pamięci procesu, jak bufor logów: nigdzie nie zapisywany
+  /// i niewidoczny w PROD, bo Developer Tools jest tylko w DEV.
+  String get lastRawText => _lastRaw.toString();
+
   TextRecognizer get _engine =>
       _recognizer ??= TextRecognizer(script: TextRecognitionScript.latin);
 
   /// Czyta wydatek ze zdjęcia. `null` = żaden wzorzec nie pasuje (sprawę
   /// przejmuje silnik AI). [now] tylko do testów.
   Future<ParsedReceipt?> readReceipt(String imagePath, {DateTime? now}) async {
+    _lastRaw.clear();
     for (final angle in _angles) {
       String? path = imagePath;
       if (angle != 0) path = await _rotatedCopy(imagePath, angle);
       if (path == null) continue;
       try {
         final recognized = await _engine.processImage(InputImage.fromFilePath(path));
+        _lastRaw.writeln('--- obrot $angle ---');
+        _lastRaw.writeln(recognized.text);
         final receipt = ReceiptTextParser.parse(recognized.text, now: now);
         if (receipt != null) {
           _log.info('Szybka sciezka OCR: trafienie przy obrocie $angle');

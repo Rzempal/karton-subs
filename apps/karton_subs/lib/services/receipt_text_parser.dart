@@ -406,7 +406,13 @@ class ReceiptTextParser {
     );
     final end = firstLabel < 0 ? lines.length : firstLabel;
     for (final line in lines.take(end)) {
-      final candidate = line.replaceAll(_confirmationHeader, ' ').trim();
+      // Końcowa interpunkcja leci PRZED heurystyką: „to zdanie, nie nazwa"
+      // odrzuca linię kończącą się kropką, więc jeden artefakt OCR na końcu
+      // nazwy kasował ją bez śladu.
+      final candidate = line
+          .replaceAll(_confirmationHeader, ' ')
+          .replaceAll(RegExp(r'[\s.,;:•·|]+$'), '')
+          .trim();
       if (candidate.isEmpty) continue;
       if (!_looksLikeMerchant(candidate)) continue;
       return _shorten(candidate);
