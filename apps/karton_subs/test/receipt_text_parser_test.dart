@@ -305,6 +305,86 @@ Razem: 120,00
     });
   });
 
+  group('Potwierdzenie z portfela telefonu (Samsung Wallet)', () {
+    // Uklad z prawdziwego ekranu: naglowek, nazwa sklepu, potem pary
+    // etykieta-wartosc. Data jest pelna, wiec roku nie zgadujemy.
+    const raw = '''
+Potwierdzenie
+Salon psiej urody Sznup D
+Data: 20.08.2026 17:22:07
+Nazwa karty: Millennium VISA Konto 360
+Stan: Zatwierdzone
+Kwota: 150,00 zl
+''';
+
+    test('czyta kwote, date i nazwe sklepu', () {
+      final parsed = ReceiptTextParser.parse(raw, now: _now);
+
+      expect(parsed, isNotNull);
+      expect(parsed!.amount, 150.00);
+      expect(parsed.date, DateTime(2026, 8, 20));
+      expect(parsed.name, 'Salon psiej urody Sznup D');
+      expect(parsed.currency, 'PLN');
+    });
+
+    test('OCR lamiacy kolumny (wartosc w nastepnej linii) czyta tak samo', () {
+      const split = '''
+Potwierdzenie
+Salon psiej urody Sznup D
+Data:
+20.08.2026 17:22:07
+Nazwa karty:
+Millennium VISA Konto 360
+Stan:
+Zatwierdzone
+Kwota:
+150,00 zl
+''';
+
+      final parsed = ReceiptTextParser.parse(split, now: _now);
+
+      expect(parsed!.amount, 150.00);
+      expect(parsed.date, DateTime(2026, 8, 20));
+      expect(parsed.name, 'Salon psiej urody Sznup D');
+    });
+
+    // Stan platnosci NIE wplywa na odczyt: szybka sciezka nie ma kanalu
+    // „odrzuc dokument", a pozycja i tak czeka na zatwierdzenie ze zdjeciem.
+    test('platnosc odrzucona tez jest czytana (decyzje podejmuje uzytkownik)', () {
+      final parsed = ReceiptTextParser.parse(
+        raw.replaceAll('Zatwierdzone', 'Odrzucone'),
+        now: _now,
+      );
+
+      expect(parsed!.amount, 150.00);
+    });
+
+    test('numer karty nie moze zostac kwota ani data', () {
+      final parsed = ReceiptTextParser.parse(raw, now: _now);
+
+      expect(parsed!.amount, isNot(360));
+      expect(parsed.name, isNot(contains('Millennium')));
+    });
+
+    test('samo slowo „Potwierdzenie" bez etykiet -> null', () {
+      const raw = '''
+Potwierdzenie
+Dziekujemy za zakupy
+Do zobaczenia
+''';
+      expect(ReceiptTextParser.parse(raw, now: _now), isNull);
+    });
+
+    test('etykiety bez naglowka -> null (to nie ten dokument)', () {
+      const raw = '''
+Salon psiej urody
+Data: 20.08.2026
+Stan: Zatwierdzone
+''';
+      expect(ReceiptTextParser.parse(raw, now: _now), isNull);
+    });
+  });
+
   group('Dokument spoza wzorcow', () {
 
     test('pusty tekst -> null', () {

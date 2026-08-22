@@ -36,6 +36,8 @@ Przed sięgnięciem po silnik AI aplikacja próbuje **szybkiej ścieżki**:
      podatek), data ISO z wydruku, sprzedawca z nagłówka (pomijając NIP i adres).
    - **Zrzut płatności** — kwota `X,XX zł`, sprzedawca z linii nad kwotą
      (z pominięciem paska stanu telefonu), data z „dzień tygodnia, dzień miesiąc".
+   - **Potwierdzenie z portfela** — układ etykieta–wartość (`Data:`, `Kwota:`),
+     patrz rozszerzenie z 2026-08-20.
 3. Trafienie → pozycja gotowa w ~1–2 s. Brak trafienia albo brak pewnej kwoty →
    dokument przejmuje silnik AI, dokładnie jak dotąd.
 
@@ -90,3 +92,34 @@ oparcie sumy na tej etykiecie podstawiało kwotę netto.
 Zweryfikowane na trzech prawdziwych fakturach właściciela (kwota, data
 i wystawca trafione w każdej); dokumenty zostają lokalnie, testy odwzorowują
 ich układ na danych zmienionych.
+
+---
+
+## Rozszerzenie (2026-08-20): czwarty wzorzec — potwierdzenie z portfela
+
+Samsung Wallet pokazuje po płatności ekran o stałym układzie etykieta–wartość:
+nagłówek „Potwierdzenie", nazwa sklepu, a pod nią `Data:`, `Nazwa karty:`,
+`Stan:` i `Kwota:`. Doszedł wiec czwarty wzorzec, czytany tak samo pewnie jak
+paragon fiskalny — z **pełną datą dzienną**, więc znów bez zgadywania roku.
+
+**Kotwicą jest nagłówek RAZEM z etykietami** (co najmniej dwie z czterech).
+Samo słowo „Potwierdzenie" nie wystarcza, bo tak samo tytułowane jest bankowe
+potwierdzenie przelewu. Etykiety sprawdzamy od POCZĄTKU linii i z dwukropkiem —
+inaczej „Kwota A 23,00%" z paragonu fiskalnego udawałaby etykietę kwoty.
+
+**Stan płatności („Zatwierdzone" / „Odrzucone") nie wpływa na odczyt.** Kuszące
+było odrzucanie dokumentów o innym stanie, ale szybka ścieżka nie ma kanału
+„odrzuć ten dokument": zwrócenie pustego wyniku oddałoby odrzuconą płatność
+silnikowi AI, który wpisałby kwotę i tak — tylko wolniej i bez pokazania stanu.
+Pozycja czeka w „Do zatwierdzenia" ze zdjęciem obok, więc decyzja i tak należy
+do użytkownika.
+
+**Data jest opcjonalna, kwota nie.** Nagłówek i etykiety rozpoznają dokument
+pewnie, więc nieudany odczyt samej daty nie jest powodem, żeby posyłać
+sekundowy odczyt do czterdziestosekundowego silnika.
+
+**Nazwa karty jest czytana, ale nieużywana.** Kusi, żeby podstawić z niej metodę
+płatności (u właściciela decyduje ona o automacie karty kredytowej, ADR-033),
+ale wymagałoby to przeciągnięcia nowego pola przez cały łańcuch skanu aż do
+formularza. Świadomie odłożone; dziś służy tylko jako element kotwicy.
+

@@ -5,8 +5,9 @@ import 'receipt_scan_service.dart';
 /// Po co, skoro jest silnik AI: paragony fiskalne i zrzuty płatności telefonem
 /// mają sztywny układ, więc reguły czytają je pewniej, natychmiast i — co
 /// najważniejsze — **bez zgadywania roku**. Paragon drukuje pełną datę ISO,
-/// a zrzut z Google Wallet podaje dzień tygodnia, który jednoznacznie wskazuje
-/// rok („sobota, 25 lip" to 2026, bo 25 lipca 2025 był piątkiem).
+/// potwierdzenie z Samsung Wallet pełną datę dzienną, a zrzut z Google Wallet
+/// podaje dzień tygodnia, który jednoznacznie wskazuje rok („sobota, 25 lip"
+/// to 2026, bo 25 lipca 2025 był piątkiem).
 ///
 /// Reguły są celowo zachowawcze: brak pewnej kwoty = brak wyniku i sprawę
 /// przejmuje silnik AI. Lepiej oddać dokument modelowi niż wpisać złą kwotę.
@@ -22,6 +23,7 @@ class ReceiptTextParser {
         .toList();
     if (lines.isEmpty) return null;
     return _fiscalReceipt(lines, today) ??
+        _walletConfirmation(lines, today) ??
         _paymentScreenshot(lines, today) ??
         _invoice(lines);
   }
@@ -308,6 +310,94 @@ class ReceiptTextParser {
       final line = lines[i];
       if (statusBar.hasMatch(line)) continue;
       if (_looksLikeMerchant(line)) return _shorten(line);
+    }
+    return null;
+  }
+
+  // ── Potwierdzenie płatności z portfela (Samsung Wallet) ───────────────────
+
+  /// Nagłówek dokumentu. Samo słowo nie wystarcza za rozpoznanie — bank tak
+  /// samo tytułuje potwierdzenie przelewu — więc musi mu towarzyszyć zestaw
+  /// etykiet z tego układu.
+  static final _confirmationHeader = RegExp(
+    r'potwierdzenie',
+    caseSensitive: false,
+  );
+
+  /// Etykiety pól, sprawdzane od POCZĄTKU linii i z dwukropkiem. Bez tego
+  /// zastrzeżenia „Kwota A 23,00%" z paragonu fiskalnego udawałaby etykietę
+  /// kwoty, a „Data sprzedaży" z faktury — etykietę daty.
+  static final _confirmAmountLabel = RegExp(
+    r'^kwota\s*:',
+    caseSensitive: false,
+  );
+  static final _confirmDateLabel = RegExp(r'^data\s*:', caseSensitive: false);
+  static final _confirmCardLabel = RegExp(
+    r'^nazwa\s+karty\s*:',
+    caseSensitive: false,
+  );
+  static final _confirmStateLabel = RegExp(r'^stan\s*:', caseSensitive: false);
+
+  static final _confirmationLabels = [
+    _confirmAmountLabel,
+    _confirmDateLabel,
+    _confirmCardLabel,
+    _confirmStateLabel,
+  ];
+
+  /// Potwierdzenie płatności telefonem w układzie etykieta–wartość:
+  ///
+  /// ```text
+  /// Potwierdzenie
+  /// Salon psiej urody Sznup D
+  /// Data:         20.08.2026 17:22:07
+  /// Nazwa karty:  Millennium VISA Konto 360
+  /// Stan:         Zatwierdzone
+  /// Kwota:        150,00 zł
+  /// ```
+  ///
+  /// **Stan („Zatwierdzone" / „Odrzucone") świadomie nie wpływa na odczyt.**
+  /// Szybka ścieżka nie ma kanału „odrzuć ten dokument": zwrócenie `null`
+  /// oddałoby odrzuconą płatność silnikowi AI, który i tak wpisałby kwotę —
+  /// tyle że bez pokazania stanu. Pozycja i tak czeka na zatwierdzenie ze
+  /// zdjęciem obok, więc decyzja należy do użytkownika.
+  ///
+  /// **Data jest opcjonalna, kwota nie.** Nagłówek i etykiety rozpoznają
+  /// dokument pewnie, więc nieudany odczyt samej daty nie jest powodem, żeby
+  /// posyłać sekundowy odczyt do czterdziestosekundowego silnika — formularz
+  /// podstawi dzisiejszą datę, a użytkownik ma dokument przed oczami.
+  static ParsedReceipt? _walletConfirmation(
+    List<String> lines,
+    DateTime today,
+  ) {
+    if (!lines.any(_confirmationHeader.hasMatch)) return null;
+    final labels = _confirmationLabels
+        .where((label) => lines.any(label.hasMatch))
+        .length;
+    if (labels < 2) return null;
+
+    final amount = _amountNearLabel(lines, _confirmAmountLabel, window: 2);
+    if (amount == null) return null;
+
+    return ParsedReceipt(
+      name: _confirmationMerchant(lines),
+      amount: amount,
+      currency: 'PLN',
+      date:
+          _dateNearLabel(lines, _confirmDateLabel) ??
+          _dateFromLines(lines, today),
+    );
+  }
+
+  /// Nazwa sklepu stoi między nagłówkiem a pierwszą etykietą — portfel nie
+  /// opisuje jej żadnym słowem, więc jedyną wskazówką jest pozycja w układzie.
+  static String? _confirmationMerchant(List<String> lines) {
+    final start = lines.indexWhere(_confirmationHeader.hasMatch);
+    if (start < 0) return null;
+    for (final line in lines.skip(start + 1)) {
+      if (_confirmationLabels.any((label) => label.hasMatch(line))) break;
+      if (!_looksLikeMerchant(line)) continue;
+      return _shorten(line);
     }
     return null;
   }

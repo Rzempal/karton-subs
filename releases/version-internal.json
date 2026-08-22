@@ -1,9 +1,11 @@
 {
-  "releaseNotes": "- Jednorazowe wplywy z karty (pozyczki gotowkowe) zwijaja sie we wlasna grupe\n- Lustrzane wplywy z zakupow zostaja w osobnej grupie, bo ich suma znaczy co innego\n- Grupowanie idzie po karcie, a nie po nazwie wpisu",
-  "version": "0.26.26081801",
-  "releaseDate": "2026-08-18T12:12:45Z",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026081801",
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/internal/zostaje-dev_latest.apk?v=2026082200",
+  "version": "0.26.26082200",
   "changelog": [
+    {
+      "version": "0.26.26082200",
+      "notes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt"
+    },
     {
       "version": "0.26.26081801",
       "notes": "- Jednorazowe wplywy z karty (pozyczki gotowkowe) zwijaja sie we wlasna grupe\n- Lustrzane wplywy z zakupow zostaja w osobnej grupie, bo ich suma znaczy co innego\n- Grupowanie idzie po karcie, a nie po nazwie wpisu"
@@ -39,11 +41,9 @@
     {
       "version": "0.24.26081000",
       "notes": "- Metoda platnosci moze byc karta kredytowa z liczba dni bezodsetkowych\n- Wplyw jednorazowy da sie oznaczyc jako pozyczony z karty — splata powstaje sama po okresie bezodsetkowym\n- Zakup karta tworzy dodatkowo lustrzany wplyw z karty, wiec miesiac zakupu wychodzi na zero, a koszt lauduje w miesiacu splaty\n- Usuniecie dowolnej pozycji kasuje caly zestaw, zmiana kwoty przechodzi na pozostale"
-    },
-    {
-      "version": "0.23.26080902",
-      "notes": "- Sortowanie, grupowanie i zwijanie w Bilansie miesiaca sa zapamietywane — osobno dla Platnosci i dla Podsumowania"
     }
   ],
-  "versionCode": 2026081801
+  "releaseNotes": "- Potwierdzenie platnosci z Samsung Wallet czytane szybka sciezka OCR w okolo sekunde\n- Kwota, data i nazwa sklepu prosto z dokumentu, bez zgadywania roku\n- Stan platnosci i nazwa karty nie wplywaja na odczyt",
+  "releaseDate": "2026-08-22T14:15:03Z",
+  "versionCode": 2026082200
 }
