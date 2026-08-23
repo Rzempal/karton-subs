@@ -902,3 +902,16 @@ a regula dostaje uklad, ktory zwrocil OCR. To dwie rozne rzeczy. Kazda nowa
 regula dokumentu powinna miec test „to samo, ale w innej kolejnosci linii" —
 inaczej polowa pol dziala, a druga polowa wychodzi pusta dopiero na telefonie.
 
+### Ciag dalszy (2026-08-23): zgadywanie kosztowalo trzy wydania
+Dwie kolejne proby naprawy szly „na wyczucie" i obie chybily. Prawdziwy odczyt
+okazal sie ukladem DWUKOLUMNOWYM: najpierw cala kolumna etykiet, potem cala
+kolumna wartosci — wartosc lezala cztery linie od swojej etykiety, wiec zadne
+szukanie „w sasiedztwie" nie mialo szans. Rozwiazaniem bylo parowanie POZYCYJNE
+(n-ta wartosc do n-tej etykiety), a nie kolejna heurystyka.
+
+Wniosek procesowy jest ostrzejszy niz techniczny: **przy pierwszym nietrafionym
+odczycie dokladamy podglad surowego tekstu, zamiast zgadywac drugi raz.**
+Kafelek „Ostatni odczyt OCR" w Developer Tools kosztowal jedno wydanie
+i rozstrzygnal sprawe w minute; dwa wczesniejsze strzaly kosztowaly tyle samo
+i nie daly nic.
+

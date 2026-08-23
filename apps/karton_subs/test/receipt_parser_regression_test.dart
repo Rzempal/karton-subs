@@ -106,4 +106,96 @@ JMP S.A. BIEDRONKA 7779
       expect(parsed.name, contains('BIEDRONKA'));
     });
   });
+
+  group('Potwierdzenie z portfela: OCR zwraca dwie kolumny', () {
+    // Prawdziwy odczyt z telefonu (Samsung Wallet). Na ekranie widac pary
+    // etykieta-wartosc, ale OCR sklada wynik z BLOKOW: najpierw cala kolumna
+    // etykiet, potem cala kolumna wartosci — a nazwa sklepu na czele wartosci,
+    // bo na ekranie stoi nad nimi. Kwota lezala cztery linie od swojej
+    // etykiety, wiec przy 0 stopni nie byla znajdowana wcale, a odczyt udawal
+    // sie dopiero po obrocie o 90 stopni — tam z kolei nazwa wypadala za
+    // etykietami i pole „Nazwa wydatku" zostawalo puste.
+    test('uklad dwukolumnowy (obrot 0) — kwota, data i nazwa sklepu', () {
+      const text = '''
+Potwierdzenie
+Data:
+Nazwa karty:
+Stan:
+Kwota:
+Salon psiej urody Sznup D
+20.08.2026 17:22:07
+Millennium VISA Konto 360
+Zatwierdzone
+150,00 zl
+''';
+
+      final parsed = ReceiptTextParser.parse(text, now: now);
+
+      expect(parsed, isNotNull);
+      expect(parsed!.amount, 150.00);
+      expect(parsed.date, DateTime(2026, 8, 20));
+      expect(parsed.name, 'Salon psiej urody Sznup D');
+    });
+
+    test('uklad przeplatany (obrot 90) — te same pola', () {
+      const text = '''
+Kwota:
+150,00 zl
+Stan:
+Zatwierdzone
+Nazwa karty:
+Millennium VISA Konto 360
+Data:
+20.08.2026 17:22:07
+Salon psiej urody Sznup D
+Potwierdzenie
+''';
+
+      final parsed = ReceiptTextParser.parse(text, now: now);
+
+      expect(parsed!.amount, 150.00);
+      expect(parsed.date, DateTime(2026, 8, 20));
+      expect(parsed.name, 'Salon psiej urody Sznup D');
+    });
+
+    test('drugi paragon z tego samego telefonu (nazwa wersalikami)', () {
+      const text = '''
+Potwierdzenie
+Data:
+Nazwa karty:
+Stan:
+Kwota:
+TI AMO GELATO
+14.08.2026 17:34:07
+Millennium VISA Konto 360
+Zatwierdzone
+48,31 zl
+''';
+
+      final parsed = ReceiptTextParser.parse(text, now: now);
+
+      expect(parsed!.amount, 48.31);
+      expect(parsed.date, DateTime(2026, 8, 14));
+      expect(parsed.name, 'TI AMO GELATO');
+    });
+
+    test('brak nazwy w bloku wartosci nie podstawia nazwy karty', () {
+      const text = '''
+Potwierdzenie
+Data:
+Nazwa karty:
+Stan:
+Kwota:
+20.08.2026 17:22:07
+Millennium VISA Konto 360
+Zatwierdzone
+150,00 zl
+''';
+
+      final parsed = ReceiptTextParser.parse(text, now: now);
+
+      expect(parsed!.amount, 150.00);
+      expect(parsed.name, isNull);
+    });
+  });
 }

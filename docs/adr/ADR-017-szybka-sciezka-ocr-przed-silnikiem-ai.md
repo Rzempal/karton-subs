@@ -118,6 +118,20 @@ do użytkownika.
 pewnie, więc nieudany odczyt samej daty nie jest powodem, żeby posyłać
 sekundowy odczyt do czterdziestosekundowego silnika.
 
+**Wartość bywa oddalona od swojej etykiety — pary trzeba składać pozycyjnie.**
+Prawdziwy odczyt tego ekranu (podgląd w Developer Tools) zwraca DWIE KOLUMNY:
+najpierw wszystkie etykiety, potem wszystkie wartości, a nazwa sklepu na czele
+bloku wartości (na ekranie stoi nad nimi). Kwota leżała więc cztery linie od
+etykiety `Kwota:` i przy 0° nie była znajdowana w ogóle — odczyt udawał się
+dopiero po obróceniu zdjęcia o 90°, gdzie pary sąsiadują. Reguła składa teraz
+pary **pozycyjnie**, gdy etykiety tworzą ciąg: n-ta wartość należy do n-tej
+etykiety, a nadmiarowa linia na czele bloku to nazwa. Dokument czyta się dzięki
+temu bez obracania, czyli jednym przebiegiem OCR zamiast dwoma.
+
+**Gdy nazwy w bloku wartości nie ma, pole zostaje puste.** Nazwa karty i status
+też są „sensownymi" liniami, więc luźniejsza reguła wpisywałaby do nazwy
+wydatku „Millennium VISA Konto 360". Puste pole jest uczciwsze.
+
 **Żadne pole nie może opierać się na pozycji w odczycie.** Pierwsza wersja
 brała nazwę sklepu jako „pierwszą sensowną linię POD nagłówkiem" — na telefonie
 wychodziła pusta, choć kwota i data były poprawne. OCR zwraca tekst **blokami**

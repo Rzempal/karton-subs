@@ -345,6 +345,10 @@ class ReceiptTextParser {
     _confirmStateLabel,
   ];
 
+  /// Kolejność etykiet w [_confirmationLabels] — używana do parowania kolumn.
+  static const _kAmountLabel = 0;
+  static const _kDateLabel = 1;
+
   /// Potwierdzenie płatności telefonem w układzie etykieta–wartość:
   ///
   /// ```text
@@ -355,6 +359,13 @@ class ReceiptTextParser {
   /// Stan:         Zatwierdzone
   /// Kwota:        150,00 zł
   /// ```
+  ///
+  /// **Tak to wygląda na ekranie — ale nie tak wygląda odczyt.** OCR składa
+  /// wynik z BLOKÓW i ten dokument potrafi zwrócić jako dwie osobne kolumny:
+  /// najpierw wszystkie etykiety, potem wszystkie wartości (a nazwa sklepu na
+  /// czele bloku wartości, bo na ekranie stoi nad nimi). Wartość bywa więc
+  /// oddalona od swojej etykiety o kilka linii i szukanie „w sąsiedztwie"
+  /// nie wystarcza — trzeba złożyć pary POZYCYJNIE.
   ///
   /// **Stan („Zatwierdzone" / „Odrzucone") świadomie nie wpływa na odczyt.**
   /// Szybka ścieżka nie ma kanału „odrzuć ten dokument": zwrócenie `null`
@@ -371,44 +382,92 @@ class ReceiptTextParser {
     DateTime today,
   ) {
     if (!lines.any(_confirmationHeader.hasMatch)) return null;
-    final labels = _confirmationLabels
-        .where((label) => lines.any(label.hasMatch))
-        .length;
-    if (labels < 2) return null;
+    final labels = _labelIndices(lines);
+    if (labels.length < 2) return null;
 
-    final amount = _amountNearLabel(lines, _confirmAmountLabel, window: 2);
+    final columns = _columnValues(lines, labels);
+
+    final amount =
+        _amountIn(columns?[_kAmountLabel] ?? '') ??
+        _amountNearLabel(lines, _confirmAmountLabel, window: 2);
     if (amount == null) return null;
 
+    final columnDate = columns?[_kDateLabel];
+    final date =
+        (columnDate == null ? null : _dateFromLines([columnDate], today)) ??
+        _dateNearLabel(lines, _confirmDateLabel) ??
+        _dateFromLines(lines, today);
+
     return ParsedReceipt(
-      name: _confirmationMerchant(lines),
+      name: _confirmationMerchant(lines, labels),
       amount: amount,
       currency: 'PLN',
-      date:
-          _dateNearLabel(lines, _confirmDateLabel) ??
-          _dateFromLines(lines, today),
+      date: date,
     );
   }
 
-  /// Nazwa sklepu: pierwsza sensowna linia PRZED pierwszą etykietą.
+  static List<int> _labelIndices(List<String> lines) => [
+    for (var i = 0; i < lines.length; i++)
+      if (_confirmationLabels.any((label) => label.hasMatch(lines[i]))) i,
+  ];
+
+  static int _labelKind(String line) =>
+      _confirmationLabels.indexWhere((label) => label.hasMatch(line));
+
+  /// Wartości sparowane z etykietami POZYCYJNIE — dla układu „kolumna etykiet,
+  /// potem kolumna wartości". `null`, gdy odczyt ma inny kształt (wtedy działa
+  /// zwykłe szukanie w sąsiedztwie etykiety).
   ///
-  /// Świadomie nie szukamy jej „pod nagłówkiem", choć na ekranie tam właśnie
-  /// stoi. OCR zwraca tekst BLOKAMI i nie obiecuje kolejności wizualnej —
-  /// „Potwierdzenie" to mały, osobny blok w rogu, który potrafi trafić
-  /// w odczycie za nazwę albo nawet za tabelę. Kwota i data przeżywały to bez
-  /// szwanku, bo szuka się ich po etykietach; nazwa była jedynym polem
-  /// opartym na pozycji i jako jedyna wychodziła pusta.
+  /// Blok wartości bywa o jedną linię dłuższy od bloku etykiet — ta nadmiarowa
+  /// linia na jego czele to nazwa sklepu. Gdy długości są równe, nazwy w tym
+  /// dokumencie nie ma i **nie wolno podstawić za nią nazwy karty**.
+  static Map<int, String>? _columnValues(List<String> lines, List<int> labels) {
+    if (labels.last - labels.first + 1 != labels.length) return null;
+    final rest = lines
+        .skip(labels.last + 1)
+        .where((l) => l.replaceAll(_confirmationHeader, ' ').trim().isNotEmpty)
+        .toList();
+    final offset = rest.length - labels.length;
+    if (offset < 0 || offset > 1) return null;
+    return {
+      for (var i = 0; i < labels.length; i++)
+        _labelKind(lines[labels[i]]): rest[i + offset],
+    };
+  }
+
+  /// Nazwa sklepu. Trzy kształty odczytu, w kolejności pewności:
   ///
-  /// Sam nagłówek nazwą nie jest, ale bywa z nią sklejony w jedną linię —
-  /// dlatego wycinamy go z kandydata zamiast odrzucać całą linię.
-  static String? _confirmationMerchant(List<String> lines) {
-    final firstLabel = lines.indexWhere(
-      (line) => _confirmationLabels.any((label) => label.hasMatch(line)),
-    );
-    final end = firstLabel < 0 ? lines.length : firstLabel;
-    for (final line in lines.take(end)) {
-      // Końcowa interpunkcja leci PRZED heurystyką: „to zdanie, nie nazwa"
-      // odrzuca linię kończącą się kropką, więc jeden artefakt OCR na końcu
-      // nazwy kasował ją bez śladu.
+  /// 1. linia PRZED pierwszą etykietą (nagłówek stoi nad nazwą albo jest z nią
+  ///    sklejony w jedną linię),
+  /// 2. nadmiarowa linia na czele bloku wartości (układ dwukolumnowy),
+  /// 3. linia, przy której nie stoi żadna etykieta (układ przeplatany —
+  ///    tak wygląda odczyt po obróceniu zdjęcia).
+  ///
+  /// Gdy żaden kształt nie da kandydata, pole zostaje puste. To celowe: nazwa
+  /// karty i status też są „sensownymi" liniami, więc luźniejsza reguła
+  /// wpisywałaby do nazwy wydatku „Millennium VISA Konto 360".
+  static String? _confirmationMerchant(List<String> lines, List<int> labels) {
+    final above = _firstMerchant(lines.take(labels.first));
+    if (above != null) return above;
+
+    if (labels.last - labels.first + 1 == labels.length) {
+      final rest = lines.skip(labels.last + 1).toList();
+      if (rest.length != labels.length + 1) return null;
+      return _firstMerchant([rest.first]);
+    }
+
+    final attached = <int>{...labels, for (final i in labels) i + 1};
+    return _firstMerchant([
+      for (var i = 0; i < lines.length; i++)
+        if (!attached.contains(i)) lines[i],
+    ]);
+  }
+
+  /// Pierwsza linia, która może być nazwą sklepu. Nagłówek jest wycinany
+  /// (bloki bywają sklejane), a końcowa interpunkcja obcinana — bez tego jeden
+  /// artefakt OCR kasował nazwę przez regułę „to zdanie, nie nazwa".
+  static String? _firstMerchant(Iterable<String> candidates) {
+    for (final line in candidates) {
       final candidate = line
           .replaceAll(_confirmationHeader, ' ')
           .replaceAll(RegExp(r'[\s.,;:•·|]+$'), '')
