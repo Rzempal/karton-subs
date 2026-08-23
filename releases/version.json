@@ -1,6 +1,11 @@
 {
-  "versionCode": 2026081800,
+  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026082300",
+  "versionCode": 2026082300,
   "changelog": [
+    {
+      "version": "0.26.26082300",
+      "notes": "- Potwierdzenie platnosci z portfela telefonu (Samsung Wallet) czytane w okolo sekunde, bez silnika AI\n- Nazwa sklepu, kwota i data prosto z dokumentu, bez zgadywania roku\n- Odczyt nie wymaga obracania zdjecia, wiec jest szybszy"
+    },
     {
       "version": "0.26.26081800",
       "notes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji"
@@ -36,14 +41,9 @@
     {
       "version": "0.21.26080400",
       "notes": "- Pokaz kod QR na sparowanym telefonie: kolejne urzadzenie dolacza do tego samego gospodarstwa\n- wymiana telefonu nie wymaga juz rozlaczania drugiej osoby"
-    },
-    {
-      "version": "0.20.26080203",
-      "notes": "- zaznaczanie wielu pozycji na listach: dlugie przytrzymanie, potem kategoria, metoda platnosci, data albo usuniecie naraz\n- Rachunki: zmiana daty przenosi rachunek do bilansu innego miesiaca razem z odhaczeniem platnosci\n- Wydatki i Wplywy: zbiorcze wstrzymywanie i wznawianie pozycji\n- dluga lista rachunkow buduje sie leniwie"
     }
   ],
-  "releaseDate": "2026-08-18T14:49:24Z",
-  "releaseNotes": "- Scalanie zaznaczonych wydatkow w jeden wpis: suma kwot, data najstarszej pozycji, wzorzec wybierany z listy\n- Pozycje karty kredytowej sa chronione przed scaleniem, bo ich usuniecie kasuje kaskada zakup\n- Splaty karty na Biezacych oraz wplywy z karty na Wplywach zwijaja sie w jeden wiersz z suma\n- Rozwinieta grupa ma wciecie, wiec widac przynaleznosc pozycji",
-  "version": "0.26.26081800",
-  "apkUrl": "https://michalrapala.app/releases/karton-subs/zostaje_latest.apk?v=2026081800"
+  "releaseNotes": "- Potwierdzenie platnosci z portfela telefonu (Samsung Wallet) czytane w okolo sekunde, bez silnika AI\n- Nazwa sklepu, kwota i data prosto z dokumentu, bez zgadywania roku\n- Odczyt nie wymaga obracania zdjecia, wiec jest szybszy",
+  "releaseDate": "2026-08-23T14:19:26Z",
+  "version": "0.26.26082300"
 }
